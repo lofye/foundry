@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Generation\ContextManifestGenerator;
-use Forge\Support\Paths;
-use Forge\Tests\Fixtures\TempProject;
+use Foundry\Generation\ContextManifestGenerator;
+use Foundry\Support\Paths;
+use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
 
 final class ContextManifestGeneratorTest extends TestCase

@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Http\RequestContext;
-use Forge\Http\ResponseEmitter;
+use Foundry\Http\RequestContext;
+use Foundry\Http\ResponseEmitter;
 use PHPUnit\Framework\TestCase;
 
 final class HttpSupportTest extends TestCase

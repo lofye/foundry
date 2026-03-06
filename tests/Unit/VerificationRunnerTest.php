@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Verification\VerificationResult;
-use Forge\Verification\VerificationRunner;
+use Foundry\Verification\VerificationResult;
+use Foundry\Verification\VerificationRunner;
 use PHPUnit\Framework\TestCase;
 
 final class VerificationRunnerTest extends TestCase

@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\DB;
+namespace Foundry\DB;
 
-use Forge\Observability\TraceRecorder;
-use Forge\Support\ForgeError;
+use Foundry\Observability\TraceRecorder;
+use Foundry\Support\FoundryError;
 
 final class PdoQueryExecutor implements QueryExecutor
 {
@@ -20,6 +20,7 @@ final class PdoQueryExecutor implements QueryExecutor
     ) {
     }
 
+    #[\Override]
     public function select(string $feature, string $queryName, array $params = []): array
     {
         $definition = $this->queries->get($feature, $queryName);
@@ -28,7 +29,7 @@ final class PdoQueryExecutor implements QueryExecutor
         $start = microtime(true);
         $statement = $this->connection->pdo()->prepare($definition->sql);
         if ($statement === false) {
-            throw new ForgeError('DB_PREPARE_FAILED', 'db', ['feature' => $feature, 'query' => $queryName], 'Failed to prepare SQL statement.');
+            throw new FoundryError('DB_PREPARE_FAILED', 'db', ['feature' => $feature, 'query' => $queryName], 'Failed to prepare SQL statement.');
         }
 
         $statement->execute($params);
@@ -41,6 +42,7 @@ final class PdoQueryExecutor implements QueryExecutor
         return $rows;
     }
 
+    #[\Override]
     public function execute(string $feature, string $queryName, array $params = []): int
     {
         $definition = $this->queries->get($feature, $queryName);
@@ -49,7 +51,7 @@ final class PdoQueryExecutor implements QueryExecutor
         $start = microtime(true);
         $statement = $this->connection->pdo()->prepare($definition->sql);
         if ($statement === false) {
-            throw new ForgeError('DB_PREPARE_FAILED', 'db', ['feature' => $feature, 'query' => $queryName], 'Failed to prepare SQL statement.');
+            throw new FoundryError('DB_PREPARE_FAILED', 'db', ['feature' => $feature, 'query' => $queryName], 'Failed to prepare SQL statement.');
         }
 
         $statement->execute($params);
@@ -76,7 +78,7 @@ final class PdoQueryExecutor implements QueryExecutor
     {
         foreach ($definition->placeholders as $placeholder) {
             if (!array_key_exists($placeholder, $params)) {
-                throw new ForgeError(
+                throw new FoundryError(
                     'QUERY_PARAM_MISSING',
                     'validation',
                     ['feature' => $definition->feature, 'query' => $definition->name, 'param' => $placeholder],

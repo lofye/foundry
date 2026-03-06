@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\DB;
+namespace Foundry\DB;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class DatabaseManager
 {
@@ -20,7 +20,7 @@ final class DatabaseManager
     public function connection(string $name = 'default'): Connection
     {
         if (!isset($this->connections[$name])) {
-            throw new ForgeError('DB_CONNECTION_NOT_FOUND', 'not_found', ['connection' => $name], 'Database connection not found.');
+            throw new FoundryError('DB_CONNECTION_NOT_FOUND', 'not_found', ['connection' => $name], 'Database connection not found.');
         }
 
         return $this->connections[$name];

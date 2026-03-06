@@ -1,31 +1,37 @@
 {
-  "name": "forge/framework",
-  "description": "Forge: an explicit, LLM-first PHP web framework",
+  "name": "foundry/framework",
+  "description": "Foundry: an explicit, LLM-first PHP web framework",
   "type": "library",
   "license": "MIT",
   "require": {
-    "php": "^8.4",
+    "php": "^8.5",
     "ext-json": "*",
     "ext-pdo": "*",
     "opis/json-schema": "^2.6",
     "symfony/yaml": "^7.3"
   },
   "require-dev": {
-    "phpunit/phpunit": "^11.5"
+    "phpunit/phpunit": "^11.5",
+    "aws/aws-sdk-php": "^3.357"
+  },
+  "suggest": {
+    "aws/aws-sdk-php": "Enable real MinIO/S3 object storage via MinioStorageDriver.",
+    "ext-redis": "Enable production-grade Redis queue support via RedisQueueDriver.",
+    "ext-pdo_pgsql": "Enable PostgreSQL database connectivity for integration tests and runtime deployments."
   },
   "autoload": {
     "psr-4": {
-      "Forge\\": "src/",
+      "Foundry\\": "src/",
       "App\\": "app/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Forge\\Tests\\": "tests/"
+      "Foundry\\Tests\\": "tests/"
     }
   },
   "bin": [
-    "bin/forge"
+    "bin/foundry"
   ],
   "scripts": {
     "test": "phpunit",

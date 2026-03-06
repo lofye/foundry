@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 return [
-    'name' => 'Forge App',
+    'name' => 'Foundry App',
     'env' => 'local',
     'debug' => true,
 ];

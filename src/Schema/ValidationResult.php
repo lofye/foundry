@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Schema;
+namespace Foundry\Schema;
 
-final class ValidationResult
+final readonly class ValidationResult
 {
     /**
      * @param array<int,ValidationError> $errors

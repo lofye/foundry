@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Config;
+namespace Foundry\Config;
 
-use Forge\Support\Arr;
+use Foundry\Support\Arr;
 
 final class ConfigRepository
 {

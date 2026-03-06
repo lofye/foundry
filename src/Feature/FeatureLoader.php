@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Feature;
+namespace Foundry\Feature;
 
-use Forge\Http\Route;
-use Forge\Http\RouteCollection;
-use Forge\Support\ForgeError;
-use Forge\Support\Json;
-use Forge\Support\Paths;
+use Foundry\Http\Route;
+use Foundry\Http\RouteCollection;
+use Foundry\Support\FoundryError;
+use Foundry\Support\Json;
+use Foundry\Support\Paths;
 
 final class FeatureLoader implements FeatureRegistry
 {
@@ -25,6 +25,7 @@ final class FeatureLoader implements FeatureRegistry
     {
     }
 
+    #[\Override]
     public function all(): array
     {
         $this->loadFeatures();
@@ -32,6 +33,7 @@ final class FeatureLoader implements FeatureRegistry
         return $this->features ?? [];
     }
 
+    #[\Override]
     public function has(string $feature): bool
     {
         $this->loadFeatures();
@@ -39,12 +41,13 @@ final class FeatureLoader implements FeatureRegistry
         return isset($this->features[$feature]);
     }
 
+    #[\Override]
     public function get(string $feature): FeatureDefinition
     {
         $this->loadFeatures();
 
         if (!isset($this->features[$feature])) {
-            throw new ForgeError('FEATURE_NOT_FOUND', 'not_found', ['feature' => $feature], 'Feature not found.');
+            throw new FoundryError('FEATURE_NOT_FOUND', 'not_found', ['feature' => $feature], 'Feature not found.');
         }
 
         return $this->features[$feature];
@@ -66,7 +69,7 @@ final class FeatureLoader implements FeatureRegistry
         /** @var mixed $raw */
         $raw = require $path;
         if (!is_array($raw)) {
-            throw new ForgeError('ROUTE_INDEX_INVALID', 'validation', ['path' => $path], 'Route index must return an array.');
+            throw new FoundryError('ROUTE_INDEX_INVALID', 'validation', ['path' => $path], 'Route index must return an array.');
         }
 
         $routes = [];
@@ -122,7 +125,7 @@ final class FeatureLoader implements FeatureRegistry
         /** @var mixed $raw */
         $raw = require $path;
         if (!is_array($raw)) {
-            throw new ForgeError('FEATURE_INDEX_INVALID', 'validation', ['path' => $path], 'Feature index must return an array.');
+            throw new FoundryError('FEATURE_INDEX_INVALID', 'validation', ['path' => $path], 'Feature index must return an array.');
         }
 
         $loaded = [];

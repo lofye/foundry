@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Queue\DefaultJobDispatcher;
-use Forge\Queue\JobDefinition;
-use Forge\Queue\JobRegistry;
-use Forge\Queue\RetryPolicy;
-use Forge\Queue\SyncQueueDriver;
-use Forge\Queue\Worker;
+use Foundry\Queue\DefaultJobDispatcher;
+use Foundry\Queue\JobDefinition;
+use Foundry\Queue\JobRegistry;
+use Foundry\Queue\RetryPolicy;
+use Foundry\Queue\SyncQueueDriver;
+use Foundry\Queue\Worker;
 use PHPUnit\Framework\TestCase;
 
 final class QueueTest extends TestCase

@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Http;
+namespace Foundry\Http;
 
-use Forge\Feature\FeatureExecutor;
-use Forge\Observability\Logger;
-use Forge\Support\ForgeError;
+use Foundry\Feature\FeatureExecutor;
+use Foundry\Observability\Logger;
+use Foundry\Support\FoundryError;
 
 final class HttpKernel
 {
@@ -28,7 +28,7 @@ final class HttpKernel
                 'headers' => ['content-type' => 'application/json'],
                 'body' => $payload,
             ];
-        } catch (ForgeError $error) {
+        } catch (FoundryError $error) {
             $this->logger->log('error', 'request_failed', $error->toArray());
 
             return [
@@ -54,7 +54,7 @@ final class HttpKernel
         }
     }
 
-    private function statusFor(ForgeError $error): int
+    private function statusFor(FoundryError $error): int
     {
         return match ($error->category) {
             'authorization' => 403,

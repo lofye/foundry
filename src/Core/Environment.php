@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Core;
+namespace Foundry\Core;
 
 final class Environment
 {

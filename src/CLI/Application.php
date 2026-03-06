@@ -1,20 +1,20 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI;
+namespace Foundry\CLI;
 
-use Forge\CLI\Commands\GenerateFeatureCommand;
-use Forge\CLI\Commands\GenerateIndexesCommand;
-use Forge\CLI\Commands\ImpactCommand;
-use Forge\CLI\Commands\InspectFeatureCommand;
-use Forge\CLI\Commands\InspectRouteCommand;
-use Forge\CLI\Commands\QueueWorkCommand;
-use Forge\CLI\Commands\ScheduleRunCommand;
-use Forge\CLI\Commands\ServeCommand;
-use Forge\CLI\Commands\VerifyContractsCommand;
-use Forge\CLI\Commands\VerifyFeatureCommand;
-use Forge\Support\ForgeError;
-use Forge\Support\Json;
+use Foundry\CLI\Commands\GenerateFeatureCommand;
+use Foundry\CLI\Commands\GenerateIndexesCommand;
+use Foundry\CLI\Commands\ImpactCommand;
+use Foundry\CLI\Commands\InspectFeatureCommand;
+use Foundry\CLI\Commands\InspectRouteCommand;
+use Foundry\CLI\Commands\QueueWorkCommand;
+use Foundry\CLI\Commands\ScheduleRunCommand;
+use Foundry\CLI\Commands\ServeCommand;
+use Foundry\CLI\Commands\VerifyContractsCommand;
+use Foundry\CLI\Commands\VerifyFeatureCommand;
+use Foundry\Support\FoundryError;
+use Foundry\Support\Json;
 
 final class Application
 {
@@ -61,17 +61,19 @@ final class Application
         $context = new CommandContext();
 
         try {
-            foreach ($this->commands as $command) {
-                if (!$command->matches($args)) {
-                    continue;
-                }
+            $command = array_find(
+                $this->commands,
+                static fn (Command $candidate): bool => $candidate->matches($args),
+            );
 
+            if ($command !== null) {
                 $result = $command->run($args, $context);
+
                 return $this->emitResult($result, $json);
             }
 
-            throw new ForgeError('CLI_COMMAND_NOT_FOUND', 'not_found', ['args' => $args], 'Command not found.');
-        } catch (ForgeError $error) {
+            throw new FoundryError('CLI_COMMAND_NOT_FOUND', 'not_found', ['args' => $args], 'Command not found.');
+        } catch (FoundryError $error) {
             return $this->emitResult(['status' => 1, 'payload' => $error->toArray(), 'message' => $error->getMessage()], $json);
         } catch (\Throwable $error) {
             $payload = [

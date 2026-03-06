@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Queue;
+namespace Foundry\Queue;
 
-use Forge\Observability\TraceRecorder;
-use Forge\Schema\JsonSchemaValidator;
-use Forge\Schema\ValidationResult;
-use Forge\Support\ForgeError;
+use Foundry\Observability\TraceRecorder;
+use Foundry\Schema\JsonSchemaValidator;
+use Foundry\Schema\ValidationResult;
+use Foundry\Support\FoundryError;
 
 final class DefaultJobDispatcher implements JobDispatcher
 {
@@ -17,12 +17,13 @@ final class DefaultJobDispatcher implements JobDispatcher
     ) {
     }
 
+    #[\Override]
     public function dispatch(string $jobName, array $payload): void
     {
         $definition = $this->jobs->get($jobName);
         $validation = $this->validatePayload($definition, $payload);
         if (!$validation->isValid) {
-            throw new ForgeError('JOB_PAYLOAD_INVALID', 'validation', ['job' => $jobName], 'Job payload does not match schema.');
+            throw new FoundryError('JOB_PAYLOAD_INVALID', 'validation', ['job' => $jobName], 'Job payload does not match schema.');
         }
 
         $this->driver->enqueue($definition->queue, $jobName, $payload);
@@ -34,7 +35,7 @@ final class DefaultJobDispatcher implements JobDispatcher
      */
     private function validatePayload(JobDefinition $definition, array $payload): ValidationResult
     {
-        $tmpFile = tempnam(sys_get_temp_dir(), 'forge-job-schema-');
+        $tmpFile = tempnam(sys_get_temp_dir(), 'foundry-job-schema-');
         if ($tmpFile === false) {
             return ValidationResult::valid();
         }

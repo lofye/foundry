@@ -1,4 +1,4 @@
-# Feature Definition Spec (Forge v1)
+# Feature Definition Spec (Foundry v1)
 
 ## Required files per feature
 `app/features/<feature>/`
@@ -36,7 +36,7 @@
 - required tests from `tests.required` should exist in `tests/`
 
 ## Generated artifacts
-`forge generate indexes` produces:
+`foundry generate indexes` produces:
 - `app/generated/routes.php`
 - `app/generated/feature_index.php`
 - `app/generated/schema_index.php`

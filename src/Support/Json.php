@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Support;
+namespace Foundry\Support;
 
 final class Json
 {
@@ -14,11 +14,11 @@ final class Json
             /** @var mixed $decoded */
             $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            throw new ForgeError('JSON_PARSE_ERROR', 'parsing', ['raw' => $json], $e->getMessage(), 0, $e);
+            throw new FoundryError('JSON_PARSE_ERROR', 'parsing', ['raw' => $json], $e->getMessage(), 0, $e);
         }
 
         if (!is_array($decoded)) {
-            throw new ForgeError('JSON_OBJECT_REQUIRED', 'validation', [], 'JSON root must be an object.');
+            throw new FoundryError('JSON_OBJECT_REQUIRED', 'validation', [], 'JSON root must be an object.');
         }
 
         return $decoded;
@@ -32,7 +32,7 @@ final class Json
                 JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | ($pretty ? JSON_PRETTY_PRINT : 0)
             );
         } catch (\JsonException $e) {
-            throw new ForgeError('JSON_ENCODE_ERROR', 'serialization', [], $e->getMessage(), 0, $e);
+            throw new FoundryError('JSON_ENCODE_ERROR', 'serialization', [], $e->getMessage(), 0, $e);
         }
     }
 }

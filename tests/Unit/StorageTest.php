@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Storage\LocalStorageDriver;
-use Forge\Storage\S3StorageDriver;
+use Foundry\Storage\LocalStorageDriver;
+use Foundry\Storage\S3StorageDriver;
 use PHPUnit\Framework\TestCase;
 
 final class StorageTest extends TestCase
 {
     public function test_local_storage_read_write_delete(): void
     {
-        $root = sys_get_temp_dir() . '/forge-storage-' . bin2hex(random_bytes(4));
+        $root = sys_get_temp_dir() . '/foundry-storage-' . bin2hex(random_bytes(4));
         mkdir($root, 0777, true);
 
         $driver = new LocalStorageDriver($root);

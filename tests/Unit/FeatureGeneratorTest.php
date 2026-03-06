@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Generation\FeatureGenerator;
-use Forge\Support\Paths;
-use Forge\Tests\Fixtures\TempProject;
+use Foundry\Generation\FeatureGenerator;
+use Foundry\Support\Paths;
+use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
 
 final class FeatureGeneratorTest extends TestCase

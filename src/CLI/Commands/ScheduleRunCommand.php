@@ -1,18 +1,20 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI\Commands;
+namespace Foundry\CLI\Commands;
 
-use Forge\CLI\Command;
-use Forge\CLI\CommandContext;
+use Foundry\CLI\Command;
+use Foundry\CLI\CommandContext;
 
 final class ScheduleRunCommand extends Command
 {
+    #[\Override]
     public function matches(array $args): bool
     {
         return in_array(($args[0] ?? ''), ['schedule:run', 'trace:tail'], true);
     }
 
+    #[\Override]
     public function run(array $args, CommandContext $context): array
     {
         $command = (string) ($args[0] ?? '');

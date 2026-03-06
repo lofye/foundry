@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Events;
+namespace Foundry\Events;
 
-final class EventDefinition
+final readonly class EventDefinition
 {
     /**
      * @param array<string,mixed> $schema

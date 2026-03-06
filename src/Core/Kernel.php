@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Core;
+namespace Foundry\Core;
 
-use Forge\Http\HttpKernel;
-use Forge\Http\RequestContext;
+use Foundry\Http\HttpKernel;
+use Foundry\Http\RequestContext;
 
 final class Kernel
 {

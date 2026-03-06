@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Feature;
+namespace Foundry\Feature;
 
-final class FeatureDefinition
+final readonly class FeatureDefinition
 {
     /**
      * @param array<string,mixed>|null $route

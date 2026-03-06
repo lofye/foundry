@@ -1,25 +1,27 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI\Commands;
+namespace Foundry\CLI\Commands;
 
-use Forge\CLI\Command;
-use Forge\CLI\CommandContext;
-use Forge\Support\ForgeError;
+use Foundry\CLI\Command;
+use Foundry\CLI\CommandContext;
+use Foundry\Support\FoundryError;
 
 final class InspectFeatureCommand extends Command
 {
+    #[\Override]
     public function matches(array $args): bool
     {
         return ($args[0] ?? null) === 'inspect' && in_array(($args[1] ?? ''), ['feature', 'auth', 'cache', 'events', 'jobs', 'context', 'dependencies'], true);
     }
 
+    #[\Override]
     public function run(array $args, CommandContext $context): array
     {
         $kind = (string) ($args[1] ?? '');
         $featureName = (string) ($args[2] ?? '');
         if ($featureName === '') {
-            throw new ForgeError('CLI_FEATURE_REQUIRED', 'validation', [], 'Feature name required.');
+            throw new FoundryError('CLI_FEATURE_REQUIRED', 'validation', [], 'Feature name required.');
         }
 
         $loader = $context->featureLoader();
@@ -83,7 +85,7 @@ final class InspectFeatureCommand extends Command
                     'downstream' => $manifest?->downstreamDependents ?? [],
                 ],
             ],
-            default => throw new ForgeError('CLI_INSPECT_KIND_INVALID', 'validation', ['kind' => $kind], 'Unsupported inspect target.'),
+            default => throw new FoundryError('CLI_INSPECT_KIND_INVALID', 'validation', ['kind' => $kind], 'Unsupported inspect target.'),
         };
     }
 }

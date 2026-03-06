@@ -1,7 +1,7 @@
-# Forge Architecture
+# Foundry Architecture
 
 ## Goals
-Forge is an explicit, deterministic, LLM-first PHP web framework focused on:
+Foundry is an explicit, deterministic, LLM-first PHP web framework focused on:
 - contract-driven feature execution
 - generated indexes over runtime scanning
 - inspectable behavior and machine-readable metadata

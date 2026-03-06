@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Schema;
+namespace Foundry\Schema;
 
-final class ValidationError
+final readonly class ValidationError
 {
     public function __construct(
         public readonly string $path,

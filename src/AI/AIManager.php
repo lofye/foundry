@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\AI;
+namespace Foundry\AI;
 
-use Forge\Observability\TraceRecorder;
-use Forge\Schema\JsonSchemaValidator;
-use Forge\Support\ForgeError;
+use Foundry\Observability\TraceRecorder;
+use Foundry\Schema\JsonSchemaValidator;
+use Foundry\Support\FoundryError;
 
 final class AIManager
 {
@@ -23,7 +23,7 @@ final class AIManager
     {
         $provider = $this->providers[$request->provider] ?? null;
         if ($provider === null) {
-            throw new ForgeError('AI_PROVIDER_NOT_FOUND', 'not_found', ['provider' => $request->provider], 'AI provider not found.');
+            throw new FoundryError('AI_PROVIDER_NOT_FOUND', 'not_found', ['provider' => $request->provider], 'AI provider not found.');
         }
 
         $cacheKey = $this->cache?->keyFor($request);
@@ -66,12 +66,12 @@ final class AIManager
         }
 
         if ($response->parsed === []) {
-            throw new ForgeError('AI_RESPONSE_PARSE_REQUIRED', 'validation', [], 'Response schema provided but parsed response is empty.');
+            throw new FoundryError('AI_RESPONSE_PARSE_REQUIRED', 'validation', [], 'Response schema provided but parsed response is empty.');
         }
 
-        $tmpFile = tempnam(sys_get_temp_dir(), 'forge-ai-schema-');
+        $tmpFile = tempnam(sys_get_temp_dir(), 'foundry-ai-schema-');
         if ($tmpFile === false) {
-            throw new ForgeError('AI_SCHEMA_TEMPFILE_FAILED', 'runtime', [], 'Failed to create AI schema tempfile.');
+            throw new FoundryError('AI_SCHEMA_TEMPFILE_FAILED', 'runtime', [], 'Failed to create AI schema tempfile.');
         }
 
         file_put_contents($tmpFile, json_encode($request->responseSchema, JSON_UNESCAPED_SLASHES));
@@ -80,7 +80,7 @@ final class AIManager
         @unlink($tmpFile);
 
         if (!$result->isValid) {
-            throw new ForgeError('AI_RESPONSE_SCHEMA_VIOLATION', 'validation', ['errors' => array_map(static fn ($e): array => $e->toArray(), $result->errors)], 'AI response schema violation.');
+            throw new FoundryError('AI_RESPONSE_SCHEMA_VIOLATION', 'validation', ['errors' => array_map(static fn ($e): array => $e->toArray(), $result->errors)], 'AI response schema violation.');
         }
     }
 

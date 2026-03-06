@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Cache;
+namespace Foundry\Cache;
 
 final class ArrayCacheStore implements CacheStore
 {
@@ -10,6 +10,7 @@ final class ArrayCacheStore implements CacheStore
      */
     private array $items = [];
 
+    #[\Override]
     public function get(string $key): mixed
     {
         if (!$this->has($key)) {
@@ -19,6 +20,7 @@ final class ArrayCacheStore implements CacheStore
         return $this->items[$key]['value'];
     }
 
+    #[\Override]
     public function put(string $key, mixed $value, int $ttlSeconds): void
     {
         $this->items[$key] = [
@@ -27,11 +29,13 @@ final class ArrayCacheStore implements CacheStore
         ];
     }
 
+    #[\Override]
     public function forget(string $key): void
     {
         unset($this->items[$key]);
     }
 
+    #[\Override]
     public function has(string $key): bool
     {
         if (!isset($this->items[$key])) {

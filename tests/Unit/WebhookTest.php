@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Webhook\WebhookSigner;
-use Forge\Webhook\WebhookVerifier;
+use Foundry\Webhook\WebhookSigner;
+use Foundry\Webhook\WebhookVerifier;
 use PHPUnit\Framework\TestCase;
 
 final class WebhookTest extends TestCase

@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Cache;
+namespace Foundry\Cache;
 
-final class CacheDefinition
+final readonly class CacheDefinition
 {
     /**
      * @param array<int,string> $invalidatedBy

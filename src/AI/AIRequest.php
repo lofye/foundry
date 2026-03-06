@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\AI;
+namespace Foundry\AI;
 
-final class AIRequest
+final readonly class AIRequest
 {
     /**
      * @param array<string,mixed> $input

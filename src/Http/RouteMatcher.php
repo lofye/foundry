@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Http;
+namespace Foundry\Http;
 
 final class RouteMatcher
 {
@@ -10,19 +10,26 @@ final class RouteMatcher
      */
     public function match(RouteCollection $routes, RequestContext $request): ?array
     {
-        foreach ($routes->all() as $route) {
+        $matchedRequest = null;
+        $route = array_find($routes->all(), function (Route $route) use ($request, &$matchedRequest): bool {
             if (strtoupper($route->method) !== $request->method()) {
-                continue;
+                return false;
             }
 
             $params = $this->matchPath($route->path, $request->path());
             if ($params === null) {
-                continue;
+                return false;
             }
 
+            $matchedRequest = $request->withRouteParams($params);
+
+            return true;
+        });
+
+        if ($route !== null && $matchedRequest !== null) {
             return [
                 'route' => $route,
-                'request' => $request->withRouteParams($params),
+                'request' => $matchedRequest,
             ];
         }
 

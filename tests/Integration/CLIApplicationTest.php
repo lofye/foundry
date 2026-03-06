@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Integration;
+namespace Foundry\Tests\Integration;
 
-use Forge\CLI\Application;
-use Forge\Tests\Fixtures\TempProject;
+use Foundry\CLI\Application;
+use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
 
 final class CLIApplicationTest extends TestCase
@@ -67,27 +67,27 @@ YAML);
 
         $app = new Application();
 
-        $this->assertSame(0, $this->runCommand($app, ['forge', 'generate', 'feature', $spec, '--json'])['status']);
+        $this->assertSame(0, $this->runCommand($app, ['foundry', 'generate', 'feature', $spec, '--json'])['status']);
         $this->assertFileExists($this->project->root . '/app/features/publish_post/feature.yaml');
 
-        $this->assertSame(0, $this->runCommand($app, ['forge', 'generate', 'indexes', '--json'])['status']);
+        $this->assertSame(0, $this->runCommand($app, ['foundry', 'generate', 'indexes', '--json'])['status']);
 
-        $inspect = $this->runCommand($app, ['forge', 'inspect', 'feature', 'publish_post', '--json']);
+        $inspect = $this->runCommand($app, ['foundry', 'inspect', 'feature', 'publish_post', '--json']);
         $this->assertSame(0, $inspect['status']);
         $this->assertSame('publish_post', $inspect['payload']['feature']);
 
-        $verify = $this->runCommand($app, ['forge', 'verify', 'feature', 'publish_post', '--json']);
+        $verify = $this->runCommand($app, ['foundry', 'verify', 'feature', 'publish_post', '--json']);
         $this->assertSame(0, $verify['status']);
         $this->assertTrue($verify['payload']['ok']);
 
-        $context = $this->runCommand($app, ['forge', 'generate', 'context', 'publish_post', '--json']);
+        $context = $this->runCommand($app, ['foundry', 'generate', 'context', 'publish_post', '--json']);
         $this->assertSame(0, $context['status']);
 
-        $affected = $this->runCommand($app, ['forge', 'affected-files', 'publish_post', '--json']);
+        $affected = $this->runCommand($app, ['foundry', 'affected-files', 'publish_post', '--json']);
         $this->assertSame(0, $affected['status']);
         $this->assertNotEmpty($affected['payload']['affected_files']);
 
-        $impacted = $this->runCommand($app, ['forge', 'impacted-features', 'posts.create', '--json']);
+        $impacted = $this->runCommand($app, ['foundry', 'impacted-features', 'posts.create', '--json']);
         $this->assertSame(0, $impacted['status']);
         $this->assertContains('publish_post', $impacted['payload']['features']);
     }
@@ -95,7 +95,7 @@ YAML);
     public function test_unknown_command_returns_structured_error(): void
     {
         $app = new Application();
-        $result = $this->runCommand($app, ['forge', 'unknown', '--json']);
+        $result = $this->runCommand($app, ['foundry', 'unknown', '--json']);
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('CLI_COMMAND_NOT_FOUND', $result['payload']['error']['code']);

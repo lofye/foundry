@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI;
+namespace Foundry\CLI;
 
 abstract class Command
 {

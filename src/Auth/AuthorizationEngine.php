@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Auth;
+namespace Foundry\Auth;
 
-use Forge\Feature\FeatureDefinition;
-use Forge\Http\RequestContext;
-use Forge\Support\ForgeError;
+use Foundry\Feature\FeatureDefinition;
+use Foundry\Http\RequestContext;
+use Foundry\Support\FoundryError;
 
 final class AuthorizationEngine
 {
@@ -41,7 +41,7 @@ final class AuthorizationEngine
         }
 
         if ($required) {
-            throw new ForgeError(
+            throw new FoundryError(
                 'AUTHENTICATION_REQUIRED',
                 'authentication',
                 ['feature' => $feature->name, 'strategies' => $strategies],

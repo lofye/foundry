@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Http;
+namespace Foundry\Http;
 
 final class RequestContext
 {

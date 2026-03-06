@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\AI;
+namespace Foundry\AI;
 
-use Forge\Cache\CacheManager;
+use Foundry\Cache\CacheManager;
 
 final class AIResultCache
 {

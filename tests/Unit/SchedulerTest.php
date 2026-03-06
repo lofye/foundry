@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Scheduler\ScheduledTaskDefinition;
-use Forge\Scheduler\Scheduler;
-use Forge\Scheduler\SchedulerRegistry;
+use Foundry\Scheduler\ScheduledTaskDefinition;
+use Foundry\Scheduler\Scheduler;
+use Foundry\Scheduler\SchedulerRegistry;
 use PHPUnit\Framework\TestCase;
 
 final class SchedulerTest extends TestCase

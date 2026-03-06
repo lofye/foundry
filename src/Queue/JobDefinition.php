@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Queue;
+namespace Foundry\Queue;
 
-final class JobDefinition
+final readonly class JobDefinition
 {
     /**
      * @param array<string,mixed> $inputSchema

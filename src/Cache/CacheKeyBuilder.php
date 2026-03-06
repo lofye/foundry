@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Cache;
+namespace Foundry\Cache;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class CacheKeyBuilder
 {
@@ -17,7 +17,7 @@ final class CacheKeyBuilder
             static function (array $matches) use ($params): string {
                 $key = $matches[1];
                 if (!array_key_exists($key, $params)) {
-                    throw new ForgeError('CACHE_KEY_PARAM_MISSING', 'validation', ['param' => $key], 'Missing cache key parameter.');
+                    throw new FoundryError('CACHE_KEY_PARAM_MISSING', 'validation', ['param' => $key], 'Missing cache key parameter.');
                 }
 
                 return rawurlencode((string) $params[$key]);

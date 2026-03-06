@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Observability;
+namespace Foundry\Observability;
 
-use Forge\Support\Clock;
+use Foundry\Support\Clock;
 
 final class TraceRecorder
 {

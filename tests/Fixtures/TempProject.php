@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Fixtures;
+namespace Foundry\Tests\Fixtures;
 
 final class TempProject
 {
@@ -9,7 +9,7 @@ final class TempProject
 
     public function __construct()
     {
-        $base = sys_get_temp_dir() . '/forge-tests-' . bin2hex(random_bytes(6));
+        $base = sys_get_temp_dir() . '/foundry-tests-' . bin2hex(random_bytes(6));
         mkdir($base, 0777, true);
         $this->root = $base;
 

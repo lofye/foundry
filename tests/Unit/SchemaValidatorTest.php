@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Schema\JsonSchemaValidator;
+use Foundry\Schema\JsonSchemaValidator;
 use PHPUnit\Framework\TestCase;
 
 final class SchemaValidatorTest extends TestCase

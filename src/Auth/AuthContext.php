@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Auth;
+namespace Foundry\Auth;
 
 final class AuthContext
 {

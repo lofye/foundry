@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Queue;
+namespace Foundry\Queue;
 
 final class DatabaseQueueDriver implements QueueDriver
 {
@@ -10,12 +10,14 @@ final class DatabaseQueueDriver implements QueueDriver
      */
     private array $queues = [];
 
+    #[\Override]
     public function enqueue(string $queue, string $jobName, array $payload): void
     {
         $this->queues[$queue] ??= [];
         $this->queues[$queue][] = ['job' => $jobName, 'payload' => $payload];
     }
 
+    #[\Override]
     public function dequeue(string $queue): ?array
     {
         $this->queues[$queue] ??= [];
@@ -23,6 +25,7 @@ final class DatabaseQueueDriver implements QueueDriver
         return array_shift($this->queues[$queue]);
     }
 
+    #[\Override]
     public function inspect(string $queue): array
     {
         return $this->queues[$queue] ?? [];

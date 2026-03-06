@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Storage;
+namespace Foundry\Storage;
 
-final class FileDescriptor
+final readonly class FileDescriptor
 {
     public function __construct(
         public readonly string $path,

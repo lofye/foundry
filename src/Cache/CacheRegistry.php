@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Cache;
+namespace Foundry\Cache;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class CacheRegistry
 {
@@ -25,7 +25,7 @@ final class CacheRegistry
     public function get(string $key): CacheDefinition
     {
         if (!isset($this->entries[$key])) {
-            throw new ForgeError('CACHE_ENTRY_NOT_FOUND', 'not_found', ['key' => $key], 'Cache entry not found.');
+            throw new FoundryError('CACHE_ENTRY_NOT_FOUND', 'not_found', ['key' => $key], 'Cache entry not found.');
         }
 
         return $this->entries[$key];

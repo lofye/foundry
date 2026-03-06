@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Support\Paths;
-use Forge\Tests\Fixtures\TempProject;
-use Forge\Verification\AuthVerifier;
-use Forge\Verification\CacheVerifier;
-use Forge\Verification\ContractsVerifier;
-use Forge\Verification\EventsVerifier;
-use Forge\Verification\FeatureVerifier;
-use Forge\Verification\JobsVerifier;
-use Forge\Verification\MigrationsVerifier;
+use Foundry\Support\Paths;
+use Foundry\Tests\Fixtures\TempProject;
+use Foundry\Verification\AuthVerifier;
+use Foundry\Verification\CacheVerifier;
+use Foundry\Verification\ContractsVerifier;
+use Foundry\Verification\EventsVerifier;
+use Foundry\Verification\FeatureVerifier;
+use Foundry\Verification\JobsVerifier;
+use Foundry\Verification\MigrationsVerifier;
 use PHPUnit\Framework\TestCase;
 
 final class VerifiersTest extends TestCase

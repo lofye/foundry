@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Observability;
+namespace Foundry\Observability;
 
-use Forge\Support\Clock;
+use Foundry\Support\Clock;
 
 final class StructuredLogger implements Logger
 {
@@ -16,6 +16,7 @@ final class StructuredLogger implements Logger
     {
     }
 
+    #[\Override]
     public function log(string $level, string $message, array $context = []): void
     {
         $this->records[] = [

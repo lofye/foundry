@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\AI;
+namespace Foundry\AI;
 
-final class AITrace
+final readonly class AITrace
 {
     /**
      * @param array<string,mixed> $metadata

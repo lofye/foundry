@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Http;
+namespace Foundry\Http;
 
-use Forge\Support\Json;
+use Foundry\Support\Json;
 
 final class ResponseEmitter
 {

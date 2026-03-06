@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\DB;
+namespace Foundry\DB;
 
-final class QueryTrace
+final readonly class QueryTrace
 {
     /**
      * @param array<string,mixed> $params

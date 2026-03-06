@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\CLI\CommandContext;
-use Forge\CLI\Commands\QueueWorkCommand;
-use Forge\CLI\Commands\ScheduleRunCommand;
-use Forge\CLI\Commands\ServeCommand;
-use Forge\Tests\Fixtures\TempProject;
+use Foundry\CLI\CommandContext;
+use Foundry\CLI\Commands\QueueWorkCommand;
+use Foundry\CLI\Commands\ScheduleRunCommand;
+use Foundry\CLI\Commands\ServeCommand;
+use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
 
 final class CLICommandsTest extends TestCase

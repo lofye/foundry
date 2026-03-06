@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Webhook;
+namespace Foundry\Webhook;
 
-final class IncomingWebhookDefinition
+final readonly class IncomingWebhookDefinition
 {
     /**
      * @param array<string,mixed> $schema

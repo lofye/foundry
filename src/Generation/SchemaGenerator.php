@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Generation;
+namespace Foundry\Generation;
 
 final class SchemaGenerator
 {

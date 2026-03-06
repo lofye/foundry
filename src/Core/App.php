@@ -1,21 +1,21 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Core;
+namespace Foundry\Core;
 
-use Forge\Auth\AuthorizationEngine;
-use Forge\Config\ConfigRepository;
-use Forge\Feature\FeatureExecutor;
-use Forge\Feature\FeatureLoader;
-use Forge\Http\HttpKernel;
-use Forge\Observability\AuditRecorder;
-use Forge\Observability\MetricsRecorder;
-use Forge\Observability\StructuredLogger;
-use Forge\Observability\TraceContext;
-use Forge\Observability\TraceRecorder;
-use Forge\Schema\SchemaRegistry;
-use Forge\Schema\SchemaValidator;
-use Forge\Support\Paths;
+use Foundry\Auth\AuthorizationEngine;
+use Foundry\Config\ConfigRepository;
+use Foundry\Feature\FeatureExecutor;
+use Foundry\Feature\FeatureLoader;
+use Foundry\Http\HttpKernel;
+use Foundry\Observability\AuditRecorder;
+use Foundry\Observability\MetricsRecorder;
+use Foundry\Observability\StructuredLogger;
+use Foundry\Observability\TraceContext;
+use Foundry\Observability\TraceRecorder;
+use Foundry\Schema\SchemaRegistry;
+use Foundry\Schema\SchemaValidator;
+use Foundry\Support\Paths;
 
 final class App
 {

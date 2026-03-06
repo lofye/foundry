@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Queue;
+namespace Foundry\Queue;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class JobRegistry
 {
@@ -25,7 +25,7 @@ final class JobRegistry
     public function get(string $name): JobDefinition
     {
         if (!isset($this->jobs[$name])) {
-            throw new ForgeError('JOB_NOT_FOUND', 'not_found', ['job' => $name], 'Job not found.');
+            throw new FoundryError('JOB_NOT_FOUND', 'not_found', ['job' => $name], 'Job not found.');
         }
 
         return $this->jobs[$name];

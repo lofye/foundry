@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Generation;
+namespace Foundry\Generation;
 
-use Forge\Support\Json;
-use Forge\Support\Paths;
+use Foundry\Support\Json;
+use Foundry\Support\Paths;
 
 final class ContextManifestGenerator
 {

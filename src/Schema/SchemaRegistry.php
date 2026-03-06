@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Schema;
+namespace Foundry\Schema;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class SchemaRegistry
 {
@@ -25,7 +25,7 @@ final class SchemaRegistry
     public function get(string $path): Schema
     {
         if (!isset($this->schemas[$path])) {
-            throw new ForgeError('SCHEMA_NOT_REGISTERED', 'not_found', ['schema' => $path], 'Schema not registered.');
+            throw new FoundryError('SCHEMA_NOT_REGISTERED', 'not_found', ['schema' => $path], 'Schema not registered.');
         }
 
         return $this->schemas[$path];

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Events;
+namespace Foundry\Events;
 
 interface EventSubscriber
 {

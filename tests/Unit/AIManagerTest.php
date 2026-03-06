@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\AI\AIManager;
-use Forge\AI\AIRequest;
-use Forge\AI\AIResponse;
-use Forge\AI\AIResultCache;
-use Forge\AI\StaticAIProvider;
-use Forge\Cache\ArrayCacheStore;
-use Forge\Cache\CacheManager;
-use Forge\Cache\CacheRegistry;
+use Foundry\AI\AIManager;
+use Foundry\AI\AIRequest;
+use Foundry\AI\AIResponse;
+use Foundry\AI\AIResultCache;
+use Foundry\AI\StaticAIProvider;
+use Foundry\Cache\ArrayCacheStore;
+use Foundry\Cache\CacheManager;
+use Foundry\Cache\CacheRegistry;
 use PHPUnit\Framework\TestCase;
 
 final class AIManagerTest extends TestCase

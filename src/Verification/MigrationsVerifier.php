@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Verification;
+namespace Foundry\Verification;
 
-use Forge\Support\Paths;
+use Foundry\Support\Paths;
 
 final class MigrationsVerifier
 {

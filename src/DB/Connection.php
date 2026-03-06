@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\DB;
+namespace Foundry\DB;
 
 final class Connection
 {

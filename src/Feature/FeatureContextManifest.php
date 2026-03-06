@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Feature;
+namespace Foundry\Feature;
 
-final class FeatureContextManifest
+final readonly class FeatureContextManifest
 {
     /**
      * @param array<int,string> $relevantFiles

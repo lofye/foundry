@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\DB\SqlFileLoader;
-use Forge\Support\ForgeError;
+use Foundry\DB\SqlFileLoader;
+use Foundry\Support\FoundryError;
 use PHPUnit\Framework\TestCase;
 
 final class SqlFileLoaderTest extends TestCase
@@ -37,7 +37,7 @@ SELECT 1;
 SELECT 2;
 SQL;
 
-        $this->expectException(ForgeError::class);
+        $this->expectException(FoundryError::class);
         (new SqlFileLoader())->parse('feature', $sql);
     }
 }

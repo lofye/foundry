@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Storage;
+namespace Foundry\Storage;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class LocalStorageDriver implements StorageDriver
 {
@@ -11,6 +11,7 @@ final class LocalStorageDriver implements StorageDriver
     {
     }
 
+    #[\Override]
     public function write(string $path, string $content): FileDescriptor
     {
         $fullPath = $this->fullPath($path);
@@ -21,28 +22,31 @@ final class LocalStorageDriver implements StorageDriver
 
         $bytes = file_put_contents($fullPath, $content);
         if ($bytes === false) {
-            throw new ForgeError('STORAGE_WRITE_FAILED', 'io', ['path' => $path], 'Failed to write file.');
+            throw new FoundryError('STORAGE_WRITE_FAILED', 'io', ['path' => $path], 'Failed to write file.');
         }
 
         return new FileDescriptor($path, $bytes, 'application/octet-stream');
     }
 
+    #[\Override]
     public function read(string $path): string
     {
         $fullPath = $this->fullPath($path);
         $content = file_get_contents($fullPath);
         if ($content === false) {
-            throw new ForgeError('STORAGE_READ_FAILED', 'io', ['path' => $path], 'Failed to read file.');
+            throw new FoundryError('STORAGE_READ_FAILED', 'io', ['path' => $path], 'Failed to read file.');
         }
 
         return $content;
     }
 
+    #[\Override]
     public function exists(string $path): bool
     {
         return is_file($this->fullPath($path));
     }
 
+    #[\Override]
     public function delete(string $path): void
     {
         $fullPath = $this->fullPath($path);

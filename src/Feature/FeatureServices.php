@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Feature;
+namespace Foundry\Feature;
 
-use Forge\AI\AIManager;
-use Forge\Cache\CacheManager;
-use Forge\DB\QueryExecutor;
-use Forge\Events\EventDispatcher;
-use Forge\Observability\TraceContext;
-use Forge\Queue\JobDispatcher;
-use Forge\Storage\StorageDriver;
+use Foundry\AI\AIManager;
+use Foundry\Cache\CacheManager;
+use Foundry\DB\QueryExecutor;
+use Foundry\Events\EventDispatcher;
+use Foundry\Observability\TraceContext;
+use Foundry\Queue\JobDispatcher;
+use Foundry\Storage\StorageDriver;
 
 interface FeatureServices
 {

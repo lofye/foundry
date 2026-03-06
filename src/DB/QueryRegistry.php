@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\DB;
+namespace Foundry\DB;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class QueryRegistry
 {
@@ -27,7 +27,7 @@ final class QueryRegistry
     {
         $key = $this->key($feature, $queryName);
         if (!isset($this->queries[$key])) {
-            throw new ForgeError('QUERY_NOT_FOUND', 'not_found', ['feature' => $feature, 'query' => $queryName], 'Query not found.');
+            throw new FoundryError('QUERY_NOT_FOUND', 'not_found', ['feature' => $feature, 'query' => $queryName], 'Query not found.');
         }
 
         return $this->queries[$key];

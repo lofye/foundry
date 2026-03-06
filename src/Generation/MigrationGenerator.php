@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Generation;
+namespace Foundry\Generation;
 
-use Forge\Support\Yaml;
+use Foundry\Support\Yaml;
 
 final class MigrationGenerator
 {
@@ -19,7 +19,7 @@ final class MigrationGenerator
 
         $content = "-- GENERATED FILE - DO NOT EDIT DIRECTLY\n";
         $content .= "-- Source: {$specPath}\n";
-        $content .= "-- Regenerate with: forge generate migration {$specPath}\n\n";
+        $content .= "-- Regenerate with: foundry generate migration {$specPath}\n\n";
         $content .= "CREATE TABLE IF NOT EXISTS {$table} (\n    id TEXT PRIMARY KEY\n);\n";
 
         if (!is_dir($outputDir)) {

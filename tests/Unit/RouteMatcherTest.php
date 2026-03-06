@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Http\RequestContext;
-use Forge\Http\Route;
-use Forge\Http\RouteCollection;
-use Forge\Http\RouteMatcher;
+use Foundry\Http\RequestContext;
+use Foundry\Http\Route;
+use Foundry\Http\RouteCollection;
+use Foundry\Http\RouteMatcher;
 use PHPUnit\Framework\TestCase;
 
 final class RouteMatcherTest extends TestCase

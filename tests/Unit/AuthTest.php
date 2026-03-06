@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Auth\AuthorizationEngine;
-use Forge\Auth\HeaderTokenAuthenticator;
-use Forge\Auth\PermissionRegistry;
-use Forge\Feature\FeatureDefinition;
-use Forge\Http\RequestContext;
+use Foundry\Auth\AuthorizationEngine;
+use Foundry\Auth\HeaderTokenAuthenticator;
+use Foundry\Auth\PermissionRegistry;
+use Foundry\Feature\FeatureDefinition;
+use Foundry\Http\RequestContext;
 use PHPUnit\Framework\TestCase;
 
 final class AuthTest extends TestCase
@@ -69,7 +69,7 @@ final class AuthTest extends TestCase
             '/tmp'
         );
 
-        $decision = $engine->authorize($feature, \Forge\Auth\AuthContext::guest());
+        $decision = $engine->authorize($feature, \Foundry\Auth\AuthContext::guest());
         $this->assertFalse($decision->allowed);
     }
 }

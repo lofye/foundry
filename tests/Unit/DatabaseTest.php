@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\DB\Connection;
-use Forge\DB\PdoQueryExecutor;
-use Forge\DB\QueryDefinition;
-use Forge\DB\QueryRegistry;
-use Forge\DB\TransactionManager;
+use Foundry\DB\Connection;
+use Foundry\DB\PdoQueryExecutor;
+use Foundry\DB\QueryDefinition;
+use Foundry\DB\QueryRegistry;
+use Foundry\DB\TransactionManager;
 use PHPUnit\Framework\TestCase;
 
 final class DatabaseTest extends TestCase

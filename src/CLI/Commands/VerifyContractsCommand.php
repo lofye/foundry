@@ -1,19 +1,21 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI\Commands;
+namespace Foundry\CLI\Commands;
 
-use Forge\CLI\Command;
-use Forge\CLI\CommandContext;
-use Forge\Support\ForgeError;
+use Foundry\CLI\Command;
+use Foundry\CLI\CommandContext;
+use Foundry\Support\FoundryError;
 
 final class VerifyContractsCommand extends Command
 {
+    #[\Override]
     public function matches(array $args): bool
     {
         return ($args[0] ?? null) === 'verify' && in_array(($args[1] ?? ''), ['contracts', 'auth', 'cache', 'events', 'jobs', 'migrations'], true);
     }
 
+    #[\Override]
     public function run(array $args, CommandContext $context): array
     {
         $target = (string) ($args[1] ?? '');
@@ -25,7 +27,7 @@ final class VerifyContractsCommand extends Command
             'events' => $context->eventsVerifier()->verify(),
             'jobs' => $context->jobsVerifier()->verify(),
             'migrations' => $context->migrationsVerifier()->verify(),
-            default => throw new ForgeError('CLI_VERIFY_TARGET_INVALID', 'validation', ['target' => $target], 'Unsupported verify target.'),
+            default => throw new FoundryError('CLI_VERIFY_TARGET_INVALID', 'validation', ['target' => $target], 'Unsupported verify target.'),
         };
 
         return [

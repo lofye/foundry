@@ -1,25 +1,27 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI\Commands;
+namespace Foundry\CLI\Commands;
 
-use Forge\CLI\Command;
-use Forge\CLI\CommandContext;
-use Forge\Support\ForgeError;
+use Foundry\CLI\Command;
+use Foundry\CLI\CommandContext;
+use Foundry\Support\FoundryError;
 
 final class InspectRouteCommand extends Command
 {
+    #[\Override]
     public function matches(array $args): bool
     {
         return ($args[0] ?? null) === 'inspect' && ($args[1] ?? null) === 'route';
     }
 
+    #[\Override]
     public function run(array $args, CommandContext $context): array
     {
         $method = strtoupper((string) ($args[2] ?? ''));
         $path = (string) ($args[3] ?? '');
         if ($method === '' || $path === '') {
-            throw new ForgeError('CLI_ROUTE_REQUIRED', 'validation', [], 'Method and path required.');
+            throw new FoundryError('CLI_ROUTE_REQUIRED', 'validation', [], 'Method and path required.');
         }
 
         foreach ($context->featureLoader()->routes()->all() as $route) {
@@ -38,6 +40,6 @@ final class InspectRouteCommand extends Command
             }
         }
 
-        throw new ForgeError('ROUTE_NOT_FOUND', 'not_found', ['route' => $method . ' ' . $path], 'Route not found.');
+        throw new FoundryError('ROUTE_NOT_FOUND', 'not_found', ['route' => $method . ' ' . $path], 'Route not found.');
     }
 }

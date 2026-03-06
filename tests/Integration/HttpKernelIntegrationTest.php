@@ -1,40 +1,40 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Integration;
+namespace Foundry\Tests\Integration;
 
-use Forge\AI\AIManager;
-use Forge\AI\StaticAIProvider;
-use Forge\Auth\AuthorizationEngine;
-use Forge\Auth\HeaderTokenAuthenticator;
-use Forge\Auth\PermissionRegistry;
-use Forge\Cache\ArrayCacheStore;
-use Forge\Cache\CacheManager;
-use Forge\Cache\CacheRegistry;
-use Forge\DB\Connection;
-use Forge\DB\PdoQueryExecutor;
-use Forge\DB\QueryRegistry;
-use Forge\DB\TransactionManager;
-use Forge\Events\DefaultEventDispatcher;
-use Forge\Events\EventDefinition;
-use Forge\Events\EventRegistry;
-use Forge\Feature\DefaultFeatureServices;
-use Forge\Feature\FeatureExecutor;
-use Forge\Feature\FeatureLoader;
-use Forge\Http\HttpKernel;
-use Forge\Http\RequestContext;
-use Forge\Observability\AuditRecorder;
-use Forge\Observability\StructuredLogger;
-use Forge\Observability\TraceContext;
-use Forge\Observability\TraceRecorder;
-use Forge\Queue\DefaultJobDispatcher;
-use Forge\Queue\JobDefinition;
-use Forge\Queue\JobRegistry;
-use Forge\Queue\RetryPolicy;
-use Forge\Queue\SyncQueueDriver;
-use Forge\Schema\JsonSchemaValidator;
-use Forge\Storage\LocalStorageDriver;
-use Forge\Support\Paths;
+use Foundry\AI\AIManager;
+use Foundry\AI\StaticAIProvider;
+use Foundry\Auth\AuthorizationEngine;
+use Foundry\Auth\HeaderTokenAuthenticator;
+use Foundry\Auth\PermissionRegistry;
+use Foundry\Cache\ArrayCacheStore;
+use Foundry\Cache\CacheManager;
+use Foundry\Cache\CacheRegistry;
+use Foundry\DB\Connection;
+use Foundry\DB\PdoQueryExecutor;
+use Foundry\DB\QueryRegistry;
+use Foundry\DB\TransactionManager;
+use Foundry\Events\DefaultEventDispatcher;
+use Foundry\Events\EventDefinition;
+use Foundry\Events\EventRegistry;
+use Foundry\Feature\DefaultFeatureServices;
+use Foundry\Feature\FeatureExecutor;
+use Foundry\Feature\FeatureLoader;
+use Foundry\Http\HttpKernel;
+use Foundry\Http\RequestContext;
+use Foundry\Observability\AuditRecorder;
+use Foundry\Observability\StructuredLogger;
+use Foundry\Observability\TraceContext;
+use Foundry\Observability\TraceRecorder;
+use Foundry\Queue\DefaultJobDispatcher;
+use Foundry\Queue\JobDefinition;
+use Foundry\Queue\JobRegistry;
+use Foundry\Queue\RetryPolicy;
+use Foundry\Queue\SyncQueueDriver;
+use Foundry\Schema\JsonSchemaValidator;
+use Foundry\Storage\LocalStorageDriver;
+use Foundry\Support\Paths;
 use PHPUnit\Framework\TestCase;
 
 final class HttpKernelIntegrationTest extends TestCase
@@ -85,7 +85,7 @@ final class HttpKernelIntegrationTest extends TestCase
             new CacheManager(new ArrayCacheStore(), new CacheRegistry()),
             new DefaultJobDispatcher($jobs, new SyncQueueDriver(), $trace),
             new DefaultEventDispatcher($eventRegistry, $trace),
-            new LocalStorageDriver(sys_get_temp_dir() . '/forge-storage-http'),
+            new LocalStorageDriver(sys_get_temp_dir() . '/foundry-storage-http'),
             $traceContext,
             new AIManager(['static' => new StaticAIProvider('static', ['content' => 'ok'])])
         );

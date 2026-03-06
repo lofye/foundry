@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\AI;
+namespace Foundry\AI;
 
 final class StaticAIProvider implements AIProvider
 {
@@ -14,11 +14,13 @@ final class StaticAIProvider implements AIProvider
     ) {
     }
 
+    #[\Override]
     public function name(): string
     {
         return $this->providerName;
     }
 
+    #[\Override]
     public function complete(AIRequest $request): AIResponse
     {
         return new AIResponse(

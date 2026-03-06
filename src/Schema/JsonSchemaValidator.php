@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Schema;
+namespace Foundry\Schema;
 
-use Forge\Support\ForgeError;
-use Forge\Support\Json;
+use Foundry\Support\FoundryError;
+use Foundry\Support\Json;
 
 final class JsonSchemaValidator implements SchemaValidator
 {
@@ -13,6 +13,7 @@ final class JsonSchemaValidator implements SchemaValidator
      */
     private array $cache = [];
 
+    #[\Override]
     public function validate(array $data, string $schemaPath): ValidationResult
     {
         $schema = $this->loadSchema($schemaPath);
@@ -32,12 +33,12 @@ final class JsonSchemaValidator implements SchemaValidator
         }
 
         if (!is_file($schemaPath)) {
-            throw new ForgeError('SCHEMA_FILE_NOT_FOUND', 'not_found', ['path' => $schemaPath], 'Schema file not found.');
+            throw new FoundryError('SCHEMA_FILE_NOT_FOUND', 'not_found', ['path' => $schemaPath], 'Schema file not found.');
         }
 
         $content = file_get_contents($schemaPath);
         if ($content === false) {
-            throw new ForgeError('SCHEMA_FILE_READ_ERROR', 'io', ['path' => $schemaPath], 'Failed to read schema file.');
+            throw new FoundryError('SCHEMA_FILE_READ_ERROR', 'io', ['path' => $schemaPath], 'Failed to read schema file.');
         }
 
         $schema = Json::decodeAssoc($content);

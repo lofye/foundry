@@ -1,18 +1,20 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI\Commands;
+namespace Foundry\CLI\Commands;
 
-use Forge\CLI\Command;
-use Forge\CLI\CommandContext;
+use Foundry\CLI\Command;
+use Foundry\CLI\CommandContext;
 
 final class ServeCommand extends Command
 {
+    #[\Override]
     public function matches(array $args): bool
     {
         return ($args[0] ?? null) === 'serve';
     }
 
+    #[\Override]
     public function run(array $args, CommandContext $context): array
     {
         $host = (string) ($args[1] ?? '127.0.0.1:8000');

@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Observability\AuditRecorder;
-use Forge\Observability\MetricsRecorder;
-use Forge\Observability\StructuredLogger;
-use Forge\Observability\TraceContext;
-use Forge\Observability\TraceRecorder;
+use Foundry\Observability\AuditRecorder;
+use Foundry\Observability\MetricsRecorder;
+use Foundry\Observability\StructuredLogger;
+use Foundry\Observability\TraceContext;
+use Foundry\Observability\TraceRecorder;
 use PHPUnit\Framework\TestCase;
 
 final class ObservabilityTest extends TestCase
@@ -21,7 +21,9 @@ final class ObservabilityTest extends TestCase
         $metrics = new MetricsRecorder();
         $metrics->increment('requests');
         $metrics->observe('latency_ms', 12.3);
+        $metrics->observe('a_latency_ms', 10.1);
         $this->assertSame(1.0, $metrics->counters()['requests']);
+        $this->assertSame(['a_latency_ms' => 10.1, 'latency_ms' => 12.3], $metrics->timings());
 
         $trace = new TraceRecorder(new TraceContext('trace-id'));
         $trace->record('feature', 'http', 'start');

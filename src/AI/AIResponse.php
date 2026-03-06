@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\AI;
+namespace Foundry\AI;
 
-final class AIResponse
+final readonly class AIResponse
 {
     /**
      * @param array<string,mixed> $parsed

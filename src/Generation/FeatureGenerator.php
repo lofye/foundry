@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Generation;
+namespace Foundry\Generation;
 
-use Forge\Support\ForgeError;
-use Forge\Support\Json;
-use Forge\Support\Paths;
-use Forge\Support\Str;
-use Forge\Support\Yaml;
+use Foundry\Support\FoundryError;
+use Foundry\Support\Json;
+use Foundry\Support\Paths;
+use Foundry\Support\Str;
+use Foundry\Support\Yaml;
 
 final class FeatureGenerator
 {
@@ -28,7 +28,7 @@ final class FeatureGenerator
 
         $feature = (string) ($spec['feature'] ?? '');
         if ($feature === '' || !Str::isSnakeCase($feature)) {
-            throw new ForgeError('FEATURE_NAME_INVALID', 'validation', ['feature' => $feature], 'Feature name must be snake_case.');
+            throw new FoundryError('FEATURE_NAME_INVALID', 'validation', ['feature' => $feature], 'Feature name must be snake_case.');
         }
 
         $kind = (string) ($spec['kind'] ?? 'http');
@@ -170,13 +170,14 @@ declare(strict_types=1);
 
 namespace {{NAMESPACE}};
 
-use Forge\Auth\AuthContext;
-use Forge\Feature\FeatureAction;
-use Forge\Feature\FeatureServices;
-use Forge\Http\RequestContext;
+use Foundry\Auth\AuthContext;
+use Foundry\Feature\FeatureAction;
+use Foundry\Feature\FeatureServices;
+use Foundry\Http\RequestContext;
 
 final class Action implements FeatureAction
 {
+    #[\Override]
     public function handle(array $input, RequestContext $request, AuthContext $auth, FeatureServices $services): array
     {
         return [
@@ -199,7 +200,7 @@ PHP;
         if (is_file($path)) {
             $existing = file_get_contents($path) ?: '';
             if (!$generated && $existing !== '') {
-                throw new ForgeError('FILE_EXISTS_NOT_GENERATED', 'io', ['path' => $path], 'Refusing to overwrite non-generated file.');
+                throw new FoundryError('FILE_EXISTS_NOT_GENERATED', 'io', ['path' => $path], 'Refusing to overwrite non-generated file.');
             }
         }
 
@@ -214,6 +215,6 @@ PHP;
 
     private function phpHeader(string $path): string
     {
-        return "<?php\ndeclare(strict_types=1);\n\n/**\n * GENERATED FILE - DO NOT EDIT DIRECTLY\n * Source: {$path}\n * Regenerate with: forge generate feature\n */\n\n";
+        return "<?php\ndeclare(strict_types=1);\n\n/**\n * GENERATED FILE - DO NOT EDIT DIRECTLY\n * Source: {$path}\n * Regenerate with: foundry generate feature\n */\n\n";
     }
 }

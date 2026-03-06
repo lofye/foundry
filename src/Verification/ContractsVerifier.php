@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Verification;
+namespace Foundry\Verification;
 
-use Forge\Support\Json;
-use Forge\Support\Paths;
-use Forge\Support\Yaml;
+use Foundry\Support\Json;
+use Foundry\Support\Paths;
+use Foundry\Support\Yaml;
 
 final class ContractsVerifier
 {

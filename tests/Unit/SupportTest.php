@@ -1,13 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Support\Arr;
-use Forge\Support\Json;
-use Forge\Support\Str;
-use Forge\Support\Uuid;
-use Forge\Support\ForgeError;
+use Foundry\Support\Arr;
+use Foundry\Support\Json;
+use Foundry\Support\Str;
+use Foundry\Support\Uuid;
+use Foundry\Support\FoundryError;
+use Foundry\Support\Yaml;
 use PHPUnit\Framework\TestCase;
 
 final class SupportTest extends TestCase
@@ -39,8 +40,20 @@ final class SupportTest extends TestCase
 
     public function test_json_decode_rejects_invalid_document(): void
     {
-        $this->expectException(ForgeError::class);
+        $this->expectException(FoundryError::class);
         Json::decodeAssoc('{');
+    }
+
+    public function test_json_decode_rejects_non_object_root(): void
+    {
+        $this->expectException(FoundryError::class);
+        Json::decodeAssoc('1');
+    }
+
+    public function test_yaml_dump_outputs_string(): void
+    {
+        $dump = Yaml::dump(['a' => ['b' => 1]]);
+        $this->assertStringContainsString('a:', $dump);
     }
 
     public function test_uuid_v4_shape(): void

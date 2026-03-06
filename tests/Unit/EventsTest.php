@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Events\DefaultEventDispatcher;
-use Forge\Events\EventDefinition;
-use Forge\Events\EventRegistry;
-use Forge\Events\InMemoryEventCollector;
+use Foundry\Events\DefaultEventDispatcher;
+use Foundry\Events\EventDefinition;
+use Foundry\Events\EventRegistry;
+use Foundry\Events\InMemoryEventCollector;
 use PHPUnit\Framework\TestCase;
 
 final class EventsTest extends TestCase

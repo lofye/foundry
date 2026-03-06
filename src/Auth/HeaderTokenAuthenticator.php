@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Auth;
+namespace Foundry\Auth;
 
-use Forge\Feature\FeatureDefinition;
-use Forge\Http\RequestContext;
+use Foundry\Feature\FeatureDefinition;
+use Foundry\Http\RequestContext;
 
 final class HeaderTokenAuthenticator implements Authenticator
 {
@@ -12,11 +12,13 @@ final class HeaderTokenAuthenticator implements Authenticator
     {
     }
 
+    #[\Override]
     public function strategy(): string
     {
         return 'bearer';
     }
 
+    #[\Override]
     public function authenticate(RequestContext $request, FeatureDefinition $feature): AuthContext
     {
         $userId = $request->header($this->headerName);

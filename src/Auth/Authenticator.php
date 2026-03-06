@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Auth;
+namespace Foundry\Auth;
 
-use Forge\Feature\FeatureDefinition;
-use Forge\Http\RequestContext;
+use Foundry\Feature\FeatureDefinition;
+use Foundry\Http\RequestContext;
 
 interface Authenticator
 {

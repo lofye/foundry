@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Scheduler;
+namespace Foundry\Scheduler;
 
-use Forge\Observability\TraceRecorder;
+use Foundry\Observability\TraceRecorder;
 
 final class Scheduler
 {

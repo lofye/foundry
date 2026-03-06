@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\DB;
+namespace Foundry\DB;
 
-final class QueryDefinition
+final readonly class QueryDefinition
 {
     /**
      * @param array<int,string> $placeholders

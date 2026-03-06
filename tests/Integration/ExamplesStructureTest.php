@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Integration;
+namespace Foundry\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 

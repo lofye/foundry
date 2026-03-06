@@ -1,7 +1,7 @@
 # Benchmark Notes (Hot JSON Endpoints)
 
 ## Scope
-Initial benchmark guidance for low-latency JSON endpoints in Forge v1.
+Initial benchmark guidance for low-latency JSON endpoints in Foundry v1.
 
 ## Key design choices affecting performance
 - precompiled route/feature indexes loaded from `app/generated/*.php`

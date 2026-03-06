@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Testing;
+namespace Foundry\Testing;
 
 final class JobTestGenerator
 {

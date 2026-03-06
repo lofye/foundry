@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Events;
+namespace Foundry\Events;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class EventRegistry
 {
@@ -32,7 +32,7 @@ final class EventRegistry
     public function event(string $name): EventDefinition
     {
         if (!isset($this->events[$name])) {
-            throw new ForgeError('EVENT_NOT_FOUND', 'not_found', ['event' => $name], 'Event not found.');
+            throw new FoundryError('EVENT_NOT_FOUND', 'not_found', ['event' => $name], 'Event not found.');
         }
 
         return $this->events[$name];

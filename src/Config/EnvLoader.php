@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Config;
+namespace Foundry\Config;
 
 final class EnvLoader
 {

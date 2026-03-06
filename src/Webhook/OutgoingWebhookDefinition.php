@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Webhook;
+namespace Foundry\Webhook;
 
-final class OutgoingWebhookDefinition
+final readonly class OutgoingWebhookDefinition
 {
     /**
      * @param array<string,string> $headers

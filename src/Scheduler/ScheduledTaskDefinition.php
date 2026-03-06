@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Scheduler;
+namespace Foundry\Scheduler;
 
-final class ScheduledTaskDefinition
+final readonly class ScheduledTaskDefinition
 {
     public function __construct(
         public readonly string $name,

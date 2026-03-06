@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Webhook;
+namespace Foundry\Webhook;
 
 final class WebhookRegistry
 {

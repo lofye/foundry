@@ -1,19 +1,19 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Feature;
+namespace Foundry\Feature;
 
-use Forge\Auth\AuthContext;
-use Forge\Auth\AuthorizationEngine;
-use Forge\DB\TransactionManager;
-use Forge\Http\RequestContext;
-use Forge\Http\RouteMatcher;
-use Forge\Observability\AuditRecorder;
-use Forge\Observability\TraceRecorder;
-use Forge\Schema\SchemaValidator;
-use Forge\Support\ForgeError;
-use Forge\Support\Paths;
-use Forge\Support\Str;
+use Foundry\Auth\AuthContext;
+use Foundry\Auth\AuthorizationEngine;
+use Foundry\DB\TransactionManager;
+use Foundry\Http\RequestContext;
+use Foundry\Http\RouteMatcher;
+use Foundry\Observability\AuditRecorder;
+use Foundry\Observability\TraceRecorder;
+use Foundry\Schema\SchemaValidator;
+use Foundry\Support\FoundryError;
+use Foundry\Support\Paths;
+use Foundry\Support\Str;
 
 final class FeatureExecutor
 {
@@ -40,7 +40,7 @@ final class FeatureExecutor
 
         $match = $this->matcher->match($this->features->routes(), $request);
         if ($match === null) {
-            throw new ForgeError(
+            throw new FoundryError(
                 'ROUTE_NOT_FOUND',
                 'not_found',
                 ['method' => $request->method(), 'path' => $request->path()],
@@ -59,7 +59,7 @@ final class FeatureExecutor
         $this->trace->record($feature->name, 'auth', 'authorization_decision', ['allowed' => $decision->allowed, 'reason' => $decision->reason]);
 
         if (!$decision->allowed) {
-            throw new ForgeError(
+            throw new FoundryError(
                 'AUTHORIZATION_DENIED',
                 'authorization',
                 ['feature' => $feature->name, 'reason' => $decision->reason],
@@ -73,7 +73,7 @@ final class FeatureExecutor
         $this->trace->record($feature->name, 'schema', 'input_validation', ['ok' => $inputValidation->isValid]);
 
         if (!$inputValidation->isValid) {
-            throw new ForgeError(
+            throw new FoundryError(
                 'FEATURE_INPUT_SCHEMA_VIOLATION',
                 'validation',
                 ['feature' => $feature->name, 'errors' => array_map(static fn ($e): array => $e->toArray(), $inputValidation->errors)],
@@ -97,7 +97,7 @@ final class FeatureExecutor
             $this->trace->record($feature->name, 'schema', 'output_validation', ['ok' => $outputValidation->isValid]);
 
             if (!$outputValidation->isValid) {
-                throw new ForgeError(
+                throw new FoundryError(
                     'FEATURE_OUTPUT_SCHEMA_VIOLATION',
                     'validation',
                     ['feature' => $feature->name, 'errors' => array_map(static fn ($e): array => $e->toArray(), $outputValidation->errors)],
@@ -130,7 +130,7 @@ final class FeatureExecutor
     private function resolveSchemaPath(string $path): string
     {
         if ($path === '') {
-            throw new ForgeError('SCHEMA_PATH_EMPTY', 'validation', [], 'Schema path cannot be empty.');
+            throw new FoundryError('SCHEMA_PATH_EMPTY', 'validation', [], 'Schema path cannot be empty.');
         }
 
         if (str_starts_with($path, '/')) {
@@ -153,12 +153,12 @@ final class FeatureExecutor
         }
 
         if (!class_exists($class)) {
-            throw new ForgeError('FEATURE_ACTION_CLASS_NOT_FOUND', 'not_found', ['feature' => $feature->name, 'class' => $class], 'Feature action class not found.');
+            throw new FoundryError('FEATURE_ACTION_CLASS_NOT_FOUND', 'not_found', ['feature' => $feature->name, 'class' => $class], 'Feature action class not found.');
         }
 
         $action = new $class();
         if (!$action instanceof FeatureAction) {
-            throw new ForgeError('FEATURE_ACTION_CONTRACT_VIOLATION', 'validation', ['class' => $class], 'Action must implement FeatureAction.');
+            throw new FoundryError('FEATURE_ACTION_CONTRACT_VIOLATION', 'validation', ['class' => $class], 'Action must implement FeatureAction.');
         }
 
         return $action;

@@ -1,22 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI;
+namespace Foundry\CLI;
 
-use Forge\Feature\FeatureLoader;
-use Forge\Generation\ContextManifestGenerator;
-use Forge\Generation\FeatureGenerator;
-use Forge\Generation\IndexGenerator;
-use Forge\Generation\MigrationGenerator;
-use Forge\Generation\TestGenerator;
-use Forge\Support\Paths;
-use Forge\Verification\AuthVerifier;
-use Forge\Verification\CacheVerifier;
-use Forge\Verification\ContractsVerifier;
-use Forge\Verification\EventsVerifier;
-use Forge\Verification\FeatureVerifier;
-use Forge\Verification\JobsVerifier;
-use Forge\Verification\MigrationsVerifier;
+use Foundry\Feature\FeatureLoader;
+use Foundry\Generation\ContextManifestGenerator;
+use Foundry\Generation\FeatureGenerator;
+use Foundry\Generation\IndexGenerator;
+use Foundry\Generation\MigrationGenerator;
+use Foundry\Generation\TestGenerator;
+use Foundry\Support\Paths;
+use Foundry\Verification\AuthVerifier;
+use Foundry\Verification\CacheVerifier;
+use Foundry\Verification\ContractsVerifier;
+use Foundry\Verification\EventsVerifier;
+use Foundry\Verification\FeatureVerifier;
+use Foundry\Verification\JobsVerifier;
+use Foundry\Verification\MigrationsVerifier;
 
 final class CommandContext
 {

@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Generation;
+namespace Foundry\Generation;
 
-use Forge\Testing\AuthTestGenerator;
-use Forge\Testing\ContractTestGenerator;
-use Forge\Testing\FeatureTestGenerator;
-use Forge\Testing\JobTestGenerator;
+use Foundry\Testing\AuthTestGenerator;
+use Foundry\Testing\ContractTestGenerator;
+use Foundry\Testing\FeatureTestGenerator;
+use Foundry\Testing\JobTestGenerator;
 
 final class TestGenerator
 {

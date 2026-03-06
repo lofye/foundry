@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Support;
+namespace Foundry\Support;
 
-final class ForgeError extends \RuntimeException
+final class FoundryError extends \RuntimeException
 {
     /**
      * @param array<string,mixed> $details

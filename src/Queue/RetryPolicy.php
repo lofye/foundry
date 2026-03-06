@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Queue;
+namespace Foundry\Queue;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class RetryPolicy
 {
@@ -15,11 +15,11 @@ final class RetryPolicy
         public readonly array $backoffSeconds,
     ) {
         if ($this->maxAttempts < 1) {
-            throw new ForgeError('RETRY_MAX_ATTEMPTS_INVALID', 'validation', ['max_attempts' => $this->maxAttempts], 'Max attempts must be >= 1.');
+            throw new FoundryError('RETRY_MAX_ATTEMPTS_INVALID', 'validation', ['max_attempts' => $this->maxAttempts], 'Max attempts must be >= 1.');
         }
 
         if ($this->backoffSeconds === []) {
-            throw new ForgeError('RETRY_BACKOFF_INVALID', 'validation', [], 'Backoff must not be empty.');
+            throw new FoundryError('RETRY_BACKOFF_INVALID', 'validation', [], 'Backoff must not be empty.');
         }
     }
 

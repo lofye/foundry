@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Generation;
+namespace Foundry\Generation;
 
-use Forge\Support\Paths;
-use Forge\Support\Str;
-use Forge\Support\Yaml;
+use Foundry\Support\Paths;
+use Foundry\Support\Str;
+use Foundry\Support\Yaml;
 
 final class IndexGenerator
 {
@@ -257,7 +257,7 @@ final class IndexGenerator
     {
         $path = $this->paths->join('app/generated/' . $name);
         $source = 'app/features/<feature>/feature.yaml';
-        $content = "<?php\ndeclare(strict_types=1);\n\n/**\n * GENERATED FILE - DO NOT EDIT DIRECTLY\n * Source: {$source}\n * Regenerate with: forge generate indexes\n */\n\nreturn " . var_export($data, true) . ";\n";
+        $content = "<?php\ndeclare(strict_types=1);\n\n/**\n * GENERATED FILE - DO NOT EDIT DIRECTLY\n * Source: {$source}\n * Regenerate with: foundry generate indexes\n */\n\nreturn " . var_export($data, true) . ";\n";
         file_put_contents($path, $content);
 
         return $path;

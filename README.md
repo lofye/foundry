@@ -1,6 +1,6 @@
-# Forge
+# Foundry
 
-Forge is a production-minded, explicit, deterministic, LLM-first PHP framework for building feature-local web apps.
+Foundry is a production-minded, explicit, deterministic, LLM-first PHP framework for building feature-local web apps.
 
 It is optimized for:
 - explicit contracts
@@ -9,19 +9,57 @@ It is optimized for:
 - small safe edit surfaces
 - strong verification and testing
 
+Initial Prompt: Derek Martin
+Architect: ChatGPT-5.3
+Engineer: GPT-5.3-Codex (Extra High)
 License: MIT.
 
 ## Runtime and Language
-- PHP `^8.4` (code is written in a PHP 8.5-ready style)
+- PHP `^8.5`
 - Composer-based
 
 ## Install and Run
 ```bash
 composer install
-php bin/forge generate indexes
-php bin/forge verify contracts --json
+php bin/foundry generate indexes
+php bin/foundry verify contracts --json
 vendor/bin/phpunit
 ```
+
+## Local MinIO (Fix + Verify)
+Your MinIO install issue is typically a port conflict on `127.0.0.1:9000`.
+
+Check what owns the ports:
+```bash
+lsof -nP -iTCP:9000 -sTCP:LISTEN
+lsof -nP -iTCP:9001 -sTCP:LISTEN
+```
+
+Option A: keep defaults and stop the conflicting process.
+
+Option B: run MinIO on alternate ports (recommended if 9000 is already used):
+```bash
+mkdir -p "$HOME/minio-data"
+export MINIO_ROOT_USER="foundry"
+export MINIO_ROOT_PASSWORD="foundry-dev-secret"
+minio server "$HOME/minio-data" --address ":9100" --console-address ":9101"
+```
+
+Configure `mc` and create a bucket:
+```bash
+mc alias set foundry http://127.0.0.1:9100 foundry foundry-dev-secret
+mc mb --ignore-existing foundry/foundry-dev
+mc ls foundry
+```
+
+Health check:
+```bash
+curl -sS http://127.0.0.1:9100/minio/health/live
+```
+
+Notes:
+- `/home/shared` is a Linux path; on macOS use an existing directory like `$HOME/minio-data`.
+- avoid default credentials (`minioadmin:minioadmin`) for persistent local setups.
 
 ## Core Workflow for LLMs
 Use this loop for every change:
@@ -33,16 +71,16 @@ Use this loop for every change:
 
 Recommended command sequence:
 ```bash
-php bin/forge inspect feature <feature> --json
-php bin/forge inspect context <feature> --json
-php bin/forge generate indexes --json
-php bin/forge generate context <feature> --json
-php bin/forge verify feature <feature> --json
-php bin/forge verify contracts --json
-php bin/forge verify auth --json
-php bin/forge verify cache --json
-php bin/forge verify events --json
-php bin/forge verify jobs --json
+php bin/foundry inspect feature <feature> --json
+php bin/foundry inspect context <feature> --json
+php bin/foundry generate indexes --json
+php bin/foundry generate context <feature> --json
+php bin/foundry verify feature <feature> --json
+php bin/foundry verify contracts --json
+php bin/foundry verify auth --json
+php bin/foundry verify cache --json
+php bin/foundry verify events --json
+php bin/foundry verify jobs --json
 vendor/bin/phpunit
 ```
 
@@ -82,7 +120,7 @@ Rules:
 ## Feature Contract
 Each feature must define:
 - manifest (`feature.yaml`)
-- action implementation (`action.php` implementing `Forge\Feature\FeatureAction`)
+- action implementation (`action.php` implementing `Foundry\Feature\FeatureAction`)
 - input/output schemas
 - context manifest
 - tests declared in `feature.yaml`
@@ -95,45 +133,45 @@ All inspection, verification, and planning commands support `--json`.
 
 Inspect:
 ```bash
-php bin/forge inspect feature <feature> --json
-php bin/forge inspect route <METHOD> <PATH> --json
-php bin/forge inspect auth <feature> --json
-php bin/forge inspect cache <feature> --json
-php bin/forge inspect events <feature> --json
-php bin/forge inspect jobs <feature> --json
-php bin/forge inspect context <feature> --json
-php bin/forge inspect dependencies <feature> --json
+php bin/foundry inspect feature <feature> --json
+php bin/foundry inspect route <METHOD> <PATH> --json
+php bin/foundry inspect auth <feature> --json
+php bin/foundry inspect cache <feature> --json
+php bin/foundry inspect events <feature> --json
+php bin/foundry inspect jobs <feature> --json
+php bin/foundry inspect context <feature> --json
+php bin/foundry inspect dependencies <feature> --json
 ```
 
 Generate:
 ```bash
-php bin/forge generate feature <spec.yaml> --json
-php bin/forge generate indexes --json
-php bin/forge generate tests <feature> --json
-php bin/forge generate migration <spec.yaml> --json
-php bin/forge generate context <feature> --json
+php bin/foundry generate feature <spec.yaml> --json
+php bin/foundry generate indexes --json
+php bin/foundry generate tests <feature> --json
+php bin/foundry generate migration <spec.yaml> --json
+php bin/foundry generate context <feature> --json
 ```
 
 Verify:
 ```bash
-php bin/forge verify feature <feature> --json
-php bin/forge verify contracts --json
-php bin/forge verify auth --json
-php bin/forge verify cache --json
-php bin/forge verify events --json
-php bin/forge verify jobs --json
-php bin/forge verify migrations --json
+php bin/foundry verify feature <feature> --json
+php bin/foundry verify contracts --json
+php bin/foundry verify auth --json
+php bin/foundry verify cache --json
+php bin/foundry verify events --json
+php bin/foundry verify jobs --json
+php bin/foundry verify migrations --json
 ```
 
 Runtime / planning:
 ```bash
-php bin/forge serve
-php bin/forge queue:work
-php bin/forge queue:inspect --json
-php bin/forge schedule:run --json
-php bin/forge trace:tail --json
-php bin/forge affected-files <feature> --json
-php bin/forge impacted-features <permission|event:<name>|cache:<key>> --json
+php bin/foundry serve
+php bin/foundry queue:work
+php bin/foundry queue:inspect --json
+php bin/foundry schedule:run --json
+php bin/foundry trace:tail --json
+php bin/foundry affected-files <feature> --json
+php bin/foundry impacted-features <permission|event:<name>|cache:<key>> --json
 ```
 
 ## Tests
@@ -150,9 +188,25 @@ Run:
 vendor/bin/phpunit
 ```
 
+Optional local integration targets:
+- Redis queue integration tests run when `ext-redis` is loaded and Redis is reachable on `127.0.0.1:6379`.
+- PostgreSQL integration tests run when `pdo_pgsql` is loaded and Postgres is reachable.
+- MinIO storage integrations can use `Foundry\Storage\MinioStorageDriver` with an injected client, or with `aws/aws-sdk-php`.
+- MinIO integration test env overrides:
+  `FOUNDRY_TEST_MINIO_ENDPOINT`, `FOUNDRY_TEST_MINIO_ACCESS_KEY`,
+  `FOUNDRY_TEST_MINIO_SECRET_KEY`, `FOUNDRY_TEST_MINIO_BUCKET`,
+  `FOUNDRY_TEST_MINIO_REGION`.
+- PostgreSQL DSN/user/pass can be overridden with:
+  `FOUNDRY_TEST_PG_DSN`, `FOUNDRY_TEST_PG_USER`, `FOUNDRY_TEST_PG_PASS`.
+- If `postgresql@17` is keg-only on Homebrew, use:
+  `/opt/homebrew/opt/postgresql@17/bin/psql`
+  and optionally add it to `PATH`.
+
 Coverage note:
 - code coverage output requires a coverage driver (`xdebug` or `pcov`).
 - if not installed, tests still run but coverage metrics are unavailable.
+- when Xdebug is installed but not auto-loaded in CLI, run coverage with:
+  `php -dzend_extension=/path/to/xdebug.so -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text`
 
 ## Examples
 Included example apps:

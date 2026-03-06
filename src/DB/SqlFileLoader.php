@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\DB;
+namespace Foundry\DB;
 
-use Forge\Support\ForgeError;
+use Foundry\Support\FoundryError;
 
 final class SqlFileLoader
 {
@@ -13,12 +13,12 @@ final class SqlFileLoader
     public function load(string $feature, string $path): array
     {
         if (!is_file($path)) {
-            throw new ForgeError('SQL_FILE_NOT_FOUND', 'not_found', ['path' => $path], 'SQL file not found.');
+            throw new FoundryError('SQL_FILE_NOT_FOUND', 'not_found', ['path' => $path], 'SQL file not found.');
         }
 
         $sql = file_get_contents($path);
         if ($sql === false) {
-            throw new ForgeError('SQL_FILE_READ_ERROR', 'io', ['path' => $path], 'Failed to read SQL file.');
+            throw new FoundryError('SQL_FILE_READ_ERROR', 'io', ['path' => $path], 'Failed to read SQL file.');
         }
 
         return $this->parse($feature, $sql);
@@ -42,7 +42,7 @@ final class SqlFileLoader
             }
 
             if (isset($seen[$name])) {
-                throw new ForgeError('DUPLICATE_QUERY_NAME', 'validation', ['feature' => $feature, 'query' => $name], 'Duplicate query name.');
+                throw new FoundryError('DUPLICATE_QUERY_NAME', 'validation', ['feature' => $feature, 'query' => $name], 'Duplicate query name.');
             }
 
             $seen[$name] = true;

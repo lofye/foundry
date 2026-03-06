@@ -1,20 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI\Commands;
+namespace Foundry\CLI\Commands;
 
-use Forge\CLI\Command;
-use Forge\CLI\CommandContext;
-use Forge\Support\ForgeError;
-use Forge\Support\Yaml;
+use Foundry\CLI\Command;
+use Foundry\CLI\CommandContext;
+use Foundry\Support\FoundryError;
+use Foundry\Support\Yaml;
 
 final class ImpactCommand extends Command
 {
+    #[\Override]
     public function matches(array $args): bool
     {
         return in_array(($args[0] ?? ''), ['affected-files', 'impacted-features'], true);
     }
 
+    #[\Override]
     public function run(array $args, CommandContext $context): array
     {
         $command = (string) ($args[0] ?? '');
@@ -22,12 +24,12 @@ final class ImpactCommand extends Command
         if ($command === 'affected-files') {
             $feature = (string) ($args[1] ?? '');
             if ($feature === '') {
-                throw new ForgeError('CLI_FEATURE_REQUIRED', 'validation', [], 'Feature required.');
+                throw new FoundryError('CLI_FEATURE_REQUIRED', 'validation', [], 'Feature required.');
             }
 
             $manifest = $context->featureLoader()->contextManifest($feature);
             if ($manifest === null) {
-                throw new ForgeError('CONTEXT_MANIFEST_NOT_FOUND', 'not_found', ['feature' => $feature], 'Context manifest not found.');
+                throw new FoundryError('CONTEXT_MANIFEST_NOT_FOUND', 'not_found', ['feature' => $feature], 'Context manifest not found.');
             }
 
             return [
@@ -42,7 +44,7 @@ final class ImpactCommand extends Command
 
         $needle = (string) ($args[1] ?? '');
         if ($needle === '') {
-            throw new ForgeError('CLI_IMPACT_TARGET_REQUIRED', 'validation', [], 'Impact target required.');
+            throw new FoundryError('CLI_IMPACT_TARGET_REQUIRED', 'validation', [], 'Impact target required.');
         }
 
         $features = [];

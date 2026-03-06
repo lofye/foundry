@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Schema;
+namespace Foundry\Schema;
 
 final class Schema
 {

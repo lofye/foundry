@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Events;
+namespace Foundry\Events;
 
-use Forge\Observability\TraceRecorder;
-use Forge\Schema\JsonSchemaValidator;
-use Forge\Support\ForgeError;
+use Foundry\Observability\TraceRecorder;
+use Foundry\Schema\JsonSchemaValidator;
+use Foundry\Support\FoundryError;
 
 final class DefaultEventDispatcher implements EventDispatcher
 {
@@ -15,13 +15,14 @@ final class DefaultEventDispatcher implements EventDispatcher
     ) {
     }
 
+    #[\Override]
     public function emit(string $eventName, array $payload): void
     {
         $event = $this->events->event($eventName);
 
-        $tmpFile = tempnam(sys_get_temp_dir(), 'forge-event-schema-');
+        $tmpFile = tempnam(sys_get_temp_dir(), 'foundry-event-schema-');
         if ($tmpFile === false) {
-            throw new ForgeError('EVENT_SCHEMA_TEMPFILE_FAILED', 'runtime', ['event' => $eventName], 'Failed to create schema tempfile.');
+            throw new FoundryError('EVENT_SCHEMA_TEMPFILE_FAILED', 'runtime', ['event' => $eventName], 'Failed to create schema tempfile.');
         }
 
         file_put_contents($tmpFile, json_encode($event->schema, JSON_UNESCAPED_SLASHES));
@@ -30,7 +31,7 @@ final class DefaultEventDispatcher implements EventDispatcher
         @unlink($tmpFile);
 
         if (!$validation->isValid) {
-            throw new ForgeError('EVENT_PAYLOAD_INVALID', 'validation', ['event' => $eventName], 'Event payload does not match schema.');
+            throw new FoundryError('EVENT_PAYLOAD_INVALID', 'validation', ['event' => $eventName], 'Event payload does not match schema.');
         }
 
         foreach ($this->events->subscribers($eventName) as $subscriber) {

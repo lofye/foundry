@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Queue;
+namespace Foundry\Queue;
 
-use Forge\Observability\TraceRecorder;
-use Forge\Support\ForgeError;
+use Foundry\Observability\TraceRecorder;
+use Foundry\Support\FoundryError;
 
 final class Worker
 {
@@ -36,7 +36,7 @@ final class Worker
             $definition = $this->jobs->get($name);
             $handler = $this->handlers[$name] ?? null;
             if ($handler === null) {
-                throw new ForgeError('JOB_HANDLER_NOT_FOUND', 'runtime', ['job' => $name], 'Job handler not found.');
+                throw new FoundryError('JOB_HANDLER_NOT_FOUND', 'runtime', ['job' => $name], 'Job handler not found.');
             }
 
             $attempt = 1;
@@ -59,7 +59,7 @@ final class Worker
             }
 
             if (!$success) {
-                throw new ForgeError('JOB_RETRY_EXHAUSTED', 'runtime', ['job' => $name], 'Job retry exhausted.');
+                throw new FoundryError('JOB_RETRY_EXHAUSTED', 'runtime', ['job' => $name], 'Job retry exhausted.');
             }
         }
 

@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Tests\Unit;
+namespace Foundry\Tests\Unit;
 
-use Forge\Cache\ArrayCacheStore;
-use Forge\Cache\CacheDefinition;
-use Forge\Cache\CacheKeyBuilder;
-use Forge\Cache\CacheManager;
-use Forge\Cache\CacheRegistry;
+use Foundry\Cache\ArrayCacheStore;
+use Foundry\Cache\CacheDefinition;
+use Foundry\Cache\CacheKeyBuilder;
+use Foundry\Cache\CacheManager;
+use Foundry\Cache\CacheRegistry;
 use PHPUnit\Framework\TestCase;
 
 final class CacheTest extends TestCase

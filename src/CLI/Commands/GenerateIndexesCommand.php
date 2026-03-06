@@ -1,19 +1,21 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\CLI\Commands;
+namespace Foundry\CLI\Commands;
 
-use Forge\CLI\Command;
-use Forge\CLI\CommandContext;
-use Forge\Support\ForgeError;
+use Foundry\CLI\Command;
+use Foundry\CLI\CommandContext;
+use Foundry\Support\FoundryError;
 
 final class GenerateIndexesCommand extends Command
 {
+    #[\Override]
     public function matches(array $args): bool
     {
         return ($args[0] ?? null) === 'generate' && in_array(($args[1] ?? ''), ['indexes', 'migration'], true);
     }
 
+    #[\Override]
     public function run(array $args, CommandContext $context): array
     {
         $target = (string) ($args[1] ?? '');
@@ -30,7 +32,7 @@ final class GenerateIndexesCommand extends Command
 
         $specPath = (string) ($args[2] ?? '');
         if ($specPath === '') {
-            throw new ForgeError('CLI_MIGRATION_SPEC_REQUIRED', 'validation', [], 'Migration spec path required.');
+            throw new FoundryError('CLI_MIGRATION_SPEC_REQUIRED', 'validation', [], 'Migration spec path required.');
         }
 
         $out = $context->paths()->join('app/platform/migrations');

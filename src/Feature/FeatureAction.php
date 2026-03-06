@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Feature;
+namespace Foundry\Feature;
 
-use Forge\Auth\AuthContext;
-use Forge\Http\RequestContext;
+use Foundry\Auth\AuthContext;
+use Foundry\Http\RequestContext;
 
 interface FeatureAction
 {

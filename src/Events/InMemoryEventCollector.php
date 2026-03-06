@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Events;
+namespace Foundry\Events;
 
 final class InMemoryEventCollector implements EventSubscriber
 {
@@ -14,11 +14,13 @@ final class InMemoryEventCollector implements EventSubscriber
     {
     }
 
+    #[\Override]
     public function eventName(): string
     {
         return $this->eventName;
     }
 
+    #[\Override]
     public function handle(array $payload): void
     {
         $this->collected[] = $payload;

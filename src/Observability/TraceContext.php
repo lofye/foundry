@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Forge\Observability;
+namespace Foundry\Observability;
 
-use Forge\Support\Uuid;
+use Foundry\Support\Uuid;
 
 final class TraceContext
 {
