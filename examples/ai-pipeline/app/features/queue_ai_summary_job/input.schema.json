@@ -1,0 +1,8 @@
+{
+  "": "https://json-schema.org/draft/2020-12/schema",
+  "title": "queue_ai_summary_job_input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {}
+}

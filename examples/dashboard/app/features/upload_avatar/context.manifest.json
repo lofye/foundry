@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "upload_avatar",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/upload_avatar/feature.yaml",
+        "app/features/upload_avatar/action.php",
+        "app/features/upload_avatar/input.schema.json",
+        "app/features/upload_avatar/output.schema.json",
+        "app/features/upload_avatar/permissions.yaml",
+        "app/features/upload_avatar/cache.yaml",
+        "app/features/upload_avatar/events.yaml",
+        "app/features/upload_avatar/jobs.yaml",
+        "app/features/upload_avatar/tests/upload_avatar_contract_test.php",
+        "app/features/upload_avatar/tests/upload_avatar_feature_test.php",
+        "app/features/upload_avatar/tests/upload_avatar_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/upload_avatar/input.schema.json",
+        "output": "app/features/upload_avatar/output.schema.json"
+    },
+    "tests": [
+        "upload_avatar_contract_test",
+        "upload_avatar_feature_test",
+        "upload_avatar_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

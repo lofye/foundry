@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - queue_ai_summary_job.execute
+rules:
+  queue_ai_summary_job.execute:
+    description: Execute queue_ai_summary_job.

@@ -1,0 +1,50 @@
+version: 1
+feature: list_notifications
+kind: http
+description: list_notifications endpoint for dashboard.
+owners:
+  - dashboard
+route:
+  method: GET
+  path: /notifications
+input:
+  schema: app/features/list_notifications/input.schema.json
+output:
+  schema: app/features/list_notifications/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - list_notifications.execute
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: list_notifications
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: low
+  notes_file: prompts.md

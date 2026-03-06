@@ -1,0 +1,15 @@
+version: 1
+emit:
+  - name: post.created
+    schema:
+      type: object
+      additionalProperties: false
+      required: [post_id, author_id, status]
+      properties:
+        post_id:
+          type: string
+        author_id:
+          type: string
+        status:
+          type: string
+subscribe: []

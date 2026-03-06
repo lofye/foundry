@@ -1,0 +1,50 @@
+version: 1
+feature: update_post
+kind: http
+description: update_post endpoint for blog-api.
+owners:
+  - blog-api
+route:
+  method: PUT
+  path: /posts/{id}
+input:
+  schema: app/features/update_post/input.schema.json
+output:
+  schema: app/features/update_post/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - update_post.execute
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: update_post
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: low
+  notes_file: prompts.md

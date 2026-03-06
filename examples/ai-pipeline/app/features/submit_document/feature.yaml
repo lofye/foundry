@@ -1,0 +1,50 @@
+version: 1
+feature: submit_document
+kind: http
+description: submit_document endpoint for ai-pipeline.
+owners:
+  - ai-pipeline
+route:
+  method: POST
+  path: /documents
+input:
+  schema: app/features/submit_document/input.schema.json
+output:
+  schema: app/features/submit_document/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - submit_document.execute
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: submit_document
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: low
+  notes_file: prompts.md

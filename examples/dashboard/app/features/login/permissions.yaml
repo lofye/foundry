@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - login.execute
+rules:
+  login.execute:
+    description: Execute login.

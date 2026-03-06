@@ -1,0 +1,16 @@
+version: 1
+dispatch:
+  - name: notify_followers
+    input_schema:
+      type: object
+      additionalProperties: false
+      required: [post_id]
+      properties:
+        post_id:
+          type: string
+    queue: default
+    retry:
+      max_attempts: 5
+      backoff_seconds: [5, 30, 120, 300, 600]
+    timeout_seconds: 60
+    idempotency_key: post_id

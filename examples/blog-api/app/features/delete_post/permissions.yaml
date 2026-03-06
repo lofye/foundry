@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - delete_post.execute
+rules:
+  delete_post.execute:
+    description: Execute delete_post.

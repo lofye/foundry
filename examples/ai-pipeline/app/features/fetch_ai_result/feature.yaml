@@ -1,0 +1,50 @@
+version: 1
+feature: fetch_ai_result
+kind: http
+description: fetch_ai_result endpoint for ai-pipeline.
+owners:
+  - ai-pipeline
+route:
+  method: GET
+  path: /documents/{id}/ai-result
+input:
+  schema: app/features/fetch_ai_result/input.schema.json
+output:
+  schema: app/features/fetch_ai_result/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - fetch_ai_result.execute
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: fetch_ai_result
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: low
+  notes_file: prompts.md

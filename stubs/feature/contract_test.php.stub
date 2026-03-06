@@ -1,0 +1,12 @@
+<?php
+declare(strict_types=1);
+
+use PHPUnit\Framework\TestCase;
+
+final class {{FeatureStudly}}ContractTest extends TestCase
+{
+    public function test_contract(): void
+    {
+        self::assertTrue(true);
+    }
+}

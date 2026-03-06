@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - list_posts.execute
+rules:
+  list_posts.execute:
+    description: Execute list_posts.

@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "submit_document",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/submit_document/feature.yaml",
+        "app/features/submit_document/action.php",
+        "app/features/submit_document/input.schema.json",
+        "app/features/submit_document/output.schema.json",
+        "app/features/submit_document/permissions.yaml",
+        "app/features/submit_document/cache.yaml",
+        "app/features/submit_document/events.yaml",
+        "app/features/submit_document/jobs.yaml",
+        "app/features/submit_document/tests/submit_document_contract_test.php",
+        "app/features/submit_document/tests/submit_document_feature_test.php",
+        "app/features/submit_document/tests/submit_document_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/submit_document/input.schema.json",
+        "output": "app/features/submit_document/output.schema.json"
+    },
+    "tests": [
+        "submit_document_contract_test",
+        "submit_document_feature_test",
+        "submit_document_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

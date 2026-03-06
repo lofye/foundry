@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - publish_post.execute
+rules:
+  publish_post.execute:
+    description: Execute publish_post.

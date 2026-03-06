@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - current_user.execute
+rules:
+  current_user.execute:
+    description: Execute current_user.

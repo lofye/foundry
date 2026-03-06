@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "view_post",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/view_post/feature.yaml",
+        "app/features/view_post/action.php",
+        "app/features/view_post/input.schema.json",
+        "app/features/view_post/output.schema.json",
+        "app/features/view_post/permissions.yaml",
+        "app/features/view_post/cache.yaml",
+        "app/features/view_post/events.yaml",
+        "app/features/view_post/jobs.yaml",
+        "app/features/view_post/tests/view_post_contract_test.php",
+        "app/features/view_post/tests/view_post_feature_test.php",
+        "app/features/view_post/tests/view_post_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/view_post/input.schema.json",
+        "output": "app/features/view_post/output.schema.json"
+    },
+    "tests": [
+        "view_post_contract_test",
+        "view_post_feature_test",
+        "view_post_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

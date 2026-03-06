@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "publish_post_input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "slug", "body_markdown"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "body_markdown": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publish_now": {
+      "type": "boolean",
+      "default": false
+    },
+    "publish_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - update_post.execute
+rules:
+  update_post.execute:
+    description: Execute update_post.

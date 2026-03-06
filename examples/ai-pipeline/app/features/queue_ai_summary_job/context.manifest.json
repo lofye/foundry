@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "queue_ai_summary_job",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/queue_ai_summary_job/feature.yaml",
+        "app/features/queue_ai_summary_job/action.php",
+        "app/features/queue_ai_summary_job/input.schema.json",
+        "app/features/queue_ai_summary_job/output.schema.json",
+        "app/features/queue_ai_summary_job/permissions.yaml",
+        "app/features/queue_ai_summary_job/cache.yaml",
+        "app/features/queue_ai_summary_job/events.yaml",
+        "app/features/queue_ai_summary_job/jobs.yaml",
+        "app/features/queue_ai_summary_job/tests/queue_ai_summary_job_contract_test.php",
+        "app/features/queue_ai_summary_job/tests/queue_ai_summary_job_feature_test.php",
+        "app/features/queue_ai_summary_job/tests/queue_ai_summary_job_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/queue_ai_summary_job/input.schema.json",
+        "output": "app/features/queue_ai_summary_job/output.schema.json"
+    },
+    "tests": [
+        "queue_ai_summary_job_contract_test",
+        "queue_ai_summary_job_feature_test",
+        "queue_ai_summary_job_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

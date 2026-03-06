@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "current_user",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/current_user/feature.yaml",
+        "app/features/current_user/action.php",
+        "app/features/current_user/input.schema.json",
+        "app/features/current_user/output.schema.json",
+        "app/features/current_user/permissions.yaml",
+        "app/features/current_user/cache.yaml",
+        "app/features/current_user/events.yaml",
+        "app/features/current_user/jobs.yaml",
+        "app/features/current_user/tests/current_user_contract_test.php",
+        "app/features/current_user/tests/current_user_feature_test.php",
+        "app/features/current_user/tests/current_user_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/current_user/input.schema.json",
+        "output": "app/features/current_user/output.schema.json"
+    },
+    "tests": [
+        "current_user_contract_test",
+        "current_user_feature_test",
+        "current_user_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

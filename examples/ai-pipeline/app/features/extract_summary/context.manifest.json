@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "extract_summary",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/extract_summary/feature.yaml",
+        "app/features/extract_summary/action.php",
+        "app/features/extract_summary/input.schema.json",
+        "app/features/extract_summary/output.schema.json",
+        "app/features/extract_summary/permissions.yaml",
+        "app/features/extract_summary/cache.yaml",
+        "app/features/extract_summary/events.yaml",
+        "app/features/extract_summary/jobs.yaml",
+        "app/features/extract_summary/tests/extract_summary_contract_test.php",
+        "app/features/extract_summary/tests/extract_summary_feature_test.php",
+        "app/features/extract_summary/tests/extract_summary_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/extract_summary/input.schema.json",
+        "output": "app/features/extract_summary/output.schema.json"
+    },
+    "tests": [
+        "extract_summary_contract_test",
+        "extract_summary_feature_test",
+        "extract_summary_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

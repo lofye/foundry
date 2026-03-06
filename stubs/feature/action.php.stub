@@ -1,0 +1,19 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Features\{{FeatureStudly}};
+
+use Forge\Auth\AuthContext;
+use Forge\Feature\FeatureAction;
+use Forge\Feature\FeatureServices;
+use Forge\Http\RequestContext;
+
+final class Action implements FeatureAction
+{
+    public function handle(array $input, RequestContext $request, AuthContext $auth, FeatureServices $services): array
+    {
+        return [
+            'status' => 'ok',
+        ];
+    }
+}

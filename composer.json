@@ -1,0 +1,36 @@
+{
+  "name": "forge/framework",
+  "description": "Forge: an explicit, LLM-first PHP web framework",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": "^8.4",
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "opis/json-schema": "^2.6",
+    "symfony/yaml": "^7.3"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Forge\\": "src/",
+      "App\\": "app/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Forge\\Tests\\": "tests/"
+    }
+  },
+  "bin": [
+    "bin/forge"
+  ],
+  "scripts": {
+    "test": "phpunit",
+    "test:coverage": "phpunit --coverage-text"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

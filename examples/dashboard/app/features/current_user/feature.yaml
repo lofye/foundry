@@ -1,0 +1,50 @@
+version: 1
+feature: current_user
+kind: http
+description: current_user endpoint for dashboard.
+owners:
+  - dashboard
+route:
+  method: GET
+  path: /me
+input:
+  schema: app/features/current_user/input.schema.json
+output:
+  schema: app/features/current_user/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - current_user.execute
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: current_user
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: low
+  notes_file: prompts.md

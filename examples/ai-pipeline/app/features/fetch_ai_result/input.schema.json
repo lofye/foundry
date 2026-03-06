@@ -1,0 +1,8 @@
+{
+  "": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fetch_ai_result_input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {}
+}

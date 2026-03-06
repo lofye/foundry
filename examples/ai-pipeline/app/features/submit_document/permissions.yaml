@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - submit_document.execute
+rules:
+  submit_document.execute:
+    description: Execute submit_document.

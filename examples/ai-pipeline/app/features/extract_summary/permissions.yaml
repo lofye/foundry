@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - extract_summary.execute
+rules:
+  extract_summary.execute:
+    description: Execute extract_summary.

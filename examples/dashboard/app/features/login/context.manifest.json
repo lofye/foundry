@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "login",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/login/feature.yaml",
+        "app/features/login/action.php",
+        "app/features/login/input.schema.json",
+        "app/features/login/output.schema.json",
+        "app/features/login/permissions.yaml",
+        "app/features/login/cache.yaml",
+        "app/features/login/events.yaml",
+        "app/features/login/jobs.yaml",
+        "app/features/login/tests/login_contract_test.php",
+        "app/features/login/tests/login_feature_test.php",
+        "app/features/login/tests/login_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/login/input.schema.json",
+        "output": "app/features/login/output.schema.json"
+    },
+    "tests": [
+        "login_contract_test",
+        "login_feature_test",
+        "login_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

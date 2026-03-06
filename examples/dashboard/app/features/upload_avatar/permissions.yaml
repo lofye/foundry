@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - upload_avatar.execute
+rules:
+  upload_avatar.execute:
+    description: Execute upload_avatar.

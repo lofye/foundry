@@ -1,0 +1,8 @@
+{
+  "": "https://json-schema.org/draft/2020-12/schema",
+  "title": "login_input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {}
+}

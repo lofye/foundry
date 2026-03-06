@@ -1,0 +1,50 @@
+version: 1
+feature: publish_post
+kind: http
+description: publish_post endpoint for blog-api.
+owners:
+  - blog-api
+route:
+  method: POST
+  path: /posts
+input:
+  schema: app/features/publish_post/input.schema.json
+output:
+  schema: app/features/publish_post/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - publish_post.execute
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: publish_post
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: low
+  notes_file: prompts.md

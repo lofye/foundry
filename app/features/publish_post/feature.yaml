@@ -1,0 +1,57 @@
+version: 1
+feature: publish_post
+kind: http
+description: Create a new post and optionally publish it immediately.
+owners:
+  - content
+route:
+  method: POST
+  path: /posts
+input:
+  schema: app/features/publish_post/input.schema.json
+output:
+  schema: app/features/publish_post/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - posts.create
+database:
+  reads:
+    - users
+  writes:
+    - posts
+  transactions: required
+  queries:
+    - find_user_by_id
+    - insert_post
+cache:
+  reads: []
+  writes: []
+  invalidate:
+    - posts:list
+events:
+  emit:
+    - post.created
+  subscribe: []
+jobs:
+  dispatch:
+    - notify_followers
+rate_limit:
+  strategy: user
+  bucket: post_create
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: medium
+  notes_file: prompts.md

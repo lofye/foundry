@@ -1,0 +1,43 @@
+version: 1
+feature: {{feature}}
+kind: http
+description: {{description}}
+route:
+  method: POST
+  path: /{{feature}}
+input:
+  schema: app/features/{{feature}}/input.schema.json
+output:
+  schema: app/features/{{feature}}/output.schema.json
+auth:
+  required: true
+  strategies: [bearer]
+  permissions: []
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: {{feature}}
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required: [contract, feature, auth]
+llm:
+  editable: true
+  risk: medium
+  notes_file: prompts.md

@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - list_notifications.execute
+rules:
+  list_notifications.execute:
+    description: Execute list_notifications.

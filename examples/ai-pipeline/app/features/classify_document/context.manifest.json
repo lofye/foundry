@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "classify_document",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/classify_document/feature.yaml",
+        "app/features/classify_document/action.php",
+        "app/features/classify_document/input.schema.json",
+        "app/features/classify_document/output.schema.json",
+        "app/features/classify_document/permissions.yaml",
+        "app/features/classify_document/cache.yaml",
+        "app/features/classify_document/events.yaml",
+        "app/features/classify_document/jobs.yaml",
+        "app/features/classify_document/tests/classify_document_contract_test.php",
+        "app/features/classify_document/tests/classify_document_feature_test.php",
+        "app/features/classify_document/tests/classify_document_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/classify_document/input.schema.json",
+        "output": "app/features/classify_document/output.schema.json"
+    },
+    "tests": [
+        "classify_document_contract_test",
+        "classify_document_feature_test",
+        "classify_document_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

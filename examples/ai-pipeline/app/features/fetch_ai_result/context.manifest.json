@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "fetch_ai_result",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/fetch_ai_result/feature.yaml",
+        "app/features/fetch_ai_result/action.php",
+        "app/features/fetch_ai_result/input.schema.json",
+        "app/features/fetch_ai_result/output.schema.json",
+        "app/features/fetch_ai_result/permissions.yaml",
+        "app/features/fetch_ai_result/cache.yaml",
+        "app/features/fetch_ai_result/events.yaml",
+        "app/features/fetch_ai_result/jobs.yaml",
+        "app/features/fetch_ai_result/tests/fetch_ai_result_contract_test.php",
+        "app/features/fetch_ai_result/tests/fetch_ai_result_feature_test.php",
+        "app/features/fetch_ai_result/tests/fetch_ai_result_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/fetch_ai_result/input.schema.json",
+        "output": "app/features/fetch_ai_result/output.schema.json"
+    },
+    "tests": [
+        "fetch_ai_result_contract_test",
+        "fetch_ai_result_feature_test",
+        "fetch_ai_result_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

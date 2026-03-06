@@ -1,0 +1,50 @@
+version: 1
+feature: queue_ai_summary_job
+kind: http
+description: queue_ai_summary_job endpoint for ai-pipeline.
+owners:
+  - ai-pipeline
+route:
+  method: POST
+  path: /documents/{id}/queue-summary
+input:
+  schema: app/features/queue_ai_summary_job/input.schema.json
+output:
+  schema: app/features/queue_ai_summary_job/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - queue_ai_summary_job.execute
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: queue_ai_summary_job
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: low
+  notes_file: prompts.md

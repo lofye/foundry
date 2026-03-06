@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - posts.create
+rules:
+  posts.create:
+    description: User can create posts.

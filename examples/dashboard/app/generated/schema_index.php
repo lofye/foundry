@@ -1,0 +1,31 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * GENERATED FILE - DO NOT EDIT DIRECTLY
+ * Source: app/features/<feature>/feature.yaml
+ * Regenerate with: forge generate indexes
+ */
+
+return array (
+  'current_user' => 
+  array (
+    'input' => 'app/features/current_user/input.schema.json',
+    'output' => 'app/features/current_user/output.schema.json',
+  ),
+  'list_notifications' => 
+  array (
+    'input' => 'app/features/list_notifications/input.schema.json',
+    'output' => 'app/features/list_notifications/output.schema.json',
+  ),
+  'login' => 
+  array (
+    'input' => 'app/features/login/input.schema.json',
+    'output' => 'app/features/login/output.schema.json',
+  ),
+  'upload_avatar' => 
+  array (
+    'input' => 'app/features/upload_avatar/input.schema.json',
+    'output' => 'app/features/upload_avatar/output.schema.json',
+  ),
+);

@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - classify_document.execute
+rules:
+  classify_document.execute:
+    description: Execute classify_document.

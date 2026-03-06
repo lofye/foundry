@@ -1,0 +1,50 @@
+version: 1
+feature: extract_summary
+kind: http
+description: extract_summary endpoint for ai-pipeline.
+owners:
+  - ai-pipeline
+route:
+  method: POST
+  path: /documents/{id}/summary
+input:
+  schema: app/features/extract_summary/input.schema.json
+output:
+  schema: app/features/extract_summary/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - extract_summary.execute
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: extract_summary
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+    - auth
+llm:
+  editable: true
+  risk: low
+  notes_file: prompts.md

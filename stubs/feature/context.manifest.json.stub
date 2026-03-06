@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "feature": "{{feature}}",
+  "kind": "http",
+  "relevant_files": [],
+  "generated_files": [],
+  "upstream_dependencies": [],
+  "downstream_dependents": [],
+  "contracts": {},
+  "tests": [],
+  "forbidden_paths": [],
+  "risk_level": "medium"
+}

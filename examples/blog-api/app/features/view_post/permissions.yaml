@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - view_post.execute
+rules:
+  view_post.execute:
+    description: Execute view_post.

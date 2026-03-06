@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "feature": "delete_post",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/delete_post/feature.yaml",
+        "app/features/delete_post/action.php",
+        "app/features/delete_post/input.schema.json",
+        "app/features/delete_post/output.schema.json",
+        "app/features/delete_post/permissions.yaml",
+        "app/features/delete_post/cache.yaml",
+        "app/features/delete_post/events.yaml",
+        "app/features/delete_post/jobs.yaml",
+        "app/features/delete_post/tests/delete_post_contract_test.php",
+        "app/features/delete_post/tests/delete_post_feature_test.php",
+        "app/features/delete_post/tests/delete_post_auth_test.php"
+    ],
+    "generated_files": [
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/delete_post/input.schema.json",
+        "output": "app/features/delete_post/output.schema.json"
+    },
+    "tests": [
+        "delete_post_contract_test",
+        "delete_post_feature_test",
+        "delete_post_auth_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}
