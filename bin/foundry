@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+use Foundry\CLI\Application;
+
+$autoload = $_composer_autoload_path ?? dirname(__DIR__) . '/vendor/autoload.php';
+if (!is_string($autoload) || !is_file($autoload)) {
+    fwrite(STDERR, "Unable to locate Composer autoloader.\n");
+    exit(1);
+}
+
+require $autoload;
+
+$app = new Application();
+exit($app->run($_SERVER['argv'] ?? []));

@@ -96,12 +96,12 @@ YAML);
         $app = new Application();
 
         foreach (['auth', 'cache', 'events', 'jobs', 'context', 'dependencies'] as $target) {
-            $result = $this->runCommand($app, ['forge', 'inspect', $target, 'publish_post', '--json']);
+            $result = $this->runCommand($app, ['foundry', 'inspect', $target, 'publish_post', '--json']);
             $this->assertSame(0, $result['status']);
         }
 
         foreach (['contracts', 'auth', 'cache', 'events', 'jobs', 'migrations'] as $target) {
-            $result = $this->runCommand($app, ['forge', 'verify', $target, '--json']);
+            $result = $this->runCommand($app, ['foundry', 'verify', $target, '--json']);
             $this->assertSame(0, $result['status']);
             $this->assertArrayHasKey('ok', $result['payload']);
         }
@@ -111,28 +111,28 @@ YAML);
     {
         $app = new Application();
 
-        $generateTests = $this->runCommand($app, ['forge', 'generate', 'tests', 'publish_post', '--json']);
+        $generateTests = $this->runCommand($app, ['foundry', 'generate', 'tests', 'publish_post', '--json']);
         $this->assertSame(0, $generateTests['status']);
 
-        $migration = $this->runCommand($app, ['forge', 'generate', 'migration', 'migration.yaml', '--json']);
+        $migration = $this->runCommand($app, ['foundry', 'generate', 'migration', 'migration.yaml', '--json']);
         $this->assertSame(0, $migration['status']);
         $this->assertFileExists($migration['payload']['file']);
 
-        $this->assertSame(0, $this->runCommand($app, ['forge', 'queue:work', '--json'])['status']);
-        $this->assertSame(0, $this->runCommand($app, ['forge', 'queue:inspect', '--json'])['status']);
-        $this->assertSame(0, $this->runCommand($app, ['forge', 'schedule:run', '--json'])['status']);
-        $this->assertSame(0, $this->runCommand($app, ['forge', 'trace:tail', '--json'])['status']);
+        $this->assertSame(0, $this->runCommand($app, ['foundry', 'queue:work', '--json'])['status']);
+        $this->assertSame(0, $this->runCommand($app, ['foundry', 'queue:inspect', '--json'])['status']);
+        $this->assertSame(0, $this->runCommand($app, ['foundry', 'schedule:run', '--json'])['status']);
+        $this->assertSame(0, $this->runCommand($app, ['foundry', 'trace:tail', '--json'])['status']);
     }
 
     public function test_inspect_route_success_and_failure(): void
     {
         $app = new Application();
 
-        $ok = $this->runCommand($app, ['forge', 'inspect', 'route', 'POST', '/posts', '--json']);
+        $ok = $this->runCommand($app, ['foundry', 'inspect', 'route', 'POST', '/posts', '--json']);
         $this->assertSame(0, $ok['status']);
         $this->assertSame('publish_post', $ok['payload']['feature']);
 
-        $fail = $this->runCommand($app, ['forge', 'inspect', 'route', 'GET', '/missing', '--json']);
+        $fail = $this->runCommand($app, ['foundry', 'inspect', 'route', 'GET', '/missing', '--json']);
         $this->assertSame(1, $fail['status']);
         $this->assertSame('ROUTE_NOT_FOUND', $fail['payload']['error']['code']);
     }
@@ -142,7 +142,7 @@ YAML);
         $app = new Application();
 
         ob_start();
-        $status = $app->run(['forge', 'serve']);
+        $status = $app->run(['foundry', 'serve']);
         $output = ob_get_clean() ?: '';
 
         $this->assertSame(0, $status);

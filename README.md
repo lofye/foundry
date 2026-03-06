@@ -26,6 +26,32 @@ php bin/foundry verify contracts --json
 vendor/bin/phpunit
 ```
 
+## Create an Upgrade-Friendly App Project
+Recommended workflow: keep app code in its own repo and consume Foundry via Composer.
+
+From this framework clone:
+```bash
+composer install
+php bin/foundry init app ../my-foundry-app --name=acme/my-foundry-app
+```
+
+Then in the generated app:
+```bash
+cd ../my-foundry-app
+composer install
+php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry verify contracts --json
+php -S 127.0.0.1:8000 app/platform/public/index.php
+```
+
+Upgrade flow for existing apps:
+```bash
+git -C ../foundry pull
+composer update foundry/framework
+php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry verify contracts --json
+```
+
 ## Local MinIO (Fix + Verify)
 Your MinIO install issue is typically a port conflict on `127.0.0.1:9000`.
 
@@ -165,6 +191,7 @@ php bin/foundry verify migrations --json
 
 Runtime / planning:
 ```bash
+php bin/foundry init app <path> [--name=vendor/app] [--force]
 php bin/foundry serve
 php bin/foundry queue:work
 php bin/foundry queue:inspect --json

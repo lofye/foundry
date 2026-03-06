@@ -6,6 +6,7 @@ namespace Foundry\Tests\Unit;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
 use Foundry\CLI\Commands\ImpactCommand;
+use Foundry\CLI\Commands\InitAppCommand;
 use Foundry\CLI\Commands\InspectFeatureCommand;
 use Foundry\CLI\Commands\InspectRouteCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
@@ -23,6 +24,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertFalse((new InspectFeatureCommand())->matches(['other']));
 
         $this->assertTrue((new InspectRouteCommand())->matches(['inspect', 'route', 'GET', '/']));
+        $this->assertTrue((new InitAppCommand())->matches(['init', 'app', './my-app']));
         $this->assertTrue((new GenerateFeatureCommand())->matches(['generate', 'feature', 'x.yaml']));
         $this->assertTrue((new GenerateIndexesCommand())->matches(['generate', 'indexes']));
         $this->assertTrue((new VerifyFeatureCommand())->matches(['verify', 'feature', 'x']));

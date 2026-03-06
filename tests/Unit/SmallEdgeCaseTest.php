@@ -56,8 +56,8 @@ final class SmallEdgeCaseTest extends TestCase
         $paths = Paths::fromCwd('/tmp/project');
         $this->assertSame('/tmp/project/app', $paths->app());
         $this->assertSame('/tmp/project/app/platform', $paths->platform());
-        $this->assertSame('/tmp/project/examples', $paths->examples());
-        $this->assertSame('/tmp/project/stubs', $paths->stubs());
+        $this->assertSame($paths->frameworkRoot() . '/examples', $paths->examples());
+        $this->assertSame($paths->frameworkRoot() . '/stubs', $paths->stubs());
     }
 
     public function test_yaml_parse_file_missing_throws(): void

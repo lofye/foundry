@@ -6,6 +6,7 @@ namespace Foundry\CLI;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
 use Foundry\CLI\Commands\ImpactCommand;
+use Foundry\CLI\Commands\InitAppCommand;
 use Foundry\CLI\Commands\InspectFeatureCommand;
 use Foundry\CLI\Commands\InspectRouteCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
@@ -28,6 +29,7 @@ final class Application
         $this->commands = $commands ?? [
             new InspectFeatureCommand(),
             new InspectRouteCommand(),
+            new InitAppCommand(),
             new GenerateFeatureCommand(),
             new GenerateIndexesCommand(),
             new VerifyFeatureCommand(),

@@ -5,18 +5,28 @@ namespace Foundry\Support;
 
 final class Paths
 {
-    public function __construct(private readonly string $projectRoot)
-    {
-    }
+    private readonly string $normalizedProjectRoot;
+    private readonly string $normalizedFrameworkRoot;
 
     public static function fromCwd(?string $cwd = null): self
     {
-        return new self($cwd ?? getcwd() ?: '.');
+        return new self($cwd ?? getcwd() ?: '.', dirname(__DIR__, 2));
+    }
+
+    public function __construct(string $projectRoot, ?string $frameworkRoot = null)
+    {
+        $this->normalizedProjectRoot = rtrim($projectRoot, '/');
+        $this->normalizedFrameworkRoot = rtrim($frameworkRoot ?? dirname(__DIR__, 2), '/');
     }
 
     public function root(): string
     {
-        return $this->projectRoot;
+        return $this->normalizedProjectRoot;
+    }
+
+    public function frameworkRoot(): string
+    {
+        return $this->normalizedFrameworkRoot;
     }
 
     public function app(): string
@@ -41,16 +51,21 @@ final class Paths
 
     public function stubs(): string
     {
-        return $this->join('stubs');
+        return $this->frameworkJoin('stubs');
     }
 
     public function examples(): string
     {
-        return $this->join('examples');
+        return $this->frameworkJoin('examples');
     }
 
     public function join(string $relative): string
     {
-        return rtrim($this->projectRoot, '/') . '/' . ltrim($relative, '/');
+        return $this->normalizedProjectRoot . '/' . ltrim($relative, '/');
+    }
+
+    public function frameworkJoin(string $relative): string
+    {
+        return $this->normalizedFrameworkRoot . '/' . ltrim($relative, '/');
     }
 }

@@ -21,13 +21,13 @@
   },
   "autoload": {
     "psr-4": {
-      "Foundry\\": "src/",
-      "App\\": "app/"
+      "Foundry\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Foundry\\Tests\\": "tests/"
+      "Foundry\\Tests\\": "tests/",
+      "App\\": "app/"
     }
   },
   "bin": [
