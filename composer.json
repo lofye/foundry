@@ -1,5 +1,5 @@
 {
-  "name": "foundry/framework",
+  "name": "lofye/foundry",
   "description": "Foundry: an explicit, LLM-first PHP web framework",
   "type": "library",
   "license": "MIT",
