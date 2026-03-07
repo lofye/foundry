@@ -35,7 +35,7 @@ composer install
 
 # Generate indexes and verify contracts
 php vendor/bin/foundry generate indexes --json
-php vendor/bin/foundry verify contracts --json<
+php vendor/bin/foundry verify contracts --json
 php -S 127.0.0.1:8000 app/platform/public/index.php
 ```
 
