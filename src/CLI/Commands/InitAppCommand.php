@@ -80,7 +80,7 @@ final class InitAppCommand extends Command
             'description' => 'Application built on Foundry framework.',
             'type' => 'project',
             'require' => [
-                'php' => '^8.5',
+                'php' => '^8.4',
                 'lofye/foundry' => $frameworkVersion,
             ],
             'require-dev' => [

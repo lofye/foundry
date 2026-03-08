@@ -2,100 +2,78 @@
 
 Foundry is a production-minded, explicit, deterministic, LLM-first PHP framework for building feature-local web apps.
 
-It is optimized for:
+It is designed to help humans and LLMs work on the same codebase without relying on hidden framework behavior, sprawling edit surfaces, or lucky guesses.
+
+## What Foundry optimizes for
+
 - explicit contracts
 - deterministic generation
 - machine-readable inspection
-- small safe edit surfaces
+- small, safe edit surfaces
+- generated runtime indexes
 - strong verification and testing
+- feature-local application structure
 
-Initial Prompt: Derek Martin
-Architect: ChatGPT-5.3
-Engineer: GPT-5.3-Codex (Extra High)
-License: MIT.
+## What “LLM-first” means here
 
-## Runtime and Language
-- PHP `^8.5`
-- Composer-based
+Foundry is not trying to replace developers.
 
-## Install and Run (Packagist)
+It is trying to make AI-assisted development more factual.
+
+Most frameworks assume the developer already knows where everything is and how the conventions fit together. Foundry assumes the codebase should explain itself to both humans and machines.
+
+That is why Foundry uses:
+
+- feature-local folders instead of scattering one behavior across the codebase
+- generated indexes for runtime metadata instead of hot-path folder scanning
+- JSON-schema contracts at boundaries
+- explicit inspect / generate / verify commands with stable JSON output
+- verification as part of the normal development loop
+
+## Requirements
+
+- PHP `^8.5` according to the repository README
+- Composer
+
+> Note: Packagist metadata currently lists `php: ^8.4`, while the repository README says `^8.5`. Pick one target and keep both sources aligned before publishing broadly.
+
+## Install Foundry in a new app
+
 ```bash
 mkdir my-foundry-app
 cd my-foundry-app
-composer require lofye/foundry:^0.1
-php vendor/bin/foundry init app . --name=acme/my-foundry-app --force
+composer require lofye/foundry:^0.2
+php vendor/bin/foundry init app . --name=acme/my-foundry-app
 composer install
 php vendor/bin/foundry generate indexes --json
 php vendor/bin/foundry verify contracts --json
+```
+
+Then serve the app locally:
+
+```bash
 php -S 127.0.0.1:8000 app/platform/public/index.php
 ```
 
-## Upgrade Foundry in an App
+Or use the Foundry runtime command if that fits your workflow:
+
+```bash
+php vendor/bin/foundry serve
+```
+
+## Upgrade Foundry inside an app
+
 ```bash
 composer update lofye/foundry
 php vendor/bin/foundry generate indexes --json
 php vendor/bin/foundry verify contracts --json
-```
-
-## Local MinIO (Fix + Verify)
-Your MinIO install issue is typically a port conflict on `127.0.0.1:9000`.
-
-Check what owns the ports:
-```bash
-lsof -nP -iTCP:9000 -sTCP:LISTEN
-lsof -nP -iTCP:9001 -sTCP:LISTEN
-```
-
-Option A: keep defaults and stop the conflicting process.
-
-Option B: run MinIO on alternate ports (recommended if 9000 is already used):
-```bash
-mkdir -p "$HOME/minio-data"
-export MINIO_ROOT_USER="foundry"
-export MINIO_ROOT_PASSWORD="foundry-dev-secret"
-minio server "$HOME/minio-data" --address ":9100" --console-address ":9101"
-```
-
-Configure `mc` and create a bucket:
-```bash
-mc alias set foundry http://127.0.0.1:9100 foundry foundry-dev-secret
-mc mb --ignore-existing foundry/foundry-dev
-mc ls foundry
-```
-
-Health check:
-```bash
-curl -sS http://127.0.0.1:9100/minio/health/live
-```
-
-Notes:
-- `/home/shared` is a Linux path; on macOS use an existing directory like `$HOME/minio-data`.
-- avoid default credentials (`minioadmin:minioadmin`) for persistent local setups.
-
-## Core Workflow for LLMs
-Use this loop for every change:
-1. Inspect current reality.
-2. Edit the minimum feature-local files.
-3. Regenerate indexes/context.
-4. Verify contracts/rules.
-5. Run tests.
-
-Recommended command sequence:
-```bash
-php vendor/bin/foundry inspect feature <feature> --json
-php vendor/bin/foundry inspect context <feature> --json
-php vendor/bin/foundry generate indexes --json
-php vendor/bin/foundry generate context <feature> --json
-php vendor/bin/foundry verify feature <feature> --json
-php vendor/bin/foundry verify contracts --json
-php vendor/bin/foundry verify auth --json
-php vendor/bin/foundry verify cache --json
-php vendor/bin/foundry verify events --json
-php vendor/bin/foundry verify jobs --json
 vendor/bin/phpunit
 ```
 
-## App Structure
+## The shape of a Foundry app
+
+A Foundry app has three main zones:
+
 ```text
 app/
   features/
@@ -106,6 +84,12 @@ app/
       output.schema.json
       context.manifest.json
       tests/
+      queries.sql
+      permissions.yaml
+      cache.yaml
+      events.yaml
+      jobs.yaml
+      prompts.md
   generated/
     routes.php
     feature_index.php
@@ -123,47 +107,87 @@ app/
     public/index.php
 ```
 
-Rules:
-- `app/features/*` is source-of-truth behavior.
-- `app/generated/*` is regenerated, deterministic runtime metadata.
-- hot-path runtime reads generated indexes (no folder scanning in request path).
+### What each zone means
 
-## Feature Contract
-Each feature must define:
-- manifest (`feature.yaml`)
-- action implementation (`action.php` implementing `Foundry\Feature\FeatureAction`)
-- input/output schemas
-- context manifest
-- tests declared in `feature.yaml`
+#### `app/features/`
+This is the source of truth for application behavior.
 
-Optional feature-local files:
-- `queries.sql`, `permissions.yaml`, `cache.yaml`, `events.yaml`, `jobs.yaml`, `prompts.md`
+If you are adding or modifying a feature, this is where the real intent lives.
 
-## CLI Surface
-All inspection, verification, and planning commands support `--json`.
+#### `app/generated/`
+This is deterministic runtime metadata generated from the feature contracts.
 
-Inspect:
+Production reads these indexes on the hot path.
+
+#### `app/platform/`
+This is low-level application wiring: bootstrap, config, migrations, and the public entrypoint.
+
+It is infrastructure, not feature logic.
+
+## The feature contract
+
+In Foundry, the feature is the minimum unit of behavior.
+
+Every feature must include:
+
+- `feature.yaml`
+- `action.php`
+- `input.schema.json`
+- `output.schema.json`
+- `context.manifest.json`
+- `tests/`
+
+Strongly encouraged files:
+
+- `queries.sql`
+- `permissions.yaml`
+- `cache.yaml`
+- `events.yaml`
+- `jobs.yaml`
+- `prompts.md`
+
+This structure is deliberate. It gives humans and LLMs a small local surface for understanding and editing one bounded behavior.
+
+## The development loop
+
+Foundry works best when you follow the same loop for every change.
+
+### 1. Inspect current reality
+
+Start by asking Foundry what exists.
+
 ```bash
 php vendor/bin/foundry inspect feature <feature> --json
-php vendor/bin/foundry inspect route <METHOD> <PATH> --json
-php vendor/bin/foundry inspect auth <feature> --json
-php vendor/bin/foundry inspect cache <feature> --json
-php vendor/bin/foundry inspect events <feature> --json
-php vendor/bin/foundry inspect jobs <feature> --json
 php vendor/bin/foundry inspect context <feature> --json
+php vendor/bin/foundry inspect auth <feature> --json
 php vendor/bin/foundry inspect dependencies <feature> --json
 ```
 
-Generate:
+Do not begin with guesses when the framework can answer the question.
+
+### 2. Edit the minimum feature-local files
+
+Change only the files that represent the source-of-truth behavior for the feature.
+
+That usually means working inside:
+
+```text
+app/features/<feature>/
+```
+
+### 3. Regenerate runtime metadata
+
+After changing feature contracts, regenerate the indexes and context manifests that the runtime and future LLM runs depend on.
+
 ```bash
-php vendor/bin/foundry generate feature <spec.yaml> --json
 php vendor/bin/foundry generate indexes --json
-php vendor/bin/foundry generate tests <feature> --json
-php vendor/bin/foundry generate migration <spec.yaml> --json
 php vendor/bin/foundry generate context <feature> --json
 ```
 
-Verify:
+### 4. Verify the rules
+
+Run the verifiers.
+
 ```bash
 php vendor/bin/foundry verify feature <feature> --json
 php vendor/bin/foundry verify contracts --json
@@ -174,61 +198,171 @@ php vendor/bin/foundry verify jobs --json
 php vendor/bin/foundry verify migrations --json
 ```
 
-Runtime / planning:
+### 5. Run tests
+
 ```bash
-php vendor/bin/foundry init app <path> [--name=vendor/app] [--version=^0.1] [--force]
+vendor/bin/phpunit
+```
+
+That loop is the heart of Foundry:
+
+**inspect → edit → regenerate → verify → test**
+
+## CLI overview
+
+All inspection, verification, and planning commands support `--json`.
+
+### Inspect
+
+```bash
+php vendor/bin/foundry inspect feature <feature> --json
+php vendor/bin/foundry inspect route <method> <path> --json
+php vendor/bin/foundry inspect auth <feature> --json
+php vendor/bin/foundry inspect cache <feature> --json
+php vendor/bin/foundry inspect events <feature> --json
+php vendor/bin/foundry inspect jobs <feature> --json
+php vendor/bin/foundry inspect context <feature> --json
+php vendor/bin/foundry inspect dependencies <feature> --json
+```
+
+### Generate
+
+```bash
+php vendor/bin/foundry generate feature <spec-file> --json
+php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry generate tests <feature> --json
+php vendor/bin/foundry generate migration <spec-file> --json
+php vendor/bin/foundry generate context <feature> --json
+```
+
+### Verify
+
+```bash
+php vendor/bin/foundry verify feature <feature> --json
+php vendor/bin/foundry verify contracts --json
+php vendor/bin/foundry verify auth --json
+php vendor/bin/foundry verify cache --json
+php vendor/bin/foundry verify events --json
+php vendor/bin/foundry verify jobs --json
+php vendor/bin/foundry verify migrations --json
+```
+
+### Runtime and planning
+
+```bash
+php vendor/bin/foundry init app . --name=acme/my-foundry-app
 php vendor/bin/foundry serve
 php vendor/bin/foundry queue:work
 php vendor/bin/foundry queue:inspect --json
 php vendor/bin/foundry schedule:run --json
 php vendor/bin/foundry trace:tail --json
 php vendor/bin/foundry affected-files <feature> --json
-php vendor/bin/foundry impacted-features <permission|event:<name>|cache:<key>> --json
+php vendor/bin/foundry impacted-features <target> --json
 ```
 
-## Tests
-Test suite includes unit and integration coverage for:
-- parsing/validation/generation/verification
+## Why the code is organized this way
+
+### 1. To reduce ambiguity for LLMs
+
+Feature-local architecture means the relevant files for one behavior live close together.
+
+That reduces token cost and lowers the odds of accidental edits far away from the requested change.
+
+### 2. To make runtime behavior derived instead of inferred
+
+Generated indexes let Foundry derive runtime metadata from source contracts.
+
+That keeps production fast and predictable.
+
+### 3. To make verification possible
+
+If routes, schemas, cache rules, jobs, events, and permissions are explicit, Foundry can verify them.
+
+If those things are hidden in conventions and side effects, the framework has less to prove against.
+
+### 4. To help humans too
+
+This architecture is not only for machines.
+
+Humans get:
+
+- more obvious edit boundaries
+- easier review of AI-generated changes
+- clearer runtime behavior
+- better inspection and planning commands
+- a more disciplined path from prompt to deployable code
+
+## What happens when developers prompt an LLM to build with Foundry
+
+A good Foundry workflow looks like this:
+
+1. The developer asks the LLM to inspect a feature or route first.
+2. The LLM uses Foundry CLI output to understand the current state.
+3. The LLM edits only the local feature files that should change.
+4. The developer or agent regenerates indexes and context.
+5. Foundry verifies the contracts and dependencies.
+6. The test suite confirms the change is coherent.
+
+This keeps the conversation grounded in reality.
+
+Instead of “please change the app somehow,” the process becomes:
+
+- inspect the feature
+- understand the boundaries
+- change the minimum source-of-truth files
+- regenerate what runtime needs
+- verify what changed
+- run tests
+
+That is the point of Foundry.
+
+## Testing
+
+Foundry includes unit and integration coverage for:
+
+- parsing, validation, generation, and verification
 - CLI JSON command behavior
 - HTTP feature execution pipeline
 - DB query execution
-- queue/event/cache/webhook/AI subsystems
+- queue, event, cache, webhook, and AI subsystems
 - example app structure checks
 
-Run:
+Run the test suite with:
+
 ```bash
 vendor/bin/phpunit
 ```
 
-Optional local integration targets:
-- Redis queue integration tests run when `ext-redis` is loaded and Redis is reachable on `127.0.0.1:6379`.
-- PostgreSQL integration tests run when `pdo_pgsql` is loaded and Postgres is reachable.
-- MinIO storage integrations can use `Foundry\Storage\MinioStorageDriver` with an injected client, or with `aws/aws-sdk-php`.
-- MinIO integration test env overrides:
-  `FOUNDRY_TEST_MINIO_ENDPOINT`, `FOUNDRY_TEST_MINIO_ACCESS_KEY`,
-  `FOUNDRY_TEST_MINIO_SECRET_KEY`, `FOUNDRY_TEST_MINIO_BUCKET`,
-  `FOUNDRY_TEST_MINIO_REGION`.
-- PostgreSQL DSN/user/pass can be overridden with:
-  `FOUNDRY_TEST_PG_DSN`, `FOUNDRY_TEST_PG_USER`, `FOUNDRY_TEST_PG_PASS`.
-- If `postgresql@17` is keg-only on Homebrew, use:
-  `/opt/homebrew/opt/postgresql@17/bin/psql`
-  and optionally add it to `PATH`.
+### Optional integration targets
 
-Coverage note:
-- code coverage output requires a coverage driver (`xdebug` or `pcov`).
-- if not installed, tests still run but coverage metrics are unavailable.
-- when Xdebug is installed but not auto-loaded in CLI, run coverage with:
-  `php -dzend_extension=/path/to/xdebug.so -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text`
+Foundry can also run deeper integration tests when the required extensions or services are available:
 
-## Examples
-Included example apps:
+- Redis queue tests when `ext-redis` is loaded and Redis is reachable
+- PostgreSQL tests when `pdo_pgsql` is loaded and Postgres is reachable
+- MinIO / S3-like storage integrations when storage dependencies are configured
+
+## Examples included
+
+Foundry includes example applications:
+
 - `examples/blog-api`
 - `examples/dashboard`
 - `examples/ai-pipeline`
 
-Each example includes feature folders plus generated indexes.
+These are useful when you want to see the feature-local structure in a more concrete setting.
 
-## Additional Docs
+## Additional docs
+
+The repository also includes:
+
 - `ARCHITECTURE.md`
 - `FEATURE_SPEC.md`
 - `BENCHMARK_NOTES.md`
+
+## Closing thought
+
+Foundry is trying to make AI-assisted development less mystical.
+
+It does that by organizing applications around explicit feature contracts, deriving runtime metadata from those contracts, exposing machine-readable inspection commands, and treating verification as a normal part of development.
+
+Or, put more bluntly: it is a framework for teams that want AI to help build software without letting the codebase turn into haunted spaghetti.
