@@ -91,8 +91,23 @@ final class EmitPass implements CompilerPass
             'analysis' => [
                 'change_risk' => $state->analysis['change_risk'] ?? 'low',
                 'changed_nodes' => array_keys((array) ($state->analysis['change_impact'] ?? [])),
+                'compatibility' => $state->analysis['compatibility'] ?? [],
             ],
             'extensions' => $state->extensions->inspectRows(),
+            'extension_registration_sources' => $state->extensions->registrationSources(),
+            'packs' => $state->extensions->packRegistry()->inspectRows(),
+            'spec_formats' => array_values(array_map(
+                static fn ($format): array => method_exists($format, 'toArray') ? $format->toArray() : [],
+                $state->extensions->specFormats(),
+            )),
+            'codemods' => array_values(array_map(
+                static fn ($codemod): array => [
+                    'id' => method_exists($codemod, 'id') ? (string) $codemod->id() : '',
+                    'description' => method_exists($codemod, 'description') ? (string) $codemod->description() : '',
+                    'source_type' => method_exists($codemod, 'sourceType') ? (string) $codemod->sourceType() : '',
+                ],
+                $state->extensions->codemods(),
+            )),
             'projections' => array_values(array_map(
                 static fn (array $row): string => (string) ($row['file'] ?? ''),
                 $projectionRows,

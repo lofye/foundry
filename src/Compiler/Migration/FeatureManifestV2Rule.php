@@ -20,6 +20,16 @@ final class FeatureManifestV2Rule implements MigrationRule
         return 'feature_manifest';
     }
 
+    public function fromVersion(): int
+    {
+        return 1;
+    }
+
+    public function toVersion(): int
+    {
+        return 2;
+    }
+
     /**
      * @param array<string,mixed> $document
      */

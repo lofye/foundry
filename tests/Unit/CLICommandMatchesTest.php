@@ -14,7 +14,9 @@ use Foundry\CLI\Commands\MigrateSpecsCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
 use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
+use Foundry\CLI\Commands\CodemodRunCommand;
 use Foundry\CLI\Commands\CompileGraphCommand;
+use Foundry\CLI\Commands\VerifyCompatibilityCommand;
 use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
@@ -29,6 +31,11 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'graph']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'impact', '--file=app/features/x/feature.yaml']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'dependencies', 'feature:x']));
+        $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'extension', 'core']));
+        $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'packs']));
+        $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'pack', 'core.foundation']));
+        $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'compatibility']));
+        $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'spec-format', 'feature_manifest']));
         $this->assertFalse((new InspectGraphCommand())->matches(['inspect', 'dependencies', 'x']));
 
         $this->assertTrue((new InspectRouteCommand())->matches(['inspect', 'route', 'GET', '/']));
@@ -39,10 +46,13 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new VerifyFeatureCommand())->matches(['verify', 'feature', 'x']));
         $this->assertTrue((new VerifyContractsCommand())->matches(['verify', 'contracts']));
         $this->assertTrue((new VerifyGraphCommand())->matches(['verify', 'graph']));
+        $this->assertTrue((new VerifyCompatibilityCommand())->matches(['verify', 'extensions']));
+        $this->assertTrue((new VerifyCompatibilityCommand())->matches(['verify', 'compatibility']));
         $this->assertTrue((new ServeCommand())->matches(['serve']));
         $this->assertTrue((new QueueWorkCommand())->matches(['queue:work']));
         $this->assertTrue((new ScheduleRunCommand())->matches(['schedule:run']));
         $this->assertTrue((new ImpactCommand())->matches(['affected-files', 'x']));
         $this->assertTrue((new MigrateSpecsCommand())->matches(['migrate', 'specs', '--dry-run']));
+        $this->assertTrue((new CodemodRunCommand())->matches(['codemod', 'run', 'feature-manifest-v1-to-v2', '--dry-run']));
     }
 }

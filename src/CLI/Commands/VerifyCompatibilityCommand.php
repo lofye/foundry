@@ -1,0 +1,55 @@
+<?php
+declare(strict_types=1);
+
+namespace Foundry\CLI\Commands;
+
+use Foundry\CLI\Command;
+use Foundry\CLI\CommandContext;
+
+final class VerifyCompatibilityCommand extends Command
+{
+    #[\Override]
+    public function matches(array $args): bool
+    {
+        return ($args[0] ?? null) === 'verify'
+            && in_array((string) ($args[1] ?? ''), ['extensions', 'compatibility'], true);
+    }
+
+    #[\Override]
+    public function run(array $args, CommandContext $context): array
+    {
+        $target = (string) ($args[1] ?? 'compatibility');
+        $compiler = $context->graphCompiler();
+        $report = $context->extensionRegistry()->compatibilityReport(
+            frameworkVersion: $compiler->frameworkVersion(),
+            graphVersion: \Foundry\Compiler\GraphCompiler::GRAPH_VERSION,
+        );
+
+        $diagnostics = $report->diagnostics;
+        if ($target === 'extensions') {
+            $diagnostics = array_values(array_filter(
+                $diagnostics,
+                static fn (array $row): bool => str_starts_with((string) ($row['code'] ?? ''), 'FDY700'),
+            ));
+        }
+
+        $ok = true;
+        foreach ($diagnostics as $row) {
+            if ((string) ($row['severity'] ?? '') === 'error') {
+                $ok = false;
+                break;
+            }
+        }
+
+        return [
+            'status' => $ok ? 0 : 1,
+            'message' => $ok ? ucfirst($target) . ' verification passed.' : ucfirst($target) . ' verification failed.',
+            'payload' => [
+                'ok' => $ok,
+                'target' => $target,
+                'diagnostics' => $diagnostics,
+                'version_matrix' => $report->versionMatrix,
+            ],
+        ];
+    }
+}

@@ -28,7 +28,12 @@ final class InspectGraphCommand extends Command
         'affected-tests',
         'affected-features',
         'extensions',
+        'extension',
+        'packs',
+        'pack',
+        'compatibility',
         'migrations',
+        'spec-format',
     ];
 
     #[\Override]
@@ -47,6 +52,12 @@ final class InspectGraphCommand extends Command
             $nodeId = (string) ($args[2] ?? '');
 
             return str_contains($nodeId, ':');
+        }
+
+        if (in_array($target, ['extension', 'pack', 'spec-format'], true)) {
+            $name = (string) ($args[2] ?? '');
+
+            return $name !== '';
         }
 
         if ($target === 'impact') {
@@ -70,16 +81,37 @@ final class InspectGraphCommand extends Command
                 'message' => null,
                 'payload' => [
                     'extensions' => $context->extensionRegistry()->inspectRows(),
+                    'registration_sources' => $context->extensionRegistry()->registrationSources(),
                 ],
+            ],
+            'extension' => $this->inspectExtension($context, (string) ($args[2] ?? '')),
+            'packs' => [
+                'status' => 0,
+                'message' => null,
+                'payload' => [
+                    'packs' => $context->extensionRegistry()->packRegistry()->inspectRows(),
+                ],
+            ],
+            'pack' => $this->inspectPack($context, (string) ($args[2] ?? '')),
+            'compatibility' => [
+                'status' => 0,
+                'message' => null,
+                'payload' => $context->extensionRegistry()->compatibilityReport(
+                    frameworkVersion: $context->graphCompiler()->frameworkVersion(),
+                    graphVersion: GraphCompiler::GRAPH_VERSION,
+                )->toArray(),
             ],
             'migrations' => [
                 'status' => 0,
                 'message' => null,
                 'payload' => [
                     'rules' => $context->specMigrator()->inspect(),
+                    'spec_formats' => $context->specMigrator()->specFormats(),
+                    'codemods' => $context->codemodEngine()->inspectRows(),
                     'pending' => $context->specMigrator()->migrate(false)->toArray(),
                 ],
             ],
+            'spec-format' => $this->inspectSpecFormat($context, (string) ($args[2] ?? '')),
             'build' => $this->inspectBuild($context),
             default => $this->inspectGraphSurface($args, $context),
         };
@@ -136,6 +168,71 @@ final class InspectGraphCommand extends Command
                 'integrity_hashes' => $integrity,
                 'diagnostics' => $diagnostics,
                 'verification' => $verification->toArray(),
+            ],
+        ];
+    }
+
+    private function inspectExtension(CommandContext $context, string $name): array
+    {
+        if ($name === '') {
+            throw new FoundryError('CLI_EXTENSION_REQUIRED', 'validation', [], 'Extension name required.');
+        }
+
+        $extension = $context->extensionRegistry()->extension($name);
+        if ($extension === null) {
+            throw new FoundryError('EXTENSION_NOT_FOUND', 'not_found', ['extension' => $name], 'Extension not found.');
+        }
+
+        return [
+            'status' => 0,
+            'message' => null,
+            'payload' => [
+                'extension' => $extension->describe(),
+                'descriptor' => $extension->descriptor()->toArray(),
+                'packs' => array_values(array_map(
+                    static fn ($pack): array => $pack->toArray(),
+                    $extension->packs(),
+                )),
+            ],
+        ];
+    }
+
+    private function inspectPack(CommandContext $context, string $name): array
+    {
+        if ($name === '') {
+            throw new FoundryError('CLI_PACK_REQUIRED', 'validation', [], 'Pack name required.');
+        }
+
+        $pack = $context->extensionRegistry()->packRegistry()->get($name);
+        if ($pack === null) {
+            throw new FoundryError('PACK_NOT_FOUND', 'not_found', ['pack' => $name], 'Pack not found.');
+        }
+
+        return [
+            'status' => 0,
+            'message' => null,
+            'payload' => [
+                'pack' => $pack->toArray(),
+            ],
+        ];
+    }
+
+    private function inspectSpecFormat(CommandContext $context, string $name): array
+    {
+        if ($name === '') {
+            throw new FoundryError('CLI_SPEC_FORMAT_REQUIRED', 'validation', [], 'Spec format name required.');
+        }
+
+        $format = $context->specMigrator()->specFormat($name);
+        if ($format === null) {
+            throw new FoundryError('SPEC_FORMAT_NOT_FOUND', 'not_found', ['format' => $name], 'Spec format not found.');
+        }
+
+        return [
+            'status' => 0,
+            'message' => null,
+            'payload' => [
+                'spec_format' => $format,
             ],
         ];
     }

@@ -11,6 +11,10 @@ interface MigrationRule
 
     public function sourceType(): string;
 
+    public function fromVersion(): int;
+
+    public function toVersion(): int;
+
     /**
      * @param array<string,mixed> $document
      */

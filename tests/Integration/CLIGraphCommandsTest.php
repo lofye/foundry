@@ -124,18 +124,57 @@ YAML);
         $extensions = $this->runCommand($app, ['foundry', 'inspect', 'extensions', '--json']);
         $this->assertSame(0, $extensions['status']);
         $this->assertNotEmpty($extensions['payload']['extensions']);
+        $this->assertIsArray($extensions['payload']['registration_sources'] ?? null);
+
+        $extension = $this->runCommand($app, ['foundry', 'inspect', 'extension', 'core', '--json']);
+        $this->assertSame(0, $extension['status']);
+        $this->assertSame('core', $extension['payload']['extension']['name']);
+
+        $packs = $this->runCommand($app, ['foundry', 'inspect', 'packs', '--json']);
+        $this->assertSame(0, $packs['status']);
+        $this->assertNotEmpty($packs['payload']['packs']);
+
+        $pack = $this->runCommand($app, ['foundry', 'inspect', 'pack', 'core.foundation', '--json']);
+        $this->assertSame(0, $pack['status']);
+        $this->assertSame('core.foundation', $pack['payload']['pack']['name']);
+
+        $compatibility = $this->runCommand($app, ['foundry', 'inspect', 'compatibility', '--json']);
+        $this->assertSame(0, $compatibility['status']);
+        $this->assertArrayHasKey('version_matrix', $compatibility['payload']);
 
         $migrations = $this->runCommand($app, ['foundry', 'inspect', 'migrations', '--json']);
         $this->assertSame(0, $migrations['status']);
         $this->assertNotEmpty($migrations['payload']['rules']);
+        $this->assertNotEmpty($migrations['payload']['spec_formats']);
+        $this->assertNotEmpty($migrations['payload']['codemods']);
+
+        $specFormat = $this->runCommand($app, ['foundry', 'inspect', 'spec-format', 'feature_manifest', '--json']);
+        $this->assertSame(0, $specFormat['status']);
+        $this->assertSame('feature_manifest', $specFormat['payload']['spec_format']['name']);
 
         $verifyGraph = $this->runCommand($app, ['foundry', 'verify', 'graph', '--json']);
         $this->assertSame(0, $verifyGraph['status']);
         $this->assertTrue($verifyGraph['payload']['ok']);
 
+        $verifyExtensions = $this->runCommand($app, ['foundry', 'verify', 'extensions', '--json']);
+        $this->assertSame(0, $verifyExtensions['status']);
+        $this->assertTrue($verifyExtensions['payload']['ok']);
+
+        $verifyCompatibility = $this->runCommand($app, ['foundry', 'verify', 'compatibility', '--json']);
+        $this->assertSame(0, $verifyCompatibility['status']);
+        $this->assertTrue($verifyCompatibility['payload']['ok']);
+
         $migrateDryRun = $this->runCommand($app, ['foundry', 'migrate', 'specs', '--dry-run', '--json']);
         $this->assertSame(0, $migrateDryRun['status']);
         $this->assertSame('dry-run', $migrateDryRun['payload']['mode']);
+
+        $migratePathDryRun = $this->runCommand($app, ['foundry', 'migrate', 'specs', '--path=app/features/publish_post/feature.yaml', '--dry-run', '--json']);
+        $this->assertSame(0, $migratePathDryRun['status']);
+        $this->assertSame('app/features/publish_post/feature.yaml', $migratePathDryRun['payload']['path']);
+
+        $codemodDryRun = $this->runCommand($app, ['foundry', 'codemod', 'run', 'feature-manifest-v1-to-v2', '--dry-run', '--json']);
+        $this->assertSame(0, $codemodDryRun['status']);
+        $this->assertSame('feature-manifest-v1-to-v2', $codemodDryRun['payload']['codemod']);
 
         $inspectBuild = $this->runCommand($app, ['foundry', 'inspect', 'build', '--json']);
         $this->assertSame(0, $inspectBuild['status']);

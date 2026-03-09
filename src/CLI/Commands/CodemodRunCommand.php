@@ -6,27 +6,31 @@ namespace Foundry\CLI\Commands;
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
 
-final class MigrateSpecsCommand extends Command
+final class CodemodRunCommand extends Command
 {
     #[\Override]
     public function matches(array $args): bool
     {
-        return ($args[0] ?? null) === 'migrate' && ($args[1] ?? null) === 'specs';
+        return ($args[0] ?? null) === 'codemod'
+            && ($args[1] ?? null) === 'run'
+            && isset($args[2]);
     }
 
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
+        $codemod = (string) ($args[2] ?? '');
         $write = in_array('--write', $args, true);
         $dryRun = in_array('--dry-run', $args, true) || !$write;
         $path = $this->extractOption($args, '--path');
 
-        $result = $context->specMigrator()->migrate($write, $path);
+        $result = $context->codemodEngine()->run($codemod, $write, $path);
 
         return [
             'status' => 0,
-            'message' => $write ? 'Spec migration complete.' : 'Spec migration dry run complete.',
+            'message' => $write ? 'Codemod write complete.' : 'Codemod dry run complete.',
             'payload' => [
+                'codemod' => $codemod,
                 'mode' => $write ? 'write' : 'dry-run',
                 'dry_run' => $dryRun,
                 'path' => $path,

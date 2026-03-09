@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Foundry\CLI;
 
-use Foundry\Compiler\Extensions\CoreCompilerExtension;
+use Foundry\Compiler\Codemod\CodemodEngine;
 use Foundry\Compiler\Extensions\ExtensionRegistry;
 use Foundry\Compiler\GraphCompiler;
 use Foundry\Compiler\GraphVerifier;
@@ -32,6 +32,7 @@ final class CommandContext
     private ?GraphCompiler $graphCompiler = null;
     private ?GraphVerifier $graphVerifier = null;
     private ?SpecMigrator $specMigrator = null;
+    private ?CodemodEngine $codemodEngine = null;
 
     public function __construct(private readonly ?string $cwd = null)
     {
@@ -49,9 +50,7 @@ final class CommandContext
 
     public function extensionRegistry(): ExtensionRegistry
     {
-        return $this->extensions ??= new ExtensionRegistry([
-            new CoreCompilerExtension(),
-        ]);
+        return $this->extensions ??= ExtensionRegistry::forPaths($this->paths());
     }
 
     public function graphCompiler(): GraphCompiler
@@ -70,6 +69,15 @@ final class CommandContext
             $this->paths(),
             new ManifestVersionResolver(),
             $this->extensionRegistry()->migrationRules(),
+            $this->extensionRegistry()->specFormats(),
+        );
+    }
+
+    public function codemodEngine(): CodemodEngine
+    {
+        return $this->codemodEngine ??= new CodemodEngine(
+            $this->paths(),
+            $this->extensionRegistry()->codemods(),
         );
     }
 

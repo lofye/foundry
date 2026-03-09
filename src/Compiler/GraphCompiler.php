@@ -5,7 +5,6 @@ namespace Foundry\Compiler;
 
 use Foundry\Compiler\Analysis\ImpactAnalyzer;
 use Foundry\Compiler\Diagnostics\DiagnosticBag;
-use Foundry\Compiler\Extensions\CoreCompilerExtension;
 use Foundry\Compiler\Extensions\ExtensionRegistry;
 use Foundry\Compiler\Passes\AnalyzePass;
 use Foundry\Compiler\Passes\DiscoveryPass;
@@ -38,7 +37,7 @@ final class GraphCompiler
 
     public function compile(CompileOptions $options = new CompileOptions()): CompileResult
     {
-        $frameworkVersion = $this->frameworkVersion();
+        $frameworkVersion = $this->detectedFrameworkVersion();
 
         $currentFeatures = array_map('basename', glob($this->paths->features() . '/*', GLOB_ONLYDIR) ?: []);
         sort($currentFeatures);
@@ -97,6 +96,25 @@ final class GraphCompiler
 
         $diagnostics = new DiagnosticBag();
         $extensions = $this->extensionRegistry();
+        $compatibility = $extensions->compatibilityReport($frameworkVersion, self::GRAPH_VERSION);
+        foreach ($compatibility->diagnostics as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $severity = (string) ($row['severity'] ?? 'warning');
+            $code = (string) ($row['code'] ?? 'FDY7999_EXTENSION_COMPATIBILITY');
+            $category = (string) ($row['category'] ?? 'extensions');
+            $message = (string) ($row['message'] ?? 'Extension compatibility issue detected.');
+
+            if ($severity === 'error') {
+                $diagnostics->error($code, $category, $message, pass: 'extensions.compatibility');
+            } elseif ($severity === 'info') {
+                $diagnostics->info($code, $category, $message, pass: 'extensions.compatibility');
+            } else {
+                $diagnostics->warning($code, $category, $message, pass: 'extensions.compatibility');
+            }
+        }
 
         $state = new CompilationState(
             paths: $this->paths,
@@ -109,6 +127,7 @@ final class GraphCompiler
             sourceHashes: $sourceHashes,
             previousManifest: $previousManifest,
         );
+        $state->analysis['compatibility'] = $compatibility->toArray();
 
         $passes = $this->buildPasses($state);
         foreach ($passes as $pass) {
@@ -146,9 +165,14 @@ final class GraphCompiler
         return $this->layout;
     }
 
+    public function frameworkVersion(): string
+    {
+        return $this->detectedFrameworkVersion();
+    }
+
     public function extensionRegistry(): ExtensionRegistry
     {
-        return $this->extensions ?? new ExtensionRegistry([new CoreCompilerExtension()]);
+        return $this->extensions ?? ExtensionRegistry::forPaths($this->paths);
     }
 
     /**
@@ -161,37 +185,37 @@ final class GraphCompiler
         $passes = [];
 
         $passes[] = new DiscoveryPass();
-        foreach ($extensions->collect(static fn ($extension): array => $extension->discoveryPasses()) as $pass) {
+        foreach ($extensions->passesForPhase('discovery') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new NormalizePass();
-        foreach ($extensions->collect(static fn ($extension): array => $extension->normalizePasses()) as $pass) {
+        foreach ($extensions->passesForPhase('normalize') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new LinkPass();
-        foreach ($extensions->collect(static fn ($extension): array => $extension->linkPasses()) as $pass) {
+        foreach ($extensions->passesForPhase('link') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new ValidatePass();
-        foreach ($extensions->collect(static fn ($extension): array => $extension->validatePasses()) as $pass) {
+        foreach ($extensions->passesForPhase('validate') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new EnrichPass();
-        foreach ($extensions->collect(static fn ($extension): array => $extension->enrichPasses()) as $pass) {
+        foreach ($extensions->passesForPhase('enrich') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new AnalyzePass($this->impactAnalyzer);
-        foreach ($extensions->collect(static fn ($extension): array => $extension->analyzePasses()) as $pass) {
+        foreach ($extensions->passesForPhase('analyze') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new EmitPass();
-        foreach ($extensions->collect(static fn ($extension): array => $extension->emitPasses()) as $pass) {
+        foreach ($extensions->passesForPhase('emit') as $pass) {
             $passes[] = $pass;
         }
 
@@ -240,7 +264,7 @@ final class GraphCompiler
         }
     }
 
-    private function frameworkVersion(): string
+    private function detectedFrameworkVersion(): string
     {
         $composerPath = $this->paths->frameworkJoin('composer.json');
         if (!is_file($composerPath)) {

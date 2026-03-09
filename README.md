@@ -194,7 +194,12 @@ php vendor/bin/foundry inspect impact --file=<path> --json
 php vendor/bin/foundry inspect affected-tests <node-id> --json
 php vendor/bin/foundry inspect affected-features <node-id> --json
 php vendor/bin/foundry inspect extensions --json
+php vendor/bin/foundry inspect extension <name> --json
+php vendor/bin/foundry inspect packs --json
+php vendor/bin/foundry inspect pack <name> --json
+php vendor/bin/foundry inspect compatibility --json
 php vendor/bin/foundry inspect migrations --json
+php vendor/bin/foundry inspect spec-format <name> --json
 php vendor/bin/foundry inspect feature <feature> --json
 php vendor/bin/foundry inspect route <METHOD> <PATH> --json
 php vendor/bin/foundry inspect auth <feature> --json
@@ -218,6 +223,8 @@ Verify:
 ```bash
 php vendor/bin/foundry verify feature <feature> --json
 php vendor/bin/foundry verify graph --json
+php vendor/bin/foundry verify extensions --json
+php vendor/bin/foundry verify compatibility --json
 php vendor/bin/foundry verify contracts --json
 php vendor/bin/foundry verify auth --json
 php vendor/bin/foundry verify cache --json
@@ -237,7 +244,10 @@ php vendor/bin/foundry trace:tail --json
 php vendor/bin/foundry affected-files <feature> --json
 php vendor/bin/foundry impacted-features <permission|event:<name>|cache:<key>> --json
 php vendor/bin/foundry migrate specs --dry-run --json
+php vendor/bin/foundry migrate specs --path=<path> --dry-run --json
 php vendor/bin/foundry migrate specs --write --json
+php vendor/bin/foundry codemod run <name> --dry-run --json
+php vendor/bin/foundry codemod run <name> --write --json
 ```
 
 ## Tests
@@ -288,3 +298,4 @@ Each example includes feature folders plus generated indexes.
 - `FEATURE_SPEC.md`
 - `BENCHMARK_NOTES.md`
 - `docs/semantic-compiler-phase0.md`
+- `docs/semantic-compiler-phase0b.md`

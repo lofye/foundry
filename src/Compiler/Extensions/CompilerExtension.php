@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
 
+use Foundry\Compiler\Codemod\Codemod;
 use Foundry\Compiler\CompilerPass;
 use Foundry\Compiler\Migration\MigrationRule;
+use Foundry\Compiler\Migration\SpecFormat;
 use Foundry\Compiler\Projection\ProjectionEmitter;
 
 interface CompilerExtension
@@ -12,6 +14,8 @@ interface CompilerExtension
     public function name(): string;
 
     public function version(): string;
+
+    public function descriptor(): ExtensionDescriptor;
 
     /**
      * @return array<int,CompilerPass>
@@ -54,9 +58,26 @@ interface CompilerExtension
     public function projectionEmitters(): array;
 
     /**
+     * @return array<int,PackDefinition>
+     */
+    public function packs(): array;
+
+    /**
      * @return array<int,MigrationRule>
      */
     public function migrationRules(): array;
+
+    /**
+     * @return array<int,SpecFormat>
+     */
+    public function specFormats(): array;
+
+    /**
+     * @return array<int,Codemod>
+     */
+    public function codemods(): array;
+
+    public function passPriority(string $phase, CompilerPass $pass): int;
 
     /**
      * @return array<string,mixed>

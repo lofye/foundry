@@ -14,7 +14,9 @@ use Foundry\CLI\Commands\MigrateSpecsCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
 use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
+use Foundry\CLI\Commands\CodemodRunCommand;
 use Foundry\CLI\Commands\CompileGraphCommand;
+use Foundry\CLI\Commands\VerifyCompatibilityCommand;
 use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
@@ -34,7 +36,9 @@ final class Application
             new CompileGraphCommand(),
             new InspectGraphCommand(),
             new VerifyGraphCommand(),
+            new VerifyCompatibilityCommand(),
             new MigrateSpecsCommand(),
+            new CodemodRunCommand(),
             new InspectFeatureCommand(),
             new InspectRouteCommand(),
             new InitAppCommand(),
