@@ -1,0 +1,13 @@
+version: 1
+resource: posts
+search:
+  fields: [title, slug]
+filters:
+  published_at:
+    type: date
+sort:
+  allowed: [title, slug]
+  default: -title
+pagination:
+  mode: page
+  per_page: 25

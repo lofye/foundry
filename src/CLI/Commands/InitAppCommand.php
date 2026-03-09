@@ -58,7 +58,8 @@ final class InitAppCommand extends Command
                 'next_steps' => [
                     'cd ' . $targetPath,
                     'composer install',
-                    'php vendor/bin/foundry generate indexes --json',
+                    'php vendor/bin/foundry compile graph --json',
+                    'php vendor/bin/foundry verify graph --json',
                     'php vendor/bin/foundry verify contracts --json',
                     'php -S 127.0.0.1:8000 app/platform/public/index.php',
                 ],
@@ -92,8 +93,8 @@ final class InitAppCommand extends Command
                 ],
             ],
             'scripts' => [
-                'foundry:generate' => 'php vendor/bin/foundry generate indexes --json',
-                'foundry:verify' => 'php vendor/bin/foundry verify contracts --json',
+                'foundry:generate' => 'php vendor/bin/foundry compile graph --json',
+                'foundry:verify' => 'php vendor/bin/foundry verify graph --json && php vendor/bin/foundry verify contracts --json',
                 'test' => 'php vendor/bin/phpunit',
             ],
             'minimum-stability' => 'dev',
@@ -111,7 +112,8 @@ This app was scaffolded with Foundry.
 ## First Run
 ```bash
 composer install
-php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry verify graph --json
 php vendor/bin/foundry verify contracts --json
 php -S 127.0.0.1:8000 app/platform/public/index.php
 ```
@@ -120,14 +122,16 @@ php -S 127.0.0.1:8000 app/platform/public/index.php
 ```bash
 php vendor/bin/foundry inspect feature home --json
 php vendor/bin/foundry generate feature <spec.yaml> --json
-php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry verify graph --json
 php vendor/bin/foundry verify contracts --json
 ```
 
 ## Upgrading Foundry
 ```bash
 composer update lofye/foundry
-php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry verify graph --json
 php vendor/bin/foundry verify contracts --json
 ```
 MD, $placeholders),

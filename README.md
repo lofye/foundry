@@ -9,6 +9,11 @@ It is optimized for:
 - small safe edit surfaces
 - strong verification and testing
 
+Foundry now includes a semantic compiler core:
+- source files are compiled into a canonical application graph
+- runtime indexes are projections of that graph
+- verification and impact analysis operate over compiled graph state
+
 Initial Prompt: Derek Martin
 Architect: ChatGPT-5.3
 Engineer: GPT-5.3-Codex (Extra High)
@@ -34,7 +39,8 @@ php vendor/bin/foundry init app . --name=acme/my-foundry-app
 composer install
 
 # Generate indexes and verify contracts
-php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry verify graph --json
 php vendor/bin/foundry verify contracts --json
 php -S 127.0.0.1:8000 app/platform/public/index.php
 ```
@@ -42,7 +48,8 @@ php -S 127.0.0.1:8000 app/platform/public/index.php
 ## Upgrade Foundry in an App
 ```bash
 composer update lofye/foundry
-php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry verify graph --json
 php vendor/bin/foundry verify contracts --json
 ```
 
@@ -85,15 +92,19 @@ Notes:
 Use this loop for every change:
 1. Inspect current reality.
 2. Edit the minimum feature-local files.
-3. Regenerate indexes/context.
-4. Verify contracts/rules.
-5. Run tests.
+3. Compile graph.
+4. Inspect diagnostics and impact.
+5. Verify graph/contracts/rules.
+6. Run tests.
 
 Recommended command sequence:
 ```bash
 php vendor/bin/foundry inspect feature <feature> --json
 php vendor/bin/foundry inspect context <feature> --json
-php vendor/bin/foundry generate indexes --json
+php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry inspect graph --json
+php vendor/bin/foundry inspect impact --file=app/features/<feature>/feature.yaml --json
+php vendor/bin/foundry verify graph --json
 php vendor/bin/foundry generate context <feature> --json
 php vendor/bin/foundry verify feature <feature> --json
 php vendor/bin/foundry verify contracts --json
@@ -131,6 +142,12 @@ app/
     cache_index.php
     scheduler_index.php
     webhook_index.php
+  .foundry/
+    build/
+      graph/
+      projections/
+      manifests/
+      diagnostics/
   platform/
     bootstrap/
     config/
@@ -140,8 +157,9 @@ app/
 
 Rules:
 - `app/features/*` is source-of-truth behavior.
-- `app/generated/*` is regenerated, deterministic runtime metadata.
-- hot-path runtime reads generated indexes (no folder scanning in request path).
+- `app/.foundry/build/*` is canonical compiled output.
+- `app/generated/*` remains a compatibility mirror of runtime projections.
+- hot-path runtime reads generated projections (no folder scanning in request path).
 
 ## Feature Contract
 Each feature must define:
@@ -157,8 +175,63 @@ Optional feature-local files:
 ## CLI Surface
 All inspection, verification, and planning commands support `--json`.
 
+Compile:
+```bash
+php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry compile graph --feature=<feature> --json
+php vendor/bin/foundry compile graph --changed-only --json
+```
+
+Architecture analysis:
+```bash
+php vendor/bin/foundry doctor --json
+php vendor/bin/foundry doctor --strict --json
+php vendor/bin/foundry doctor --feature=<feature> --json
+```
+
+Graph visualization:
+```bash
+php vendor/bin/foundry graph visualize --json
+php vendor/bin/foundry graph visualize --events --format=mermaid --json
+php vendor/bin/foundry graph visualize --routes --format=dot --json
+php vendor/bin/foundry graph visualize --caches --feature=<feature> --format=svg --json
+php vendor/bin/foundry graph visualize --pipeline --format=mermaid --json
+```
+
+AI prompt loop:
+```bash
+php vendor/bin/foundry prompt "add bookmark endpoint for posts" --json
+php vendor/bin/foundry prompt "add bookmark endpoint for posts" --feature-context --dry-run --json
+php vendor/bin/foundry preview notification <name> --json
+```
+
 Inspect:
 ```bash
+php vendor/bin/foundry inspect graph --json
+php vendor/bin/foundry inspect build --json
+php vendor/bin/foundry inspect node <node-id> --json
+php vendor/bin/foundry inspect dependencies <node-id> --json
+php vendor/bin/foundry inspect dependents <node-id> --json
+php vendor/bin/foundry inspect pipeline --json
+php vendor/bin/foundry inspect execution-plan <feature|route> --json
+php vendor/bin/foundry inspect guards --json
+php vendor/bin/foundry inspect guards <feature> --json
+php vendor/bin/foundry inspect interceptors --json
+php vendor/bin/foundry inspect interceptors --stage=<stage> --json
+php vendor/bin/foundry inspect impact <node-id> --json
+php vendor/bin/foundry inspect impact --file=<path> --json
+php vendor/bin/foundry inspect affected-tests <node-id> --json
+php vendor/bin/foundry inspect affected-features <node-id> --json
+php vendor/bin/foundry inspect extensions --json
+php vendor/bin/foundry inspect extension <name> --json
+php vendor/bin/foundry inspect packs --json
+php vendor/bin/foundry inspect pack <name> --json
+php vendor/bin/foundry inspect compatibility --json
+php vendor/bin/foundry inspect migrations --json
+php vendor/bin/foundry inspect spec-format <name> --json
+php vendor/bin/foundry inspect resource <name> --json
+php vendor/bin/foundry inspect notification <name> --json
+php vendor/bin/foundry inspect api <name> --json
 php vendor/bin/foundry inspect feature <feature> --json
 php vendor/bin/foundry inspect route <METHOD> <PATH> --json
 php vendor/bin/foundry inspect auth <feature> --json
@@ -172,21 +245,46 @@ php vendor/bin/foundry inspect dependencies <feature> --json
 Generate:
 ```bash
 php vendor/bin/foundry generate feature <spec.yaml> --json
+php vendor/bin/foundry generate starter server-rendered --json
+php vendor/bin/foundry generate starter api --json
+php vendor/bin/foundry generate resource <name> --spec=<file> --json
+php vendor/bin/foundry generate admin-resource <name> --json
+php vendor/bin/foundry generate uploads avatar --json
+php vendor/bin/foundry generate uploads attachments --json
+php vendor/bin/foundry generate notification <name> --json
+php vendor/bin/foundry generate api-resource <name> --spec=<file> --json
+php vendor/bin/foundry generate docs --format=markdown --json
+php vendor/bin/foundry generate docs --format=html --json
 php vendor/bin/foundry generate indexes --json
 php vendor/bin/foundry generate tests <feature> --json
+php vendor/bin/foundry generate tests <target> --mode=deep --json
+php vendor/bin/foundry generate tests --all-missing --mode=deep --json
 php vendor/bin/foundry generate migration <spec.yaml> --json
 php vendor/bin/foundry generate context <feature> --json
+```
+
+Export:
+```bash
+php vendor/bin/foundry export openapi --format=json --json
+php vendor/bin/foundry export openapi --format=yaml --json
 ```
 
 Verify:
 ```bash
 php vendor/bin/foundry verify feature <feature> --json
+php vendor/bin/foundry verify graph --json
+php vendor/bin/foundry verify pipeline --json
+php vendor/bin/foundry verify extensions --json
+php vendor/bin/foundry verify compatibility --json
 php vendor/bin/foundry verify contracts --json
 php vendor/bin/foundry verify auth --json
 php vendor/bin/foundry verify cache --json
 php vendor/bin/foundry verify events --json
 php vendor/bin/foundry verify jobs --json
 php vendor/bin/foundry verify migrations --json
+php vendor/bin/foundry verify resource <name> --json
+php vendor/bin/foundry verify notifications --json
+php vendor/bin/foundry verify api --json
 ```
 
 Runtime / planning:
@@ -199,6 +297,11 @@ php vendor/bin/foundry schedule:run --json
 php vendor/bin/foundry trace:tail --json
 php vendor/bin/foundry affected-files <feature> --json
 php vendor/bin/foundry impacted-features <permission|event:<name>|cache:<key>> --json
+php vendor/bin/foundry migrate specs --dry-run --json
+php vendor/bin/foundry migrate specs --path=<path> --dry-run --json
+php vendor/bin/foundry migrate specs --write --json
+php vendor/bin/foundry codemod run <name> --dry-run --json
+php vendor/bin/foundry codemod run <name> --write --json
 ```
 
 ## Tests
@@ -240,6 +343,11 @@ Included example apps:
 - `examples/blog-api`
 - `examples/dashboard`
 - `examples/ai-pipeline`
+- `examples/phase0`
+- `examples/phase0b`
+- `examples/phase0c`
+- `examples/phase0d`
+- `examples/phase1`
 
 Each example includes feature folders plus generated indexes.
 
@@ -247,3 +355,8 @@ Each example includes feature folders plus generated indexes.
 - `ARCHITECTURE.md`
 - `FEATURE_SPEC.md`
 - `BENCHMARK_NOTES.md`
+- `docs/semantic-compiler-phase0.md`
+- `docs/semantic-compiler-phase0b.md`
+- `docs/semantic-compiler-phase0c.md`
+- `docs/semantic-compiler-phase0d.md`
+- `docs/roadmap-phase1.md`

@@ -1,0 +1,49 @@
+{
+  "target": "publish_post",
+  "plan": {
+    "id": "execution_plan:feature:publish_post",
+    "type": "execution_plan",
+    "source_path": "app/features/publish_post/feature.yaml",
+    "source_region": {
+      "line_start": 1,
+      "line_end": null
+    },
+    "payload": {
+      "feature": "publish_post",
+      "route_signature": "POST /posts",
+      "route_node": "route:POST:/posts",
+      "stages": [
+        "request_received",
+        "routing",
+        "before_auth",
+        "auth",
+        "before_validation",
+        "validation",
+        "before_action",
+        "action",
+        "after_action",
+        "response_serialization",
+        "response_send"
+      ],
+      "guards": [
+        "guard:auth:publish_post",
+        "guard:permission:publish_post:posts_create",
+        "guard:request_validation:publish_post",
+        "guard:transaction:publish_post"
+      ],
+      "interceptors": {
+        "request_received": [
+          "trace.request_received"
+        ],
+        "response_send": [
+          "trace.response_send"
+        ]
+      },
+      "action_node": "feature:publish_post",
+      "plan_version": 1
+    },
+    "graph_compatibility": [
+      1
+    ]
+  }
+}

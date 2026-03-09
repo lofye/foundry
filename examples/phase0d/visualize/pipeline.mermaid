@@ -1,0 +1,15 @@
+graph TD
+    R["request_received (pipeline_stage)"]
+    RT["routing (pipeline_stage)"]
+    A["auth (pipeline_stage)"]
+    V["validation (pipeline_stage)"]
+    P["POST /posts (execution_plan)"]
+    G["authentication (guard)"]
+    I["trace.request_received (interceptor)"]
+
+    R --> RT
+    RT --> A
+    A --> V
+    P --> A
+    P --> G
+    I --> R

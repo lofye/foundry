@@ -2,15 +2,13 @@
 declare(strict_types=1);
 
 /**
- * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Source: app/features/<feature>/feature.yaml
- * Regenerate with: foundry generate indexes
+ * GENERATED FILE - DO NOT EDIT
+ * Built by Foundry semantic compiler.
+ * Regenerate with: php vendor/bin/foundry compile graph
  */
-
 return array (
   'notify_followers' => 
   array (
-    'feature' => 'publish_post',
     'input_schema' => 
     array (
       'type' => 'object',
@@ -42,5 +40,6 @@ return array (
     ),
     'timeout_seconds' => 60,
     'idempotency_key' => 'post_id',
+    'feature' => 'publish_post',
   ),
 );

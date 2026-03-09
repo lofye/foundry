@@ -1,0 +1,12 @@
+version: 2
+feature: publish_post
+kind: http
+route:
+  method: POST
+  path: /posts
+auth:
+  strategies: [bearer]
+  permissions: [posts.create]
+llm:
+  editable: true
+  risk_level: medium

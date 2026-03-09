@@ -5,8 +5,8 @@ namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
+use Foundry\Compiler\CompileOptions;
 use Foundry\Support\FoundryError;
-use Foundry\Support\Yaml;
 
 final class ImpactCommand extends Command
 {
@@ -20,6 +20,8 @@ final class ImpactCommand extends Command
     public function run(array $args, CommandContext $context): array
     {
         $command = (string) ($args[0] ?? '');
+        $compiler = $context->graphCompiler();
+        $graph = $compiler->loadGraph() ?? $compiler->compile(new CompileOptions())->graph;
 
         if ($command === 'affected-files') {
             $feature = (string) ($args[1] ?? '');
@@ -27,17 +29,35 @@ final class ImpactCommand extends Command
                 throw new FoundryError('CLI_FEATURE_REQUIRED', 'validation', [], 'Feature required.');
             }
 
-            $manifest = $context->featureLoader()->contextManifest($feature);
-            if ($manifest === null) {
-                throw new FoundryError('CONTEXT_MANIFEST_NOT_FOUND', 'not_found', ['feature' => $feature], 'Context manifest not found.');
+            $node = $graph->node('feature:' . $feature);
+            if ($node === null) {
+                throw new FoundryError('FEATURE_NOT_FOUND', 'not_found', ['feature' => $feature], 'Feature not found.');
             }
+
+            $payload = $node->payload();
+            $sourceFiles = array_values(array_map('strval', (array) ($payload['source_files'] ?? [])));
+            $generatedFiles = [
+                'app/.foundry/build/graph/app_graph.json',
+                'app/.foundry/build/diagnostics/latest.json',
+                'app/.foundry/build/manifests/compile_manifest.json',
+                'app/generated/routes.php',
+                'app/generated/feature_index.php',
+                'app/generated/schema_index.php',
+                'app/generated/permission_index.php',
+                'app/generated/event_index.php',
+                'app/generated/job_index.php',
+                'app/generated/cache_index.php',
+                'app/generated/scheduler_index.php',
+                'app/generated/webhook_index.php',
+                'app/generated/query_index.php',
+            ];
 
             return [
                 'status' => 0,
                 'message' => null,
                 'payload' => [
                     'feature' => $feature,
-                    'affected_files' => array_values(array_unique(array_merge($manifest->relevantFiles, $manifest->generatedFiles))),
+                    'affected_files' => array_values(array_unique(array_merge($sourceFiles, $generatedFiles))),
                 ],
             ];
         }
@@ -47,34 +67,24 @@ final class ImpactCommand extends Command
             throw new FoundryError('CLI_IMPACT_TARGET_REQUIRED', 'validation', [], 'Impact target required.');
         }
 
-        $features = [];
-        foreach (glob($context->paths()->features() . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
-            $manifestPath = $dir . '/feature.yaml';
-            if (!is_file($manifestPath)) {
-                continue;
-            }
+        $nodeId = str_starts_with($needle, 'event:')
+            ? 'event:' . substr($needle, strlen('event:'))
+            : (str_starts_with($needle, 'cache:')
+                ? 'cache:' . substr($needle, strlen('cache:'))
+                : 'permission:' . $needle);
 
-            $manifest = Yaml::parseFile($manifestPath);
-            $feature = basename($dir);
-
-            if (str_starts_with($needle, 'event:')) {
-                $event = substr($needle, strlen('event:'));
-                if (in_array($event, (array) ($manifest['events']['emit'] ?? []), true) || in_array($event, (array) ($manifest['events']['subscribe'] ?? []), true)) {
-                    $features[] = $feature;
-                }
-            } elseif (str_starts_with($needle, 'cache:')) {
-                $cacheKey = substr($needle, strlen('cache:'));
-                if (in_array($cacheKey, (array) ($manifest['cache']['invalidate'] ?? []), true)) {
-                    $features[] = $feature;
-                }
-            } else {
-                if (in_array($needle, (array) ($manifest['auth']['permissions'] ?? []), true)) {
-                    $features[] = $feature;
-                }
-            }
+        if ($graph->node($nodeId) === null) {
+            return [
+                'status' => 0,
+                'message' => null,
+                'payload' => [
+                    'target' => $needle,
+                    'features' => [],
+                ],
+            ];
         }
 
-        sort($features);
+        $features = $compiler->impactAnalyzer()->affectedFeatures($graph, $nodeId);
 
         return [
             'status' => 0,

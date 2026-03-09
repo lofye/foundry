@@ -2,11 +2,10 @@
 declare(strict_types=1);
 
 /**
- * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Source: app/features/<feature>/feature.yaml
- * Regenerate with: foundry generate indexes
+ * GENERATED FILE - DO NOT EDIT
+ * Built by Foundry semantic compiler.
+ * Regenerate with: php vendor/bin/foundry compile graph
  */
-
 return array (
   'publish_post' => 
   array (
@@ -30,6 +29,7 @@ return array (
       array (
         0 => 'posts.create',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -60,12 +60,53 @@ return array (
       array (
         0 => 'posts:list',
       ),
+      'entries' => 
+      array (
+        'posts:list' => 
+        array (
+          'kind' => 'computed',
+          'ttl_seconds' => 300,
+          'invalidated_by' => 
+          array (
+            0 => 'publish_post',
+          ),
+        ),
+      ),
     ),
     'events' => 
     array (
       'emit' => 
       array (
         0 => 'post.created',
+      ),
+      'emit_definitions' => 
+      array (
+        'post.created' => 
+        array (
+          'type' => 'object',
+          'additionalProperties' => false,
+          'required' => 
+          array (
+            0 => 'post_id',
+            1 => 'author_id',
+            2 => 'status',
+          ),
+          'properties' => 
+          array (
+            'post_id' => 
+            array (
+              'type' => 'string',
+            ),
+            'author_id' => 
+            array (
+              'type' => 'string',
+            ),
+            'status' => 
+            array (
+              'type' => 'string',
+            ),
+          ),
+        ),
       ),
       'subscribe' => 
       array (
@@ -77,20 +118,63 @@ return array (
       array (
         0 => 'notify_followers',
       ),
+      'definitions' => 
+      array (
+        'notify_followers' => 
+        array (
+          'input_schema' => 
+          array (
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => 
+            array (
+              0 => 'post_id',
+            ),
+            'properties' => 
+            array (
+              'post_id' => 
+              array (
+                'type' => 'string',
+              ),
+            ),
+          ),
+          'queue' => 'default',
+          'retry' => 
+          array (
+            'max_attempts' => 5,
+            'backoff_seconds' => 
+            array (
+              0 => 5,
+              1 => 30,
+              2 => 120,
+              3 => 300,
+              4 => 600,
+            ),
+          ),
+          'timeout_seconds' => 60,
+          'idempotency_key' => 'post_id',
+        ),
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'post_create',
       'cost' => 1,
+      'strategy' => 'user',
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/publish_post/tests/publish_post_auth_test.php',
+        1 => 'app/features/publish_post/tests/publish_post_contract_test.php',
+        2 => 'app/features/publish_post/tests/publish_post_feature_test.php',
       ),
     ),
     'llm' => 
@@ -98,6 +182,7 @@ return array (
       'editable' => true,
       'risk' => 'medium',
       'notes_file' => 'prompts.md',
+      'risk_level' => 'medium',
     ),
     'base_path' => 'app/features/publish_post',
     'action_class' => 'App\\Features\\PublishPost\\Action',

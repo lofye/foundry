@@ -1,0 +1,27 @@
+{
+  "instruction": "add bookmark endpoint for posts",
+  "feature_context": true,
+  "selected_features": [
+    "publish_post",
+    "list_posts"
+  ],
+  "context": {
+    "node_counts": {
+      "feature": 2,
+      "route": 2,
+      "schema": 4
+    }
+  },
+  "prompt": {
+    "constraints": [
+      "Edit only source-of-truth files under app/features/*.",
+      "Do not hand-edit app/.foundry/build/* or app/generated/*."
+    ],
+    "workflow": [
+      "php vendor/bin/foundry compile graph --json",
+      "php vendor/bin/foundry verify graph --json",
+      "php vendor/bin/phpunit"
+    ]
+  }
+}
+

@@ -1,0 +1,34 @@
+version: 1
+resource: posts
+style: api
+model:
+  table: posts
+  primary_key: id
+fields:
+  title:
+    type: string
+    required: true
+  slug:
+    type: string
+    required: true
+  body_markdown:
+    type: text
+    required: true
+auth:
+  list: posts.view
+  view: posts.view
+  create: posts.create
+  update: posts.update
+  delete: posts.delete
+features:
+  - list
+  - view
+  - create
+  - update
+  - delete
+feature_names:
+  list: api_list_posts
+  view: api_view_post
+  create: api_create_post
+  update: api_update_post
+  delete: api_delete_post

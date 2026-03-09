@@ -1,0 +1,9 @@
+digraph foundry {
+  rankdir=LR;
+  "feature:publish_post" [label="publish_post (feature)"];
+  "route:POST:/posts" [label="POST /posts (route)"];
+  "schema:app/features/publish_post/input.schema.json" [label="app/features/publish_post/input.schema.json (schema)"];
+  "feature:publish_post" -> "route:POST:/posts" [label="feature_to_route"];
+  "feature:publish_post" -> "schema:app/features/publish_post/input.schema.json" [label="feature_to_input_schema"];
+}
+

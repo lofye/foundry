@@ -1,4 +1,4 @@
-# Feature Definition Spec (Foundry v1)
+# Feature Definition Spec (Foundry v2)
 
 ## Required files per feature
 `app/features/<feature>/`
@@ -36,7 +36,24 @@
 - required tests from `tests.required` should exist in `tests/`
 
 ## Generated artifacts
-`foundry generate indexes` produces:
+`foundry compile graph` produces canonical artifacts under `app/.foundry/build` and mirrors runtime projections to `app/generated`:
+- `app/.foundry/build/graph/app_graph.json`
+- `app/.foundry/build/graph/app_graph.php`
+- `app/.foundry/build/projections/routes_index.php`
+- `app/.foundry/build/projections/feature_index.php`
+- `app/.foundry/build/projections/schema_index.php`
+- `app/.foundry/build/projections/permission_index.php`
+- `app/.foundry/build/projections/event_index.php`
+- `app/.foundry/build/projections/job_index.php`
+- `app/.foundry/build/projections/cache_index.php`
+- `app/.foundry/build/projections/scheduler_index.php`
+- `app/.foundry/build/projections/webhook_index.php`
+- `app/.foundry/build/projections/query_index.php`
+- `app/.foundry/build/manifests/compile_manifest.json`
+- `app/.foundry/build/manifests/integrity_hashes.json`
+- `app/.foundry/build/diagnostics/latest.json`
+
+Compatibility mirrors in `app/generated`:
 - `app/generated/routes.php`
 - `app/generated/feature_index.php`
 - `app/generated/schema_index.php`

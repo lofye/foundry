@@ -1,0 +1,7 @@
+graph TD
+    N0["publish_post (feature)"]
+    N1["post.created (event)"]
+    N2["update_feed (feature)"]
+    N0 -->|feature_to_event_emit| N1
+    N2 -->|feature_to_event_subscribe| N1
+

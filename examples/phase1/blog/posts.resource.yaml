@@ -1,0 +1,39 @@
+version: 1
+resource: posts
+style: server-rendered
+model:
+  table: posts
+  primary_key: id
+fields:
+  title:
+    type: string
+    required: true
+    maxLength: 200
+    list: true
+    form: text
+    search: true
+    sort: true
+  slug:
+    type: string
+    required: true
+    unique: true
+    list: true
+    form: text
+    search: true
+    sort: true
+  body_markdown:
+    type: text
+    required: true
+    form: textarea
+  published_at:
+    type: datetime
+    required: false
+    form: datetime
+    filter: true
+auth:
+  list: posts.view
+  view: posts.view
+  create: posts.create
+  update: posts.update
+  delete: posts.delete
+features: [list, view, create, update, delete]

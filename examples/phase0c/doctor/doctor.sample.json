@@ -1,0 +1,28 @@
+{
+  "graph_version": 1,
+  "feature_filter": "publish_post",
+  "strict": true,
+  "risk": "medium",
+  "diagnostics_summary": {
+    "error": 0,
+    "warning": 2,
+    "info": 1,
+    "total": 3
+  },
+  "analyzers": {
+    "auth_coverage": {
+      "result": {
+        "unguarded_routes": [],
+        "permission_gaps": [
+          {
+            "feature": "publish_post",
+            "missing_permissions": [
+              "posts.create"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+

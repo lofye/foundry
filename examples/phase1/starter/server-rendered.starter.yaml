@@ -1,0 +1,17 @@
+version: 1
+starter: server-rendered
+auth_mode: session
+features:
+  - register_user
+  - login_user
+  - logout_user
+  - request_password_reset
+  - reset_password
+  - verify_email
+  - view_dashboard
+  - view_account_settings
+  - update_account_settings
+pipeline_defaults:
+  csrf: true
+  rate_limit: true
+  validation: true

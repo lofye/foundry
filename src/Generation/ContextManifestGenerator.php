@@ -38,6 +38,17 @@ final class ContextManifestGenerator
         $relevant = array_values(array_filter($relevant, fn (string $path): bool => is_file($this->paths->join($path))));
 
         $generated = [
+            'app/.foundry/build/graph/app_graph.json',
+            'app/.foundry/build/projections/routes_index.php',
+            'app/.foundry/build/projections/schema_index.php',
+            'app/.foundry/build/projections/feature_index.php',
+            'app/.foundry/build/projections/permission_index.php',
+            'app/.foundry/build/projections/event_index.php',
+            'app/.foundry/build/projections/job_index.php',
+            'app/.foundry/build/projections/cache_index.php',
+            'app/.foundry/build/projections/scheduler_index.php',
+            'app/.foundry/build/projections/webhook_index.php',
+            'app/.foundry/build/projections/query_index.php',
             'app/generated/routes.php',
             'app/generated/schema_index.php',
             'app/generated/feature_index.php',
@@ -47,6 +58,7 @@ final class ContextManifestGenerator
             'app/generated/cache_index.php',
             'app/generated/scheduler_index.php',
             'app/generated/webhook_index.php',
+            'app/generated/query_index.php',
         ];
 
         $deps = array_values(array_unique(array_merge(
@@ -71,7 +83,7 @@ final class ContextManifestGenerator
             ],
             'tests' => array_values(array_map(static fn (string $name): string => $feature . '_' . $name . '_test', (array) ($manifest['tests']['required'] ?? []))),
             'forbidden_paths' => ['src/Core', 'src/Http'],
-            'risk_level' => (string) (($manifest['llm']['risk'] ?? 'medium')),
+            'risk_level' => (string) (($manifest['llm']['risk_level'] ?? $manifest['llm']['risk'] ?? 'medium')),
         ];
 
         return $data;

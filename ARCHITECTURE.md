@@ -9,7 +9,8 @@ Foundry is an explicit, deterministic, LLM-first PHP web framework focused on:
 
 ## Runtime Shape
 - `app/features/*` is source-of-truth behavior.
-- `app/generated/*` is generated, deterministic runtime index data.
+- `app/.foundry/build/*` is canonical compiler output (graph + projections + manifests + diagnostics).
+- `app/generated/*` is a compatibility mirror for runtime loading.
 - `src/*` contains stable framework core.
 
 Hot request path (`kind=http`):
@@ -24,6 +25,7 @@ Hot request path (`kind=http`):
 9. response emission + trace/audit
 
 ## Core Subsystems
+- `Compiler`: canonical graph IR, pass pipeline, diagnostics, projections, impact analysis, migration hooks, extension hooks.
 - `Feature`: definitions, loading, execution pipeline.
 - `Schema`: schema registry + validator.
 - `DB`: named-query loader/registry + PDO executor + transactions.
@@ -36,12 +38,13 @@ Hot request path (`kind=http`):
 - `Webhook`: signing and verification.
 - `AI`: provider abstraction, request/response contracts, cache integration.
 - `Observability`: structured logs, traces, metrics, audit events.
-- `Generation`: feature/index/test/context/migration generation.
+- `Generation`: feature/test/context/migration generation.
 - `Verification`: feature/contracts/auth/cache/events/jobs/migrations checks.
-- `CLI`: inspect/generate/verify/runtime/planning command surface.
+- `CLI`: compile/inspect/verify/migrate/runtime command surface.
 
 ## Determinism Rules
-- Generated index files are stable and sorted.
+- Graph and projection outputs are stable and sorted.
+- Build artifacts are explicit files, not opaque archives.
 - Generated output is plain PHP arrays for fast load time.
 - Feature folders are explicit; no hidden runtime discovery in hot path.
 

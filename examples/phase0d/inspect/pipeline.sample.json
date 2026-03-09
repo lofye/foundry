@@ -1,0 +1,45 @@
+{
+  "order": [
+    "request_received",
+    "routing",
+    "before_auth",
+    "auth",
+    "before_validation",
+    "validation",
+    "before_action",
+    "action",
+    "after_action",
+    "response_serialization",
+    "response_send"
+  ],
+  "stages": [
+    {
+      "id": "pipeline_stage:request_received",
+      "name": "request_received",
+      "order": 0,
+      "priority": 10,
+      "extension": "core",
+      "after_stage": null,
+      "before_stage": "routing"
+    },
+    {
+      "id": "pipeline_stage:auth",
+      "name": "auth",
+      "order": 3,
+      "priority": 13,
+      "extension": "core",
+      "after_stage": "before_auth",
+      "before_stage": "before_validation"
+    }
+  ],
+  "links": [
+    {
+      "from": "request_received",
+      "to": "routing"
+    },
+    {
+      "from": "before_auth",
+      "to": "auth"
+    }
+  ]
+}

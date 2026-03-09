@@ -22,16 +22,24 @@ final class FeatureGenerator
     /**
      * @return array<int,string>
      */
-    public function generateFromSpec(string $specPath): array
+    public function generateFromSpec(string $specPath, bool $force = false): array
     {
         $spec = Yaml::parseFile($specPath);
 
+        return $this->generateFromArray($spec, $force);
+    }
+
+    /**
+     * @param array<string,mixed> $spec
+     * @return array<int,string>
+     */
+    public function generateFromArray(array $spec, bool $force = false): array
+    {
         $feature = (string) ($spec['feature'] ?? '');
         if ($feature === '' || !Str::isSnakeCase($feature)) {
             throw new FoundryError('FEATURE_NAME_INVALID', 'validation', ['feature' => $feature], 'Feature name must be snake_case.');
         }
 
-        $kind = (string) ($spec['kind'] ?? 'http');
         $base = $this->paths->join('app/features/' . $feature);
         if (!is_dir($base)) {
             mkdir($base, 0777, true);
@@ -40,19 +48,19 @@ final class FeatureGenerator
         $manifest = $this->buildFeatureManifest($spec);
 
         $written = [];
-        $written[] = $this->writeIfAllowed($base . '/feature.yaml', Yaml::dump($manifest), true);
-        $written[] = $this->writeIfAllowed($base . '/input.schema.json', Json::encode($this->schemas->fromFieldSpec($feature . '_input', (array) $spec['input']), true) . "\n", true);
-        $written[] = $this->writeIfAllowed($base . '/output.schema.json', Json::encode($this->schemas->fromFieldSpec($feature . '_output', (array) $spec['output']), true) . "\n", true);
-        $written[] = $this->writeIfAllowed($base . '/action.php', $this->actionTemplate($feature), false);
+        $written[] = $this->writeIfAllowed($base . '/feature.yaml', Yaml::dump($manifest), true, $force);
+        $written[] = $this->writeIfAllowed($base . '/input.schema.json', Json::encode($this->schemas->fromFieldSpec($feature . '_input', (array) $spec['input']), true) . "\n", true, $force);
+        $written[] = $this->writeIfAllowed($base . '/output.schema.json', Json::encode($this->schemas->fromFieldSpec($feature . '_output', (array) $spec['output']), true) . "\n", true, $force);
+        $written[] = $this->writeIfAllowed($base . '/action.php', $this->actionTemplate($feature), false, $force);
 
         $queries = array_values(array_map('strval', (array) (($spec['database']['queries'] ?? []))));
-        $written[] = $this->writeIfAllowed($base . '/queries.sql', $this->queries->generate($queries), true);
+        $written[] = $this->writeIfAllowed($base . '/queries.sql', $this->queries->generate($queries), true, $force);
 
         $written[] = $this->writeIfAllowed($base . '/permissions.yaml', Yaml::dump([
             'version' => 1,
             'permissions' => array_values(array_map('strval', (array) ($spec['auth']['permissions'] ?? []))),
             'rules' => new \stdClass(),
-        ]), true);
+        ]), true, $force);
 
         $written[] = $this->writeIfAllowed($base . '/cache.yaml', Yaml::dump([
             'version' => 1,
@@ -62,7 +70,7 @@ final class FeatureGenerator
                 'ttl_seconds' => 300,
                 'invalidated_by' => [$feature],
             ], array_values(array_map('strval', (array) ($spec['cache']['invalidate'] ?? [])))),
-        ]), true);
+        ]), true, $force);
 
         $written[] = $this->writeIfAllowed($base . '/events.yaml', Yaml::dump([
             'version' => 1,
@@ -75,7 +83,7 @@ final class FeatureGenerator
                 ],
             ], array_values(array_map('strval', (array) ($spec['events']['emit'] ?? [])))),
             'subscribe' => [],
-        ]), true);
+        ]), true, $force);
 
         $written[] = $this->writeIfAllowed($base . '/jobs.yaml', Yaml::dump([
             'version' => 1,
@@ -93,9 +101,9 @@ final class FeatureGenerator
                 ],
                 'timeout_seconds' => 60,
             ], array_values(array_map('strval', (array) ($spec['jobs']['dispatch'] ?? [])))),
-        ]), true);
+        ]), true, $force);
 
-        $written[] = $this->writeIfAllowed($base . '/prompts.md', "# {$feature}\n\nFeature-local LLM notes.\n", false);
+        $written[] = $this->writeIfAllowed($base . '/prompts.md', "# {$feature}\n\nFeature-local LLM notes.\n", false, $force);
 
         $required = array_values(array_map('strval', (array) ($spec['tests']['required'] ?? ['contract', 'feature', 'auth'])));
         $written = array_merge($written, $this->tests->generate($feature, $base, $required));
@@ -112,8 +120,8 @@ final class FeatureGenerator
      */
     private function buildFeatureManifest(array $spec): array
     {
-        return [
-            'version' => 1,
+        $manifest = [
+            'version' => 2,
             'feature' => (string) $spec['feature'],
             'kind' => (string) ($spec['kind'] ?? 'http'),
             'description' => (string) ($spec['description'] ?? 'No description.'),
@@ -155,10 +163,18 @@ final class FeatureGenerator
             ], (array) ($spec['tests'] ?? [])),
             'llm' => array_merge([
                 'editable' => true,
-                'risk' => 'medium',
+                'risk_level' => 'medium',
                 'notes_file' => 'prompts.md',
             ], (array) ($spec['llm'] ?? [])),
         ];
+
+        foreach (['csrf', 'resource', 'listing', 'uploads', 'ui'] as $key) {
+            if (is_array($spec[$key] ?? null)) {
+                $manifest[$key] = $spec[$key];
+            }
+        }
+
+        return $manifest;
     }
 
     private function actionTemplate(string $feature): string
@@ -195,11 +211,11 @@ PHP;
         );
     }
 
-    private function writeIfAllowed(string $path, string $content, bool $generated): string
+    private function writeIfAllowed(string $path, string $content, bool $generated, bool $force = false): string
     {
         if (is_file($path)) {
             $existing = file_get_contents($path) ?: '';
-            if (!$generated && $existing !== '') {
+            if (!$generated && $existing !== '' && !$force) {
                 throw new FoundryError('FILE_EXISTS_NOT_GENERATED', 'io', ['path' => $path], 'Refusing to overwrite non-generated file.');
             }
         }
