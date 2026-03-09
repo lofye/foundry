@@ -233,6 +233,54 @@ final class ExecutionPlanNode extends AbstractNode
     }
 }
 
+final class StarterKitNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'starter_kit';
+    }
+}
+
+final class ResourceNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'resource';
+    }
+}
+
+final class AdminResourceNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'admin_resource';
+    }
+}
+
+final class UploadProfileNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'upload_profile';
+    }
+}
+
+final class ListingConfigNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'listing_config';
+    }
+}
+
+final class FormDefinitionNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'form_definition';
+    }
+}
+
 final class NodeFactory
 {
     /**
@@ -270,6 +318,12 @@ final class NodeFactory
             'guard' => new GuardNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             'interceptor' => new InterceptorNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             'execution_plan' => new ExecutionPlanNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'starter_kit' => new StarterKitNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'resource' => new ResourceNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'admin_resource' => new AdminResourceNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'upload_profile' => new UploadProfileNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'listing_config' => new ListingConfigNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'form_definition' => new FormDefinitionNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             default => new FeatureNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
         };
     }

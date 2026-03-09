@@ -146,6 +146,8 @@ final class DiscoveryPass implements CompilerPass
         }
 
         ksort($state->discoveredFeatures);
+        $state->discoveredSpecs = $this->discoverPhaseOneSpecs($state);
+        $state->analysis['discovered_specs'] = $state->discoveredSpecs;
     }
 
     private function normalizeSchemaPath(string $feature, string $path): string
@@ -249,5 +251,81 @@ final class DiscoveryPass implements CompilerPass
         return str_starts_with($path, $root)
             ? substr($path, strlen($root))
             : $path;
+    }
+
+    /**
+     * @return array<string,array<string,array<string,mixed>>>
+     */
+    private function discoverPhaseOneSpecs(CompilationState $state): array
+    {
+        $map = [
+            'starter' => 'app/specs/starters/*.starter.yaml',
+            'resource' => 'app/specs/resources/*.resource.yaml',
+            'admin_resource' => 'app/specs/admin/*.admin.yaml',
+            'upload_profile' => 'app/specs/uploads/*.uploads.yaml',
+            'listing_config' => 'app/specs/listing/*.list.yaml',
+        ];
+
+        $discovered = [];
+        foreach ($map as $type => $pattern) {
+            $paths = glob($state->paths->join($pattern)) ?: [];
+            sort($paths);
+
+            foreach ($paths as $path) {
+                $relative = $this->relativePath($state, $path);
+                $document = $this->safeYaml(
+                    state: $state,
+                    path: $path,
+                    code: 'FDY2100_SPEC_PARSE_ERROR',
+                    category: 'discovery',
+                    optional: false,
+                );
+                if ($document === null) {
+                    continue;
+                }
+
+                $name = $this->specName($type, $document, $path);
+                if ($name === '') {
+                    continue;
+                }
+
+                $discovered[$type][$name] = [
+                    'type' => $type,
+                    'name' => $name,
+                    'path' => $relative,
+                    'document' => $document,
+                ];
+            }
+        }
+
+        ksort($discovered);
+        foreach ($discovered as &$rows) {
+            ksort($rows);
+        }
+        unset($rows);
+
+        return $discovered;
+    }
+
+    /**
+     * @param array<string,mixed> $document
+     */
+    private function specName(string $type, array $document, string $path): string
+    {
+        $name = match ($type) {
+            'starter' => (string) ($document['starter'] ?? ''),
+            'resource', 'admin_resource', 'listing_config' => (string) ($document['resource'] ?? ''),
+            'upload_profile' => (string) ($document['profile'] ?? ''),
+            default => '',
+        };
+
+        if ($name === '') {
+            $base = basename($path);
+            $name = preg_replace('/\.[a-z]+\.yaml$/', '', $base) ?? '';
+        }
+
+        $name = trim($name);
+
+        return $name;
     }
 }

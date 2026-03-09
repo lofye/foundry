@@ -138,6 +138,30 @@ final class ValidatePass implements CompilerPass
                     );
                 }
             }
+
+            $csrf = is_array($payload['csrf'] ?? null) ? $payload['csrf'] : [];
+            if ((bool) ($csrf['required'] ?? false) && $kind !== 'http') {
+                $state->diagnostics->warning(
+                    code: 'FDY1010_CSRF_ON_NON_HTTP_FEATURE',
+                    category: 'validation',
+                    message: 'CSRF guard is configured on a non-http feature.',
+                    nodeId: $nodeId,
+                    sourcePath: $sourcePath,
+                    pass: $this->name(),
+                );
+            }
+
+            $resource = is_array($payload['resource'] ?? null) ? $payload['resource'] : [];
+            if ($resource !== [] && !isset($resource['name'])) {
+                $state->diagnostics->warning(
+                    code: 'FDY1011_RESOURCE_METADATA_INCOMPLETE',
+                    category: 'validation',
+                    message: 'Resource metadata exists but is missing resource.name.',
+                    nodeId: $nodeId,
+                    sourcePath: $sourcePath,
+                    pass: $this->name(),
+                );
+            }
         }
 
         foreach ($state->graph->nodesByType('route') as $routeNode) {

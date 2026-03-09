@@ -15,6 +15,11 @@ final class CompilationState
     public array $discoveredFeatures = [];
 
     /**
+     * @var array<string,array<string,array<string,mixed>>>
+     */
+    public array $discoveredSpecs = [];
+
+    /**
      * @var array<string,mixed>
      */
     public array $analysis = [];

@@ -212,6 +212,12 @@ final class GraphVisualizer
             'guard' => (string) ($payload['type'] ?? $node->id()),
             'interceptor' => (string) ($payload['id'] ?? $node->id()),
             'execution_plan' => (string) ($payload['route_signature'] ?? $payload['feature'] ?? $node->id()),
+            'starter_kit' => (string) ($payload['starter'] ?? $node->id()),
+            'resource' => (string) ($payload['resource'] ?? $node->id()),
+            'admin_resource' => (string) ($payload['resource'] ?? $node->id()),
+            'upload_profile' => (string) ($payload['profile'] ?? $node->id()),
+            'listing_config' => (string) ($payload['resource'] ?? $node->id()),
+            'form_definition' => (string) (($payload['resource'] ?? '') . ':' . ($payload['intent'] ?? '')) ?: $node->id(),
             default => $node->id(),
         };
     }

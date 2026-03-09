@@ -89,6 +89,31 @@ final class NormalizePass implements CompilerPass
                 $llm['risk_level'] = (string) $llm['risk'];
             }
 
+            $csrf = is_array($manifest['csrf'] ?? null) ? $manifest['csrf'] : [];
+            if ($csrf !== []) {
+                $csrf['required'] = (bool) ($csrf['required'] ?? false);
+            }
+
+            $resourceMeta = is_array($manifest['resource'] ?? null) ? $manifest['resource'] : [];
+            if ($resourceMeta !== []) {
+                ksort($resourceMeta);
+            }
+
+            $listingMeta = is_array($manifest['listing'] ?? null) ? $manifest['listing'] : [];
+            if ($listingMeta !== []) {
+                ksort($listingMeta);
+            }
+
+            $uploadsMeta = is_array($manifest['uploads'] ?? null) ? $manifest['uploads'] : [];
+            if ($uploadsMeta !== []) {
+                ksort($uploadsMeta);
+            }
+
+            $uiMeta = is_array($manifest['ui'] ?? null) ? $manifest['ui'] : [];
+            if ($uiMeta !== []) {
+                ksort($uiMeta);
+            }
+
             $permissionsYaml = is_array($discovered['permissions'] ?? null) ? $discovered['permissions'] : [];
             $declaredPermissions = $this->sortedStrings((array) ($permissionsYaml['permissions'] ?? []));
 
@@ -247,6 +272,11 @@ final class NormalizePass implements CompilerPass
                 'webhooks' => $webhooks,
                 'context_manifest' => is_array($discovered['context_manifest'] ?? null) ? $discovered['context_manifest'] : null,
                 'rate_limit' => $rateLimit,
+                'csrf' => $csrf,
+                'resource' => $resourceMeta,
+                'listing' => $listingMeta,
+                'uploads' => $uploadsMeta,
+                'ui' => $uiMeta,
                 'action_class' => 'App\\Features\\' . Str::studly($feature) . '\\Action',
                 'source_files' => array_values(array_map('strval', (array) ($discovered['source_files'] ?? []))),
             ];

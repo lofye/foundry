@@ -50,6 +50,15 @@ final readonly class SourceScanner
             }
         }
 
+        $phaseOneSpecFiles = glob($this->paths->join('app/specs/*/*.yaml')) ?: [];
+        sort($phaseOneSpecFiles);
+        foreach ($phaseOneSpecFiles as $file) {
+            $relative = $this->relativePath($file);
+            if ($relative !== '') {
+                $files[] = $relative;
+            }
+        }
+
         sort($files);
 
         return array_values(array_unique($files));

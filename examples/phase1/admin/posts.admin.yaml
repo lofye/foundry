@@ -1,0 +1,7 @@
+version: 1
+resource: posts
+table:
+  columns: [title, slug, published_at]
+filters: [published_at]
+bulk_actions: [delete]
+row_actions: [edit, delete]

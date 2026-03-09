@@ -12,9 +12,14 @@ use Foundry\Compiler\Migration\SpecMigrator;
 use Foundry\Feature\FeatureLoader;
 use Foundry\Generation\ContextManifestGenerator;
 use Foundry\Generation\FeatureGenerator;
+use Foundry\Generation\FormSchemaRenderer;
+use Foundry\Generation\AdminResourceGenerator;
 use Foundry\Generation\IndexGenerator;
 use Foundry\Generation\MigrationGenerator;
+use Foundry\Generation\ResourceGenerator;
+use Foundry\Generation\StarterGenerator;
 use Foundry\Generation\TestGenerator;
+use Foundry\Generation\UploadsGenerator;
 use Foundry\Support\Paths;
 use Foundry\Verification\AuthVerifier;
 use Foundry\Verification\CacheVerifier;
@@ -23,6 +28,7 @@ use Foundry\Verification\EventsVerifier;
 use Foundry\Verification\FeatureVerifier;
 use Foundry\Verification\JobsVerifier;
 use Foundry\Verification\MigrationsVerifier;
+use Foundry\Verification\ResourceVerifier;
 
 final class CommandContext
 {
@@ -106,9 +112,34 @@ final class CommandContext
         return new ContextManifestGenerator($this->paths());
     }
 
+    public function starterGenerator(): StarterGenerator
+    {
+        return new StarterGenerator($this->paths(), $this->featureGenerator());
+    }
+
+    public function resourceGenerator(): ResourceGenerator
+    {
+        return new ResourceGenerator($this->paths(), $this->featureGenerator(), new FormSchemaRenderer());
+    }
+
+    public function adminResourceGenerator(): AdminResourceGenerator
+    {
+        return new AdminResourceGenerator($this->paths(), $this->featureGenerator());
+    }
+
+    public function uploadsGenerator(): UploadsGenerator
+    {
+        return new UploadsGenerator($this->paths(), $this->featureGenerator());
+    }
+
     public function featureVerifier(): FeatureVerifier
     {
         return new FeatureVerifier($this->paths());
+    }
+
+    public function resourceVerifier(): ResourceVerifier
+    {
+        return new ResourceVerifier($this->graphCompiler());
     }
 
     public function contractsVerifier(): ContractsVerifier

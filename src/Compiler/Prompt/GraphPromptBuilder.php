@@ -87,7 +87,7 @@ final readonly class GraphPromptBuilder
         );
 
         $constraints = [
-            'Edit only source-of-truth files under app/features/*.',
+            'Edit only source-of-truth files under app/features/* and app/specs/*.',
             'Do not hand-edit app/.foundry/build/* or app/generated/*.',
             'Preserve existing graph node IDs and naming conventions when possible.',
             'Keep manifests, schemas, queries, permissions, events, jobs, cache, and tests in sync.',

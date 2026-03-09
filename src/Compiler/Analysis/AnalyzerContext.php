@@ -47,6 +47,12 @@ final readonly class AnalyzerContext
             'guard' => $this->includesFeature((string) ($payload['feature'] ?? '')),
             'interceptor' => true,
             'pipeline_stage' => true,
+            'resource' => in_array($this->featureFilter, array_map('strval', (array) ($payload['feature_map'] ?? [])), true),
+            'admin_resource' => in_array($this->featureFilter, array_map('strval', (array) ($payload['feature_map'] ?? [])), true),
+            'upload_profile' => in_array($this->featureFilter, array_map('strval', (array) ($payload['feature_map'] ?? [])), true),
+            'listing_config' => $this->includesFeature('list_' . (string) ($payload['resource'] ?? ''))
+                || $this->includesFeature('admin_list_' . (string) ($payload['resource'] ?? '')),
+            'form_definition' => $this->includesFeature((string) ($payload['feature'] ?? '')),
             default => false,
         };
     }

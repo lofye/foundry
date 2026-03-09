@@ -1,0 +1,13 @@
+version: 1
+profile: avatar
+disk: local
+visibility: private
+allowed_mime_types: [image/jpeg, image/png, image/webp]
+max_size_kb: 2048
+ownership:
+  required: true
+  owner_type_field: owner_type
+  owner_id_field: owner_id
+feature_names:
+  upload: upload_avatar
+  attach: attach_avatar

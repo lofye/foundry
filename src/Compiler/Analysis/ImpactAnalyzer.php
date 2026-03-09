@@ -106,6 +106,24 @@ final readonly class ImpactAnalyzer
                 case 'execution_plan':
                     $affectedProjections[] = 'execution_plan_index.php';
                     break;
+                case 'starter_kit':
+                    $affectedProjections[] = 'starter_index.php';
+                    break;
+                case 'resource':
+                    $affectedProjections[] = 'resource_index.php';
+                    break;
+                case 'admin_resource':
+                    $affectedProjections[] = 'admin_resource_index.php';
+                    break;
+                case 'upload_profile':
+                    $affectedProjections[] = 'upload_profile_index.php';
+                    break;
+                case 'listing_config':
+                    $affectedProjections[] = 'listing_index.php';
+                    break;
+                case 'form_definition':
+                    $affectedProjections[] = 'form_index.php';
+                    break;
             }
         }
 
@@ -296,6 +314,15 @@ final readonly class ImpactAnalyzer
         }
 
         if (
+            in_array('resource_index.php', $projections, true)
+            || in_array('admin_resource_index.php', $projections, true)
+            || in_array('upload_profile_index.php', $projections, true)
+            || in_array('listing_index.php', $projections, true)
+        ) {
+            $commands[] = 'php vendor/bin/foundry verify resource <name> --json';
+        }
+
+        if (
             in_array('pipeline_index.php', $projections, true)
             || in_array('guard_index.php', $projections, true)
             || in_array('interceptor_index.php', $projections, true)
@@ -334,7 +361,7 @@ final readonly class ImpactAnalyzer
             $risk = ($role === 'input') ? 'high' : 'medium';
         }
 
-        if (in_array($type, ['query', 'event', 'job', 'cache', 'feature', 'guard'], true)) {
+        if (in_array($type, ['query', 'event', 'job', 'cache', 'feature', 'guard', 'resource', 'admin_resource', 'upload_profile', 'listing_config', 'form_definition'], true)) {
             $risk = $this->maxRisk($risk, 'medium');
         }
 

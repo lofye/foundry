@@ -228,6 +228,7 @@ php vendor/bin/foundry inspect pack <name> --json
 php vendor/bin/foundry inspect compatibility --json
 php vendor/bin/foundry inspect migrations --json
 php vendor/bin/foundry inspect spec-format <name> --json
+php vendor/bin/foundry inspect resource <name> --json
 php vendor/bin/foundry inspect feature <feature> --json
 php vendor/bin/foundry inspect route <METHOD> <PATH> --json
 php vendor/bin/foundry inspect auth <feature> --json
@@ -241,6 +242,12 @@ php vendor/bin/foundry inspect dependencies <feature> --json
 Generate:
 ```bash
 php vendor/bin/foundry generate feature <spec.yaml> --json
+php vendor/bin/foundry generate starter server-rendered --json
+php vendor/bin/foundry generate starter api --json
+php vendor/bin/foundry generate resource <name> --spec=<file> --json
+php vendor/bin/foundry generate admin-resource <name> --json
+php vendor/bin/foundry generate uploads avatar --json
+php vendor/bin/foundry generate uploads attachments --json
 php vendor/bin/foundry generate indexes --json
 php vendor/bin/foundry generate tests <feature> --json
 php vendor/bin/foundry generate migration <spec.yaml> --json
@@ -260,6 +267,7 @@ php vendor/bin/foundry verify cache --json
 php vendor/bin/foundry verify events --json
 php vendor/bin/foundry verify jobs --json
 php vendor/bin/foundry verify migrations --json
+php vendor/bin/foundry verify resource <name> --json
 ```
 
 Runtime / planning:
@@ -322,6 +330,7 @@ Included example apps:
 - `examples/phase0b`
 - `examples/phase0c`
 - `examples/phase0d`
+- `examples/phase1`
 
 Each example includes feature folders plus generated indexes.
 
@@ -333,6 +342,4 @@ Each example includes feature folders plus generated indexes.
 - `docs/semantic-compiler-phase0b.md`
 - `docs/semantic-compiler-phase0c.md`
 - `docs/semantic-compiler-phase0d.md`
-- `docs/semantic-compiler-phase0.md`
-- `docs/semantic-compiler-phase0b.md`
-- `docs/semantic-compiler-phase0c.md`
+- `docs/roadmap-phase1.md`

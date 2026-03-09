@@ -5,11 +5,13 @@ namespace Foundry\CLI;
 
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
+use Foundry\CLI\Commands\GeneratePhaseOneCommand;
 use Foundry\CLI\Commands\GraphVisualizeCommand;
 use Foundry\CLI\Commands\ImpactCommand;
 use Foundry\CLI\Commands\InitAppCommand;
 use Foundry\CLI\Commands\InspectGraphCommand;
 use Foundry\CLI\Commands\InspectFeatureCommand;
+use Foundry\CLI\Commands\InspectResourceCommand;
 use Foundry\CLI\Commands\InspectRouteCommand;
 use Foundry\CLI\Commands\MigrateSpecsCommand;
 use Foundry\CLI\Commands\DoctorCommand;
@@ -24,6 +26,7 @@ use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyPipelineCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
+use Foundry\CLI\Commands\VerifyResourceCommand;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
 
@@ -48,11 +51,14 @@ final class Application
             new MigrateSpecsCommand(),
             new CodemodRunCommand(),
             new InspectFeatureCommand(),
+            new InspectResourceCommand(),
             new InspectRouteCommand(),
             new InitAppCommand(),
+            new GeneratePhaseOneCommand(),
             new GenerateFeatureCommand(),
             new GenerateIndexesCommand(),
             new VerifyFeatureCommand(),
+            new VerifyResourceCommand(),
             new VerifyContractsCommand(),
             new ServeCommand(),
             new QueueWorkCommand(),
