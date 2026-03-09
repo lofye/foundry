@@ -1,0 +1,8 @@
+version: 1
+notification: welcome_email
+channel: mail
+queue: default
+template: welcome_email
+input_schema: app/notifications/schemas/welcome_email.input.schema.json
+dispatch_features:
+  - dispatch_welcome_email

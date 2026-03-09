@@ -124,6 +124,12 @@ final readonly class ImpactAnalyzer
                 case 'form_definition':
                     $affectedProjections[] = 'form_index.php';
                     break;
+                case 'notification':
+                    $affectedProjections[] = 'notification_index.php';
+                    break;
+                case 'api_resource':
+                    $affectedProjections[] = 'api_resource_index.php';
+                    break;
             }
         }
 
@@ -331,6 +337,14 @@ final readonly class ImpactAnalyzer
             $commands[] = 'php vendor/bin/foundry verify pipeline --json';
         }
 
+        if (in_array('notification_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify notifications --json';
+        }
+
+        if (in_array('api_resource_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify api --json';
+        }
+
         foreach ($features as $feature) {
             $commands[] = 'php vendor/bin/foundry verify feature ' . $feature . ' --json';
         }
@@ -361,7 +375,7 @@ final readonly class ImpactAnalyzer
             $risk = ($role === 'input') ? 'high' : 'medium';
         }
 
-        if (in_array($type, ['query', 'event', 'job', 'cache', 'feature', 'guard', 'resource', 'admin_resource', 'upload_profile', 'listing_config', 'form_definition'], true)) {
+        if (in_array($type, ['query', 'event', 'job', 'cache', 'feature', 'guard', 'resource', 'admin_resource', 'upload_profile', 'listing_config', 'form_definition', 'notification', 'api_resource'], true)) {
             $risk = $this->maxRisk($risk, 'medium');
         }
 

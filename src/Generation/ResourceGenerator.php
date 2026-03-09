@@ -36,7 +36,7 @@ final class ResourceGenerator
         $canonical = $this->canonicalResourceSpec($document, $resource);
         $singular = $this->singularize($resource);
         $operations = array_values(array_map('strval', (array) $canonical['features']));
-        $featureMap = $this->featureMap($resource, $singular, $operations);
+        $featureMap = $this->featureMap($resource, $singular, $operations, (string) ($canonical['style'] ?? 'server-rendered'));
 
         $generatedFeatures = [];
         $generatedFiles = [];
@@ -195,14 +195,15 @@ final class ResourceGenerator
      * @param array<int,string> $operations
      * @return array<string,string>
      */
-    private function featureMap(string $resource, string $singular, array $operations): array
+    private function featureMap(string $resource, string $singular, array $operations, string $style = 'server-rendered'): array
     {
+        $prefix = $style === 'api' ? 'api_' : '';
         $default = [
-            'list' => 'list_' . $resource,
-            'view' => 'view_' . $singular,
-            'create' => 'create_' . $singular,
-            'update' => 'update_' . $singular,
-            'delete' => 'delete_' . $singular,
+            'list' => $prefix . 'list_' . $resource,
+            'view' => $prefix . 'view_' . $singular,
+            'create' => $prefix . 'create_' . $singular,
+            'update' => $prefix . 'update_' . $singular,
+            'delete' => $prefix . 'delete_' . $singular,
         ];
 
         $map = [];
@@ -254,11 +255,17 @@ final class ResourceGenerator
             ];
         }
 
-        $outputFields = [
-            'status' => ['type' => 'string', 'required' => true],
-            'resource' => ['type' => 'string', 'required' => false],
-            'operation' => ['type' => 'string', 'required' => true],
-        ];
+        $outputFields = $isApi
+            ? [
+                'data' => ['type' => 'object', 'required' => true],
+                'meta' => ['type' => 'object', 'required' => false],
+                'error' => ['type' => 'object', 'required' => false],
+            ]
+            : [
+                'status' => ['type' => 'string', 'required' => true],
+                'resource' => ['type' => 'string', 'required' => false],
+                'operation' => ['type' => 'string', 'required' => true],
+            ];
 
         $queries = [
             $operation . '_' . $singular,
@@ -328,6 +335,11 @@ final class ResourceGenerator
             ],
             'ui' => [
                 'style' => $style,
+                'api' => $isApi ? [
+                    'response_envelope' => 'data',
+                    'error_envelope' => 'error',
+                    'content_type' => 'application/json',
+                ] : [],
                 'form' => [
                     'partial' => in_array($operation, ['create', 'update'], true)
                         ? 'app/features/' . $feature . '/form.partial.php'

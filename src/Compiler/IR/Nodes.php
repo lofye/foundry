@@ -281,6 +281,22 @@ final class FormDefinitionNode extends AbstractNode
     }
 }
 
+final class NotificationNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'notification';
+    }
+}
+
+final class ApiResourceNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'api_resource';
+    }
+}
+
 final class NodeFactory
 {
     /**
@@ -324,6 +340,8 @@ final class NodeFactory
             'upload_profile' => new UploadProfileNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             'listing_config' => new ListingConfigNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             'form_definition' => new FormDefinitionNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'notification' => new NotificationNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'api_resource' => new ApiResourceNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             default => new FeatureNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
         };
     }

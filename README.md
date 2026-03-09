@@ -202,6 +202,7 @@ AI prompt loop:
 ```bash
 php vendor/bin/foundry prompt "add bookmark endpoint for posts" --json
 php vendor/bin/foundry prompt "add bookmark endpoint for posts" --feature-context --dry-run --json
+php vendor/bin/foundry preview notification <name> --json
 ```
 
 Inspect:
@@ -229,6 +230,8 @@ php vendor/bin/foundry inspect compatibility --json
 php vendor/bin/foundry inspect migrations --json
 php vendor/bin/foundry inspect spec-format <name> --json
 php vendor/bin/foundry inspect resource <name> --json
+php vendor/bin/foundry inspect notification <name> --json
+php vendor/bin/foundry inspect api <name> --json
 php vendor/bin/foundry inspect feature <feature> --json
 php vendor/bin/foundry inspect route <METHOD> <PATH> --json
 php vendor/bin/foundry inspect auth <feature> --json
@@ -248,10 +251,22 @@ php vendor/bin/foundry generate resource <name> --spec=<file> --json
 php vendor/bin/foundry generate admin-resource <name> --json
 php vendor/bin/foundry generate uploads avatar --json
 php vendor/bin/foundry generate uploads attachments --json
+php vendor/bin/foundry generate notification <name> --json
+php vendor/bin/foundry generate api-resource <name> --spec=<file> --json
+php vendor/bin/foundry generate docs --format=markdown --json
+php vendor/bin/foundry generate docs --format=html --json
 php vendor/bin/foundry generate indexes --json
 php vendor/bin/foundry generate tests <feature> --json
+php vendor/bin/foundry generate tests <target> --mode=deep --json
+php vendor/bin/foundry generate tests --all-missing --mode=deep --json
 php vendor/bin/foundry generate migration <spec.yaml> --json
 php vendor/bin/foundry generate context <feature> --json
+```
+
+Export:
+```bash
+php vendor/bin/foundry export openapi --format=json --json
+php vendor/bin/foundry export openapi --format=yaml --json
 ```
 
 Verify:
@@ -268,6 +283,8 @@ php vendor/bin/foundry verify events --json
 php vendor/bin/foundry verify jobs --json
 php vendor/bin/foundry verify migrations --json
 php vendor/bin/foundry verify resource <name> --json
+php vendor/bin/foundry verify notifications --json
+php vendor/bin/foundry verify api --json
 ```
 
 Runtime / planning:

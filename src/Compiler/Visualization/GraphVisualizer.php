@@ -128,6 +128,8 @@ final class GraphVisualizer
                     'feature_to_query',
                     'feature_to_event_emit',
                     'feature_to_job_dispatch',
+                    'feature_to_api_resource',
+                    'feature_to_notification_dispatch',
                 ], true),
                 'caches' => $edge->type === 'feature_to_cache_invalidation',
                 'pipeline' => in_array($edge->type, [
@@ -218,6 +220,8 @@ final class GraphVisualizer
             'upload_profile' => (string) ($payload['profile'] ?? $node->id()),
             'listing_config' => (string) ($payload['resource'] ?? $node->id()),
             'form_definition' => (string) (($payload['resource'] ?? '') . ':' . ($payload['intent'] ?? '')) ?: $node->id(),
+            'notification' => (string) ($payload['notification'] ?? $node->id()),
+            'api_resource' => (string) ($payload['resource'] ?? $node->id()),
             default => $node->id(),
         };
     }

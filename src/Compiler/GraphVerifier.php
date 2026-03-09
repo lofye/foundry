@@ -46,6 +46,8 @@ final class GraphVerifier
             $this->layout->projectionPath('upload_profile_index.php'),
             $this->layout->projectionPath('listing_index.php'),
             $this->layout->projectionPath('form_index.php'),
+            $this->layout->projectionPath('notification_index.php'),
+            $this->layout->projectionPath('api_resource_index.php'),
         ];
 
         foreach ($requiredFiles as $file) {

@@ -264,6 +264,8 @@ final class DiscoveryPass implements CompilerPass
             'admin_resource' => 'app/specs/admin/*.admin.yaml',
             'upload_profile' => 'app/specs/uploads/*.uploads.yaml',
             'listing_config' => 'app/specs/listing/*.list.yaml',
+            'notification' => 'app/specs/notifications/*.notification.yaml',
+            'api_resource' => 'app/specs/api/*.api-resource.yaml',
         ];
 
         $discovered = [];
@@ -316,6 +318,8 @@ final class DiscoveryPass implements CompilerPass
             'starter' => (string) ($document['starter'] ?? ''),
             'resource', 'admin_resource', 'listing_config' => (string) ($document['resource'] ?? ''),
             'upload_profile' => (string) ($document['profile'] ?? ''),
+            'notification' => (string) ($document['notification'] ?? ''),
+            'api_resource' => (string) ($document['resource'] ?? ''),
             default => '',
         };
 

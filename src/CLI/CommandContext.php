@@ -9,18 +9,25 @@ use Foundry\Compiler\GraphCompiler;
 use Foundry\Compiler\GraphVerifier;
 use Foundry\Compiler\Migration\ManifestVersionResolver;
 use Foundry\Compiler\Migration\SpecMigrator;
+use Foundry\Documentation\GraphDocsGenerator;
+use Foundry\Export\OpenApiExporter;
+use Foundry\Generation\ApiResourceGenerator;
 use Foundry\Feature\FeatureLoader;
 use Foundry\Generation\ContextManifestGenerator;
+use Foundry\Generation\DeepTestGenerator;
 use Foundry\Generation\FeatureGenerator;
 use Foundry\Generation\FormSchemaRenderer;
 use Foundry\Generation\AdminResourceGenerator;
 use Foundry\Generation\IndexGenerator;
 use Foundry\Generation\MigrationGenerator;
+use Foundry\Generation\NotificationGenerator;
 use Foundry\Generation\ResourceGenerator;
 use Foundry\Generation\StarterGenerator;
 use Foundry\Generation\TestGenerator;
 use Foundry\Generation\UploadsGenerator;
+use Foundry\Notifications\NotificationPreviewer;
 use Foundry\Support\Paths;
+use Foundry\Verification\ApiVerifier;
 use Foundry\Verification\AuthVerifier;
 use Foundry\Verification\CacheVerifier;
 use Foundry\Verification\ContractsVerifier;
@@ -28,6 +35,7 @@ use Foundry\Verification\EventsVerifier;
 use Foundry\Verification\FeatureVerifier;
 use Foundry\Verification\JobsVerifier;
 use Foundry\Verification\MigrationsVerifier;
+use Foundry\Verification\NotificationsVerifier;
 use Foundry\Verification\ResourceVerifier;
 
 final class CommandContext
@@ -102,6 +110,15 @@ final class CommandContext
         return new TestGenerator();
     }
 
+    public function deepTestGenerator(): DeepTestGenerator
+    {
+        return new DeepTestGenerator(
+            $this->paths(),
+            $this->graphCompiler(),
+            $this->testGenerator(),
+        );
+    }
+
     public function migrationGenerator(): MigrationGenerator
     {
         return new MigrationGenerator();
@@ -130,6 +147,31 @@ final class CommandContext
     public function uploadsGenerator(): UploadsGenerator
     {
         return new UploadsGenerator($this->paths(), $this->featureGenerator());
+    }
+
+    public function notificationGenerator(): NotificationGenerator
+    {
+        return new NotificationGenerator($this->paths());
+    }
+
+    public function apiResourceGenerator(): ApiResourceGenerator
+    {
+        return new ApiResourceGenerator($this->paths(), $this->resourceGenerator());
+    }
+
+    public function docsGenerator(): GraphDocsGenerator
+    {
+        return new GraphDocsGenerator($this->paths());
+    }
+
+    public function openApiExporter(): OpenApiExporter
+    {
+        return new OpenApiExporter();
+    }
+
+    public function notificationPreviewer(): NotificationPreviewer
+    {
+        return new NotificationPreviewer($this->paths(), $this->graphCompiler());
     }
 
     public function featureVerifier(): FeatureVerifier
@@ -170,5 +212,15 @@ final class CommandContext
     public function migrationsVerifier(): MigrationsVerifier
     {
         return new MigrationsVerifier($this->paths());
+    }
+
+    public function notificationsVerifier(): NotificationsVerifier
+    {
+        return new NotificationsVerifier($this->graphCompiler(), $this->paths());
+    }
+
+    public function apiVerifier(): ApiVerifier
+    {
+        return new ApiVerifier($this->graphCompiler());
     }
 }
