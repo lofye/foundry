@@ -48,6 +48,15 @@ final class GraphVerifier
             $this->layout->projectionPath('form_index.php'),
             $this->layout->projectionPath('notification_index.php'),
             $this->layout->projectionPath('api_resource_index.php'),
+            $this->layout->projectionPath('billing_index.php'),
+            $this->layout->projectionPath('workflow_index.php'),
+            $this->layout->projectionPath('orchestration_index.php'),
+            $this->layout->projectionPath('search_index.php'),
+            $this->layout->projectionPath('stream_index.php'),
+            $this->layout->projectionPath('locale_index.php'),
+            $this->layout->projectionPath('role_index.php'),
+            $this->layout->projectionPath('policy_index.php'),
+            $this->layout->projectionPath('inspect_ui_index.php'),
         ];
 
         foreach ($requiredFiles as $file) {

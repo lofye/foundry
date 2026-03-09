@@ -130,6 +130,7 @@ final class GraphVisualizer
                     'feature_to_job_dispatch',
                     'feature_to_api_resource',
                     'feature_to_notification_dispatch',
+                    'feature_to_stream',
                 ], true),
                 'caches' => $edge->type === 'feature_to_cache_invalidation',
                 'pipeline' => in_array($edge->type, [
@@ -222,6 +223,15 @@ final class GraphVisualizer
             'form_definition' => (string) (($payload['resource'] ?? '') . ':' . ($payload['intent'] ?? '')) ?: $node->id(),
             'notification' => (string) ($payload['notification'] ?? $node->id()),
             'api_resource' => (string) ($payload['resource'] ?? $node->id()),
+            'billing' => (string) ($payload['provider'] ?? $node->id()),
+            'workflow' => (string) ($payload['resource'] ?? $node->id()),
+            'orchestration' => (string) ($payload['name'] ?? $node->id()),
+            'search_index' => (string) ($payload['index'] ?? $node->id()),
+            'stream' => (string) ($payload['stream'] ?? $node->id()),
+            'locale_bundle' => (string) ($payload['bundle'] ?? $node->id()),
+            'role' => (string) ($payload['role'] ?? $node->id()),
+            'policy' => (string) ($payload['policy'] ?? $node->id()),
+            'inspect_ui' => (string) ($payload['name'] ?? $node->id()),
             default => $node->id(),
         };
     }

@@ -130,6 +130,33 @@ final readonly class ImpactAnalyzer
                 case 'api_resource':
                     $affectedProjections[] = 'api_resource_index.php';
                     break;
+                case 'billing':
+                    $affectedProjections[] = 'billing_index.php';
+                    break;
+                case 'workflow':
+                    $affectedProjections[] = 'workflow_index.php';
+                    break;
+                case 'orchestration':
+                    $affectedProjections[] = 'orchestration_index.php';
+                    break;
+                case 'search_index':
+                    $affectedProjections[] = 'search_index.php';
+                    break;
+                case 'stream':
+                    $affectedProjections[] = 'stream_index.php';
+                    break;
+                case 'locale_bundle':
+                    $affectedProjections[] = 'locale_index.php';
+                    break;
+                case 'role':
+                    $affectedProjections[] = 'role_index.php';
+                    break;
+                case 'policy':
+                    $affectedProjections[] = 'policy_index.php';
+                    break;
+                case 'inspect_ui':
+                    $affectedProjections[] = 'inspect_ui_index.php';
+                    break;
             }
         }
 
@@ -343,6 +370,34 @@ final readonly class ImpactAnalyzer
 
         if (in_array('api_resource_index.php', $projections, true)) {
             $commands[] = 'php vendor/bin/foundry verify api --json';
+        }
+
+        if (in_array('billing_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify billing --json';
+        }
+
+        if (in_array('workflow_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify workflows --json';
+        }
+
+        if (in_array('orchestration_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify orchestrations --json';
+        }
+
+        if (in_array('search_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify search --json';
+        }
+
+        if (in_array('stream_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify streams --json';
+        }
+
+        if (in_array('locale_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify locales --json';
+        }
+
+        if (in_array('policy_index.php', $projections, true) || in_array('role_index.php', $projections, true)) {
+            $commands[] = 'php vendor/bin/foundry verify policies --json';
         }
 
         foreach ($features as $feature) {

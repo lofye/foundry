@@ -42,6 +42,7 @@ final class ExtensionRegistry
             new CoreCompilerExtension(),
             new PhaseOneCompilerExtension(),
             new PhaseTwoCompilerExtension(),
+            new PhaseThreeCompilerExtension(),
         ]);
 
         $loader = new ExtensionRegistrationLoader();

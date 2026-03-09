@@ -10,7 +10,9 @@ use Foundry\Compiler\GraphVerifier;
 use Foundry\Compiler\Migration\ManifestVersionResolver;
 use Foundry\Compiler\Migration\SpecMigrator;
 use Foundry\Documentation\GraphDocsGenerator;
+use Foundry\Documentation\InspectUiGenerator;
 use Foundry\Export\OpenApiExporter;
+use Foundry\Generation\BillingGenerator;
 use Foundry\Generation\ApiResourceGenerator;
 use Foundry\Feature\FeatureLoader;
 use Foundry\Generation\ContextManifestGenerator;
@@ -21,22 +23,36 @@ use Foundry\Generation\AdminResourceGenerator;
 use Foundry\Generation\IndexGenerator;
 use Foundry\Generation\MigrationGenerator;
 use Foundry\Generation\NotificationGenerator;
+use Foundry\Generation\LocaleGenerator;
+use Foundry\Generation\OrchestrationGenerator;
+use Foundry\Generation\PolicyGenerator;
+use Foundry\Generation\RolesGenerator;
 use Foundry\Generation\ResourceGenerator;
+use Foundry\Generation\SearchIndexGenerator;
 use Foundry\Generation\StarterGenerator;
+use Foundry\Generation\StreamGenerator;
 use Foundry\Generation\TestGenerator;
 use Foundry\Generation\UploadsGenerator;
+use Foundry\Generation\WorkflowGenerator;
 use Foundry\Notifications\NotificationPreviewer;
 use Foundry\Support\Paths;
 use Foundry\Verification\ApiVerifier;
 use Foundry\Verification\AuthVerifier;
+use Foundry\Verification\BillingVerifier;
 use Foundry\Verification\CacheVerifier;
 use Foundry\Verification\ContractsVerifier;
 use Foundry\Verification\EventsVerifier;
 use Foundry\Verification\FeatureVerifier;
 use Foundry\Verification\JobsVerifier;
+use Foundry\Verification\LocalesVerifier;
 use Foundry\Verification\MigrationsVerifier;
 use Foundry\Verification\NotificationsVerifier;
+use Foundry\Verification\OrchestrationsVerifier;
+use Foundry\Verification\PoliciesVerifier;
 use Foundry\Verification\ResourceVerifier;
+use Foundry\Verification\SearchVerifier;
+use Foundry\Verification\StreamsVerifier;
+use Foundry\Verification\WorkflowVerifier;
 
 final class CommandContext
 {
@@ -154,6 +170,46 @@ final class CommandContext
         return new NotificationGenerator($this->paths());
     }
 
+    public function billingGenerator(): BillingGenerator
+    {
+        return new BillingGenerator($this->paths(), $this->featureGenerator());
+    }
+
+    public function workflowGenerator(): WorkflowGenerator
+    {
+        return new WorkflowGenerator($this->paths(), $this->featureGenerator());
+    }
+
+    public function orchestrationGenerator(): OrchestrationGenerator
+    {
+        return new OrchestrationGenerator($this->paths(), $this->featureGenerator());
+    }
+
+    public function searchIndexGenerator(): SearchIndexGenerator
+    {
+        return new SearchIndexGenerator($this->paths());
+    }
+
+    public function streamGenerator(): StreamGenerator
+    {
+        return new StreamGenerator($this->paths(), $this->featureGenerator());
+    }
+
+    public function localeGenerator(): LocaleGenerator
+    {
+        return new LocaleGenerator($this->paths());
+    }
+
+    public function rolesGenerator(): RolesGenerator
+    {
+        return new RolesGenerator($this->paths());
+    }
+
+    public function policyGenerator(): PolicyGenerator
+    {
+        return new PolicyGenerator($this->paths());
+    }
+
     public function apiResourceGenerator(): ApiResourceGenerator
     {
         return new ApiResourceGenerator($this->paths(), $this->resourceGenerator());
@@ -162,6 +218,11 @@ final class CommandContext
     public function docsGenerator(): GraphDocsGenerator
     {
         return new GraphDocsGenerator($this->paths());
+    }
+
+    public function inspectUiGenerator(): InspectUiGenerator
+    {
+        return new InspectUiGenerator($this->paths());
     }
 
     public function openApiExporter(): OpenApiExporter
@@ -222,5 +283,40 @@ final class CommandContext
     public function apiVerifier(): ApiVerifier
     {
         return new ApiVerifier($this->graphCompiler());
+    }
+
+    public function billingVerifier(): BillingVerifier
+    {
+        return new BillingVerifier($this->graphCompiler());
+    }
+
+    public function workflowVerifier(): WorkflowVerifier
+    {
+        return new WorkflowVerifier($this->graphCompiler());
+    }
+
+    public function orchestrationsVerifier(): OrchestrationsVerifier
+    {
+        return new OrchestrationsVerifier($this->graphCompiler());
+    }
+
+    public function searchVerifier(): SearchVerifier
+    {
+        return new SearchVerifier($this->graphCompiler());
+    }
+
+    public function streamsVerifier(): StreamsVerifier
+    {
+        return new StreamsVerifier($this->graphCompiler());
+    }
+
+    public function localesVerifier(): LocalesVerifier
+    {
+        return new LocalesVerifier($this->graphCompiler(), $this->paths());
+    }
+
+    public function policiesVerifier(): PoliciesVerifier
+    {
+        return new PoliciesVerifier($this->graphCompiler());
     }
 }

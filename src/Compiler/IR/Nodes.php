@@ -297,6 +297,78 @@ final class ApiResourceNode extends AbstractNode
     }
 }
 
+final class BillingNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'billing';
+    }
+}
+
+final class WorkflowNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'workflow';
+    }
+}
+
+final class OrchestrationNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'orchestration';
+    }
+}
+
+final class SearchIndexNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'search_index';
+    }
+}
+
+final class StreamNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'stream';
+    }
+}
+
+final class LocaleBundleNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'locale_bundle';
+    }
+}
+
+final class RoleNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'role';
+    }
+}
+
+final class PolicyNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'policy';
+    }
+}
+
+final class InspectUiNode extends AbstractNode
+{
+    public function type(): string
+    {
+        return 'inspect_ui';
+    }
+}
+
 final class NodeFactory
 {
     /**
@@ -342,6 +414,15 @@ final class NodeFactory
             'form_definition' => new FormDefinitionNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             'notification' => new NotificationNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             'api_resource' => new ApiResourceNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'billing' => new BillingNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'workflow' => new WorkflowNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'orchestration' => new OrchestrationNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'search_index' => new SearchIndexNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'stream' => new StreamNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'locale_bundle' => new LocaleBundleNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'role' => new RoleNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'policy' => new PolicyNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
+            'inspect_ui' => new InspectUiNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
             default => new FeatureNode($id, $sourcePath, $payload, $sourceRegion, $compatibility),
         };
     }

@@ -266,6 +266,15 @@ final class DiscoveryPass implements CompilerPass
             'listing_config' => 'app/specs/listing/*.list.yaml',
             'notification' => 'app/specs/notifications/*.notification.yaml',
             'api_resource' => 'app/specs/api/*.api-resource.yaml',
+            'billing' => 'app/specs/billing/*.billing.yaml',
+            'workflow' => 'app/specs/workflows/*.workflow.yaml',
+            'orchestration' => 'app/specs/orchestrations/*.orchestration.yaml',
+            'search_index' => 'app/specs/search/*.search.yaml',
+            'stream' => 'app/specs/streams/*.stream.yaml',
+            'locale_bundle' => 'app/specs/locales/*.locale.yaml',
+            'roles' => 'app/specs/roles/*.roles.yaml',
+            'policy' => 'app/specs/policies/*.policy.yaml',
+            'inspect_ui' => 'app/specs/inspect-ui/*.inspect-ui.yaml',
         ];
 
         $discovered = [];
@@ -320,6 +329,15 @@ final class DiscoveryPass implements CompilerPass
             'upload_profile' => (string) ($document['profile'] ?? ''),
             'notification' => (string) ($document['notification'] ?? ''),
             'api_resource' => (string) ($document['resource'] ?? ''),
+            'billing' => (string) ($document['provider'] ?? ''),
+            'workflow' => (string) ($document['resource'] ?? $document['workflow'] ?? ''),
+            'orchestration' => (string) ($document['name'] ?? ''),
+            'search_index' => (string) ($document['index'] ?? ''),
+            'stream' => (string) ($document['stream'] ?? ''),
+            'locale_bundle' => (string) ($document['bundle'] ?? $document['name'] ?? ''),
+            'roles' => (string) ($document['set'] ?? $document['name'] ?? 'default'),
+            'policy' => (string) ($document['policy'] ?? $document['resource'] ?? $document['name'] ?? ''),
+            'inspect_ui' => (string) ($document['name'] ?? $document['base_path'] ?? 'dev'),
             default => '',
         };
 
