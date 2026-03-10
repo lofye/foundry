@@ -25,7 +25,7 @@ final class DemoCapabilityExtension extends AbstractCompilerExtension
         return new ExtensionDescriptor(
             name: $this->name(),
             version: $this->version(),
-            description: 'Minimal demo extension used to validate pack/capability registration in Phase 0B.',
+            description: 'Minimal demo extension used to validate pack/capability registration.',
             frameworkVersionConstraint: '*',
             graphVersionConstraint: '^1',
             providedNodeTypes: ['demo_note'],
@@ -69,13 +69,13 @@ final class DemoCapabilityExtension extends AbstractCompilerExtension
                 migrationRules: [],
                 verifiers: ['verify compatibility'],
                 docsEmitters: [],
-                examples: ['examples/phase0b/demo_extension'],
+                examples: ['examples/extensions-migrations/demo_extension'],
             ),
         ];
     }
 
-    public function passPriority(string $phase, CompilerPass $pass): int
+    public function passPriority(string $stage, CompilerPass $pass): int
     {
-        return $phase === 'enrich' ? 250 : 100;
+        return $stage === 'enrich' ? 250 : 100;
     }
 }

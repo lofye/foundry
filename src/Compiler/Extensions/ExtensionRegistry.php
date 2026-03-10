@@ -40,9 +40,9 @@ final class ExtensionRegistry
     {
         $registry = new self([
             new CoreCompilerExtension(),
-            new PhaseOneCompilerExtension(),
-            new PhaseTwoCompilerExtension(),
-            new PhaseThreeCompilerExtension(),
+            new FoundationCompilerExtension(),
+            new IntegrationCompilerExtension(),
+            new PlatformCompilerExtension(),
         ]);
 
         $loader = new ExtensionRegistrationLoader();
@@ -300,11 +300,11 @@ final class ExtensionRegistry
     /**
      * @return array<int,CompilerPass>
      */
-    public function passesForPhase(string $phase): array
+    public function passesForStage(string $stage): array
     {
         $rows = [];
         foreach ($this->all() as $extension) {
-            $passes = match ($phase) {
+            $passes = match ($stage) {
                 'discovery' => $extension->discoveryPasses(),
                 'normalize' => $extension->normalizePasses(),
                 'link' => $extension->linkPasses(),
@@ -318,7 +318,7 @@ final class ExtensionRegistry
             foreach ($passes as $pass) {
                 $rows[] = [
                     'extension' => $extension->name(),
-                    'priority' => $extension->passPriority($phase, $pass),
+                    'priority' => $extension->passPriority($stage, $pass),
                     'pass' => $pass,
                 ];
             }

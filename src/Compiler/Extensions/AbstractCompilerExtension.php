@@ -112,7 +112,7 @@ abstract class AbstractCompilerExtension implements CompilerExtension
         return [];
     }
 
-    public function passPriority(string $phase, CompilerPass $pass): int
+    public function passPriority(string $stage, CompilerPass $pass): int
     {
         return 100;
     }

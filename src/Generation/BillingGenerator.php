@@ -26,7 +26,7 @@ final class BillingGenerator
         }
 
         if ($provider !== 'stripe') {
-            throw new FoundryError('BILLING_PROVIDER_UNSUPPORTED', 'validation', ['provider' => $provider], 'Only stripe is supported in Phase 3.');
+            throw new FoundryError('BILLING_PROVIDER_UNSUPPORTED', 'validation', ['provider' => $provider], 'Only stripe is currently supported.');
         }
 
         $dir = $this->paths->join('app/specs/billing');

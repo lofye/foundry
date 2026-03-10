@@ -185,37 +185,37 @@ final class GraphCompiler
         $passes = [];
 
         $passes[] = new DiscoveryPass();
-        foreach ($extensions->passesForPhase('discovery') as $pass) {
+        foreach ($extensions->passesForStage('discovery') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new NormalizePass();
-        foreach ($extensions->passesForPhase('normalize') as $pass) {
+        foreach ($extensions->passesForStage('normalize') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new LinkPass();
-        foreach ($extensions->passesForPhase('link') as $pass) {
+        foreach ($extensions->passesForStage('link') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new ValidatePass();
-        foreach ($extensions->passesForPhase('validate') as $pass) {
+        foreach ($extensions->passesForStage('validate') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new EnrichPass();
-        foreach ($extensions->passesForPhase('enrich') as $pass) {
+        foreach ($extensions->passesForStage('enrich') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new AnalyzePass($this->impactAnalyzer);
-        foreach ($extensions->passesForPhase('analyze') as $pass) {
+        foreach ($extensions->passesForStage('analyze') as $pass) {
             $passes[] = $pass;
         }
 
         $passes[] = new EmitPass();
-        foreach ($extensions->passesForPhase('emit') as $pass) {
+        foreach ($extensions->passesForStage('emit') as $pass) {
             $passes[] = $pass;
         }
 

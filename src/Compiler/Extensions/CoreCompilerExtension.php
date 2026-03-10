@@ -211,7 +211,7 @@ final class CoreCompilerExtension extends AbstractCompilerExtension
                 migrationRules: ['FDY_MIGRATE_FEATURE_MANIFEST_V2'],
                 verifiers: ['verify graph'],
                 docsEmitters: [],
-                examples: ['examples/phase0'],
+                examples: ['examples/compiler-core'],
             ),
         ];
     }

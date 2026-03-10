@@ -343,11 +343,11 @@ Included example apps:
 - `examples/blog-api`
 - `examples/dashboard`
 - `examples/ai-pipeline`
-- `examples/phase0`
-- `examples/phase0b`
-- `examples/phase0c`
-- `examples/phase0d`
-- `examples/phase1`
+- `examples/compiler-core`
+- `examples/extensions-migrations`
+- `examples/architecture-tools`
+- `examples/execution-pipeline`
+- `examples/app-scaffolding`
 
 Each example includes feature folders plus generated indexes.
 
@@ -355,8 +355,10 @@ Each example includes feature folders plus generated indexes.
 - `ARCHITECTURE.md`
 - `FEATURE_SPEC.md`
 - `BENCHMARK_NOTES.md`
-- `docs/semantic-compiler-phase0.md`
-- `docs/semantic-compiler-phase0b.md`
-- `docs/semantic-compiler-phase0c.md`
-- `docs/semantic-compiler-phase0d.md`
-- `docs/roadmap-phase1.md`
+- `docs/semantic-compiler.md`
+- `docs/extensions-and-migrations.md`
+- `docs/architecture-tools.md`
+- `docs/execution-pipeline.md`
+- `docs/app-scaffolding.md`
+- `docs/api-notifications-docs.md`
+- `docs/contributor-vocabulary.md`

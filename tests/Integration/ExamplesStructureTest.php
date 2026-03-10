@@ -35,13 +35,13 @@ final class ExamplesStructureTest extends TestCase
         }
     }
 
-    public function test_phase0_examples_are_documented(): void
+    public function test_compiler_foundation_examples_are_documented(): void
     {
-        $this->assertFileExists(getcwd() . '/examples/phase0/README.md');
-        $this->assertFileExists(getcwd() . '/examples/phase0b/README.md');
-        $this->assertFileExists(getcwd() . '/examples/phase0c/README.md');
-        $this->assertFileExists(getcwd() . '/examples/phase0d/README.md');
-        $this->assertFileExists(getcwd() . '/examples/phase1/README.md');
-        $this->assertFileExists(getcwd() . '/examples/phase2/README.md');
+        $this->assertFileExists(getcwd() . '/examples/compiler-core/README.md');
+        $this->assertFileExists(getcwd() . '/examples/extensions-migrations/README.md');
+        $this->assertFileExists(getcwd() . '/examples/architecture-tools/README.md');
+        $this->assertFileExists(getcwd() . '/examples/execution-pipeline/README.md');
+        $this->assertFileExists(getcwd() . '/examples/app-scaffolding/README.md');
+        $this->assertFileExists(getcwd() . '/examples/integration-tooling/README.md');
     }
 }

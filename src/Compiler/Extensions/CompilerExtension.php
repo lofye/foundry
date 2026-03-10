@@ -95,7 +95,7 @@ interface CompilerExtension
      */
     public function pipelineInterceptors(): array;
 
-    public function passPriority(string $phase, CompilerPass $pass): int;
+    public function passPriority(string $stage, CompilerPass $pass): int;
 
     /**
      * @return array<string,mixed>

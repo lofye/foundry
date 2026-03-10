@@ -146,7 +146,7 @@ final class DiscoveryPass implements CompilerPass
         }
 
         ksort($state->discoveredFeatures);
-        $state->discoveredSpecs = $this->discoverPhaseOneSpecs($state);
+        $state->discoveredSpecs = $this->discoverSpecs($state);
         $state->analysis['discovered_specs'] = $state->discoveredSpecs;
     }
 
@@ -256,7 +256,7 @@ final class DiscoveryPass implements CompilerPass
     /**
      * @return array<string,array<string,array<string,mixed>>>
      */
-    private function discoverPhaseOneSpecs(CompilationState $state): array
+    private function discoverSpecs(CompilationState $state): array
     {
         $map = [
             'starter' => 'app/specs/starters/*.starter.yaml',

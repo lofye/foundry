@@ -74,7 +74,7 @@ final class ExtensionRegistryTest extends TestCase
             }
             public function migrationRules(): array { return [$this->rule]; }
             public function enrichPasses(): array { return [$this->pass]; }
-            public function passPriority(string $phase, CompilerPass $pass): int { return 200; }
+            public function passPriority(string $stage, CompilerPass $pass): int { return 200; }
             public function descriptor(): ExtensionDescriptor
             {
                 return new ExtensionDescriptor(
@@ -118,7 +118,7 @@ final class ExtensionRegistryTest extends TestCase
                 return [new SpecFormat('feature_manifest', 'Feature manifest', 2, [1, 2])];
             }
             public function enrichPasses(): array { return [$this->pass]; }
-            public function passPriority(string $phase, CompilerPass $pass): int { return 10; }
+            public function passPriority(string $stage, CompilerPass $pass): int { return 10; }
             public function descriptor(): ExtensionDescriptor
             {
                 return new ExtensionDescriptor(
@@ -162,7 +162,7 @@ final class ExtensionRegistryTest extends TestCase
         $this->assertSame('feature_manifest', $registry->specFormats()[0]->name);
         $this->assertSame('a-codemod', $registry->codemods()[0]->id());
 
-        $passes = $registry->passesForPhase('enrich');
+        $passes = $registry->passesForStage('enrich');
         $this->assertSame('pass.high', $passes[0]->name());
         $this->assertSame('pass.low', $passes[1]->name());
 

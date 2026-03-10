@@ -42,7 +42,7 @@ final class RolesGenerator
         $migrationPath = $this->paths->join('app/platform/migrations/20260309_create_roles_tables.sql');
         if (!is_file($migrationPath) || $force) {
             file_put_contents($migrationPath, <<<'SQL'
--- Foundry Phase 3 roles scaffolding
+-- Foundry roles scaffolding
 CREATE TABLE IF NOT EXISTS roles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,

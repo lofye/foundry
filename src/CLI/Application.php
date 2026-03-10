@@ -5,15 +5,15 @@ namespace Foundry\CLI;
 
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
-use Foundry\CLI\Commands\GeneratePhaseOneCommand;
-use Foundry\CLI\Commands\GeneratePhaseThreeCommand;
-use Foundry\CLI\Commands\GeneratePhaseTwoCommand;
+use Foundry\CLI\Commands\GenerateScaffoldCommand;
+use Foundry\CLI\Commands\GeneratePlatformCommand;
+use Foundry\CLI\Commands\GenerateIntegrationCommand;
 use Foundry\CLI\Commands\GraphVisualizeCommand;
 use Foundry\CLI\Commands\ImpactCommand;
 use Foundry\CLI\Commands\InitAppCommand;
 use Foundry\CLI\Commands\InspectApiCommand;
 use Foundry\CLI\Commands\InspectGraphCommand;
-use Foundry\CLI\Commands\InspectPhaseThreeCommand;
+use Foundry\CLI\Commands\InspectPlatformCommand;
 use Foundry\CLI\Commands\InspectFeatureCommand;
 use Foundry\CLI\Commands\InspectNotificationCommand;
 use Foundry\CLI\Commands\InspectResourceCommand;
@@ -33,8 +33,8 @@ use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyPipelineCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
-use Foundry\CLI\Commands\VerifyPhaseTwoCommand;
-use Foundry\CLI\Commands\VerifyPhaseThreeCommand;
+use Foundry\CLI\Commands\VerifyIntegrationCommand;
+use Foundry\CLI\Commands\VerifyPlatformCommand;
 use Foundry\CLI\Commands\VerifyResourceCommand;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
@@ -63,20 +63,20 @@ final class Application
             new InspectNotificationCommand(),
             new InspectApiCommand(),
             new InspectResourceCommand(),
-            new InspectPhaseThreeCommand(),
+            new InspectPlatformCommand(),
             new InspectRouteCommand(),
             new InitAppCommand(),
-            new GeneratePhaseOneCommand(),
-            new GeneratePhaseTwoCommand(),
-            new GeneratePhaseThreeCommand(),
+            new GenerateScaffoldCommand(),
+            new GenerateIntegrationCommand(),
+            new GeneratePlatformCommand(),
             new GenerateFeatureCommand(),
             new GenerateIndexesCommand(),
             new ExportOpenApiCommand(),
             new PreviewNotificationCommand(),
             new VerifyFeatureCommand(),
             new VerifyResourceCommand(),
-            new VerifyPhaseTwoCommand(),
-            new VerifyPhaseThreeCommand(),
+            new VerifyIntegrationCommand(),
+            new VerifyPlatformCommand(),
             new VerifyContractsCommand(),
             new ServeCommand(),
             new QueueWorkCommand(),
