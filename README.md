@@ -1,4 +1,4 @@
-# Foundry
+# Foundry Framework
 
 Foundry is a production-minded, explicit, deterministic, LLM-first PHP framework for building feature-local web apps.
 
@@ -30,7 +30,7 @@ mkdir my-foundry-app
 cd my-foundry-app
 
 # Install Foundry
-composer require lofye/foundry:^0.3
+composer require lofye/foundry-framework
 
 # Initialize a new Foundry app in this folder
 php vendor/bin/foundry init app . --name=acme/my-foundry-app
