@@ -1,6 +1,7 @@
 # Foundry Framework
 
 Foundry is a production-minded, explicit, deterministic, LLM-first PHP framework for building feature-local web apps.
+Visit [FoundryFramework.org](https://foundryframework.org) for extensive documentation.
 
 It is optimized for:
 - explicit contracts
