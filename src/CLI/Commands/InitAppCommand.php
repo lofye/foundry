@@ -104,10 +104,74 @@ final class InitAppCommand extends Command
         $files = [
             '.gitignore' => "/vendor/\n/.phpunit.cache/\n",
             '.env.example' => "APP_ENV=local\nAPP_DEBUG=1\n",
+            'AGENTS.md' => <<<'MD'
+# Foundry App Agent Guide
+
+Use this file when working inside a Foundry application repository.
+
+## Command Rule
+
+- In Foundry app repos, always use `php vendor/bin/foundry ...`
+- Prefer `--json` for inspect, verify, doctor, prompt, export, and generation commands when an agent is consuming the output
+
+## Source Of Truth
+
+- Treat `app/features/*` as source-of-truth application behavior
+- Treat `app/definitions/*` as source-of-truth definitions when that folder exists
+- Treat `app/.foundry/build/*` as canonical compiled output
+- Treat `app/generated/*` as generated compatibility projections
+- Do not hand-edit `app/generated/*`; regenerate instead
+
+## Safe Edit Loop
+
+1. Inspect current feature and graph reality before editing.
+2. Edit the smallest source-of-truth files that satisfy the task.
+3. Compile graph and inspect diagnostics.
+4. Inspect impact when the change touches contracts, routes, permissions, queries, events, jobs, or caches.
+5. Verify graph and contract surfaces.
+6. Run PHPUnit.
+
+Recommended command loop:
+
+```bash
+php vendor/bin/foundry inspect feature <feature> --json
+php vendor/bin/foundry inspect context <feature> --json
+php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry inspect graph --json
+php vendor/bin/foundry inspect impact --file=app/features/<feature>/feature.yaml --json
+php vendor/bin/foundry verify graph --json
+php vendor/bin/foundry verify feature <feature> --json
+php vendor/bin/foundry verify contracts --json
+php vendor/bin/foundry verify auth --json
+php vendor/bin/foundry verify cache --json
+php vendor/bin/foundry verify events --json
+php vendor/bin/foundry verify jobs --json
+php vendor/bin/phpunit
+```
+
+## App Rules
+
+- Keep changes feature-local unless the task is explicitly cross-cutting platform work
+- Update feature tests and calling code together when contracts or schemas change
+- Preserve explicit manifests, schemas, and context files; avoid hidden behavior
+- Use feature-local `prompts.md` and `context.manifest.json` when present to understand the feature before editing
+
+## Ask First
+
+Stop and ask before:
+- hand-editing generated files
+- changing app-wide conventions, package dependencies, or generated scaffold structure without approval
+- making a behavior choice when the requested behavior is ambiguous or conflicts with the existing feature contract
+MD
+                ,
             'README.md' => $this->replace(<<<'MD'
 # {{PROJECT_NAME}}
 
 This app was scaffolded with Foundry.
+
+## Working With LLMs
+
+Start with `AGENTS.md`. It defines the repo-local workflow and command rules for AI assistants working in this app.
 
 ## First Run
 ```bash

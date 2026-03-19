@@ -35,6 +35,7 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertSame($target, $result['payload']['project_root']);
         $this->assertSame('acme/marketing-site', $result['payload']['project_name']);
         $this->assertSame('lofye/foundry', $result['payload']['framework_package']);
+        $this->assertFileExists($target . '/AGENTS.md');
         $this->assertFileExists($target . '/composer.json');
         $this->assertFileExists($target . '/app/platform/public/index.php');
         $this->assertFileExists($target . '/app/features/home/feature.yaml');
@@ -44,6 +45,16 @@ final class CLIInitAppCommandTest extends TestCase
         $composer = file_get_contents($target . '/composer.json');
         $this->assertIsString($composer);
         $this->assertStringContainsString('"lofye/foundry": "^0.1"', $composer);
+
+        $agents = file_get_contents($target . '/AGENTS.md');
+        $this->assertIsString($agents);
+        $this->assertStringContainsString('Foundry App Agent Guide', $agents);
+        $this->assertStringContainsString('php vendor/bin/foundry compile graph --json', $agents);
+        $this->assertStringContainsString('Do not hand-edit `app/generated/*`', $agents);
+
+        $readme = file_get_contents($target . '/README.md');
+        $this->assertIsString($readme);
+        $this->assertStringContainsString('Start with `AGENTS.md`.', $readme);
 
         /** @var array<string,mixed> $routes */
         $routes = require $target . '/app/generated/routes.php';
