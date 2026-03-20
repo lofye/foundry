@@ -71,8 +71,10 @@ php bin/foundry doctor --feature=<feature> --json
 
 - Every framework behavior change needs PHPUnit coverage
 - Prefer focused test runs while iterating, then finish with the broader relevant suite
-- Do not weaken assertions, delete failing coverage, or edit generated output to hide regressions
+- Do not weaken assertions, delete failing coverage, or edit previously-passing tests or generated output to hide regressions
 - When changing CLI scaffolding or textual contract surfaces, assert the generated files and key content in integration tests
+- When a bug is encountered, create a test that fails because of that bug, then modify the non-test code so that the test passes while maintaining the intent of the original code.
+- Keep test coverage above 90% for all new features and existing code.
 
 ## Ask First
 

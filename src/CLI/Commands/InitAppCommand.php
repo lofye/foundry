@@ -131,6 +131,11 @@ Use this file when working inside a Foundry application repository.
 5. Verify graph and contract surfaces.
 6. Run PHPUnit.
 
+## Guard Rails
+- When a bug is encountered, create a test that fails because of that bug, then modify the non-test code so that the test passes while maintaining the intent of the original code. 
+- Never take a shortcut (such as forcing a test falsely return true) to get a test to pass. 
+- Keep test coverage above 90% for all new features and existing code.
+
 Recommended command loop:
 
 ```bash
