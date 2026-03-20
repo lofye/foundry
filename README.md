@@ -34,14 +34,18 @@ cd my-foundry-app
 composer require lofye/foundry-framework
 
 # Initialize a new Foundry app in this folder
-php vendor/bin/foundry init app . --name=acme/my-foundry-app
+php vendor/bin/foundry new . --starter=standard --name=acme/my-foundry-app
 
 # Install project dependencies
 composer install
 
-# Generate indexes and verify contracts
+# Compile, inspect, and verify contracts
 php vendor/bin/foundry compile graph --json
+php vendor/bin/foundry inspect graph --json
+php vendor/bin/foundry inspect pipeline --json
+php vendor/bin/foundry doctor --json
 php vendor/bin/foundry verify graph --json
+php vendor/bin/foundry verify pipeline --json
 php vendor/bin/foundry verify contracts --json
 php -S 127.0.0.1:8000 app/platform/public/index.php
 ```
@@ -310,7 +314,8 @@ php vendor/bin/foundry verify api --json
 
 Runtime / planning:
 ```bash
-php vendor/bin/foundry init app <path> [--name=vendor/app] [--version=^0.1] [--force]
+php vendor/bin/foundry new <path> [--starter=minimal|standard|api-first] [--name=vendor/app] [--version=^0.1] [--force]
+php vendor/bin/foundry init app <path> [--starter=minimal|standard|api-first] [--name=vendor/app] [--version=^0.1] [--force]
 php vendor/bin/foundry serve
 php vendor/bin/foundry queue:work
 php vendor/bin/foundry queue:inspect --json

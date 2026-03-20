@@ -140,7 +140,7 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features' => $first,
+            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features' => $first,
             'compile', 'graph', 'export', 'preview', 'init', 'migrate', 'codemod' => match ($first) {
                 'compile' => $second === 'graph' ? 'compile graph' : null,
                 'graph' => $second === 'visualize' ? 'graph visualize' : null,
@@ -305,7 +305,8 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('trace:tail', 'trace:tail', 'internal', 'Tail local trace output for development debugging.'),
             $this->cliCommandEntry('affected-files', 'affected-files <feature>', 'internal', 'List source-of-truth files associated with a feature.'),
             $this->cliCommandEntry('impacted-features', 'impacted-features <permission|event:<name>|cache:<key>>', 'internal', 'Resolve impacted features from a runtime contract identifier.'),
-            $this->cliCommandEntry('init app', 'init app <target> [--name=<package>] [--force]', 'experimental', 'Scaffold a new Foundry application.'),
+            $this->cliCommandEntry('new', 'new <target> [--starter=<minimal|standard|api-first>] [--name=<package>] [--version=<constraint>] [--force]', 'stable', 'Scaffold a new Foundry application.'),
+            $this->cliCommandEntry('init app', 'init app <target> [--starter=<minimal|standard|api-first>] [--name=<package>] [--version=<constraint>] [--force]', 'stable', 'Scaffold a new Foundry application (legacy alias).'),
             $this->cliCommandEntry('migrate definitions', 'migrate definitions [--path=<path>] [--dry-run|--write]', 'experimental', 'Apply framework-provided definition migrations.'),
             $this->cliCommandEntry('codemod run', 'codemod run <id> [--path=<path>] [--dry-run|--write]', 'experimental', 'Run explicit source codemods contributed by the framework or extensions.'),
             $this->cliCommandEntry('export openapi', 'export openapi [--format=json|yaml]', 'stable', 'Export OpenAPI documents derived from the canonical graph.'),

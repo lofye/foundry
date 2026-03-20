@@ -1,6 +1,7 @@
 # Foundry App Scaffolding
 
 The app scaffolding layer adds graph-native generators for the most common application slices:
+- whole-project starters (`minimal`, `standard`, `api-first`)
 - starter kits (`server-rendered`, `api`)
 - CRUD resources from resource definitions
 - server-rendered form partial generation
@@ -11,9 +12,15 @@ The app scaffolding layer adds graph-native generators for the most common appli
 All generated artifacts remain source-of-truth files first (`app/features/*`, `app/definitions/*`).
 The semantic compiler then compiles those files into the canonical graph and emits projections.
 
+Project scaffolds also emit first-run inspectability output under:
+- `docs/generated/*`
+- `docs/inspect-ui/*`
+
 ## New Commands
 
 Generate:
+- `php vendor/bin/foundry new my-app --starter=standard --json`
+- `php vendor/bin/foundry init app my-app --starter=minimal --json`
 - `php vendor/bin/foundry generate starter server-rendered --json`
 - `php vendor/bin/foundry generate starter api --json`
 - `php vendor/bin/foundry generate resource <name> --definition=<file> --json`

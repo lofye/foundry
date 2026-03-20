@@ -115,6 +115,11 @@ YAML);
         $this->assertSame('graph visualize', $commandHelp['payload']['command']['signature']);
         $this->assertSame('experimental', $commandHelp['payload']['command']['stability']);
 
+        $newHelp = $this->runCommand($app, ['foundry', 'help', 'new', '--json']);
+        $this->assertSame(0, $newHelp['status']);
+        $this->assertSame('new', $newHelp['payload']['command']['signature']);
+        $this->assertSame('stable', $newHelp['payload']['command']['stability']);
+
         $apiSurface = $this->runCommand($app, ['foundry', 'inspect', 'api-surface', '--command=compile graph', '--json']);
         $this->assertSame(0, $apiSurface['status']);
         $this->assertSame('compile graph', $apiSurface['payload']['matches']['cli_command']['signature']);

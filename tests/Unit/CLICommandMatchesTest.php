@@ -64,6 +64,7 @@ final class CLICommandMatchesTest extends TestCase
 
         $this->assertTrue((new InspectRouteCommand())->matches(['inspect', 'route', 'GET', '/']));
         $this->assertTrue((new InitAppCommand())->matches(['init', 'app', './my-app']));
+        $this->assertTrue((new InitAppCommand())->matches(['new', './my-app']));
         $this->assertTrue((new GenerateFeatureCommand())->matches(['generate', 'feature', 'x.yaml']));
         $this->assertTrue((new GenerateScaffoldCommand())->matches(['generate', 'starter', 'api']));
         $this->assertTrue((new GenerateScaffoldCommand())->matches(['generate', 'resource', 'posts', '--definition=definitions/posts.resource.yaml']));

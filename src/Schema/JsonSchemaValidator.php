@@ -61,7 +61,7 @@ final class JsonSchemaValidator implements SchemaValidator
             }
         }
 
-        if (is_array($value) && $this->isAssoc($value)) {
+        if (is_array($value) && ($this->isAssoc($value) || ($value === [] && $this->expectsObject($schema)))) {
             $this->validateObject($value, $schema, $path, $errors);
         }
     }
@@ -156,8 +156,8 @@ final class JsonSchemaValidator implements SchemaValidator
     private function matchesType(mixed $value, string $type): bool
     {
         return match ($type) {
-            'object' => is_array($value) && $this->isAssoc($value),
-            'array' => is_array($value) && !$this->isAssoc($value),
+            'object' => is_array($value) && ($value === [] || $this->isAssoc($value)),
+            'array' => is_array($value) && ($value === [] || !$this->isAssoc($value)),
             'string' => is_string($value),
             'integer' => is_int($value),
             'number' => is_int($value) || is_float($value),
@@ -165,6 +165,21 @@ final class JsonSchemaValidator implements SchemaValidator
             'null' => $value === null,
             default => false,
         };
+    }
+
+    /**
+     * @param array<string,mixed> $schema
+     */
+    private function expectsObject(array $schema): bool
+    {
+        $types = $schema['type'] ?? null;
+        if ($types === null) {
+            return false;
+        }
+
+        $types = is_array($types) ? $types : [$types];
+
+        return in_array('object', array_map('strval', $types), true);
     }
 
     /**

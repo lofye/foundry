@@ -57,4 +57,23 @@ final class SchemaValidatorTest extends TestCase
         $this->assertFalse($result->isValid);
         $this->assertNotEmpty($result->errors);
     }
+
+    public function test_empty_php_array_is_accepted_for_object_schema_without_required_fields(): void
+    {
+        $path = sys_get_temp_dir() . '/schema-empty-object-' . bin2hex(random_bytes(4)) . '.json';
+        file_put_contents($path, json_encode([
+            '$schema' => 'https://json-schema.org/draft/2020-12/schema',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'properties' => [],
+        ], JSON_UNESCAPED_SLASHES));
+
+        $validator = new JsonSchemaValidator();
+        $result = $validator->validate([], $path);
+
+        @unlink($path);
+
+        $this->assertTrue($result->isValid);
+        $this->assertSame([], $result->errors);
+    }
 }
