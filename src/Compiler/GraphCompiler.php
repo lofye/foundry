@@ -25,6 +25,7 @@ final class GraphCompiler
     private readonly SourceScanner $sourceScanner;
     private readonly CompilePlanner $planner;
     private readonly ImpactAnalyzer $impactAnalyzer;
+    private readonly CompileCacheInspector $cacheInspector;
 
     public function __construct(
         private readonly Paths $paths,
@@ -34,6 +35,7 @@ final class GraphCompiler
         $this->sourceScanner = new SourceScanner($paths);
         $this->planner = new CompilePlanner();
         $this->impactAnalyzer = new ImpactAnalyzer($paths);
+        $this->cacheInspector = new CompileCacheInspector($paths, $this->layout, $this->sourceScanner);
     }
 
     public function compile(CompileOptions $options = new CompileOptions()): CompileResult
@@ -49,6 +51,23 @@ final class GraphCompiler
 
         $previousManifest = $this->readJson($this->layout->compileManifestPath()) ?? [];
         $previousGraph = $this->loadPreviousGraph();
+        $extensions = $this->extensionRegistry();
+        $compatibility = $extensions->compatibilityReport($frameworkVersion, self::GRAPH_VERSION);
+
+        $cache = $this->cacheInspector->inspect(
+            options: $options,
+            sourceHashes: $sourceHashes,
+            previousManifest: $previousManifest,
+            previousGraph: $previousGraph,
+            extensions: $extensions,
+            compatibility: $compatibility->toArray(),
+            frameworkVersion: $frameworkVersion,
+            graphVersion: self::GRAPH_VERSION,
+        );
+
+        $forcedFullReason = ((bool) ($cache['requires_full_recompile'] ?? false))
+            ? rtrim((string) ($cache['reason'] ?? 'Compile cache invalidated.'), '.') . '; full compile required'
+            : null;
 
         $plan = $this->planner->plan(
             options: $options,
@@ -58,15 +77,37 @@ final class GraphCompiler
             hasPreviousGraph: $previousGraph !== null,
             scanner: $this->sourceScanner,
             frameworkVersion: $frameworkVersion,
+            forcedFullReason: $forcedFullReason,
         );
 
-        if ($plan->noChanges && $previousGraph !== null) {
+        if (!$options->useCache && $plan->noChanges) {
+            $plan = new CompilePlan(
+                mode: $plan->mode,
+                incremental: false,
+                noChanges: false,
+                fallbackToFull: true,
+                selectedFeatures: $currentFeatures,
+                changedFeatures: $plan->changedFeatures,
+                changedFiles: $plan->changedFiles,
+                reason: 'Compile cache disabled; full compile required.',
+            );
+        }
+
+        if (($cache['status'] ?? null) === 'hit' && $previousGraph !== null) {
             $diagnostics = new DiagnosticBag();
+            if ($plan->noChanges) {
+                $diagnostics->info(
+                    code: 'FDY0001_NO_CHANGES',
+                    category: 'graph',
+                    message: 'No source changes detected; reusing existing build artifacts.',
+                    pass: 'compile',
+                );
+            }
             $diagnostics->info(
-                code: 'FDY0001_NO_CHANGES',
+                code: 'FDY0002_COMPILE_CACHE_HIT',
                 category: 'graph',
-                message: 'No source changes detected; reusing existing build artifacts.',
-                pass: 'compile',
+                message: (string) ($cache['reason'] ?? 'Compile cache hit.'),
+                pass: 'compile.cache',
             );
 
             $integrity = $this->readJson($this->layout->integrityHashesPath()) ?? [];
@@ -74,12 +115,22 @@ final class GraphCompiler
             return new CompileResult(
                 graph: $previousGraph,
                 diagnostics: $diagnostics,
-                plan: $plan,
+                plan: new CompilePlan(
+                    mode: $plan->mode,
+                    incremental: $plan->incremental,
+                    noChanges: true,
+                    fallbackToFull: $plan->fallbackToFull,
+                    selectedFeatures: $plan->selectedFeatures,
+                    changedFeatures: $plan->changedFeatures,
+                    changedFiles: $plan->changedFiles,
+                    reason: (string) ($cache['reason'] ?? 'Compile cache hit.'),
+                ),
                 manifest: $previousManifest,
                 configSchemas: (array) (($this->readJson($this->layout->configSchemasPath())['schemas'] ?? [])),
                 configValidation: $this->readJson($this->layout->configValidationPath()) ?? [],
                 integrityHashes: array_map('strval', $integrity),
                 projections: [],
+                cache: $cache,
                 writtenFiles: [],
             );
         }
@@ -98,8 +149,7 @@ final class GraphCompiler
         }
 
         $diagnostics = new DiagnosticBag();
-        $extensions = $this->extensionRegistry();
-        $compatibility = $extensions->compatibilityReport($frameworkVersion, self::GRAPH_VERSION);
+        $this->appendCacheDiagnostic($diagnostics, $cache);
         foreach ($compatibility->diagnostics as $row) {
             if (!is_array($row)) {
                 continue;
@@ -130,6 +180,7 @@ final class GraphCompiler
             sourceHashes: $sourceHashes,
             previousManifest: $previousManifest,
         );
+        $state->cache = $cache;
         $state->analysis['compatibility'] = $compatibility->toArray();
 
         $passes = $this->buildPassRows($state);
@@ -174,6 +225,7 @@ final class GraphCompiler
             configValidation: $state->configValidation,
             integrityHashes: $state->integrityHashes,
             projections: $state->projections,
+            cache: $state->cache,
             writtenFiles: $writtenFiles,
         );
     }
@@ -196,6 +248,37 @@ final class GraphCompiler
     public function frameworkVersion(): string
     {
         return $this->detectedFrameworkVersion();
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public function inspectCache(): array
+    {
+        $frameworkVersion = $this->detectedFrameworkVersion();
+        $sourceFiles = $this->sourceScanner->sourceFiles();
+        $sourceHashes = $this->sourceScanner->hashFiles($sourceFiles);
+        $extensions = $this->extensionRegistry();
+        $compatibility = $extensions->compatibilityReport($frameworkVersion, self::GRAPH_VERSION);
+
+        return $this->cacheInspector->inspect(
+            options: new CompileOptions(),
+            sourceHashes: $sourceHashes,
+            previousManifest: $this->readJson($this->layout->compileManifestPath()) ?? [],
+            previousGraph: $this->loadPreviousGraph(),
+            extensions: $extensions,
+            compatibility: $compatibility->toArray(),
+            frameworkVersion: $frameworkVersion,
+            graphVersion: self::GRAPH_VERSION,
+        );
+    }
+
+    /**
+     * @return array{cleared:bool,removed_count:int,removed_paths:array<int,string>}
+     */
+    public function clearCache(): array
+    {
+        return $this->cacheInspector->clear();
     }
 
     public function extensionRegistry(): ExtensionRegistry
@@ -348,5 +431,36 @@ final class GraphCompiler
         $version = $decoded['version'] ?? null;
 
         return is_string($version) && $version !== '' ? $version : 'dev-main';
+    }
+
+    /**
+     * @param array<string,mixed> $cache
+     */
+    private function appendCacheDiagnostic(DiagnosticBag $diagnostics, array $cache): void
+    {
+        $status = (string) ($cache['status'] ?? '');
+        $message = (string) ($cache['reason'] ?? '');
+
+        if ($status === '' || $message === '') {
+            return;
+        }
+
+        $code = match ($status) {
+            'disabled' => 'FDY0005_COMPILE_CACHE_DISABLED',
+            'miss' => 'FDY0003_COMPILE_CACHE_MISS',
+            'invalidated' => 'FDY0004_COMPILE_CACHE_INVALIDATED',
+            default => null,
+        };
+
+        if ($code === null) {
+            return;
+        }
+
+        $diagnostics->info(
+            code: $code,
+            category: 'graph',
+            message: $message,
+            pass: 'compile.cache',
+        );
     }
 }

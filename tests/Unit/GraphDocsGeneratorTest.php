@@ -63,11 +63,13 @@ final class GraphDocsGeneratorTest extends TestCase
         $this->assertFileExists($this->project->root . '/docs/generated/features.html');
         $this->assertFileExists($this->project->root . '/docs/generated/api-surface.md');
         $this->assertFileExists($this->project->root . '/docs/generated/cli-reference.md');
+        $this->assertFileExists($this->project->root . '/docs/generated/upgrade-reference.md');
 
         $featuresMd = file_get_contents($this->project->root . '/docs/generated/features.md') ?: '';
         $routesMd = file_get_contents($this->project->root . '/docs/generated/routes.md') ?: '';
         $apiSurfaceMd = file_get_contents($this->project->root . '/docs/generated/api-surface.md') ?: '';
         $cliReferenceMd = file_get_contents($this->project->root . '/docs/generated/cli-reference.md') ?: '';
+        $upgradeReferenceMd = file_get_contents($this->project->root . '/docs/generated/upgrade-reference.md') ?: '';
         $llmMd = file_get_contents($this->project->root . '/docs/generated/llm-workflow.md') ?: '';
         $featuresHtml = file_get_contents($this->project->root . '/docs/generated/features.html') ?: '';
 
@@ -81,6 +83,9 @@ final class GraphDocsGeneratorTest extends TestCase
         $this->assertStringContainsString('graph inspect [stable]', $cliReferenceMd);
         $this->assertStringContainsString('graph visualize [stable]', $cliReferenceMd);
         $this->assertStringContainsString('export graph [stable]', $cliReferenceMd);
+        $this->assertStringContainsString('# Upgrade Reference', $upgradeReferenceMd);
+        $this->assertStringContainsString('php vendor/bin/foundry upgrade-check --json', $upgradeReferenceMd);
+        $this->assertStringContainsString('Config compatibility aliases', $upgradeReferenceMd);
         $this->assertStringContainsString('Recommended commands:', $llmMd);
         $this->assertStringContainsString('<h1>Feature Catalog</h1>', $featuresHtml);
     }

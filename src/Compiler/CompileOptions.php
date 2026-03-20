@@ -9,6 +9,7 @@ final readonly class CompileOptions
         public ?string $feature = null,
         public bool $changedOnly = false,
         public bool $emit = true,
+        public bool $useCache = true,
     ) {
     }
 

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
+use Foundry\CLI\Commands\CacheClearCommand;
+use Foundry\CLI\Commands\CacheInspectCommand;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
 use Foundry\CLI\Commands\GenerateScaffoldCommand;
@@ -29,6 +31,7 @@ use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
 use Foundry\CLI\Commands\CodemodRunCommand;
 use Foundry\CLI\Commands\CompileGraphCommand;
+use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
 use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyPipelineCommand;
@@ -90,7 +93,10 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new ExportOpenApiCommand())->matches(['export', 'openapi', '--format=json']));
         $this->assertTrue((new PreviewNotificationCommand())->matches(['preview', 'notification', 'welcome_email']));
         $this->assertTrue((new CompileGraphCommand())->matches(['compile', 'graph']));
+        $this->assertTrue((new CacheInspectCommand())->matches(['cache', 'inspect']));
+        $this->assertTrue((new CacheClearCommand())->matches(['cache', 'clear']));
         $this->assertTrue((new DoctorCommand())->matches(['doctor']));
+        $this->assertTrue((new UpgradeCheckCommand())->matches(['upgrade-check']));
         $this->assertTrue((new GraphVisualizeCommand())->matches(['graph', 'visualize']));
         $this->assertTrue((new PromptCommand())->matches(['prompt', 'add', 'feature']));
         $this->assertTrue((new InspectPlatformCommand())->matches(['inspect', 'billing']));

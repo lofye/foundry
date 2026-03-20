@@ -24,6 +24,7 @@ final class GraphVerifier
             $this->layout->graphJsonPath(),
             $this->layout->graphPhpPath(),
             $this->layout->compileManifestPath(),
+            $this->layout->compileCachePath(),
             $this->layout->integrityHashesPath(),
             $this->layout->diagnosticsPath(),
             $this->layout->configValidationPath(),
@@ -70,6 +71,11 @@ final class GraphVerifier
         $manifest = $this->readJsonFile($this->layout->compileManifestPath());
         if ($manifest === null) {
             $errors[] = 'compile_manifest.json is missing or invalid JSON.';
+        }
+
+        $cache = $this->readJsonFile($this->layout->compileCachePath());
+        if ($cache === null) {
+            $errors[] = 'compile_cache.json is missing or invalid JSON.';
         }
 
         $diagnostics = $this->readJsonFile($this->layout->diagnosticsPath());

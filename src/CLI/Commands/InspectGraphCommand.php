@@ -183,6 +183,7 @@ final class InspectGraphCommand extends Command
     {
         $layout = $context->graphCompiler()->buildLayout();
         $manifest = $this->readJson($layout->compileManifestPath()) ?? [];
+        $cache = $this->readJson($layout->compileCachePath()) ?? [];
         $integrity = $this->readJson($layout->integrityHashesPath()) ?? [];
         $diagnostics = $this->readJson($layout->diagnosticsPath()) ?? [];
 
@@ -193,6 +194,8 @@ final class InspectGraphCommand extends Command
             'message' => null,
             'payload' => [
                 'manifest' => $manifest,
+                'cache' => $cache,
+                'cache_status' => $context->graphCompiler()->inspectCache(),
                 'integrity_hashes' => $integrity,
                 'diagnostics' => $diagnostics,
                 'verification' => $verification->toArray(),

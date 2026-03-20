@@ -130,10 +130,86 @@ YAML);
         $this->assertSame('new', $newHelp['payload']['command']['signature']);
         $this->assertSame('stable', $newHelp['payload']['command']['stability']);
 
+        $upgradeHelp = $this->runCommand($app, ['foundry', 'help', 'upgrade-check', '--json']);
+        $this->assertSame(0, $upgradeHelp['status']);
+        $this->assertSame('upgrade-check', $upgradeHelp['payload']['command']['signature']);
+        $this->assertSame('stable', $upgradeHelp['payload']['command']['stability']);
+
+        $cacheHelp = $this->runCommand($app, ['foundry', 'help', 'cache', 'inspect', '--json']);
+        $this->assertSame(0, $cacheHelp['status']);
+        $this->assertSame('cache inspect', $cacheHelp['payload']['command']['signature']);
+        $this->assertSame('stable', $cacheHelp['payload']['command']['stability']);
+
         $apiSurface = $this->runCommand($app, ['foundry', 'inspect', 'api-surface', '--command=compile graph', '--json']);
         $this->assertSame(0, $apiSurface['status']);
         $this->assertSame('compile graph', $apiSurface['payload']['matches']['cli_command']['signature']);
         $this->assertSame('stable', $apiSurface['payload']['matches']['cli_command']['stability']);
+    }
+
+    public function test_non_json_cache_commands_emit_human_readable_output(): void
+    {
+        $base = $this->project->root . '/app/features/publish_post';
+        mkdir($base . '/tests', 0777, true);
+
+        file_put_contents($base . '/feature.yaml', <<<'YAML'
+version: 1
+feature: publish_post
+kind: http
+description: test
+route:
+  method: POST
+  path: /posts
+input:
+  schema: app/features/publish_post/input.schema.json
+output:
+  schema: app/features/publish_post/output.schema.json
+auth:
+  required: true
+  strategies: [bearer]
+  permissions: [posts.create]
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  invalidate: []
+events:
+  emit: []
+jobs:
+  dispatch: []
+tests:
+  required: [contract, feature, auth]
+YAML);
+        file_put_contents($base . '/input.schema.json', '{"type":"object"}');
+        file_put_contents($base . '/output.schema.json', '{"type":"object"}');
+        file_put_contents($base . '/action.php', '<?php declare(strict_types=1);');
+        file_put_contents($base . '/cache.yaml', "version: 1\nentries: []\n");
+        file_put_contents($base . '/events.yaml', "version: 1\nemit: []\nsubscribe: []\n");
+        file_put_contents($base . '/jobs.yaml', "version: 1\ndispatch: []\n");
+        file_put_contents($base . '/permissions.yaml', "version: 1\npermissions: [posts.create]\nrules: {}\n");
+        file_put_contents($base . '/context.manifest.json', '{"version":1,"feature":"publish_post","kind":"http"}');
+        file_put_contents($base . '/tests/publish_post_contract_test.php', '<?php declare(strict_types=1);');
+        file_put_contents($base . '/tests/publish_post_feature_test.php', '<?php declare(strict_types=1);');
+        file_put_contents($base . '/tests/publish_post_auth_test.php', '<?php declare(strict_types=1);');
+
+        $app = new Application();
+
+        $cacheInspect = $this->runCommandRaw($app, ['foundry', 'cache', 'inspect']);
+        $this->assertSame(0, $cacheInspect['status']);
+        $this->assertStringContainsString('Compile cache status: miss', $cacheInspect['output']);
+
+        $noCacheCompile = $this->runCommandRaw($app, ['foundry', 'compile', 'graph', '--no-cache']);
+        $this->assertSame(0, $noCacheCompile['status']);
+        $this->assertStringContainsString('Graph compiled without using the compile cache.', $noCacheCompile['output']);
+
+        $cacheHitCompile = $this->runCommandRaw($app, ['foundry', 'compile', 'graph']);
+        $this->assertSame(0, $cacheHitCompile['status']);
+        $this->assertStringContainsString('Compile cache hit; reused existing build.', $cacheHitCompile['output']);
+
+        $cacheClear = $this->runCommandRaw($app, ['foundry', 'cache', 'clear']);
+        $this->assertSame(0, $cacheClear['status']);
+        $this->assertStringContainsString('Compile cache cleared.', $cacheClear['output']);
     }
 
     /**
@@ -150,5 +226,18 @@ YAML);
         $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
         return ['status' => $status, 'payload' => $payload];
+    }
+
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,output:string}
+     */
+    private function runCommandRaw(Application $app, array $argv): array
+    {
+        ob_start();
+        $status = $app->run($argv);
+        $output = (string) (ob_get_clean() ?: '');
+
+        return ['status' => $status, 'output' => $output];
     }
 }

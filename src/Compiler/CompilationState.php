@@ -32,6 +32,11 @@ final class CompilationState
     /**
      * @var array<string,mixed>
      */
+    public array $cache = [];
+
+    /**
+     * @var array<string,mixed>
+     */
     public array $manifest = [];
 
     /**

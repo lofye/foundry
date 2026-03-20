@@ -140,8 +140,8 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features' => $first,
-            'compile', 'graph', 'export', 'preview', 'init', 'migrate', 'codemod' => match ($first) {
+            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check' => $first,
+            'compile', 'graph', 'export', 'preview', 'init', 'migrate', 'codemod', 'cache' => match ($first) {
                 'compile' => $second === 'graph' ? 'compile graph' : null,
                 'graph' => match ($second) {
                     'inspect' => 'graph inspect',
@@ -157,6 +157,11 @@ final class ApiSurfaceRegistry
                 'init' => $second === 'app' ? 'init app' : null,
                 'migrate' => $second === 'definitions' ? 'migrate definitions' : null,
                 'codemod' => $second === 'run' ? 'codemod run' : null,
+                'cache' => match ($second) {
+                    'inspect' => 'cache inspect',
+                    'clear' => 'cache clear',
+                    default => null,
+                },
                 default => null,
             },
             'doctor', 'prompt' => $first,
@@ -302,8 +307,11 @@ final class ApiSurfaceRegistry
     {
         $commands = [
             $this->cliCommandEntry('help', 'help [<command> [<subcommand>]]', 'stable', 'Show the classified CLI reference and per-command stability details.'),
-            $this->cliCommandEntry('compile graph', 'compile graph [--feature=<feature>] [--changed-only]', 'stable', 'Compile source-of-truth files into the canonical application graph.'),
+            $this->cliCommandEntry('compile graph', 'compile graph [--feature=<feature>] [--changed-only] [--no-cache]', 'stable', 'Compile source-of-truth files into the canonical application graph.'),
+            $this->cliCommandEntry('cache inspect', 'cache inspect', 'stable', 'Inspect deterministic compile cache state, keys, and invalidation reasons.'),
+            $this->cliCommandEntry('cache clear', 'cache clear', 'stable', 'Clear deterministic compile cache artifacts and generated projections.'),
             $this->cliCommandEntry('doctor', 'doctor [--feature=<feature>] [--strict]', 'experimental', 'Diagnose environment, install, build, and architecture issues from current Foundry state.'),
+            $this->cliCommandEntry('upgrade-check', 'upgrade-check [--target=<version>]', 'stable', 'Assess whether the current app is ready for a target framework upgrade.'),
             $this->cliCommandEntry('graph inspect', 'graph inspect [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Inspect graph summaries and filtered architecture slices through the stable graph surface.'),
             $this->cliCommandEntry('graph visualize', 'graph visualize [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Render graph slices through the stable graph inspection surface.'),
             $this->cliCommandEntry('prompt', 'prompt <instruction...> [--feature-context] [--dry-run]', 'experimental', 'Build structured AI-edit prompts from current graph state.'),
@@ -526,6 +534,7 @@ final class ApiSurfaceRegistry
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/graph/app_graph.php', 'internal_api', 'internal', 'Canonical graph PHP artifact.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/projections/*.php', 'internal_api', 'internal', 'Generated projection artifacts used by the runtime.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/manifests/compile_manifest.json', 'internal_api', 'internal', 'Compiler manifest artifact.'),
+            $this->surfaceEntry('generated_metadata', 'app/.foundry/build/manifests/compile_cache.json', 'internal_api', 'internal', 'Deterministic compile cache metadata artifact.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/manifests/config_schemas.json', 'internal_api', 'internal', 'Machine-readable config schema artifact.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/manifests/integrity_hashes.json', 'internal_api', 'internal', 'Compiler integrity hash artifact.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/diagnostics/latest.json', 'internal_api', 'internal', 'Latest compiler diagnostics artifact.'),

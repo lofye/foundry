@@ -41,6 +41,7 @@ final class GraphCompilerTest extends TestCase
         $this->assertFileExists($this->project->root . '/app/.foundry/build/projections/execution_plan_index.php');
         $this->assertFileExists($this->project->root . '/app/.foundry/build/projections/interceptor_index.php');
         $this->assertFileExists($this->project->root . '/app/.foundry/build/manifests/compile_manifest.json');
+        $this->assertFileExists($this->project->root . '/app/.foundry/build/manifests/compile_cache.json');
         $this->assertFileExists($this->project->root . '/app/.foundry/build/manifests/integrity_hashes.json');
         $this->assertFileExists($this->project->root . '/app/.foundry/build/diagnostics/latest.json');
 
@@ -63,6 +64,7 @@ final class GraphCompilerTest extends TestCase
         $this->assertArrayHasKey('POST /posts', $routes);
 
         $this->assertSame(0, $result->diagnostics->summary()['error']);
+        $this->assertSame('miss', $result->cache['status']);
     }
 
     public function test_compile_reports_duplicate_route_diagnostic(): void
@@ -93,12 +95,30 @@ final class GraphCompilerTest extends TestCase
 
         $this->assertTrue($result->plan->noChanges);
         $this->assertSame('changed_only', $result->plan->mode);
+        $this->assertSame('hit', $result->cache['status']);
 
         $codes = array_map(
             static fn (array $row): string => (string) ($row['code'] ?? ''),
             $result->diagnostics->toArray(),
         );
         $this->assertContains('FDY0001_NO_CHANGES', $codes);
+        $this->assertContains('FDY0002_COMPILE_CACHE_HIT', $codes);
+    }
+
+    public function test_repeated_full_compile_reuses_compile_cache(): void
+    {
+        $this->createFeature('publish_post', 'POST', '/posts');
+
+        $compiler = new GraphCompiler(Paths::fromCwd($this->project->root));
+        $compiler->compile(new CompileOptions());
+
+        $graphPath = $this->project->root . '/app/.foundry/build/graph/app_graph.json';
+        $before = (string) file_get_contents($graphPath);
+
+        $result = $compiler->compile(new CompileOptions());
+
+        $this->assertSame('hit', $result->cache['status']);
+        $this->assertSame($before, (string) file_get_contents($graphPath));
     }
 
     public function test_feature_targeted_compile_preserves_other_features(): void
@@ -118,11 +138,88 @@ final class GraphCompilerTest extends TestCase
         $this->assertTrue($result->plan->incremental);
         $this->assertContains('publish_post', $result->graph->features());
         $this->assertContains('list_posts', $result->graph->features());
+        $this->assertSame('invalidated', $result->cache['status']);
+        $this->assertContains('feature_manifest_hash', $result->cache['invalidated_inputs']);
     }
 
-    private function createFeature(string $feature, string $method, string $path): void
+    public function test_compile_cache_can_be_inspected_and_cleared(): void
     {
-        $base = $this->project->root . '/app/features/' . $feature;
+        $this->createFeature('publish_post', 'POST', '/posts');
+
+        $compiler = new GraphCompiler(Paths::fromCwd($this->project->root));
+        $compiler->compile(new CompileOptions());
+
+        $inspect = $compiler->inspectCache();
+        $this->assertSame('hit', $inspect['status']);
+        $this->assertSame([], $inspect['artifacts']['missing']);
+
+        $cleared = $compiler->clearCache();
+        $this->assertTrue($cleared['cleared']);
+        $this->assertFileDoesNotExist($this->project->root . '/app/.foundry/build/manifests/compile_manifest.json');
+
+        $afterClear = $compiler->inspectCache();
+        $this->assertSame('miss', $afterClear['status']);
+    }
+
+    public function test_compile_forces_full_rebuild_when_framework_cache_marker_changes(): void
+    {
+        $this->createFeature('publish_post', 'POST', '/posts');
+
+        $compiler = new GraphCompiler(Paths::fromCwd($this->project->root));
+        $compiler->compile(new CompileOptions());
+
+        $cachePath = $this->project->root . '/app/.foundry/build/manifests/compile_cache.json';
+        $cache = Json::decodeAssoc((string) file_get_contents($cachePath));
+        $cache['inputs']['framework_source_hash'] = 'stale-framework-hash';
+        file_put_contents($cachePath, Json::encode($cache, true));
+
+        $result = $compiler->compile(new CompileOptions(changedOnly: true));
+
+        $this->assertTrue($result->plan->fallbackToFull);
+        $this->assertSame('invalidated', $result->cache['status']);
+        $this->assertTrue($result->cache['requires_full_recompile']);
+        $this->assertContains('framework_source_hash', $result->cache['invalidated_inputs']);
+    }
+
+    public function test_graph_and_projection_outputs_match_with_and_without_cache_enabled(): void
+    {
+        $otherProject = new TempProject();
+
+        try {
+            $this->createFeature('publish_post', 'POST', '/posts');
+            $this->createFeature('publish_post', 'POST', '/posts', $otherProject->root);
+
+            $noCacheCompiler = new GraphCompiler(Paths::fromCwd($this->project->root));
+            $cachedCompiler = new GraphCompiler(Paths::fromCwd($otherProject->root));
+
+            $noCacheResult = $noCacheCompiler->compile(new CompileOptions(useCache: false));
+            $cachedResult = $cachedCompiler->compile(new CompileOptions());
+
+            $this->assertSame('disabled', $noCacheResult->cache['status']);
+            $this->assertSame('miss', $cachedResult->cache['status']);
+
+            $leftGraph = Json::decodeAssoc((string) file_get_contents($this->project->root . '/app/.foundry/build/graph/app_graph.json'));
+            $rightGraph = Json::decodeAssoc((string) file_get_contents($otherProject->root . '/app/.foundry/build/graph/app_graph.json'));
+            unset($leftGraph['compiled_at'], $rightGraph['compiled_at']);
+
+            $this->assertSame($leftGraph, $rightGraph);
+            $this->assertSame(
+                (string) file_get_contents($this->project->root . '/app/.foundry/build/projections/routes_index.php'),
+                (string) file_get_contents($otherProject->root . '/app/.foundry/build/projections/routes_index.php'),
+            );
+            $this->assertSame(
+                (string) file_get_contents($this->project->root . '/app/.foundry/build/projections/feature_index.php'),
+                (string) file_get_contents($otherProject->root . '/app/.foundry/build/projections/feature_index.php'),
+            );
+        } finally {
+            $otherProject->cleanup();
+        }
+    }
+
+    private function createFeature(string $feature, string $method, string $path, ?string $root = null): void
+    {
+        $root ??= $this->project->root;
+        $base = $root . '/app/features/' . $feature;
         mkdir($base . '/tests', 0777, true);
 
         file_put_contents($base . '/feature.yaml', <<<YAML

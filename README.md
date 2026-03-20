@@ -225,6 +225,8 @@ AI prompt loop:
 php vendor/bin/foundry prompt "add bookmark endpoint for posts" --json
 php vendor/bin/foundry prompt "add bookmark endpoint for posts" --feature-context --dry-run --json
 php vendor/bin/foundry preview notification <name> --json
+php vendor/bin/foundry upgrade-check --json
+php vendor/bin/foundry upgrade-check --target=1.0.0 --json
 ```
 
 Inspect:
@@ -384,6 +386,7 @@ Each example includes feature folders plus generated indexes.
 - `docs/semantic-compiler.md`
 - `docs/extensions-and-migrations.md`
 - `docs/extension-author-guide.md`
+- `docs/upgrade-safety.md`
 - `docs/architecture-tools.md`
 - `docs/execution-pipeline.md`
 - `docs/app-scaffolding.md`

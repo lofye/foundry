@@ -7,6 +7,7 @@ use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\IR\GraphNode;
 use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\Paths;
+use Foundry\Upgrade\FrameworkDeprecationRegistry;
 
 final class GraphDocsGenerator
 {
@@ -42,6 +43,7 @@ final class GraphDocsGenerator
             'schemas' => $this->schemasDoc($graph),
             'api-surface' => $this->apiSurfaceDoc(),
             'cli-reference' => $this->cliReferenceDoc(),
+            'upgrade-reference' => $this->upgradeReferenceDoc(),
             'llm-workflow' => $this->llmWorkflowDoc(),
         ];
 
@@ -352,6 +354,33 @@ final class GraphDocsGenerator
                     . ' Usage: ' . (string) ($entry['usage'] ?? '');
             }
 
+            $lines[] = '';
+        }
+
+        return implode("\n", $lines) . "\n";
+    }
+
+    private function upgradeReferenceDoc(): string
+    {
+        $registry = new FrameworkDeprecationRegistry();
+        $lines = [
+            '# Upgrade Reference',
+            '',
+            '## Upgrade Check',
+            '- Run `php vendor/bin/foundry upgrade-check --json` for the default next stable target.',
+            '- Run `php vendor/bin/foundry upgrade-check --target=1.0.0 --json` to pin a specific target version.',
+            '- Reports include the affected surface, why the issue matters, when the upgrade rule was introduced, and how to migrate.',
+            '',
+            '## Structured Deprecations',
+        ];
+
+        foreach ($registry->all() as $entry) {
+            $lines[] = '### ' . $entry->title;
+            $lines[] = '- introduced in: ' . $entry->introducedIn;
+            $lines[] = '- removal target: ' . $entry->removalVersion;
+            $lines[] = '- why it matters: ' . $entry->whyItMatters;
+            $lines[] = '- migration: ' . $entry->migration;
+            $lines[] = '- reference: ' . $entry->reference;
             $lines[] = '';
         }
 

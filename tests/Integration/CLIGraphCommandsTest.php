@@ -215,6 +215,38 @@ YAML);
         $inspectBuild = $this->runCommand($app, ['foundry', 'inspect', 'build', '--json']);
         $this->assertSame(0, $inspectBuild['status']);
         $this->assertArrayHasKey('manifest', $inspectBuild['payload']);
+        $this->assertArrayHasKey('cache', $inspectBuild['payload']);
+        $this->assertArrayHasKey('cache_status', $inspectBuild['payload']);
+    }
+
+    public function test_cache_inspect_clear_and_no_cache_compile_commands(): void
+    {
+        $app = new Application();
+
+        $initial = $this->runCommand($app, ['foundry', 'cache', 'inspect', '--json']);
+        $this->assertSame(0, $initial['status']);
+        $this->assertSame('miss', $initial['payload']['status']);
+
+        $compile = $this->runCommand($app, ['foundry', 'compile', 'graph', '--json']);
+        $this->assertSame(0, $compile['status']);
+        $this->assertSame('miss', $compile['payload']['cache']['status']);
+
+        $inspect = $this->runCommand($app, ['foundry', 'cache', 'inspect', '--json']);
+        $this->assertSame(0, $inspect['status']);
+        $this->assertSame('hit', $inspect['payload']['status']);
+        $this->assertSame([], $inspect['payload']['artifacts']['missing']);
+
+        $clear = $this->runCommand($app, ['foundry', 'cache', 'clear', '--json']);
+        $this->assertSame(0, $clear['status']);
+        $this->assertTrue($clear['payload']['cleared']);
+
+        $afterClear = $this->runCommand($app, ['foundry', 'cache', 'inspect', '--json']);
+        $this->assertSame(0, $afterClear['status']);
+        $this->assertSame('miss', $afterClear['payload']['status']);
+
+        $noCacheCompile = $this->runCommand($app, ['foundry', 'compile', 'graph', '--no-cache', '--json']);
+        $this->assertSame(0, $noCacheCompile['status']);
+        $this->assertSame('disabled', $noCacheCompile['payload']['cache']['status']);
     }
 
     /**

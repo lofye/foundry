@@ -54,6 +54,7 @@ use Foundry\Verification\ResourceVerifier;
 use Foundry\Verification\SearchVerifier;
 use Foundry\Verification\StreamsVerifier;
 use Foundry\Verification\WorkflowVerifier;
+use Foundry\Upgrade\UpgradeAnalyzer;
 
 final class CommandContext
 {
@@ -65,6 +66,7 @@ final class CommandContext
     private ?DefinitionMigrator $definitionMigrator = null;
     private ?CodemodEngine $codemodEngine = null;
     private ?ApiSurfaceRegistry $apiSurfaceRegistry = null;
+    private ?UpgradeAnalyzer $upgradeAnalyzer = null;
 
     public function __construct(
         private readonly ?string $cwd = null,
@@ -124,6 +126,16 @@ final class CommandContext
     public function apiSurfaceRegistry(): ApiSurfaceRegistry
     {
         return $this->apiSurfaceRegistry ??= new ApiSurfaceRegistry();
+    }
+
+    public function upgradeAnalyzer(): UpgradeAnalyzer
+    {
+        return $this->upgradeAnalyzer ??= new UpgradeAnalyzer(
+            $this->paths(),
+            $this->graphCompiler(),
+            $this->extensionRegistry(),
+            $this->definitionMigrator(),
+        );
     }
 
     public function indexGenerator(): IndexGenerator

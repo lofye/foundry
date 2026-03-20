@@ -13,6 +13,7 @@ final readonly class CompileResult
      * @param array<string,mixed> $configValidation
      * @param array<string,string> $integrityHashes
      * @param array<string,mixed> $projections
+     * @param array<string,mixed> $cache
      * @param array<int,string> $writtenFiles
      */
     public function __construct(
@@ -24,6 +25,7 @@ final readonly class CompileResult
         public array $configValidation,
         public array $integrityHashes,
         public array $projections,
+        public array $cache,
         public array $writtenFiles,
     ) {
     }
@@ -40,6 +42,7 @@ final readonly class CompileResult
                 'summary' => $this->diagnostics->summary(),
                 'items' => $this->diagnostics->toArray(),
             ],
+            'cache' => $this->cache,
             'graph' => [
                 'graph_version' => $this->graph->graphVersion(),
                 'framework_version' => $this->graph->frameworkVersion(),

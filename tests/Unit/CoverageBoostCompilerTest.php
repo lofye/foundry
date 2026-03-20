@@ -167,6 +167,19 @@ final class CoverageBoostCompilerTest extends TestCase
         );
         $this->assertTrue($outsideFeatureChange->fallbackToFull);
         $this->assertStringContainsString('non-feature source changed', $outsideFeatureChange->reason);
+
+        $forced = $planner->plan(
+            options: new CompileOptions(changedOnly: true),
+            previousManifest: $previousManifest,
+            currentSourceHashes: $currentHashes,
+            currentFeatures: ['a', 'b'],
+            hasPreviousGraph: true,
+            scanner: $scanner,
+            frameworkVersion: '1.0.0',
+            forcedFullReason: 'compile cache invalidated; full compile required',
+        );
+        $this->assertTrue($forced->fallbackToFull);
+        $this->assertStringContainsString('compile cache invalidated', $forced->reason);
     }
 
     public function test_graph_verifier_reports_missing_invalid_and_integrity_issues(): void
@@ -187,13 +200,16 @@ final class CoverageBoostCompilerTest extends TestCase
         $this->assertTrue($healthy->ok);
 
         $manifestRaw = file_get_contents($layout->compileManifestPath());
+        $cacheRaw = file_get_contents($layout->compileCachePath());
         $integrityRaw = file_get_contents($layout->integrityHashesPath());
         $diagnosticsRaw = file_get_contents($layout->diagnosticsPath());
         $this->assertIsString($manifestRaw);
+        $this->assertIsString($cacheRaw);
         $this->assertIsString($integrityRaw);
         $this->assertIsString($diagnosticsRaw);
 
         file_put_contents($layout->compileManifestPath(), '{');
+        file_put_contents($layout->compileCachePath(), '{');
         file_put_contents($layout->diagnosticsPath(), Json::encode([
             'summary' => ['error' => 1, 'warning' => 0, 'info' => 0, 'total' => 1],
             'diagnostics' => [],
@@ -210,6 +226,7 @@ final class CoverageBoostCompilerTest extends TestCase
         $broken = $verifier->verify();
         $this->assertFalse($broken->ok);
         $this->assertStringContainsString('compile_manifest.json is missing or invalid JSON.', implode("\n", $broken->errors));
+        $this->assertStringContainsString('compile_cache.json is missing or invalid JSON.', implode("\n", $broken->errors));
         $this->assertStringContainsString('Compiled graph contains error diagnostics.', implode("\n", $broken->errors));
         $this->assertStringContainsString('Integrity mismatch detected', implode("\n", $broken->warnings));
         $this->assertStringContainsString('Integrity file references missing artifact', implode("\n", $broken->warnings));

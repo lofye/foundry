@@ -43,6 +43,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $registry = new ApiSurfaceRegistry();
 
         $stable = $registry->classifyCliCommand(['compile', 'graph']);
+        $cacheInspect = $registry->classifyCliCommand(['cache', 'inspect']);
         $scaffold = $registry->classifyCliCommand(['new', 'demo-app']);
         $graphInspect = $registry->classifyCliCommand(['graph', 'inspect']);
         $graphVisualize = $registry->classifyCliCommand(['graph', 'visualize']);
@@ -50,12 +51,14 @@ final class ApiSurfaceRegistryTest extends TestCase
         $internal = $registry->classifyCliCommand(['queue:work']);
 
         $this->assertNotNull($stable);
+        $this->assertNotNull($cacheInspect);
         $this->assertNotNull($scaffold);
         $this->assertNotNull($graphInspect);
         $this->assertNotNull($graphVisualize);
         $this->assertNotNull($graphExport);
         $this->assertNotNull($internal);
         $this->assertSame('stable', $stable['stability']);
+        $this->assertSame('stable', $cacheInspect['stability']);
         $this->assertSame('stable', $scaffold['stability']);
         $this->assertSame('new', $scaffold['signature']);
         $this->assertSame('stable', $graphInspect['stability']);
@@ -71,12 +74,15 @@ final class ApiSurfaceRegistryTest extends TestCase
         $manifest = $registry->classifyConfigurationArtifact('app/features/list_posts/feature.yaml');
         $platformConfig = $registry->classifyConfigurationArtifact('app/platform/config/cache.php');
         $generated = $registry->classifyGeneratedMetadata('app/generated/routes.php');
+        $cacheMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/manifests/compile_cache.json');
 
         $this->assertNotNull($manifest);
         $this->assertNotNull($platformConfig);
         $this->assertNotNull($generated);
+        $this->assertNotNull($cacheMetadata);
         $this->assertSame('public_api', $manifest['classification']);
         $this->assertSame('experimental_api', $platformConfig['classification']);
         $this->assertSame('internal_api', $generated['classification']);
+        $this->assertSame('internal_api', $cacheMetadata['classification']);
     }
 }

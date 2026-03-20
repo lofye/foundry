@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Foundry\CLI;
 
+use Foundry\CLI\Commands\CacheClearCommand;
+use Foundry\CLI\Commands\CacheInspectCommand;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
 use Foundry\CLI\Commands\GenerateScaffoldCommand;
@@ -29,6 +31,7 @@ use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
 use Foundry\CLI\Commands\CodemodRunCommand;
 use Foundry\CLI\Commands\CompileGraphCommand;
+use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
 use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyPipelineCommand;
@@ -53,6 +56,8 @@ final class Application
     {
         $this->commands = $commands ?? [
             new CompileGraphCommand(),
+            new CacheInspectCommand(),
+            new CacheClearCommand(),
             new InspectGraphCommand(),
             new DoctorCommand(),
             new GraphVisualizeCommand(),
@@ -61,6 +66,7 @@ final class Application
             new VerifyGraphCommand(),
             new VerifyPipelineCommand(),
             new VerifyCompatibilityCommand(),
+            new UpgradeCheckCommand(),
             new MigrateDefinitionsCommand(),
             new CodemodRunCommand(),
             new InspectFeatureCommand(),

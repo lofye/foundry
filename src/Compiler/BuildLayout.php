@@ -61,6 +61,11 @@ final readonly class BuildLayout
         return $this->manifestsDir() . '/compile_manifest.json';
     }
 
+    public function compileCachePath(): string
+    {
+        return $this->manifestsDir() . '/compile_cache.json';
+    }
+
     public function configSchemasPath(): string
     {
         return $this->manifestsDir() . '/config_schemas.json';
