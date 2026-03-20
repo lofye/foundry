@@ -42,6 +42,10 @@ final class DoctorCommand extends Command
             impactAnalyzer: $compiler->impactAnalyzer(),
         );
         $analysis = $doctor->analyze($compileResult->graph, $feature);
+        $extensionReport = $context->extensionRegistry()->compatibilityReport(
+            frameworkVersion: $compileResult->graph->frameworkVersion(),
+            graphVersion: $compileResult->graph->graphVersion(),
+        );
 
         $compileSummary = $compileResult->diagnostics->summary();
         $doctorSummary = is_array($analysis['diagnostics']['summary'] ?? null)
@@ -76,6 +80,9 @@ final class DoctorCommand extends Command
                     'items' => $compileResult->diagnostics->toArray(),
                 ],
                 'doctor_diagnostics' => $analysis['diagnostics'] ?? ['summary' => [], 'items' => []],
+                'extension_diagnostics' => $extensionReport->diagnostics,
+                'extension_lifecycle' => $extensionReport->lifecycle,
+                'extension_load_order' => $extensionReport->loadOrder,
                 'diagnostics_summary' => $combinedSummary,
                 'analyzers' => $analysis['analyzers'] ?? [],
                 'impact_preview' => $analysis['impact_preview'] ?? null,
@@ -124,4 +131,3 @@ final class DoctorCommand extends Command
         return is_dir($context->paths()->features() . '/' . $feature);
     }
 }
-

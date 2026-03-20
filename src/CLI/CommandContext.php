@@ -35,6 +35,7 @@ use Foundry\Generation\TestGenerator;
 use Foundry\Generation\UploadsGenerator;
 use Foundry\Generation\WorkflowGenerator;
 use Foundry\Notifications\NotificationPreviewer;
+use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\Paths;
 use Foundry\Verification\ApiVerifier;
 use Foundry\Verification\AuthVerifier;
@@ -63,6 +64,7 @@ final class CommandContext
     private ?GraphVerifier $graphVerifier = null;
     private ?DefinitionMigrator $definitionMigrator = null;
     private ?CodemodEngine $codemodEngine = null;
+    private ?ApiSurfaceRegistry $apiSurfaceRegistry = null;
 
     public function __construct(private readonly ?string $cwd = null)
     {
@@ -109,6 +111,11 @@ final class CommandContext
             $this->paths(),
             $this->extensionRegistry()->codemods(),
         );
+    }
+
+    public function apiSurfaceRegistry(): ApiSurfaceRegistry
+    {
+        return $this->apiSurfaceRegistry ??= new ApiSurfaceRegistry();
     }
 
     public function indexGenerator(): IndexGenerator
@@ -217,7 +224,7 @@ final class CommandContext
 
     public function docsGenerator(): GraphDocsGenerator
     {
-        return new GraphDocsGenerator($this->paths());
+        return new GraphDocsGenerator($this->paths(), $this->apiSurfaceRegistry());
     }
 
     public function inspectUiGenerator(): InspectUiGenerator

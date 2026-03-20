@@ -16,6 +16,9 @@ final class ExtensionDescriptor
      * @param array<int,string> $providedInspectSurfaces
      * @param array<int,string> $providedVerifiers
      * @param array<int,string> $providedCapabilities
+     * @param array<int,string> $requiredExtensions
+     * @param array<int,string> $optionalExtensions
+     * @param array<int,string> $conflictsWithExtensions
      */
     public function __construct(
         public readonly string $name,
@@ -33,6 +36,9 @@ final class ExtensionDescriptor
         public readonly array $providedInspectSurfaces = [],
         public readonly array $providedVerifiers = [],
         public readonly array $providedCapabilities = [],
+        public readonly array $requiredExtensions = [],
+        public readonly array $optionalExtensions = [],
+        public readonly array $conflictsWithExtensions = [],
     ) {
     }
 
@@ -42,11 +48,17 @@ final class ExtensionDescriptor
     public function toArray(): array
     {
         return [
+            'schema_version' => 1,
             'name' => $this->name,
             'version' => $this->version,
             'description' => $this->description,
             'framework_version_constraint' => $this->frameworkVersionConstraint,
             'graph_version_constraint' => $this->graphVersionConstraint,
+            'dependencies' => [
+                'required_extensions' => $this->sortedUnique($this->requiredExtensions),
+                'optional_extensions' => $this->sortedUnique($this->optionalExtensions),
+                'conflicts_with_extensions' => $this->sortedUnique($this->conflictsWithExtensions),
+            ],
             'provides' => [
                 'node_types' => $this->sortedUnique($this->providedNodeTypes),
                 'passes' => $this->sortedUnique($this->providedPasses),
@@ -58,6 +70,33 @@ final class ExtensionDescriptor
                 'inspect_surfaces' => $this->sortedUnique($this->providedInspectSurfaces),
                 'verifiers' => $this->sortedUnique($this->providedVerifiers),
                 'capabilities' => $this->sortedUnique($this->providedCapabilities),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public static function schema(): array
+    {
+        return [
+            'schema_version' => 1,
+            'required_fields' => ['name', 'version', 'framework_version_constraint', 'graph_version_constraint'],
+            'optional_fields' => [
+                'description',
+                'provided_node_types',
+                'provided_passes',
+                'provided_packs',
+                'introduced_definition_formats',
+                'provided_migration_rules',
+                'provided_codemods',
+                'provided_projection_outputs',
+                'provided_inspect_surfaces',
+                'provided_verifiers',
+                'provided_capabilities',
+                'required_extensions',
+                'optional_extensions',
+                'conflicts_with_extensions',
             ],
         ];
     }

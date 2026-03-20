@@ -73,6 +73,9 @@ final class CLIArchitectureToolsCommandsTest extends TestCase
         $this->assertSame('list_posts', $doctor['payload']['feature_filter']);
         $this->assertArrayHasKey('analyzers', $doctor['payload']);
         $this->assertArrayHasKey('diagnostics_summary', $doctor['payload']);
+        $this->assertArrayHasKey('extension_diagnostics', $doctor['payload']);
+        $this->assertArrayHasKey('extension_lifecycle', $doctor['payload']);
+        $this->assertArrayHasKey('extension_load_order', $doctor['payload']);
 
         $doctorStrict = $this->runCommand($app, ['foundry', 'doctor', '--feature=list_posts', '--strict', '--json']);
         $this->assertSame(1, $doctorStrict['status']);

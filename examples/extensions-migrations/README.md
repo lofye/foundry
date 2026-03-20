@@ -3,7 +3,7 @@
 This directory demonstrates extension and migration foundations:
 
 - **Example A**: explicit extension registration and a minimal extension pass.
-- **Example B**: pack/capability metadata exposed through extension descriptors.
+- **Example B**: pack/capability metadata, lifecycle state, and load order exposed through extension descriptors.
 - **Example C**: definition migration path from feature manifest v1 to v2.
 - **Example D**: deterministic codemod dry-run output.
 
@@ -23,11 +23,19 @@ Run:
 ```bash
 php vendor/bin/foundry inspect extensions --json
 php vendor/bin/foundry inspect extension foundry.demo --json
+php vendor/bin/foundry verify extensions --json
 ```
 
 ## Example B - Pack/Capability Inspection
 
 The demo extension publishes the `demo.notes` pack and capability `demo.notes.annotate`.
+
+Inspect payloads now include:
+
+- lifecycle stages
+- load order
+- registration diagnostics
+- extension and pack metadata schemas
 
 Run:
 
@@ -35,6 +43,7 @@ Run:
 php vendor/bin/foundry inspect packs --json
 php vendor/bin/foundry inspect pack demo.notes --json
 php vendor/bin/foundry inspect compatibility --json
+php vendor/bin/foundry doctor --json
 ```
 
 ## Example C - Migration Example

@@ -145,14 +145,20 @@ YAML);
         $this->assertSame(0, $extensions['status']);
         $this->assertNotEmpty($extensions['payload']['extensions']);
         $this->assertIsArray($extensions['payload']['registration_sources'] ?? null);
+        $this->assertArrayHasKey('diagnostics', $extensions['payload']);
+        $this->assertArrayHasKey('load_order', $extensions['payload']);
+        $this->assertArrayHasKey('metadata_schemas', $extensions['payload']);
 
         $extension = $this->runCommand($app, ['foundry', 'inspect', 'extension', 'core', '--json']);
         $this->assertSame(0, $extension['status']);
         $this->assertSame('core', $extension['payload']['extension']['name']);
+        $this->assertArrayHasKey('diagnostics', $extension['payload']);
+        $this->assertArrayHasKey('lifecycle', $extension['payload']);
 
         $packs = $this->runCommand($app, ['foundry', 'inspect', 'packs', '--json']);
         $this->assertSame(0, $packs['status']);
         $this->assertNotEmpty($packs['payload']['packs']);
+        $this->assertArrayHasKey('metadata_schema', $packs['payload']);
 
         $pack = $this->runCommand($app, ['foundry', 'inspect', 'pack', 'core.foundation', '--json']);
         $this->assertSame(0, $pack['status']);
@@ -161,6 +167,8 @@ YAML);
         $compatibility = $this->runCommand($app, ['foundry', 'inspect', 'compatibility', '--json']);
         $this->assertSame(0, $compatibility['status']);
         $this->assertArrayHasKey('version_matrix', $compatibility['payload']);
+        $this->assertArrayHasKey('lifecycle', $compatibility['payload']);
+        $this->assertArrayHasKey('load_order', $compatibility['payload']);
 
         $migrations = $this->runCommand($app, ['foundry', 'inspect', 'migrations', '--json']);
         $this->assertSame(0, $migrations['status']);
@@ -183,10 +191,14 @@ YAML);
         $verifyExtensions = $this->runCommand($app, ['foundry', 'verify', 'extensions', '--json']);
         $this->assertSame(0, $verifyExtensions['status']);
         $this->assertTrue($verifyExtensions['payload']['ok']);
+        $this->assertArrayHasKey('lifecycle', $verifyExtensions['payload']);
+        $this->assertArrayHasKey('load_order', $verifyExtensions['payload']);
 
         $verifyCompatibility = $this->runCommand($app, ['foundry', 'verify', 'compatibility', '--json']);
         $this->assertSame(0, $verifyCompatibility['status']);
         $this->assertTrue($verifyCompatibility['payload']['ok']);
+        $this->assertArrayHasKey('lifecycle', $verifyCompatibility['payload']);
+        $this->assertArrayHasKey('load_order', $verifyCompatibility['payload']);
 
         $migrateDryRun = $this->runCommand($app, ['foundry', 'migrate', 'definitions', '--dry-run', '--json']);
         $this->assertSame(0, $migrateDryRun['status']);

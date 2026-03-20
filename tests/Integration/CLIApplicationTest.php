@@ -101,6 +101,26 @@ YAML);
         $this->assertSame('CLI_COMMAND_NOT_FOUND', $result['payload']['error']['code']);
     }
 
+    public function test_help_and_api_surface_outputs_expose_stability_metadata(): void
+    {
+        $app = new Application();
+
+        $helpIndex = $this->runCommand($app, ['foundry', 'help', '--json']);
+        $this->assertSame(0, $helpIndex['status']);
+        $this->assertArrayHasKey('commands', $helpIndex['payload']);
+        $this->assertGreaterThan(0, (int) $helpIndex['payload']['summary']['stable']);
+
+        $commandHelp = $this->runCommand($app, ['foundry', 'help', 'graph', 'visualize', '--json']);
+        $this->assertSame(0, $commandHelp['status']);
+        $this->assertSame('graph visualize', $commandHelp['payload']['command']['signature']);
+        $this->assertSame('experimental', $commandHelp['payload']['command']['stability']);
+
+        $apiSurface = $this->runCommand($app, ['foundry', 'inspect', 'api-surface', '--command=compile graph', '--json']);
+        $this->assertSame(0, $apiSurface['status']);
+        $this->assertSame('compile graph', $apiSurface['payload']['matches']['cli_command']['signature']);
+        $this->assertSame('stable', $apiSurface['payload']['matches']['cli_command']['stability']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}

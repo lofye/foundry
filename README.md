@@ -173,6 +173,23 @@ Each feature must define:
 Optional feature-local files:
 - `queries.sql`, `permissions.yaml`, `cache.yaml`, `events.yaml`, `jobs.yaml`, `prompts.md`
 
+## API Stability
+Foundry now classifies framework surface area explicitly:
+- `public_api`: safe for apps and automation to depend on
+- `extension_api`: safe for extensions to implement against
+- `experimental_api`: available, but still allowed to change in minor releases
+- `internal_api`: implementation detail, not a supported dependency
+
+Stable CLI commands and the API surface registry are inspectable:
+```bash
+php vendor/bin/foundry help --json
+php vendor/bin/foundry help compile graph --json
+php vendor/bin/foundry inspect api-surface --json
+php vendor/bin/foundry inspect api-surface --php=Foundry\\Feature\\FeatureAction --json
+```
+
+Policy details live in `docs/public-api-policy.md` and are also emitted into generated docs as `docs/generated/api-surface.md` and `docs/generated/cli-reference.md`.
+
 ## CLI Surface
 All inspection, verification, and planning commands support `--json`.
 
@@ -208,6 +225,8 @@ php vendor/bin/foundry preview notification <name> --json
 
 Inspect:
 ```bash
+php vendor/bin/foundry help --json
+php vendor/bin/foundry help inspect graph --json
 php vendor/bin/foundry inspect graph --json
 php vendor/bin/foundry inspect build --json
 php vendor/bin/foundry inspect node <node-id> --json
@@ -230,6 +249,7 @@ php vendor/bin/foundry inspect pack <name> --json
 php vendor/bin/foundry inspect compatibility --json
 php vendor/bin/foundry inspect migrations --json
 php vendor/bin/foundry inspect definition-format <name> --json
+php vendor/bin/foundry inspect api-surface --json
 php vendor/bin/foundry inspect resource <name> --json
 php vendor/bin/foundry inspect notification <name> --json
 php vendor/bin/foundry inspect api <name> --json
@@ -358,8 +378,10 @@ Each example includes feature folders plus generated indexes.
 - `BENCHMARK_NOTES.md`
 - `docs/semantic-compiler.md`
 - `docs/extensions-and-migrations.md`
+- `docs/extension-author-guide.md`
 - `docs/architecture-tools.md`
 - `docs/execution-pipeline.md`
 - `docs/app-scaffolding.md`
+- `docs/public-api-policy.md`
 - `docs/api-notifications-docs.md`
 - `docs/contributor-vocabulary.md`

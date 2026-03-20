@@ -129,9 +129,32 @@ final class GraphCompiler
         );
         $state->analysis['compatibility'] = $compatibility->toArray();
 
-        $passes = $this->buildPasses($state);
-        foreach ($passes as $pass) {
-            $pass->run($state);
+        $passes = $this->buildPassRows($state);
+        foreach ($passes as $row) {
+            $pass = $row['pass'];
+            $extension = $row['extension'];
+            $stage = $row['stage'];
+
+            try {
+                $pass->run($state);
+            } catch (\Throwable $error) {
+                if ($extension === null) {
+                    throw $error;
+                }
+
+                $state->diagnostics->error(
+                    code: 'FDY7020_EXTENSION_GRAPH_INTEGRATION_FAILED',
+                    category: 'extensions',
+                    message: sprintf(
+                        'Extension %s failed during %s with %s: %s',
+                        $extension,
+                        $stage,
+                        get_class($pass),
+                        $error->getMessage(),
+                    ),
+                    pass: 'extensions.' . $stage,
+                );
+            }
         }
 
         $writtenFiles = array_values(array_map(
@@ -176,50 +199,84 @@ final class GraphCompiler
     }
 
     /**
-     * @return array<int,CompilerPass>
+     * @return array<int,array{pass:CompilerPass,stage:string,extension:?string}>
      */
-    private function buildPasses(CompilationState $state): array
+    private function buildPassRows(CompilationState $state): array
     {
         $extensions = $state->extensions;
 
         $passes = [];
 
-        $passes[] = new DiscoveryPass();
-        foreach ($extensions->passesForStage('discovery') as $pass) {
-            $passes[] = $pass;
-        }
+        $passes[] = ['pass' => new DiscoveryPass(), 'stage' => 'discovery', 'extension' => null];
+        $passes = array_merge($passes, $this->extensionStagePassRows($extensions->all(), 'discovery'));
 
-        $passes[] = new NormalizePass();
-        foreach ($extensions->passesForStage('normalize') as $pass) {
-            $passes[] = $pass;
-        }
+        $passes[] = ['pass' => new NormalizePass(), 'stage' => 'normalize', 'extension' => null];
+        $passes = array_merge($passes, $this->extensionStagePassRows($extensions->all(), 'normalize'));
 
-        $passes[] = new LinkPass();
-        foreach ($extensions->passesForStage('link') as $pass) {
-            $passes[] = $pass;
-        }
+        $passes[] = ['pass' => new LinkPass(), 'stage' => 'link', 'extension' => null];
+        $passes = array_merge($passes, $this->extensionStagePassRows($extensions->all(), 'link'));
 
-        $passes[] = new ValidatePass();
-        foreach ($extensions->passesForStage('validate') as $pass) {
-            $passes[] = $pass;
-        }
+        $passes[] = ['pass' => new ValidatePass(), 'stage' => 'validate', 'extension' => null];
+        $passes = array_merge($passes, $this->extensionStagePassRows($extensions->all(), 'validate'));
 
-        $passes[] = new EnrichPass();
-        foreach ($extensions->passesForStage('enrich') as $pass) {
-            $passes[] = $pass;
-        }
+        $passes[] = ['pass' => new EnrichPass(), 'stage' => 'enrich', 'extension' => null];
+        $passes = array_merge($passes, $this->extensionStagePassRows($extensions->all(), 'enrich'));
 
-        $passes[] = new AnalyzePass($this->impactAnalyzer);
-        foreach ($extensions->passesForStage('analyze') as $pass) {
-            $passes[] = $pass;
-        }
+        $passes[] = ['pass' => new AnalyzePass($this->impactAnalyzer), 'stage' => 'analyze', 'extension' => null];
+        $passes = array_merge($passes, $this->extensionStagePassRows($extensions->all(), 'analyze'));
 
-        $passes[] = new EmitPass();
-        foreach ($extensions->passesForStage('emit') as $pass) {
-            $passes[] = $pass;
-        }
+        $passes[] = ['pass' => new EmitPass(), 'stage' => 'emit', 'extension' => null];
+        $passes = array_merge($passes, $this->extensionStagePassRows($extensions->all(), 'emit'));
 
         return $passes;
+    }
+
+    /**
+     * @param array<int,\Foundry\Compiler\Extensions\CompilerExtension> $extensions
+     * @return array<int,array{pass:CompilerPass,stage:string,extension:string}>
+     */
+    private function extensionStagePassRows(array $extensions, string $stage): array
+    {
+        $rows = [];
+        foreach (array_values($extensions) as $loadIndex => $extension) {
+            $passes = match ($stage) {
+                'discovery' => $extension->discoveryPasses(),
+                'normalize' => $extension->normalizePasses(),
+                'link' => $extension->linkPasses(),
+                'validate' => $extension->validatePasses(),
+                'enrich' => $extension->enrichPasses(),
+                'analyze' => $extension->analyzePasses(),
+                'emit' => $extension->emitPasses(),
+                default => [],
+            };
+
+            foreach ($passes as $pass) {
+                $rows[] = [
+                    'extension' => $extension->name(),
+                    'stage' => $stage,
+                    'load_index' => $loadIndex,
+                    'priority' => $extension->passPriority($stage, $pass),
+                    'pass' => $pass,
+                ];
+            }
+        }
+
+        usort(
+            $rows,
+            static fn (array $a, array $b): int => ((int) ($a['priority'] ?? 0) <=> (int) ($b['priority'] ?? 0))
+                ?: ((int) ($a['load_index'] ?? PHP_INT_MAX) <=> (int) ($b['load_index'] ?? PHP_INT_MAX))
+                ?: strcmp((string) ($a['extension'] ?? ''), (string) ($b['extension'] ?? ''))
+                ?: strcmp(get_class($a['pass']), get_class($b['pass'])),
+        );
+
+        return array_values(array_map(
+            static fn (array $row): array => [
+                'pass' => $row['pass'],
+                'stage' => (string) $row['stage'],
+                'extension' => (string) $row['extension'],
+            ],
+            $rows,
+        ));
     }
 
     private function newGraph(string $frameworkVersion, string $sourceHash): ApplicationGraph

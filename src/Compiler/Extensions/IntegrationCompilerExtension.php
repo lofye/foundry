@@ -42,6 +42,7 @@ final class IntegrationCompilerExtension extends AbstractCompilerExtension
             providedInspectSurfaces: ['notification', 'api'],
             providedVerifiers: ['notifications', 'api'],
             providedCapabilities: ['notifications.mail', 'api.resource', 'api.openapi_export', 'docs.graph_generated', 'tests.deep_generation'],
+            requiredExtensions: ['core'],
         );
     }
 
@@ -110,6 +111,7 @@ final class IntegrationCompilerExtension extends AbstractCompilerExtension
                 description: 'Graph-native notification definitions and mail template workflows.',
                 providedCapabilities: ['notifications.mail'],
                 requiredCapabilities: ['compiler.core', 'runtime.pipeline'],
+                inspectSurfaces: ['notification', 'extensions'],
                 frameworkVersionConstraint: '*',
                 graphVersionConstraint: '^1',
                 generators: ['generate notification <name>'],
@@ -125,6 +127,8 @@ final class IntegrationCompilerExtension extends AbstractCompilerExtension
                 description: 'API resource generation and graph-based OpenAPI export.',
                 providedCapabilities: ['api.resource', 'api.openapi_export'],
                 requiredCapabilities: ['resource.crud', 'compiler.core', 'runtime.pipeline'],
+                dependencies: ['foundation.resource'],
+                inspectSurfaces: ['api', 'extensions'],
                 frameworkVersionConstraint: '*',
                 graphVersionConstraint: '^1',
                 generators: ['generate api-resource <name> --definition=<file>', 'export openapi --format=json'],
@@ -140,6 +144,7 @@ final class IntegrationCompilerExtension extends AbstractCompilerExtension
                 description: 'Deterministic documentation generation from the compiled graph.',
                 providedCapabilities: ['docs.graph_generated'],
                 requiredCapabilities: ['compiler.core'],
+                inspectSurfaces: ['graph', 'extensions'],
                 frameworkVersionConstraint: '*',
                 graphVersionConstraint: '^1',
                 generators: ['generate docs --format=markdown'],
@@ -155,6 +160,7 @@ final class IntegrationCompilerExtension extends AbstractCompilerExtension
                 description: 'Graph-aware deep test generation workflows.',
                 providedCapabilities: ['tests.deep_generation'],
                 requiredCapabilities: ['compiler.core'],
+                inspectSurfaces: ['impact', 'extensions'],
                 frameworkVersionConstraint: '*',
                 graphVersionConstraint: '^1',
                 generators: ['generate tests <target> --mode=deep', 'generate tests --all-missing'],

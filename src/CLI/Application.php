@@ -36,6 +36,7 @@ use Foundry\CLI\Commands\VerifyFeatureCommand;
 use Foundry\CLI\Commands\VerifyIntegrationCommand;
 use Foundry\CLI\Commands\VerifyPlatformCommand;
 use Foundry\CLI\Commands\VerifyResourceCommand;
+use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
 
@@ -45,6 +46,7 @@ final class Application
      * @var array<int,Command>
      */
     private array $commands;
+    private ApiSurfaceRegistry $apiSurfaceRegistry;
 
     public function __construct(?array $commands = null)
     {
@@ -83,6 +85,7 @@ final class Application
             new ScheduleRunCommand(),
             new ImpactCommand(),
         ];
+        $this->apiSurfaceRegistry = new ApiSurfaceRegistry();
     }
 
     /**
@@ -107,6 +110,12 @@ final class Application
         $context = new CommandContext();
 
         try {
+            if ($args === [] || ($args[0] ?? null) === 'help') {
+                $helpArgs = ($args[0] ?? null) === 'help' ? array_slice($args, 1) : [];
+
+                return $this->emitResult($this->helpResult($helpArgs, $json), $json);
+            }
+
             $command = array_find(
                 $this->commands,
                 static fn (Command $candidate): bool => $candidate->matches($args),
@@ -155,5 +164,77 @@ final class Application
         }
 
         return $result['status'];
+    }
+
+    /**
+     * @param array<int,string> $args
+     * @return array{status:int,payload:array<string,mixed>|null,message:string|null}
+     */
+    private function helpResult(array $args, bool $json): array
+    {
+        if ($args === []) {
+            $payload = $this->apiSurfaceRegistry->cliHelpIndex();
+
+            return [
+                'status' => 0,
+                'message' => $json ? null : $this->renderHelpIndex($payload),
+                'payload' => $json ? $payload : null,
+            ];
+        }
+
+        $command = $this->apiSurfaceRegistry->classifyCliCommand($args);
+        if ($command === null) {
+            throw new FoundryError('CLI_HELP_COMMAND_NOT_FOUND', 'not_found', ['args' => $args], 'Help target not found.');
+        }
+
+        $payload = ['command' => $command];
+
+        return [
+            'status' => 0,
+            'message' => $json ? null : $this->renderCommandHelp($command),
+            'payload' => $json ? $payload : null,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    private function renderHelpIndex(array $payload): string
+    {
+        $lines = ['Foundry CLI', ''];
+
+        $groups = is_array($payload['commands'] ?? null) ? $payload['commands'] : [];
+        foreach (['stable' => 'Stable', 'experimental' => 'Experimental', 'internal' => 'Internal'] as $key => $label) {
+            $lines[] = $label . ' Commands:';
+            foreach ((array) ($groups[$key] ?? []) as $entry) {
+                if (!is_array($entry)) {
+                    continue;
+                }
+
+                $lines[] = '- ' . (string) ($entry['signature'] ?? '') . ': ' . (string) ($entry['summary'] ?? '');
+            }
+            $lines[] = '';
+        }
+
+        $lines[] = 'Use `foundry help <command>` for usage, stability, and semver details.';
+
+        return implode(PHP_EOL, $lines);
+    }
+
+    /**
+     * @param array<string,mixed> $command
+     */
+    private function renderCommandHelp(array $command): string
+    {
+        $lines = [
+            'Command: ' . (string) ($command['signature'] ?? ''),
+            'Usage: ' . (string) ($command['usage'] ?? ''),
+            'Stability: ' . (string) ($command['stability'] ?? 'internal'),
+            'Classification: ' . (string) ($command['classification'] ?? 'internal_api'),
+            'Summary: ' . (string) ($command['summary'] ?? ''),
+            'Semver: ' . (string) ($command['semver_policy'] ?? ''),
+        ];
+
+        return implode(PHP_EOL, $lines);
     }
 }

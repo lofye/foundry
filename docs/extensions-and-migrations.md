@@ -30,24 +30,23 @@ return [
 
 Core extension support is always registered, and explicit extension files are layered on top deterministically.
 
-## Extension Lifecycle in the Compiler
+## Stable Extension Lifecycle
 
-Extension contributions are integrated into the same compiler lifecycle:
+Every extension is resolved through explicit lifecycle stages:
 
-1. registration
-2. compatibility checks
-3. pass collection and deterministic ordering
-4. compile execution
-5. projection emission
-6. diagnostics emission
-7. inspect/verify surfaces
-8. migration and codemod contributions
+1. `discovered`
+2. `loaded`
+3. `validated`
+4. `graph_integrated`
+5. `runtime_enabled`
 
-Pass ordering is deterministic by:
+`inspect extensions --json` and `inspect compatibility --json` expose lifecycle rows, diagnostics, and final load order.
+
+Compiler pass ordering is deterministic by:
 
 1. compiler stage
 2. extension-declared priority
-3. extension name
+3. resolved extension load order
 4. pass class name
 
 ## Packs and Capabilities
@@ -59,14 +58,21 @@ Each pack declares:
 - name and version
 - owning extension
 - provided and required capabilities
+- required, optional, and conflicting pack dependencies
 - framework and graph constraints
-- generators/definition formats/migration rules/verifiers metadata
+- generators/inspect surfaces/definition formats/migration rules/verifiers/docs metadata
 
 Inspect commands:
 
 ```bash
 php vendor/bin/foundry inspect packs --json
 php vendor/bin/foundry inspect pack <name> --json
+```
+
+Metadata schemas are exposed through:
+
+```bash
+php vendor/bin/foundry inspect extensions --json
 ```
 
 ## Compatibility Model
@@ -90,6 +96,19 @@ Diagnostics include:
 - `FDY7007_CONFLICTING_PROJECTION_PROVIDER`
 - `FDY7008_INCOMPATIBLE_PACK_VERSION`
 - `FDY7009_PACK_CAPABILITY_MISSING`
+- `FDY7010_EXTENSION_REGISTRATION_INVALID`
+- `FDY7011_EXTENSION_CLASS_NOT_FOUND`
+- `FDY7012_EXTENSION_CLASS_INVALID`
+- `FDY7013_EXTENSION_INSTANTIATION_FAILED`
+- `FDY7014_EXTENSION_DEPENDENCY_MISSING`
+- `FDY7015_EXTENSION_CONFLICT`
+- `FDY7016_EXTENSION_METADATA_INVALID`
+- `FDY7017_PACK_METADATA_INVALID`
+- `FDY7018_PACK_DEPENDENCY_MISSING`
+- `FDY7019_EXTENSION_DEPENDENCY_CYCLE`
+- `FDY7020_EXTENSION_GRAPH_INTEGRATION_FAILED`
+- `FDY7021_DUPLICATE_PACK_ID`
+- `FDY7022_PACK_CONFLICT`
 
 Inspect/verify commands:
 
@@ -97,6 +116,7 @@ Inspect/verify commands:
 php vendor/bin/foundry inspect compatibility --json
 php vendor/bin/foundry verify extensions --json
 php vendor/bin/foundry verify compatibility --json
+php vendor/bin/foundry doctor --json
 ```
 
 ## Definition Migration Framework
@@ -145,7 +165,7 @@ php vendor/bin/foundry codemod run feature-manifest-v1-to-v2 --write --json
 
 ## Build Artifacts and Inspection
 
-extensions and migrations layer metadata is surfaced through existing build and inspect channels, including extension descriptors, packs, definition formats, codemods, and compatibility summaries.
+extensions and migrations layer metadata is surfaced through existing build and inspect channels, including extension descriptors, pack schemas, lifecycle rows, dependency diagnostics, definition formats, codemods, and compatibility summaries.
 
 ## Canonical Workflow
 

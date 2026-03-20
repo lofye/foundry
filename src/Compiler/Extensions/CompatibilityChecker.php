@@ -15,13 +15,14 @@ final class CompatibilityChecker
 
     public function check(string $frameworkVersion, int $graphVersion): CompatibilityReport
     {
-        $diagnostics = [];
+        $diagnostics = $this->extensions->diagnostics();
+        $loadedExtensions = $this->extensions->loadedExtensions();
+        $loadedPacks = $this->extensions->loadedPacks();
 
-        $nameOwners = [];
         $nodeTypeOwners = [];
         $projectionOwners = [];
 
-        foreach ($this->extensions->all() as $extension) {
+        foreach ($loadedExtensions as $extension) {
             $descriptor = $extension->descriptor();
 
             if (!VersionConstraint::matches($frameworkVersion, $descriptor->frameworkVersionConstraint)) {
@@ -54,9 +55,6 @@ final class CompatibilityChecker
                 );
             }
 
-            $nameOwners[$descriptor->name] ??= [];
-            $nameOwners[$descriptor->name][] = $descriptor->version;
-
             foreach ($descriptor->providedNodeTypes as $nodeType) {
                 $nodeType = (string) $nodeType;
                 if ($nodeType === '') {
@@ -74,21 +72,6 @@ final class CompatibilityChecker
                 $projectionOwners[$projectionFile] ??= [];
                 $projectionOwners[$projectionFile][] = $descriptor->name;
             }
-        }
-
-        foreach ($nameOwners as $name => $versions) {
-            $versions = array_values(array_unique(array_map('strval', $versions)));
-            if (count($versions) <= 1) {
-                continue;
-            }
-
-            sort($versions);
-            $diagnostics[] = $this->diagnostic(
-                code: 'FDY7005_DUPLICATE_EXTENSION_ID',
-                severity: 'error',
-                message: sprintf('Extension %s is registered multiple times (%s).', $name, implode(', ', $versions)),
-                extension: $name,
-            );
         }
 
         foreach ($nodeTypeOwners as $nodeType => $owners) {
@@ -119,8 +102,8 @@ final class CompatibilityChecker
             );
         }
 
-        $capabilities = $this->packs->providedCapabilities();
-        foreach ($this->packs->all() as $pack) {
+        $capabilities = $this->providedCapabilities($loadedPacks);
+        foreach ($loadedPacks as $pack) {
             if (!VersionConstraint::matches($frameworkVersion, $pack->frameworkVersionConstraint)) {
                 $diagnostics[] = $this->diagnostic(
                     code: 'FDY7008_INCOMPATIBLE_PACK_VERSION',
@@ -170,7 +153,7 @@ final class CompatibilityChecker
         }
 
         $definitionFormatVersions = [];
-        foreach ($this->extensions->definitionFormats() as $format) {
+        foreach ($this->definitionFormats($loadedExtensions) as $format) {
             if (!$format instanceof DefinitionFormat) {
                 continue;
             }
@@ -208,16 +191,16 @@ final class CompatibilityChecker
 
         return new CompatibilityReport(
             ok: !$hasErrors,
-            diagnostics: $diagnostics,
+            diagnostics: $this->sortDiagnostics($diagnostics),
             versionMatrix: [
                 'framework_version' => $frameworkVersion,
                 'graph_version' => $graphVersion,
                 'extension_versions' => array_values(array_map(
-                    static fn (array $row): array => [
-                        'name' => (string) ($row['name'] ?? ''),
-                        'version' => (string) ($row['version'] ?? ''),
+                    static fn (CompilerExtension $extension): array => [
+                        'name' => $extension->name(),
+                        'version' => $extension->version(),
                     ],
-                    $this->extensions->inspectRows(),
+                    $loadedExtensions,
                 )),
                 'pack_versions' => array_values(array_map(
                     static fn (PackDefinition $pack): array => [
@@ -225,10 +208,12 @@ final class CompatibilityChecker
                         'version' => $pack->version,
                         'extension' => $pack->extension,
                     ],
-                    $this->packs->all(),
+                    $loadedPacks,
                 )),
                 'definition_versions' => $definitionFormatVersions,
             ],
+            lifecycle: $this->extensions->lifecycleRows(),
+            loadOrder: $this->extensions->loadOrder(),
         );
     }
 
@@ -250,5 +235,72 @@ final class CompatibilityChecker
             'extension' => $extension,
             'pack' => $pack,
         ];
+    }
+
+    /**
+     * @param array<int,PackDefinition> $packs
+     * @return array<int,string>
+     */
+    private function providedCapabilities(array $packs): array
+    {
+        $capabilities = [];
+        foreach ($packs as $pack) {
+            foreach ($pack->providedCapabilities as $capability) {
+                $capability = trim((string) $capability);
+                if ($capability !== '') {
+                    $capabilities[] = $capability;
+                }
+            }
+        }
+
+        $capabilities = array_values(array_unique($capabilities));
+        sort($capabilities);
+
+        return $capabilities;
+    }
+
+    /**
+     * @param array<int,CompilerExtension> $extensions
+     * @return array<int,DefinitionFormat>
+     */
+    private function definitionFormats(array $extensions): array
+    {
+        $formats = [];
+        foreach ($extensions as $extension) {
+            foreach ($extension->definitionFormats() as $format) {
+                $formats[] = $format;
+            }
+        }
+
+        usort($formats, static fn (DefinitionFormat $a, DefinitionFormat $b): int => strcmp($a->name, $b->name));
+
+        return $formats;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $diagnostics
+     * @return array<int,array<string,mixed>>
+     */
+    private function sortDiagnostics(array $diagnostics): array
+    {
+        $unique = [];
+        foreach ($diagnostics as $diagnostic) {
+            if (!is_array($diagnostic)) {
+                continue;
+            }
+
+            $unique[md5(json_encode($diagnostic, JSON_THROW_ON_ERROR))] = $diagnostic;
+        }
+
+        $diagnostics = array_values($unique);
+        usort(
+            $diagnostics,
+            static fn (array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
+                ?: strcmp((string) ($a['extension'] ?? ''), (string) ($b['extension'] ?? ''))
+                ?: strcmp((string) ($a['pack'] ?? ''), (string) ($b['pack'] ?? ''))
+                ?: strcmp((string) ($a['message'] ?? ''), (string) ($b['message'] ?? '')),
+        );
+
+        return $diagnostics;
     }
 }

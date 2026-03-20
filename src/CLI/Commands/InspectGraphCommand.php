@@ -7,6 +7,8 @@ use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\CompileOptions;
+use Foundry\Compiler\Extensions\ExtensionDescriptor;
+use Foundry\Compiler\Extensions\PackDefinition;
 use Foundry\Compiler\GraphCompiler;
 use Foundry\Compiler\GraphEdge;
 use Foundry\Compiler\IR\GraphNode;
@@ -38,6 +40,7 @@ final class InspectGraphCommand extends Command
         'compatibility',
         'migrations',
         'definition-format',
+        'api-surface',
     ];
 
     #[\Override]
@@ -92,6 +95,12 @@ final class InspectGraphCommand extends Command
                 'payload' => [
                     'extensions' => $context->extensionRegistry()->inspectRows(),
                     'registration_sources' => $context->extensionRegistry()->registrationSources(),
+                    'diagnostics' => $context->extensionRegistry()->diagnostics(),
+                    'load_order' => $context->extensionRegistry()->loadOrder(),
+                    'metadata_schemas' => [
+                        'extension' => ExtensionDescriptor::schema(),
+                        'pack' => PackDefinition::schema(),
+                    ],
                 ],
             ],
             'extension' => $this->inspectExtension($context, (string) ($args[2] ?? '')),
@@ -99,7 +108,12 @@ final class InspectGraphCommand extends Command
                 'status' => 0,
                 'message' => null,
                 'payload' => [
-                    'packs' => $context->extensionRegistry()->packRegistry()->inspectRows(),
+                    'packs' => array_values(array_map(
+                        static fn (PackDefinition $pack): array => $pack->toArray(),
+                        $context->extensionRegistry()->loadedPacks(),
+                    )),
+                    'diagnostics' => $context->extensionRegistry()->diagnostics(),
+                    'metadata_schema' => PackDefinition::schema(),
                 ],
             ],
             'pack' => $this->inspectPack($context, (string) ($args[2] ?? '')),
@@ -122,6 +136,7 @@ final class InspectGraphCommand extends Command
                 ],
             ],
             'definition-format' => $this->inspectDefinitionFormat($context, (string) ($args[2] ?? '')),
+            'api-surface' => $this->inspectApiSurface($args, $context),
             'build' => $this->inspectBuild($context),
             default => $this->inspectGraphSurface($args, $context),
         };
@@ -193,7 +208,8 @@ final class InspectGraphCommand extends Command
         }
 
         $extension = $context->extensionRegistry()->extension($name);
-        if ($extension === null) {
+        $row = $context->extensionRegistry()->inspectRow($name);
+        if ($extension === null || $row === null) {
             throw new FoundryError('EXTENSION_NOT_FOUND', 'not_found', ['extension' => $name], 'Extension not found.');
         }
 
@@ -204,9 +220,14 @@ final class InspectGraphCommand extends Command
                 'extension' => $extension->describe(),
                 'descriptor' => $extension->descriptor()->toArray(),
                 'packs' => array_values(array_map(
-                    static fn ($pack): array => $pack->toArray(),
+                    static fn (PackDefinition $pack): array => $pack->toArray(),
                     $extension->packs(),
                 )),
+                'diagnostics' => $row['diagnostics'] ?? [],
+                'lifecycle' => $row['lifecycle'] ?? [],
+                'enabled' => (bool) ($row['enabled'] ?? false),
+                'load_order' => $row['load_order'] ?? null,
+                'source_path' => $row['source_path'] ?? null,
             ],
         ];
     }
@@ -217,7 +238,7 @@ final class InspectGraphCommand extends Command
             throw new FoundryError('CLI_PACK_REQUIRED', 'validation', [], 'Pack name required.');
         }
 
-        $pack = $context->extensionRegistry()->packRegistry()->get($name);
+        $pack = $this->loadedPack($context, $name);
         if ($pack === null) {
             throw new FoundryError('PACK_NOT_FOUND', 'not_found', ['pack' => $name], 'Pack not found.');
         }
@@ -229,6 +250,17 @@ final class InspectGraphCommand extends Command
                 'pack' => $pack->toArray(),
             ],
         ];
+    }
+
+    private function loadedPack(CommandContext $context, string $name): ?PackDefinition
+    {
+        foreach ($context->extensionRegistry()->loadedPacks() as $pack) {
+            if ($pack->name === $name) {
+                return $pack;
+            }
+        }
+
+        return null;
     }
 
     private function inspectDefinitionFormat(CommandContext $context, string $name): array
@@ -247,6 +279,47 @@ final class InspectGraphCommand extends Command
             'message' => null,
             'payload' => [
                 'definition_format' => $format,
+            ],
+        ];
+    }
+
+    /**
+     * @param array<int,string> $args
+     */
+    private function inspectApiSurface(array $args, CommandContext $context): array
+    {
+        $registry = $context->apiSurfaceRegistry();
+        $php = $this->extractOption($args, '--php');
+        $command = $this->extractOption($args, '--command');
+        $path = $this->extractOption($args, '--path');
+
+        if ($php === null && $command === null && $path === null) {
+            return [
+                'status' => 0,
+                'message' => null,
+                'payload' => $registry->describe(),
+            ];
+        }
+
+        $phpMatch = $php !== null ? $registry->classifyPhpSymbol($php) : null;
+        $commandMatch = $command !== null ? $registry->classifyCliCommand($command) : null;
+        $artifactMatch = $path !== null
+            ? ($registry->classifyConfigurationArtifact($path) ?? $registry->classifyGeneratedMetadata($path))
+            : null;
+
+        return [
+            'status' => ($command !== null && $commandMatch === null)
+                || ($path !== null && $artifactMatch === null)
+                ? 1
+                : 0,
+            'message' => null,
+            'payload' => [
+                'policy' => $registry->policy(),
+                'matches' => [
+                    'php_symbol' => $phpMatch,
+                    'cli_command' => $commandMatch,
+                    'artifact' => $artifactMatch,
+                ],
             ],
         ];
     }

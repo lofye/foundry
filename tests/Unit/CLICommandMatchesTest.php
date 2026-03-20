@@ -55,6 +55,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'pack', 'core.foundation']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'compatibility']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'definition-format', 'feature_manifest']));
+        $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'api-surface']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'pipeline']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'execution-plan', 'publish_post']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'guards', 'publish_post']));

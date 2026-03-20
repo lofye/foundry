@@ -5,11 +5,15 @@ namespace Foundry\Documentation;
 
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\IR\GraphNode;
+use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\Paths;
 
 final class GraphDocsGenerator
 {
-    public function __construct(private readonly Paths $paths)
+    public function __construct(
+        private readonly Paths $paths,
+        private readonly ApiSurfaceRegistry $apiSurfaceRegistry,
+    )
     {
     }
 
@@ -36,6 +40,8 @@ final class GraphDocsGenerator
             'jobs' => $this->jobsDoc($graph),
             'caches' => $this->cachesDoc($graph),
             'schemas' => $this->schemasDoc($graph),
+            'api-surface' => $this->apiSurfaceDoc(),
+            'cli-reference' => $this->cliReferenceDoc(),
             'llm-workflow' => $this->llmWorkflowDoc(),
         ];
 
@@ -258,6 +264,98 @@ final class GraphDocsGenerator
         ];
 
         return implode("\n", $lines);
+    }
+
+    private function apiSurfaceDoc(): string
+    {
+        $policy = $this->apiSurfaceRegistry->policy();
+        $lines = [
+            '# API Surface Policy',
+            '',
+            '## Classification Strategy',
+            '- ' . (string) ($policy['classification_strategy'] ?? ''),
+            '',
+            '## Naming Rules',
+        ];
+
+        foreach ((array) ($policy['naming_rules'] ?? []) as $rule) {
+            $lines[] = '- ' . (string) $rule;
+        }
+
+        $lines[] = '';
+        $lines[] = '## Semver Rules';
+        $pre = is_array($policy['pre_1_0'] ?? null) ? $policy['pre_1_0'] : [];
+        $post = is_array($policy['post_1_0'] ?? null) ? $policy['post_1_0'] : [];
+        $lines[] = '- pre-1.0 stable: ' . (string) ($pre['stable'] ?? '');
+        $lines[] = '- pre-1.0 experimental: ' . (string) ($pre['experimental'] ?? '');
+        $lines[] = '- pre-1.0 internal: ' . (string) ($pre['internal'] ?? '');
+        $lines[] = '- post-1.0 stable: ' . (string) ($post['stable'] ?? '');
+        $lines[] = '- post-1.0 experimental: ' . (string) ($post['experimental'] ?? '');
+        $lines[] = '- post-1.0 internal: ' . (string) ($post['internal'] ?? '');
+        $lines[] = '';
+        $lines[] = '## PHP Namespace Rules';
+
+        foreach ($this->apiSurfaceRegistry->phpNamespaceRules() as $entry) {
+            $lines[] = '- ' . (string) ($entry['identifier'] ?? '')
+                . ' [' . (string) ($entry['classification'] ?? '') . '/' . (string) ($entry['stability'] ?? '') . ']'
+                . ': ' . (string) ($entry['summary'] ?? '');
+        }
+
+        $lines[] = '';
+        $lines[] = '## Extension Hooks';
+        foreach ($this->apiSurfaceRegistry->extensionHooks() as $entry) {
+            $lines[] = '- ' . (string) ($entry['identifier'] ?? '')
+                . ' [' . (string) ($entry['classification'] ?? '') . '/' . (string) ($entry['stability'] ?? '') . ']'
+                . ': ' . (string) ($entry['summary'] ?? '');
+        }
+
+        $lines[] = '';
+        $lines[] = '## Configuration And Manifest Contracts';
+        foreach (array_merge($this->apiSurfaceRegistry->configurationFormats(), $this->apiSurfaceRegistry->manifestSchemas()) as $entry) {
+            $lines[] = '- ' . (string) ($entry['identifier'] ?? '')
+                . ' [' . (string) ($entry['classification'] ?? '') . '/' . (string) ($entry['stability'] ?? '') . ']'
+                . ': ' . (string) ($entry['summary'] ?? '');
+        }
+
+        $lines[] = '';
+        $lines[] = '## Generated Metadata';
+        foreach ($this->apiSurfaceRegistry->generatedMetadataFormats() as $entry) {
+            $lines[] = '- ' . (string) ($entry['identifier'] ?? '')
+                . ' [' . (string) ($entry['classification'] ?? '') . '/' . (string) ($entry['stability'] ?? '') . ']'
+                . ': ' . (string) ($entry['summary'] ?? '');
+        }
+        $lines[] = '';
+
+        return implode("\n", $lines) . "\n";
+    }
+
+    private function cliReferenceDoc(): string
+    {
+        $help = $this->apiSurfaceRegistry->cliHelpIndex();
+        $lines = [
+            '# CLI Reference',
+            '',
+        ];
+
+        $groups = is_array($help['commands'] ?? null) ? $help['commands'] : [];
+        foreach (['stable' => 'Stable Commands', 'experimental' => 'Experimental Commands', 'internal' => 'Internal Commands'] as $key => $label) {
+            $lines[] = '## ' . $label;
+
+            foreach ((array) ($groups[$key] ?? []) as $entry) {
+                if (!is_array($entry)) {
+                    continue;
+                }
+
+                $lines[] = '- ' . (string) ($entry['signature'] ?? '')
+                    . ' [' . (string) ($entry['stability'] ?? '') . ']'
+                    . ': ' . (string) ($entry['summary'] ?? '')
+                    . ' Usage: ' . (string) ($entry['usage'] ?? '');
+            }
+
+            $lines[] = '';
+        }
+
+        return implode("\n", $lines) . "\n";
     }
 
     private function toHtml(string $markdown): string

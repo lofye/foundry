@@ -29,6 +29,7 @@ Doctor compiles graph state, runs extension-registered analyzers, and returns:
 
 - compile diagnostics
 - doctor diagnostics
+- extension compatibility and lifecycle diagnostics
 - analyzer-specific findings
 - optional feature-scoped impact preview
 - deterministic recommended follow-up commands
