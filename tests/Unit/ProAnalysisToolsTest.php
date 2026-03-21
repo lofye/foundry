@@ -16,7 +16,10 @@ use Foundry\Pro\ArchitectureExplainer;
 use Foundry\Pro\DeepDiagnosticsBuilder;
 use Foundry\Pro\GraphDiffAnalyzer;
 use Foundry\Pro\TraceAnalyzer;
+use Foundry\Support\ApiSurfaceRegistry;
+use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
+use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
 
 final class ProAnalysisToolsTest extends TestCase
@@ -36,37 +39,52 @@ final class ProAnalysisToolsTest extends TestCase
     public function test_architecture_explainer_resolves_feature_and_renders_explanation(): void
     {
         $graph = $this->graphFixture();
-        $explainer = new ArchitectureExplainer(new ImpactAnalyzer(new Paths('/tmp/foundry-pro-tests', '/tmp/foundry-pro-tests')));
+        $project = new TempProject();
+        $paths = Paths::fromCwd($project->root);
+        $this->writeExplainArtifacts($project->root);
+        $explainer = new ArchitectureExplainer($paths, new ImpactAnalyzer($paths), new ApiSurfaceRegistry());
 
-        $payload = $explainer->explain($graph, 'publish_post');
+        try {
+            $response = $explainer->explain($graph, 'publish_post');
+            $payload = $response->toArray();
 
-        $this->assertSame('feature:publish_post', $payload['resolved_node_id']);
-        $this->assertSame('feature', $payload['node']['type']);
-        $this->assertNotEmpty($payload['dependencies']);
-        $this->assertSame('publish_post', $payload['pipeline_execution']['feature']);
-        $this->assertNotEmpty($payload['guards']);
-        $this->assertNotEmpty($payload['events']);
-        $this->assertNotEmpty($payload['workflows']);
-        $this->assertStringContainsString('publish_post resolves to feature publish_post.', $payload['explanation']);
-        $this->assertStringContainsString('Pipeline stages:', $payload['explanation']);
-        $this->assertStringContainsString('Guards:', $payload['explanation']);
+            $this->assertSame('feature:publish_post', $payload['subject']['id']);
+            $this->assertSame('feature', $payload['subject']['kind']);
+            $this->assertNotEmpty($payload['relationships']['depends_on']);
+            $this->assertSame('publish_post', $payload['execution_flow']['pipeline']['feature']);
+            $this->assertNotEmpty($payload['execution_flow']['guards']);
+            $this->assertNotEmpty($payload['execution_flow']['events']);
+            $this->assertStringContainsString('publish_post is a feature in the compiled application graph.', $payload['summary']['text']);
+            $this->assertArrayHasKey('subject', $payload);
+            $this->assertArrayHasKey('metadata', $payload);
+            $this->assertStringContainsString('Summary', $response->rendered);
+        } finally {
+            $project->cleanup();
+        }
     }
 
     public function test_architecture_explainer_resolves_route_targets_and_reports_missing_nodes(): void
     {
         $graph = $this->graphFixture();
-        $explainer = new ArchitectureExplainer(new ImpactAnalyzer(new Paths('/tmp/foundry-pro-tests', '/tmp/foundry-pro-tests')));
-
-        $route = $explainer->explain($graph, 'POST /posts');
-        $this->assertSame('route:POST /posts', $route['resolved_node_id']);
-        $this->assertSame('publish_post', $route['feature']);
-        $this->assertStringContainsString('Command signature: POST /posts.', $route['explanation']);
+        $project = new TempProject();
+        $paths = Paths::fromCwd($project->root);
+        $this->writeExplainArtifacts($project->root);
+        $explainer = new ArchitectureExplainer($paths, new ImpactAnalyzer($paths), new ApiSurfaceRegistry());
 
         try {
-            $explainer->explain($graph, 'missing-target');
-            self::fail('Expected missing explain target failure.');
-        } catch (\Foundry\Support\FoundryError $error) {
-            $this->assertSame('PRO_EXPLAIN_TARGET_NOT_FOUND', $error->errorCode);
+            $route = $explainer->explain($graph, 'POST /posts')->toArray();
+            $this->assertSame('route:POST /posts', $route['subject']['id']);
+            $this->assertSame('publish_post', $route['subject']['metadata']['feature']);
+            $this->assertStringContainsString('POST /posts is a route in the compiled application graph.', $route['summary']['text']);
+
+            try {
+                $explainer->explain($graph, 'missing-target');
+                self::fail('Expected missing explain target failure.');
+            } catch (FoundryError $error) {
+                $this->assertSame('EXPLAIN_TARGET_NOT_FOUND', $error->errorCode);
+            }
+        } finally {
+            $project->cleanup();
         }
     }
 
@@ -163,5 +181,73 @@ final class ProAnalysisToolsTest extends TestCase
         $graph->addEdge(GraphEdge::make('feature_to_workflow', 'feature:publish_post', 'workflow:posts_review'));
 
         return $graph;
+    }
+
+    private function writeExplainArtifacts(string $root): void
+    {
+        @mkdir($root . '/app/.foundry/build/projections', 0777, true);
+        @mkdir($root . '/app/.foundry/build/diagnostics', 0777, true);
+
+        $executionPlan = [
+            'id' => 'execution_plan:feature:publish_post',
+            'feature' => 'publish_post',
+            'route_signature' => 'POST /posts',
+            'route_node' => 'route:POST /posts',
+            'stages' => ['auth', 'validation', 'action'],
+            'guards' => ['guard:auth:publish_post'],
+            'interceptors' => [],
+            'action_node' => 'feature:publish_post',
+            'plan_version' => 1,
+        ];
+
+        file_put_contents(
+            $root . '/app/.foundry/build/projections/execution_plan_index.php',
+            '<?php return ' . var_export([
+                'by_feature' => ['publish_post' => $executionPlan],
+                'by_route' => ['POST /posts' => $executionPlan],
+            ], true) . ';',
+        );
+        file_put_contents(
+            $root . '/app/.foundry/build/projections/guard_index.php',
+            '<?php return ' . var_export([
+                'guard:auth:publish_post' => [
+                    'id' => 'guard:auth:publish_post',
+                    'feature' => 'publish_post',
+                    'type' => 'authentication',
+                    'stage' => 'auth',
+                    'config' => ['required' => true],
+                ],
+            ], true) . ';',
+        );
+        file_put_contents(
+            $root . '/app/.foundry/build/projections/event_index.php',
+            '<?php return ' . var_export([
+                'emit' => [
+                    'post.created' => [
+                        'feature' => 'publish_post',
+                        'schema' => ['type' => 'object'],
+                    ],
+                ],
+                'subscribe' => [],
+            ], true) . ';',
+        );
+        file_put_contents(
+            $root . '/app/.foundry/build/projections/pipeline_index.php',
+            '<?php return ' . var_export([
+                'order' => ['auth', 'validation', 'action'],
+                'stages' => [],
+                'links' => [],
+            ], true) . ';',
+        );
+        file_put_contents($root . '/app/.foundry/build/projections/interceptor_index.php', '<?php return [];');
+        file_put_contents($root . '/app/.foundry/build/projections/workflow_index.php', '<?php return [];');
+        file_put_contents($root . '/app/.foundry/build/projections/schema_index.php', '<?php return [];');
+        file_put_contents(
+            $root . '/app/.foundry/build/diagnostics/latest.json',
+            json_encode([
+                'summary' => ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => 0],
+                'diagnostics' => [],
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+        );
     }
 }

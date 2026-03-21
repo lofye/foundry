@@ -135,12 +135,12 @@ YAML);
 
         $explain = $this->runCommand($app, ['foundry', 'explain', 'publish_post', '--json']);
         $this->assertSame(0, $explain['status']);
-        $this->assertSame('feature:publish_post', $explain['payload']['resolved_node_id']);
-        $this->assertSame('publish_post', $explain['payload']['feature']);
-        $this->assertSame('publish_post', $explain['payload']['pipeline_execution']['feature']);
-        $this->assertNotEmpty($explain['payload']['guards']);
-        $this->assertNotEmpty($explain['payload']['events']);
-        $this->assertArrayHasKey('pro', $explain['payload']);
+        $this->assertSame('feature:publish_post', $explain['payload']['subject']['id']);
+        $this->assertSame('feature', $explain['payload']['subject']['kind']);
+        $this->assertSame('publish_post', $explain['payload']['execution_flow']['pipeline']['feature']);
+        $this->assertNotEmpty($explain['payload']['execution_flow']['guards']);
+        $this->assertNotEmpty($explain['payload']['execution_flow']['events']);
+        $this->assertSame('publish_post', $explain['payload']['metadata']['target']['selector']);
 
         $trace = $this->runCommand($app, ['foundry', 'trace', 'publish', '--json']);
         $this->assertSame(0, $trace['status']);
@@ -159,6 +159,29 @@ YAML);
         $diff = $this->runCommand($app, ['foundry', 'diff', '--json']);
         $this->assertSame(0, $diff['status']);
         $this->assertGreaterThanOrEqual(1, $diff['payload']['summary']['changed_nodes']);
+    }
+
+    public function test_explain_supports_type_markdown_and_disable_flags(): void
+    {
+        $app = new Application();
+        $this->enablePro($app);
+
+        $this->assertSame(0, $this->runCommand($app, ['foundry', 'compile', 'graph', '--json'])['status']);
+
+        $typed = $this->runCommand($app, ['foundry', 'explain', 'POST', '/posts', '--type=route', '--no-flow', '--no-neighbors', '--no-diagnostics', '--json']);
+        $this->assertSame(0, $typed['status']);
+        $this->assertSame('route', $typed['payload']['subject']['kind']);
+        $this->assertSame([], $typed['payload']['execution_flow']);
+        $this->assertSame([], $typed['payload']['relationships']['depends_on']);
+        $this->assertSame(0, $typed['payload']['diagnostics']['summary']['total']);
+
+        $markdown = $this->runCommandRaw($app, ['foundry', 'explain', 'POST', '/posts', '--type', 'route', '--markdown']);
+        $this->assertSame(0, $markdown['status']);
+        $this->assertStringContainsString('## Subject', $markdown['output']);
+
+        $missing = $this->runCommand($app, ['foundry', 'explain', '--json']);
+        $this->assertSame(1, $missing['status']);
+        $this->assertSame('EXPLAIN_TARGET_REQUIRED', $missing['payload']['error']['code']);
     }
 
     public function test_generate_requires_provider_or_deterministic_mode(): void
