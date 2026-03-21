@@ -134,13 +134,36 @@ final class ApiSurfaceRegistry
 
         $first = (string) ($args[0] ?? '');
         $second = (string) ($args[1] ?? '');
+        $generateTargets = [
+            'feature',
+            'starter',
+            'resource',
+            'admin-resource',
+            'uploads',
+            'notification',
+            'api-resource',
+            'docs',
+            'indexes',
+            'tests',
+            'migration',
+            'context',
+            'billing',
+            'workflow',
+            'orchestration',
+            'search-index',
+            'stream',
+            'locale',
+            'roles',
+            'policy',
+            'inspect-ui',
+        ];
 
         if ($first === '') {
             return null;
         }
 
         return match ($first) {
-            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check' => $first,
+            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace' => $first,
             'compile', 'graph', 'export', 'preview', 'init', 'migrate', 'codemod', 'cache' => match ($first) {
                 'compile' => $second === 'graph' ? 'compile graph' : null,
                 'graph' => match ($second) {
@@ -165,7 +188,16 @@ final class ApiSurfaceRegistry
                 default => null,
             },
             'doctor', 'prompt' => $first,
-            'inspect', 'generate', 'verify' => $second !== '' ? $first . ' ' . $second : null,
+            'pro' => match ($second) {
+                '' => 'pro',
+                'status' => 'pro status',
+                'enable' => 'pro enable',
+                default => 'pro',
+            },
+            'inspect', 'verify' => $second !== '' ? $first . ' ' . $second : null,
+            'generate' => $second === '' || str_starts_with($second, '--')
+                ? null
+                : (in_array($second, $generateTargets, true) ? 'generate ' . $second : 'generate <prompt>'),
             default => null,
         };
     }
@@ -310,11 +342,18 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('compile graph', 'compile graph [--feature=<feature>] [--changed-only] [--no-cache]', 'stable', 'Compile source-of-truth files into the canonical application graph.'),
             $this->cliCommandEntry('cache inspect', 'cache inspect', 'stable', 'Inspect deterministic compile cache state, keys, and invalidation reasons.'),
             $this->cliCommandEntry('cache clear', 'cache clear', 'stable', 'Clear deterministic compile cache artifacts and generated projections.'),
-            $this->cliCommandEntry('doctor', 'doctor [--feature=<feature>] [--strict]', 'experimental', 'Diagnose environment, install, build, and architecture issues from current Foundry state.'),
+            $this->cliCommandEntry('doctor', 'doctor [--feature=<feature>] [--strict] [--deep]', 'experimental', 'Diagnose environment, install, build, and architecture issues from current Foundry state. Deep diagnostics require Foundry Pro.'),
             $this->cliCommandEntry('upgrade-check', 'upgrade-check [--target=<version>]', 'stable', 'Assess whether the current app is ready for a target framework upgrade.'),
             $this->cliCommandEntry('graph inspect', 'graph inspect [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Inspect graph summaries and filtered architecture slices through the stable graph surface.'),
             $this->cliCommandEntry('graph visualize', 'graph visualize [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Render graph slices through the stable graph inspection surface.'),
             $this->cliCommandEntry('prompt', 'prompt <instruction...> [--feature-context] [--dry-run]', 'experimental', 'Build structured AI-edit prompts from current graph state.'),
+            $this->cliCommandEntry('pro', 'pro [status]', 'experimental', 'Inspect local Foundry Pro licensing status and available Pro commands.', 'pro'),
+            $this->cliCommandEntry('pro enable', 'pro enable <license-key>', 'experimental', 'Validate and store a local Foundry Pro license key without any required network call.', 'pro'),
+            $this->cliCommandEntry('pro status', 'pro status', 'experimental', 'Show the local Foundry Pro license status.', 'pro'),
+            $this->cliCommandEntry('explain', 'explain <target>', 'experimental', 'Explain architecture relationships for a graph target.', 'pro'),
+            $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.', 'pro'),
+            $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.', 'pro'),
+            $this->cliCommandEntry('generate <prompt>', 'generate <prompt...> [--feature-context] [--dry-run]', 'experimental', 'Build an AI-assisted generation bundle from the current graph.', 'pro'),
             $this->cliCommandEntry('serve', 'serve', 'internal', 'Emit the lightweight local PHP server hint used in development.'),
             $this->cliCommandEntry('queue:work', 'queue:work [<queue>]', 'internal', 'Run the local queue worker loop.'),
             $this->cliCommandEntry('queue:inspect', 'queue:inspect [<queue>]', 'internal', 'Inspect queued jobs for local development.'),
@@ -571,6 +610,7 @@ final class ApiSurfaceRegistry
         string $usage,
         string $stability,
         string $summary,
+        string $availability = 'core',
     ): array {
         $classification = match ($stability) {
             'stable' => 'public_api',
@@ -581,6 +621,7 @@ final class ApiSurfaceRegistry
         $entry = $this->surfaceEntry('cli_command', $signature, $classification, $stability, $summary);
         $entry['signature'] = $signature;
         $entry['usage'] = $usage;
+        $entry['availability'] = $availability;
 
         return $entry;
     }

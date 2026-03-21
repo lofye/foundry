@@ -3,6 +3,9 @@
 Foundry is a production-minded, explicit, deterministic, LLM-first PHP framework for building feature-local web apps.
 Visit [FoundryFramework.org](https://foundryframework.org) for extensive documentation.
 
+Core Foundry remains MIT-licensed and fully usable without restriction.
+Foundry Pro is an optional, additive layer for deeper diagnostics, architecture understanding, trace analysis, graph diffing, and AI-assisted workflows.
+
 It is optimized for:
 - explicit contracts
 - deterministic generation
@@ -19,6 +22,24 @@ Initial Prompt: Derek Martin
 Architect: ChatGPT-5.3
 Engineer: GPT-5.3-Codex (Extra High)
 License: MIT.
+
+## Foundry Pro
+
+Foundry Pro is optional and local-first:
+
+- core compile, inspect, verify, scaffold, runtime, and prompt flows remain available without Pro
+- Pro adds `doctor --deep`, `explain`, `diff`, `trace`, and `generate "<prompt>"`
+- Pro does not require SaaS connectivity, telemetry, or runtime calls to external services
+- Pro licensing is stored locally at `~/.foundry/license.json` by default
+
+Enable Pro locally:
+
+```bash
+php vendor/bin/foundry pro enable <license-key>
+php vendor/bin/foundry pro status --json
+```
+
+Without a valid license, Pro commands stay visible in help, return a clear message, and exit non-zero without affecting core framework behavior.
 
 ## Runtime and Language
 - PHP `^8.4`
@@ -209,6 +230,23 @@ Architecture analysis:
 php vendor/bin/foundry doctor --json
 php vendor/bin/foundry doctor --strict --json
 php vendor/bin/foundry doctor --feature=<feature> --json
+php vendor/bin/foundry doctor --deep --json
+```
+
+Core vs Pro:
+
+- Free/core: `compile`, `inspect`, `verify`, `doctor`, `prompt`, scaffold generators, runtime commands
+- Pro: `doctor --deep`, `explain <target>`, `diff`, `trace [<target>]`, `generate "<prompt>"`, `pro enable`, `pro status`
+
+Pro command surface:
+
+```bash
+php vendor/bin/foundry pro enable <license-key>
+php vendor/bin/foundry pro status --json
+php vendor/bin/foundry explain publish_post --json
+php vendor/bin/foundry diff --json
+php vendor/bin/foundry trace publish_post --json
+php vendor/bin/foundry generate "add bookmark support" --feature-context --dry-run --json
 ```
 
 Graph inspection and export:

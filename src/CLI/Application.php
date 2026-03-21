@@ -40,6 +40,12 @@ use Foundry\CLI\Commands\VerifyFeatureCommand;
 use Foundry\CLI\Commands\VerifyIntegrationCommand;
 use Foundry\CLI\Commands\VerifyPlatformCommand;
 use Foundry\CLI\Commands\VerifyResourceCommand;
+use Foundry\Pro\CLI\DeepDoctorCommand;
+use Foundry\Pro\CLI\DiffCommand;
+use Foundry\Pro\CLI\ExplainCommand;
+use Foundry\Pro\CLI\GenerateCommand as ProGenerateCommand;
+use Foundry\Pro\CLI\ProCommand;
+use Foundry\Pro\CLI\TraceCommand;
 use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
@@ -59,7 +65,11 @@ final class Application
             new CacheInspectCommand(),
             new CacheClearCommand(),
             new InspectGraphCommand(),
+            new DeepDoctorCommand(),
             new DoctorCommand(),
+            new ExplainCommand(),
+            new DiffCommand(),
+            new TraceCommand(),
             new GraphVisualizeCommand(),
             new ExportGraphCommand(),
             new PromptCommand(),
@@ -76,6 +86,8 @@ final class Application
             new InspectPlatformCommand(),
             new InspectRouteCommand(),
             new InitAppCommand(),
+            new ProCommand(),
+            new ProGenerateCommand(),
             new GenerateScaffoldCommand(),
             new GenerateIntegrationCommand(),
             new GeneratePlatformCommand(),
@@ -219,7 +231,10 @@ final class Application
                     continue;
                 }
 
-                $lines[] = '- ' . (string) ($entry['signature'] ?? '') . ': ' . (string) ($entry['summary'] ?? '');
+                $availability = (string) ($entry['availability'] ?? 'core');
+                $suffix = $availability === 'pro' ? ' [Pro]' : '';
+
+                $lines[] = '- ' . (string) ($entry['signature'] ?? '') . $suffix . ': ' . (string) ($entry['summary'] ?? '');
             }
             $lines[] = '';
         }
@@ -238,6 +253,7 @@ final class Application
             'Command: ' . (string) ($command['signature'] ?? ''),
             'Usage: ' . (string) ($command['usage'] ?? ''),
             'Stability: ' . (string) ($command['stability'] ?? 'internal'),
+            'Availability: ' . (((string) ($command['availability'] ?? 'core')) === 'pro' ? 'Foundry Pro' : 'Core'),
             'Classification: ' . (string) ($command['classification'] ?? 'internal_api'),
             'Summary: ' . (string) ($command['summary'] ?? ''),
             'Semver: ' . (string) ($command['semver_policy'] ?? ''),

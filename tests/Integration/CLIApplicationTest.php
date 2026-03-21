@@ -140,6 +140,21 @@ YAML);
         $this->assertSame('cache inspect', $cacheHelp['payload']['command']['signature']);
         $this->assertSame('stable', $cacheHelp['payload']['command']['stability']);
 
+        $explainHelp = $this->runCommand($app, ['foundry', 'help', 'explain', '--json']);
+        $this->assertSame(0, $explainHelp['status']);
+        $this->assertSame('explain', $explainHelp['payload']['command']['signature']);
+        $this->assertSame('pro', $explainHelp['payload']['command']['availability']);
+
+        $proHelp = $this->runCommand($app, ['foundry', 'help', 'pro', '--json']);
+        $this->assertSame(0, $proHelp['status']);
+        $this->assertSame('pro', $proHelp['payload']['command']['signature']);
+        $this->assertSame('pro', $proHelp['payload']['command']['availability']);
+
+        $generatePromptHelp = $this->runCommand($app, ['foundry', 'help', 'generate', 'Add', '--json']);
+        $this->assertSame(0, $generatePromptHelp['status']);
+        $this->assertSame('generate <prompt>', $generatePromptHelp['payload']['command']['signature']);
+        $this->assertSame('pro', $generatePromptHelp['payload']['command']['availability']);
+
         $apiSurface = $this->runCommand($app, ['foundry', 'inspect', 'api-surface', '--command=compile graph', '--json']);
         $this->assertSame(0, $apiSurface['status']);
         $this->assertSame('compile graph', $apiSurface['payload']['matches']['cli_command']['signature']);

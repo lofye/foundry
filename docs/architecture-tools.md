@@ -18,6 +18,28 @@ The compiler core established a canonical semantic compiler and graph. The exten
 - Diagnostics use the existing `DiagnosticBag` shape and severity model.
 - CLI outputs remain deterministic and support `--json`.
 
+## Foundry Pro Layer
+
+Foundry Pro is an optional layer on top of the same local graph and build artifacts used by core Foundry.
+
+- Core Foundry remains fully usable without Pro.
+- Pro features are additive and do not change compile, runtime, or verification semantics for unlicensed installs.
+- Pro licensing is local-first and stored in `~/.foundry/license.json` by default.
+- Pro does not require telemetry or mandatory network calls.
+- Pro commands remain visible in CLI help and fail with a clear non-zero response when no valid license is present.
+
+Current Pro command surface:
+
+```bash
+php vendor/bin/foundry pro enable <license-key>
+php vendor/bin/foundry pro status --json
+php vendor/bin/foundry doctor --deep --json
+php vendor/bin/foundry explain <target> --json
+php vendor/bin/foundry diff --json
+php vendor/bin/foundry trace [<target>] --json
+php vendor/bin/foundry generate "<prompt>" --feature-context --dry-run --json
+```
+
 ## Foundry Doctor
 
 Command surface:
@@ -26,6 +48,7 @@ Command surface:
 php vendor/bin/foundry doctor --json
 php vendor/bin/foundry doctor --strict --json
 php vendor/bin/foundry doctor --feature=<name> --json
+php vendor/bin/foundry doctor --deep --json
 ```
 
 Doctor compiles graph state, validates environment and build assumptions, runs extension-registered analyzers and doctor checks, and returns:
@@ -62,6 +85,7 @@ Current built-in doctor checks:
 - route/pipeline consistency
 
 `--strict` fails on warnings and errors; default mode fails on errors only.
+`--deep` adds Pro-only hotspot and graph topology diagnostics on top of the standard doctor payload.
 
 ## Graph Visualization And Export
 
@@ -128,6 +152,13 @@ Prompt flow:
 5. Return recommended verification/test commands.
 
 Context extraction prioritizes feature matches by instruction tokens, route paths, events, cache keys, and permissions. If no match exists, deterministic fallback selects a bounded feature subset.
+
+## Pro Explain, Diff, Trace, And Generate
+
+- `explain <target>` resolves a feature, route signature, or graph identifier into dependency, dependent, and impact context.
+- `diff` compares the last compiled baseline graph against the current source state without changing core runtime requirements.
+- `trace [<target>]` analyzes the local trace log and summarizes matching categories.
+- `generate "<prompt>"` reuses the graph-backed prompt bundle flow, but exposes it through the Pro AI-assisted generation command surface.
 
 ## Extension Integration
 

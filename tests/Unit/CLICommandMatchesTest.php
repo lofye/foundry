@@ -40,6 +40,12 @@ use Foundry\CLI\Commands\VerifyFeatureCommand;
 use Foundry\CLI\Commands\VerifyIntegrationCommand;
 use Foundry\CLI\Commands\VerifyPlatformCommand;
 use Foundry\CLI\Commands\VerifyResourceCommand;
+use Foundry\Pro\CLI\DeepDoctorCommand;
+use Foundry\Pro\CLI\DiffCommand;
+use Foundry\Pro\CLI\ExplainCommand;
+use Foundry\Pro\CLI\GenerateCommand as ProGenerateCommand;
+use Foundry\Pro\CLI\ProCommand;
+use Foundry\Pro\CLI\TraceCommand;
 use PHPUnit\Framework\TestCase;
 
 final class CLICommandMatchesTest extends TestCase
@@ -95,7 +101,13 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new CompileGraphCommand())->matches(['compile', 'graph']));
         $this->assertTrue((new CacheInspectCommand())->matches(['cache', 'inspect']));
         $this->assertTrue((new CacheClearCommand())->matches(['cache', 'clear']));
+        $this->assertTrue((new DeepDoctorCommand())->matches(['doctor', '--deep']));
         $this->assertTrue((new DoctorCommand())->matches(['doctor']));
+        $this->assertTrue((new ExplainCommand())->matches(['explain', 'publish_post']));
+        $this->assertTrue((new DiffCommand())->matches(['diff']));
+        $this->assertTrue((new TraceCommand())->matches(['trace', 'publish_post']));
+        $this->assertTrue((new ProCommand())->matches(['pro', 'enable', 'key']));
+        $this->assertTrue((new ProGenerateCommand())->matches(['generate', 'add', 'bookmark', 'support']));
         $this->assertTrue((new UpgradeCheckCommand())->matches(['upgrade-check']));
         $this->assertTrue((new GraphVisualizeCommand())->matches(['graph', 'visualize']));
         $this->assertTrue((new PromptCommand())->matches(['prompt', 'add', 'feature']));

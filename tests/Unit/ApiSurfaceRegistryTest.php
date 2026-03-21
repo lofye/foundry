@@ -48,6 +48,8 @@ final class ApiSurfaceRegistryTest extends TestCase
         $graphInspect = $registry->classifyCliCommand(['graph', 'inspect']);
         $graphVisualize = $registry->classifyCliCommand(['graph', 'visualize']);
         $graphExport = $registry->classifyCliCommand(['export', 'graph']);
+        $proExplain = $registry->classifyCliCommand(['explain', 'publish_post']);
+        $proGenerate = $registry->classifyCliCommand(['generate', 'Add', 'bookmarks']);
         $internal = $registry->classifyCliCommand(['queue:work']);
 
         $this->assertNotNull($stable);
@@ -56,6 +58,8 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($graphInspect);
         $this->assertNotNull($graphVisualize);
         $this->assertNotNull($graphExport);
+        $this->assertNotNull($proExplain);
+        $this->assertNotNull($proGenerate);
         $this->assertNotNull($internal);
         $this->assertSame('stable', $stable['stability']);
         $this->assertSame('stable', $cacheInspect['stability']);
@@ -64,6 +68,9 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $graphInspect['stability']);
         $this->assertSame('stable', $graphVisualize['stability']);
         $this->assertSame('stable', $graphExport['stability']);
+        $this->assertSame('experimental', $proExplain['stability']);
+        $this->assertSame('pro', $proExplain['availability']);
+        $this->assertSame('generate <prompt>', $proGenerate['signature']);
         $this->assertSame('internal', $internal['stability']);
     }
 
