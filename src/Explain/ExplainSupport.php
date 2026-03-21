@@ -230,6 +230,25 @@ final class ExplainSupport
         return array_values(array_unique($values));
     }
 
+    /**
+     * @param array<int,string> $values
+     * @return array<int,string>
+     */
+    public static function orderedUniqueStrings(array $values): array
+    {
+        $unique = [];
+        foreach ($values as $value) {
+            $normalized = trim((string) $value);
+            if ($normalized === '' || in_array($normalized, $unique, true)) {
+                continue;
+            }
+
+            $unique[] = $normalized;
+        }
+
+        return $unique;
+    }
+
     public static function commandPrefix(Paths $paths): string
     {
         return is_file($paths->join('bin/foundry')) ? 'php bin/foundry' : 'php vendor/bin/foundry';

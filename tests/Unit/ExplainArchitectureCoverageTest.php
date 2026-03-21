@@ -70,8 +70,10 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $extension = $engine->explain(ExplainTarget::parse('extension:test.explain'), new ExplainOptions());
 
         $this->assertSame('feature', $feature->subject['kind']);
-        $this->assertStringContainsString('feature in the compiled application graph', (string) $feature->summary['text']);
+        $this->assertStringContainsString('Publish post.', (string) $feature->summary['text']);
+        $this->assertStringContainsString('It serves POST /posts.', (string) $feature->summary['text']);
         $this->assertSame('POST /posts', $route->executionFlow['route']);
+        $this->assertSame('editorial', (string) ($route->executionFlow['workflows'][0]['resource'] ?? ''));
         $this->assertSame(['publish_post'], $this->sectionItems($event->sections, 'event')['emitters']);
         $this->assertSame('editorial', $this->sectionItems($workflow->sections, 'workflow')['resource']);
         $this->assertSame('notify_followers', $this->sectionItems($job->sections, 'job')['name']);
@@ -102,6 +104,8 @@ final class ExplainArchitectureCoverageTest extends TestCase
             self::fail('Expected ambiguous target.');
         } catch (FoundryError $error) {
             $this->assertSame('EXPLAIN_TARGET_AMBIGUOUS', $error->errorCode);
+            $this->assertStringContainsString('Ambiguous target: "publish"', $error->getMessage());
+            $this->assertStringContainsString('foundry explain feature:publish_post', $error->getMessage());
             $featureCandidates = array_values(array_filter(
                 (array) ($error->details['candidates'] ?? []),
                 static fn (mixed $row): bool => is_array($row) && (string) ($row['kind'] ?? '') === 'feature',
@@ -154,6 +158,7 @@ final class ExplainArchitectureCoverageTest extends TestCase
             ['id' => 'one', 'label' => 'One'],
         ]));
         $this->assertSame(['a', 'b'], ExplainSupport::uniqueStrings(['b', 'a', 'a']));
+        $this->assertSame(['b', 'a'], ExplainSupport::orderedUniqueStrings(['b', 'a', 'a']));
         $this->assertSame('php vendor/bin/foundry', ExplainSupport::commandPrefix($this->paths));
         $this->assertSame('Test', ExplainSupport::section('id', 'Test', [])['title']);
 
@@ -165,18 +170,26 @@ final class ExplainArchitectureCoverageTest extends TestCase
             extensionRows: $this->extensionRows(),
         );
         $plan = $engine->explain(ExplainTarget::parse('publish_post'), new ExplainOptions());
+        $deepPlan = $engine->explain(ExplainTarget::parse('publish_post'), new ExplainOptions(format: 'markdown', deep: true));
         $factory = new ExplanationRendererFactory();
 
         $text = $factory->forFormat('text')->render($plan);
         $markdown = $factory->forFormat('markdown')->render($plan);
+        $deepText = $factory->forFormat('text')->render($deepPlan);
+        $deepMarkdown = $factory->forFormat('markdown')->render($deepPlan);
         $json = $factory->forFormat('json')->render($plan);
 
         $this->assertStringContainsString('Subject', $text);
-        $this->assertStringContainsString('Contracts', $text);
+        $this->assertStringContainsString('Responsibilities', $text);
+        $this->assertStringContainsString('Execution Flow', $text);
         $this->assertStringContainsString('Related Docs', $text);
-        $this->assertStringContainsString('## Subject', $markdown);
-        $this->assertStringContainsString('## Contracts', $markdown);
-        $this->assertStringContainsString('## Related Docs', $markdown);
+        $this->assertStringContainsString('Execution Flow (Detailed)', $deepText);
+        $this->assertStringContainsString('Graph Relationships (Expanded)', $deepText);
+        $this->assertStringContainsString('## publish_post', $markdown);
+        $this->assertStringContainsString('### Responsibilities', $markdown);
+        $this->assertStringContainsString('### Related Docs', $markdown);
+        $this->assertStringContainsString('### Execution Flow (Detailed)', $deepMarkdown);
+        $this->assertStringContainsString('### Graph Relationships', $deepMarkdown);
         $this->assertStringContainsString('"subject"', $json);
         $this->assertStringContainsString('"related_docs"', $json);
     }
@@ -265,6 +278,44 @@ final class ExplainArchitectureCoverageTest extends TestCase
             $renderers->forFormat('json')->render($first),
             $renderers->forFormat('json')->render($second),
         );
+    }
+
+    public function test_deep_mode_enriches_without_changing_plan_shape_or_section_identity(): void
+    {
+        $engine = ExplainEngineFactory::create(
+            graph: $this->graphFixture(),
+            paths: $this->paths,
+            apiSurfaceRegistry: new ApiSurfaceRegistry(),
+            impactAnalyzer: new ImpactAnalyzer($this->paths),
+            extensionRows: $this->extensionRows(),
+        );
+
+        $shallow = $engine->explain(ExplainTarget::parse('feature:publish_post'), new ExplainOptions());
+        $deep = $engine->explain(ExplainTarget::parse('feature:publish_post'), new ExplainOptions(deep: true));
+
+        $this->assertSame(array_keys($shallow->toArray()), array_keys($deep->toArray()));
+        $this->assertSame(
+            array_values(array_map(static fn (array $section): string => (string) ($section['id'] ?? ''), $shallow->sections)),
+            array_values(array_map(static fn (array $section): string => (string) ($section['id'] ?? ''), $deep->sections)),
+        );
+
+        $renderers = new ExplanationRendererFactory();
+        $text = $renderers->forFormat('text')->render($shallow);
+        $deepText = $renderers->forFormat('text')->render($deep);
+        $json = json_decode($renderers->forFormat('json')->render($shallow), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertGreaterThan(-1, strpos($text, 'Subject'));
+        $this->assertGreaterThan(strpos($text, 'Subject'), strpos($text, 'Summary'));
+        $this->assertGreaterThan(strpos($text, 'Summary'), strpos($text, 'Execution Flow'));
+        $this->assertGreaterThan(strpos($text, 'Execution Flow'), strpos($text, 'Responsibilities'));
+        $this->assertGreaterThan(strpos($text, 'Responsibilities'), strpos($text, 'Impact'));
+        $this->assertGreaterThan(strpos($text, 'Impact'), strpos($text, 'Diagnostics'));
+
+        $this->assertStringContainsString('Execution Flow (Detailed)', $deepText);
+        $this->assertStringContainsString('Responsibilities', $deepText);
+        $this->assertStringContainsString('Impact', $deepText);
+        $this->assertStringContainsString('Diagnostics', $deepText);
+        $this->assertSame(array_keys($shallow->toArray()), array_keys((array) $json));
     }
 
     private function graphFixture(bool $includeSecondPublishFeature = false): ApplicationGraph

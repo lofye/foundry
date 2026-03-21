@@ -255,7 +255,9 @@ Pro command surface:
 php vendor/bin/foundry pro enable <license-key>
 php vendor/bin/foundry pro status --json
 php vendor/bin/foundry explain publish_post --json
+php vendor/bin/foundry explain publish_post --deep
 php vendor/bin/foundry explain route:POST /posts --markdown
+php vendor/bin/foundry explain route:POST /posts --neighbors
 php vendor/bin/foundry diff --json
 php vendor/bin/foundry trace publish_post --json
 php vendor/bin/foundry generate "add bookmark support" --deterministic --dry-run --json
@@ -263,6 +265,8 @@ php vendor/bin/foundry generate "add bookmark support" --provider=static --model
 ```
 
 `explain` supports typed selectors such as `feature:publish_post`, `route:POST /posts`, `command:doctor`, `event:post.created`, `workflow:editorial`, and `extension:core`.
+Default text output starts with `Subject` and `Summary`, then adds execution flow, dependencies, dependents, emitted events, triggered workflows/jobs, diagnostics, related commands, and related docs when present.
+`--deep` expands the same structure with detailed flow stages and graph relationships instead of switching to a different format.
 
 Provider-backed generation is still optional. If no provider is configured, `generate` exits non-zero with a clear message and suggests `--deterministic`.
 

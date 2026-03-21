@@ -174,8 +174,10 @@ Context extraction prioritizes feature matches by instruction tokens, route path
 
 ```bash
 php vendor/bin/foundry explain publish_post --json
+php vendor/bin/foundry explain publish_post --deep
 php vendor/bin/foundry explain feature:publish_post --markdown
 php vendor/bin/foundry explain route:POST /posts --json
+php vendor/bin/foundry explain route:POST /posts --neighbors
 php vendor/bin/foundry explain command:doctor --json
 php vendor/bin/foundry explain event:post.created --json
 php vendor/bin/foundry explain workflow:editorial --json
@@ -202,6 +204,18 @@ Supported subject kinds include:
 - command metadata
 - extension metadata
 - docs metadata when available
+
+Default human-readable output is intentionally story-shaped but stable:
+
+- `Subject`
+- `Summary`
+- `Execution Flow`
+- typed relationship sections such as `Depends On`, `Used By`, `Emits`, and `Triggers`
+- integrated `Diagnostics`
+- `Related Commands`
+- `Related Docs`
+
+`--deep` keeps the same overall layout and expands it with detailed execution stages and graph relationships instead of switching to a different output contract.
 
 The JSON payload is plan-driven and suitable for docs generation, IDE tooling, and future AI integration. It currently remains experimental, but its structure is deliberate:
 

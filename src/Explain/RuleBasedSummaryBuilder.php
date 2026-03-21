@@ -33,6 +33,7 @@ final class RuleBasedSummaryBuilder
     private function featureSummary(ExplainSubject $subject, ExplainContext $context): string
     {
         $feature = (string) ($subject->metadata['feature'] ?? $subject->label);
+        $description = trim((string) ($subject->metadata['description'] ?? ''));
         $route = trim((string) ($subject->metadata['route_signature'] ?? ''));
         if ($route === '' && is_array($subject->metadata['route'] ?? null)) {
             $method = strtoupper(trim((string) ($subject->metadata['route']['method'] ?? '')));
@@ -41,13 +42,20 @@ final class RuleBasedSummaryBuilder
         }
         $events = (array) ($context->get('events', [])['emitted'] ?? []);
         $jobs = (array) ($subject->metadata['jobs']['dispatch'] ?? []);
+        $workflows = array_values(array_filter((array) ($context->get('workflows', [])['items'] ?? []), 'is_array'));
 
-        $parts = [sprintf('%s is a feature in the compiled application graph.', $feature)];
+        $parts = [$description !== '' ? ucfirst(rtrim($description, '.')) . '.' : sprintf('%s is a feature in the compiled application graph.', $feature)];
         if ($route !== '') {
             $parts[] = 'It serves ' . $route . '.';
         }
         if ($events !== []) {
             $parts[] = 'It emits ' . implode(', ', array_slice(array_keys($events), 0, 3)) . '.';
+        }
+        if ($workflows !== []) {
+            $parts[] = 'It feeds ' . implode(', ', array_slice(array_map(
+                static fn (array $workflow): string => (string) ($workflow['resource'] ?? $workflow['label'] ?? 'workflow'),
+                $workflows,
+            ), 0, 3)) . '.';
         }
         if ($jobs !== []) {
             $parts[] = 'It dispatches ' . implode(', ', array_slice(array_map('strval', $jobs), 0, 3)) . '.';
@@ -60,10 +68,18 @@ final class RuleBasedSummaryBuilder
     {
         $feature = trim((string) ($subject->metadata['feature'] ?? ''));
         $signature = trim((string) ($subject->metadata['signature'] ?? $subject->label));
+        $events = array_keys((array) ($context->get('events', [])['emitted'] ?? []));
+        $jobs = $this->jobsForFeature($feature, $context);
 
-        $parts = [sprintf('%s is a route in the compiled application graph.', $signature)];
+        $parts = [sprintf('%s handles requests through the compiled application graph.', $signature)];
         if ($feature !== '') {
             $parts[] = 'It dispatches the ' . $feature . ' feature through the resolved pipeline.';
+        }
+        if ($events !== []) {
+            $parts[] = 'It emits ' . implode(', ', array_slice(array_values(array_map('strval', $events)), 0, 3)) . '.';
+        }
+        if ($jobs !== []) {
+            $parts[] = 'It dispatches ' . implode(', ', array_slice($jobs, 0, 3)) . '.';
         }
 
         return implode(' ', $parts);
@@ -91,13 +107,24 @@ final class RuleBasedSummaryBuilder
     {
         $resource = (string) ($subject->metadata['resource'] ?? $subject->label);
         $transitions = is_array($subject->metadata['transitions'] ?? null) ? $subject->metadata['transitions'] : [];
+        $emits = [];
+        foreach ($transitions as $transition) {
+            if (!is_array($transition)) {
+                continue;
+            }
 
-        return sprintf(
-            '%s is a workflow for the %s resource with %d compiled transitions.',
-            $resource,
-            $resource,
-            count($transitions),
-        );
+            foreach ((array) ($transition['emit'] ?? []) as $event) {
+                $emits[] = (string) $event;
+            }
+        }
+        $emits = array_values(array_unique(array_filter($emits, static fn (string $value): bool => $value !== '')));
+
+        $parts = [sprintf('%s is a workflow for the %s resource with %d compiled transitions.', $resource, $resource, count($transitions))];
+        if ($emits !== []) {
+            $parts[] = 'It emits ' . implode(', ', array_slice($emits, 0, 3)) . '.';
+        }
+
+        return implode(' ', $parts);
     }
 
     private function commandSummary(ExplainSubject $subject): string
@@ -150,5 +177,22 @@ final class RuleBasedSummaryBuilder
     private function pipelineStageSummary(ExplainSubject $subject): string
     {
         return sprintf('%s is a pipeline stage in the canonical execution sequence.', $subject->label);
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function jobsForFeature(string $feature, ExplainContext $context): array
+    {
+        if ($feature === '') {
+            return [];
+        }
+
+        $node = $context->graph->node('feature:' . $feature);
+        if ($node === null) {
+            return [];
+        }
+
+        return array_values(array_map('strval', (array) ($node->payload()['jobs']['dispatch'] ?? [])));
     }
 }

@@ -90,6 +90,11 @@ final class ExplainCommand extends Command
                 continue;
             }
 
+            if ($arg === '--neighbors') {
+                $includeNeighbors = true;
+                continue;
+            }
+
             if ($arg === '--no-flow') {
                 $includeExecutionFlow = false;
                 continue;

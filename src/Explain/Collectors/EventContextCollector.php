@@ -11,7 +11,7 @@ final class EventContextCollector implements ExplainContextCollectorInterface
 {
     public function supports(ExplainSubject $subject): bool
     {
-        return in_array($subject->kind, ['feature', 'event', 'workflow'], true);
+        return in_array($subject->kind, ['feature', 'route', 'event', 'workflow'], true);
     }
 
     public function collect(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): void
@@ -28,7 +28,7 @@ final class EventContextCollector implements ExplainContextCollectorInterface
             'event' => null,
         ];
 
-        if ($subject->kind === 'feature') {
+        if (in_array($subject->kind, ['feature', 'route'], true)) {
             $feature = trim((string) ($subject->metadata['feature'] ?? $subject->label));
             foreach ($emit as $name => $row) {
                 if (is_array($row) && (string) ($row['feature'] ?? '') === $feature) {

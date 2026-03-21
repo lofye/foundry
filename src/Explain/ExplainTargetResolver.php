@@ -43,7 +43,7 @@ final class ExplainTargetResolver
                         'kind' => $target->kind,
                         'candidates' => array_map($this->candidateSummary(...), $candidates),
                     ],
-                    'Explain target is ambiguous.',
+                    $this->ambiguityMessage($target->raw, $candidates),
                 );
             }
 
@@ -69,7 +69,7 @@ final class ExplainTargetResolver
                 'EXPLAIN_TARGET_AMBIGUOUS',
                 'validation',
                 ['target' => $target->raw, 'candidates' => array_map($this->candidateSummary(...), $aliasMatches)],
-                'Explain target is ambiguous.',
+                $this->ambiguityMessage($target->raw, $aliasMatches),
             );
         }
 
@@ -82,7 +82,7 @@ final class ExplainTargetResolver
                 'EXPLAIN_TARGET_AMBIGUOUS',
                 'validation',
                 ['target' => $target->raw, 'candidates' => array_map($this->candidateSummary(...), $routeOrCommandMatches)],
-                'Explain target is ambiguous.',
+                $this->ambiguityMessage($target->raw, $routeOrCommandMatches),
             );
         }
 
@@ -95,7 +95,7 @@ final class ExplainTargetResolver
                 'EXPLAIN_TARGET_AMBIGUOUS',
                 'validation',
                 ['target' => $target->raw, 'candidates' => array_map($this->candidateSummary(...), $fuzzy)],
-                'Explain target is ambiguous.',
+                $this->ambiguityMessage($target->raw, $fuzzy),
             );
         }
 
@@ -142,7 +142,7 @@ final class ExplainTargetResolver
                     'kind' => $kind,
                     'candidates' => array_map($this->candidateSummary(...), $matches),
                 ],
-                'Explain target is ambiguous.',
+                $this->ambiguityMessage($kind . ':' . $selector, $matches),
             );
         }
 
@@ -403,5 +403,54 @@ final class ExplainTargetResolver
             'label' => $subject->label,
             'aliases' => array_slice($subject->aliases, 0, 5),
         ];
+    }
+
+    /**
+     * @param array<int,ExplainSubject> $candidates
+     */
+    private function ambiguityMessage(string $target, array $candidates): string
+    {
+        $lines = [
+            'Ambiguous target: "' . trim($target) . '"',
+            '',
+            'Did you mean:',
+            '',
+        ];
+
+        foreach (array_slice($candidates, 0, 5) as $candidate) {
+            $lines[] = '  ' . $candidate->label . ' (' . $candidate->kind . ')';
+        }
+
+        $lines[] = '';
+        $lines[] = 'Use a more specific target, or prefix with type:';
+        $lines[] = '';
+
+        foreach (array_slice($candidates, 0, 3) as $candidate) {
+            $lines[] = '  foundry explain ' . $this->typedSelectorExample($candidate);
+        }
+
+        return implode(PHP_EOL, $lines);
+    }
+
+    private function typedSelectorExample(ExplainSubject $candidate): string
+    {
+        $selector = match ($candidate->kind) {
+            'feature' => trim((string) ($candidate->metadata['feature'] ?? $candidate->label)),
+            'route' => ExplainSupport::normalizeRouteSignature((string) ($candidate->metadata['signature'] ?? $candidate->label)),
+            'event' => trim((string) ($candidate->metadata['name'] ?? $candidate->label)),
+            'workflow' => trim((string) ($candidate->metadata['resource'] ?? $candidate->label)),
+            'job' => trim((string) ($candidate->metadata['name'] ?? $candidate->label)),
+            'schema' => trim((string) ($candidate->metadata['path'] ?? $candidate->label)),
+            'pipeline_stage' => trim((string) ($candidate->metadata['name'] ?? $candidate->label)),
+            'command' => trim((string) ($candidate->metadata['signature'] ?? $candidate->label)),
+            'extension' => trim((string) ($candidate->metadata['name'] ?? $candidate->label)),
+            default => trim($candidate->label),
+        };
+
+        if ($selector === '') {
+            $selector = trim($candidate->label);
+        }
+
+        return $candidate->kind . ':' . $selector;
     }
 }

@@ -54,7 +54,9 @@ final class ProAnalysisToolsTest extends TestCase
             $this->assertSame('publish_post', $payload['execution_flow']['pipeline']['feature']);
             $this->assertNotEmpty($payload['execution_flow']['guards']);
             $this->assertNotEmpty($payload['execution_flow']['events']);
-            $this->assertStringContainsString('publish_post is a feature in the compiled application graph.', $payload['summary']['text']);
+            $this->assertStringContainsString('Publish post.', $payload['summary']['text']);
+            $this->assertStringContainsString('It emits post.created.', $payload['summary']['text']);
+            $this->assertStringContainsString('It feeds posts_review.', $payload['summary']['text']);
             $this->assertArrayHasKey('subject', $payload);
             $this->assertArrayHasKey('metadata', $payload);
             $this->assertStringContainsString('Summary', $response->rendered);
@@ -75,7 +77,8 @@ final class ProAnalysisToolsTest extends TestCase
             $route = $explainer->explain($graph, 'POST /posts')->toArray();
             $this->assertSame('route:POST /posts', $route['subject']['id']);
             $this->assertSame('publish_post', $route['subject']['metadata']['feature']);
-            $this->assertStringContainsString('POST /posts is a route in the compiled application graph.', $route['summary']['text']);
+            $this->assertStringContainsString('POST /posts handles requests through the compiled application graph.', $route['summary']['text']);
+            $this->assertStringContainsString('It dispatches the publish_post feature through the resolved pipeline.', $route['summary']['text']);
 
             try {
                 $explainer->explain($graph, 'missing-target');

@@ -187,8 +187,10 @@ YAML);
 
         $markdown = $this->runCommandRaw($app, ['foundry', 'explain', 'POST', '/posts', '--type', 'route', '--markdown']);
         $this->assertSame(0, $markdown['status']);
-        $this->assertStringContainsString('## Subject', $markdown['output']);
-        $this->assertStringContainsString('## Related Docs', $markdown['output']);
+        $this->assertStringContainsString('## POST /posts', $markdown['output']);
+        $this->assertStringContainsString('### Summary', $markdown['output']);
+        $this->assertStringContainsString('### Execution Flow', $markdown['output']);
+        $this->assertStringContainsString('### Related Docs', $markdown['output']);
 
         $missing = $this->runCommand($app, ['foundry', 'explain', '--json']);
         $this->assertSame(1, $missing['status']);

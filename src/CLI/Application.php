@@ -179,7 +179,7 @@ final class Application
             echo $result['message'] . PHP_EOL;
         }
 
-        if ($result['payload'] !== null) {
+        if ($result['payload'] !== null && (($result['status'] ?? 0) === 0 || $result['message'] === null || $result['message'] === '')) {
             echo Json::encode($result['payload'], true) . PHP_EOL;
         }
 

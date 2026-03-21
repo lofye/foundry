@@ -144,6 +144,7 @@ YAML);
         $this->assertSame(0, $explainHelp['status']);
         $this->assertSame('explain', $explainHelp['payload']['command']['signature']);
         $this->assertSame('pro', $explainHelp['payload']['command']['availability']);
+        $this->assertStringContainsString('--neighbors', $explainHelp['payload']['command']['usage']);
 
         $proHelp = $this->runCommand($app, ['foundry', 'help', 'pro', '--json']);
         $this->assertSame(0, $proHelp['status']);

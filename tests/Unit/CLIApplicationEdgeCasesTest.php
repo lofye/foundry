@@ -64,4 +64,38 @@ final class CLIApplicationEdgeCasesTest extends TestCase
         $this->assertSame(0, $status);
         $this->assertSame('', $output);
     }
+
+    public function test_plain_error_output_prefers_human_message_over_payload_dump(): void
+    {
+        $app = new Application([
+            new class extends Command {
+                #[\Override]
+                public function matches(array $args): bool
+                {
+                    return true;
+                }
+
+                #[\Override]
+                public function run(array $args, CommandContext $context): array
+                {
+                    return [
+                        'status' => 1,
+                        'message' => "Ambiguous target: \"create\"",
+                        'payload' => [
+                            'error' => [
+                                'code' => 'EXPLAIN_TARGET_AMBIGUOUS',
+                            ],
+                        ],
+                    ];
+                }
+            },
+        ]);
+
+        ob_start();
+        $status = $app->run(['foundry', 'anything']);
+        $output = ob_get_clean() ?: '';
+
+        $this->assertSame(1, $status);
+        $this->assertSame("Ambiguous target: \"create\"\n", $output);
+    }
 }

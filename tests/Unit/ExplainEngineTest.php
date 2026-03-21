@@ -59,6 +59,8 @@ final class ExplainEngineTest extends TestCase
         } catch (FoundryError $error) {
             $this->assertSame('EXPLAIN_TARGET_AMBIGUOUS', $error->errorCode);
             $this->assertCount(2, (array) ($error->details['candidates'] ?? []));
+            $this->assertStringContainsString('Ambiguous target: "publish"', $error->getMessage());
+            $this->assertStringContainsString('foundry explain feature:publish_post', $error->getMessage());
         }
     }
 

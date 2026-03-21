@@ -53,11 +53,11 @@ final class FeatureSubjectAnalyzer implements SubjectAnalyzerInterface
             foreach ($emittedEvents as $eventName) {
                 $steps[] = (string) $eventName;
             }
-            foreach ($jobs as $jobName) {
-                $steps[] = $jobName;
-            }
             foreach ($workflowItems as $workflow) {
                 $steps[] = (string) ($workflow['resource'] ?? $workflow['label'] ?? 'workflow');
+            }
+            foreach ($jobs as $jobName) {
+                $steps[] = $jobName;
             }
 
             $executionFlow = [
@@ -74,7 +74,7 @@ final class FeatureSubjectAnalyzer implements SubjectAnalyzerInterface
                     $jobs,
                 )),
                 'workflows' => $workflowItems,
-                'steps' => ExplainSupport::uniqueStrings($steps),
+                'steps' => ExplainSupport::orderedUniqueStrings($steps),
             ];
         }
 

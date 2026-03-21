@@ -350,7 +350,7 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('pro', 'pro [status]', 'experimental', 'Inspect local Foundry Pro licensing status and available Pro commands.', 'pro'),
             $this->cliCommandEntry('pro enable', 'pro enable <license-key>', 'experimental', 'Validate and store a local Foundry Pro license key without any required network call.', 'pro'),
             $this->cliCommandEntry('pro status', 'pro status', 'experimental', 'Show the local Foundry Pro license status.', 'pro'),
-            $this->cliCommandEntry('explain', 'explain <target> [--type=<kind>] [--markdown] [--deep] [--no-diagnostics] [--no-neighbors] [--no-flow]', 'experimental', 'Explain a framework or application subject from the compiled graph, projections, diagnostics, and docs metadata.', 'pro'),
+            $this->cliCommandEntry('explain', 'explain <target> [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow]', 'experimental', 'Explain a framework or application subject from the compiled graph, projections, diagnostics, and docs metadata.', 'pro'),
             $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.', 'pro'),
             $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.', 'pro'),
             $this->cliCommandEntry('generate <prompt>', 'generate <prompt...> [--feature-context] [--dry-run] [--deterministic] [--provider=<name>] [--model=<name>] [--force]', 'experimental', 'Plan or generate graph-aware feature scaffolding from the current graph using deterministic or configured AI provider mode.', 'pro'),
