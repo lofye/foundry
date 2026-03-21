@@ -6,7 +6,6 @@ namespace Foundry\Explain\Analyzers;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
-use Foundry\Explain\ExplainSupport;
 
 final class JobSubjectAnalyzer implements SubjectAnalyzerInterface
 {
@@ -15,21 +14,19 @@ final class JobSubjectAnalyzer implements SubjectAnalyzerInterface
         return $subject->kind === 'job';
     }
 
-    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): SubjectAnalysisResult
     {
         $definitions = is_array($subject->metadata['definitions'] ?? null) ? $subject->metadata['definitions'] : [];
 
-        return [
-            'sections' => [
-                ExplainSupport::section('job', 'Job', [
-                    'name' => $subject->metadata['name'] ?? $subject->label,
-                    'features' => $subject->metadata['features'] ?? [],
-                    'definitions' => $definitions,
-                ]),
+        return new SubjectAnalysisResult(
+            responsibilities: [
+                'Run background work outside the immediate request pipeline',
             ],
-            'related_commands' => [
-                $context->commandPrefix . ' verify contracts --json',
+            summaryInputs: [
+                'name' => $subject->metadata['name'] ?? $subject->label,
+                'features' => $subject->metadata['features'] ?? [],
+                'definitions' => $definitions,
             ],
-        ];
+        );
     }
 }

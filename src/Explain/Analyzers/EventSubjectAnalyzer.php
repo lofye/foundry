@@ -6,7 +6,6 @@ namespace Foundry\Explain\Analyzers;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
-use Foundry\Explain\ExplainSupport;
 
 final class EventSubjectAnalyzer implements SubjectAnalyzerInterface
 {
@@ -15,26 +14,22 @@ final class EventSubjectAnalyzer implements SubjectAnalyzerInterface
         return $subject->kind === 'event';
     }
 
-    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): SubjectAnalysisResult
     {
-        $event = is_array($context->get('events')) ? $context->get('events') : [];
-        $workflows = is_array($context->get('workflows')) ? $context->get('workflows') : [];
+        $event = $context->events();
+        $workflows = $context->workflows();
         $name = (string) ($subject->metadata['name'] ?? $subject->label);
 
-        return [
-            'sections' => [
-                ExplainSupport::section('event', 'Event', [
-                    'name' => $name,
-                    'emitters' => $event['emitters'] ?? [],
-                    'subscribers' => $event['subscribers'] ?? [],
-                    'schema' => $event['event']['schema'] ?? null,
-                    'workflows' => $workflows['items'] ?? [],
-                ]),
+        return new SubjectAnalysisResult(
+            responsibilities: [
+                'Carry the ' . $name . ' event contract through the compiled graph',
             ],
-            'related_commands' => [
-                $context->commandPrefix . ' inspect graph --event=' . $name . ' --json',
-                $context->commandPrefix . ' verify contracts --json',
+            summaryInputs: [
+                'name' => $name,
+                'emitters' => $event['emitters'] ?? [],
+                'subscribers' => $event['subscribers'] ?? [],
+                'workflows' => $workflows['items'] ?? [],
             ],
-        ];
+        );
     }
 }

@@ -7,14 +7,25 @@ use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\Analysis\ImpactAnalyzer;
 use Foundry\Compiler\BuildLayout;
 use Foundry\Explain\Analyzers\CommandSubjectAnalyzer;
+use Foundry\Explain\Analyzers\DependencyAnalyzer;
 use Foundry\Explain\Analyzers\EventSubjectAnalyzer;
+use Foundry\Explain\Analyzers\EventEmissionAnalyzer;
 use Foundry\Explain\Analyzers\ExtensionSubjectAnalyzer;
 use Foundry\Explain\Analyzers\FeatureSubjectAnalyzer;
 use Foundry\Explain\Analyzers\GenericGraphSubjectAnalyzer;
+use Foundry\Explain\Analyzers\GraphRelationshipsAnalyzer;
 use Foundry\Explain\Analyzers\JobSubjectAnalyzer;
+use Foundry\Explain\Analyzers\PermissionAnalyzer;
 use Foundry\Explain\Analyzers\PipelineStageSubjectAnalyzer;
+use Foundry\Explain\Analyzers\RelatedCommandsAnalyzer;
+use Foundry\Explain\Analyzers\RelatedDocsAnalyzer;
 use Foundry\Explain\Analyzers\RouteSubjectAnalyzer;
 use Foundry\Explain\Analyzers\SchemaSubjectAnalyzer;
+use Foundry\Explain\Analyzers\SchemaInteractionAnalyzer;
+use Foundry\Explain\Analyzers\DiagnosticsAnalyzer;
+use Foundry\Explain\Analyzers\DependentAnalyzer;
+use Foundry\Explain\Analyzers\ExecutionFlowAnalyzer;
+use Foundry\Explain\Analyzers\TriggerAnalyzer;
 use Foundry\Explain\Analyzers\WorkflowSubjectAnalyzer;
 use Foundry\Explain\Collectors\CommandContextCollector;
 use Foundry\Explain\Collectors\DiagnosticsContextCollector;
@@ -56,34 +67,48 @@ final class ExplainEngineFactory
         return new ExplainEngine(
             graph: $graph,
             resolver: new ExplainTargetResolver($graph, $artifacts, $subjectFactory),
-            artifacts: $artifacts,
-            summaryBuilder: new RuleBasedSummaryBuilder(),
-            planAssembler: new ExplanationPlanAssembler(),
+            planAssembler: new ExplanationPlanAssembler(
+                new SummarySectionBuilder(),
+                new SuggestedFixesBuilder(),
+                [
+                    new GenericGraphSubjectAnalyzer(),
+                    new FeatureSubjectAnalyzer(),
+                    new RouteSubjectAnalyzer(),
+                    new EventSubjectAnalyzer(),
+                    new WorkflowSubjectAnalyzer(),
+                    new CommandSubjectAnalyzer(),
+                    new JobSubjectAnalyzer(),
+                    new SchemaSubjectAnalyzer(),
+                    new ExtensionSubjectAnalyzer(),
+                    new PipelineStageSubjectAnalyzer(),
+                ],
+                [
+                    new ExecutionFlowAnalyzer(),
+                    new DependencyAnalyzer(),
+                    new DependentAnalyzer(),
+                    new EventEmissionAnalyzer(),
+                    new TriggerAnalyzer(),
+                    new PermissionAnalyzer(),
+                    new SchemaInteractionAnalyzer(),
+                    new GraphRelationshipsAnalyzer(),
+                    new RelatedCommandsAnalyzer(),
+                    new RelatedDocsAnalyzer(),
+                    new DiagnosticsAnalyzer(),
+                ],
+                $contributors,
+            ),
             collectors: [
-                new GraphNeighborhoodCollector(),
-                new PipelineContextCollector(),
-                new EventContextCollector(),
-                new WorkflowContextCollector(),
-                new SchemaContextCollector(),
-                new DiagnosticsContextCollector(),
-                new CommandContextCollector(),
-                new ExtensionContextCollector(),
-                new DocsContextCollector(),
-                new ImpactContextCollector($impactAnalyzer),
+                new GraphNeighborhoodCollector($graph),
+                new PipelineContextCollector($artifacts),
+                new EventContextCollector($artifacts),
+                new WorkflowContextCollector($graph, $artifacts),
+                new SchemaContextCollector($artifacts),
+                new DiagnosticsContextCollector($graph, $artifacts),
+                new CommandContextCollector($artifacts),
+                new ExtensionContextCollector($artifacts),
+                new DocsContextCollector($artifacts),
+                new ImpactContextCollector($impactAnalyzer, $graph),
             ],
-            analyzers: [
-                new GenericGraphSubjectAnalyzer(),
-                new FeatureSubjectAnalyzer(),
-                new RouteSubjectAnalyzer(),
-                new EventSubjectAnalyzer(),
-                new WorkflowSubjectAnalyzer(),
-                new CommandSubjectAnalyzer(),
-                new JobSubjectAnalyzer(),
-                new SchemaSubjectAnalyzer(),
-                new ExtensionSubjectAnalyzer(),
-                new PipelineStageSubjectAnalyzer(),
-            ],
-            contributors: $contributors,
             commandPrefix: $commandPrefix ?? ExplainSupport::commandPrefix($paths),
         );
     }

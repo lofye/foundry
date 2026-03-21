@@ -3,12 +3,20 @@ declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
 
+use Foundry\Compiler\ApplicationGraph;
+use Foundry\Explain\ExplainArtifactCatalog;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
 
-final class DiagnosticsContextCollector implements ExplainContextCollectorInterface
+final readonly class DiagnosticsContextCollector implements ExplainContextCollectorInterface
 {
+    public function __construct(
+        private ApplicationGraph $graph,
+        private ExplainArtifactCatalog $artifacts,
+    ) {
+    }
+
     public function supports(ExplainSubject $subject): bool
     {
         return true;
@@ -17,8 +25,8 @@ final class DiagnosticsContextCollector implements ExplainContextCollectorInterf
     public function collect(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): void
     {
         $diagnostics = array_values(array_filter(
-            (array) ($context->artifacts->diagnosticsReport()['diagnostics'] ?? []),
-            fn (mixed $row): bool => $this->matchesSubject($row, $subject, $context),
+            (array) ($this->artifacts->diagnosticsReport()['diagnostics'] ?? []),
+            fn (mixed $row): bool => $this->matchesSubject($row, $subject),
         ));
 
         $summary = ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => count($diagnostics)];
@@ -29,13 +37,13 @@ final class DiagnosticsContextCollector implements ExplainContextCollectorInterf
             }
         }
 
-        $context->set('diagnostics', [
+        $context->setDiagnostics([
             'summary' => $summary,
             'items' => $diagnostics,
         ]);
     }
 
-    private function matchesSubject(mixed $row, ExplainSubject $subject, ExplainContext $context): bool
+    private function matchesSubject(mixed $row, ExplainSubject $subject): bool
     {
         if (!is_array($row)) {
             return false;
@@ -66,7 +74,7 @@ final class DiagnosticsContextCollector implements ExplainContextCollectorInterf
         }
 
         if ($nodeId !== '') {
-            $node = $context->graph->node($nodeId);
+            $node = $this->graph->node($nodeId);
             if ($node !== null && trim((string) ($node->payload()['feature'] ?? '')) === $feature) {
                 return true;
             }

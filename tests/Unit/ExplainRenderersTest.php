@@ -15,7 +15,7 @@ final class ExplainRenderersTest extends TestCase
         $plan = new ExplanationPlan(
             subject: [
                 'id' => 'thresholds.create',
-                'kind' => 'route_action',
+                'kind' => 'route',
                 'label' => 'thresholds.create',
             ],
             summary: [
@@ -23,163 +23,103 @@ final class ExplainRenderersTest extends TestCase
                 'deterministic' => true,
                 'deep' => true,
             ],
-            sections: [
-                [
-                    'id' => 'contracts',
-                    'title' => 'Contracts',
-                    'items' => [
-                        'description' => 'Create threshold records.',
-                        'route' => ['method' => 'POST', 'path' => '/thresholds'],
-                        'input_schema' => ['path' => 'app/features/thresholds/input.schema.json'],
-                        'output_schema' => ['schema' => 'app/features/thresholds/output.schema.json'],
-                        'permissions' => ['thresholds.create'],
-                    ],
-                ],
-                [
-                    'id' => 'route',
-                    'title' => 'Route',
-                    'items' => [
-                        'signature' => 'POST /thresholds',
-                        'feature' => 'thresholds',
-                        'schemas' => [
-                            'input' => 'app/features/thresholds/input.schema.json',
-                            'output' => 'app/features/thresholds/output.schema.json',
-                        ],
-                    ],
-                ],
-                [
-                    'id' => 'workflow',
-                    'title' => 'Workflow',
-                    'items' => [
-                        'states' => ['draft', 'active'],
-                        'transitions' => [
-                            'promote' => [
-                                'emit' => ['threshold.promoted'],
-                            ],
-                        ],
-                    ],
-                ],
-                [
-                    'id' => 'event',
-                    'title' => 'Event',
-                    'items' => [
-                        'emitters' => ['thresholds'],
-                        'subscribers' => ['streak.update'],
-                        'workflows' => [
-                            ['resource' => 'streak.update'],
-                        ],
-                    ],
-                ],
-                [
-                    'id' => 'extension',
-                    'title' => 'Extension',
-                    'items' => [
-                        'version' => '1.0.0',
-                        'description' => 'Adds auth-aware explain notes.',
-                        'packs' => ['auth.pack'],
-                        'provides' => [
-                            'capabilities' => ['auth.permissions'],
-                        ],
-                    ],
-                ],
-                [
-                    'id' => 'command',
-                    'title' => 'Command',
-                    'items' => [
-                        'usage' => 'explain <target>',
-                        'stability' => 'experimental',
-                        'availability' => 'pro',
-                        'classification' => 'extension_api',
-                    ],
-                ],
-                [
-                    'id' => 'job',
-                    'title' => 'Job',
-                    'items' => [
-                        'features' => ['thresholds'],
-                        'definitions' => [
-                            'thresholds' => ['queue' => 'default'],
-                        ],
-                    ],
-                ],
-                [
-                    'id' => 'schema',
-                    'title' => 'Schema',
-                    'items' => [
-                        'path' => 'app/features/thresholds/input.schema.json',
-                        'role' => 'input',
-                        'feature' => 'thresholds',
-                        'document' => [
-                            'properties' => [
-                                'title' => ['type' => 'string'],
-                                'category' => ['type' => 'string'],
-                            ],
-                        ],
-                    ],
-                ],
-                [
-                    'id' => 'pipeline_stage',
-                    'title' => 'Pipeline Stage',
-                    'items' => [
-                        'order' => ['request', 'auth', 'permissions', 'action'],
-                    ],
-                ],
-                [
-                    'id' => 'impact',
-                    'title' => 'Impact',
-                    'items' => [
-                        'risk' => 'medium',
-                        'affected_features' => ['thresholds'],
-                        'affected_routes' => ['POST /thresholds'],
-                        'affected_events' => ['threshold.created'],
-                        'affected_jobs' => ['notification.dispatch'],
-                        'affected_projections' => ['event_index.php'],
-                    ],
-                ],
-                [
-                    'id' => 'notes',
-                    'title' => 'Notes',
-                    'items' => [
-                        'owner' => 'core',
-                        'flags' => ['deterministic', 'graph-derived'],
-                        'links' => [
-                            ['label' => 'Threshold docs'],
-                            ['name' => 'Workflow docs'],
-                        ],
-                    ],
-                ],
-            ],
-            relationships: [
-                'depends_on' => [
-                    ['kind' => 'feature', 'label' => 'account', 'edge_type' => 'feature_dependency'],
-                    ['kind' => 'schema', 'label' => 'threshold', 'edge_type' => 'feature_to_input_schema'],
-                ],
-                'depended_on_by' => [
-                    ['kind' => 'route', 'label' => 'POST /thresholds', 'edge_type' => 'route_to_feature'],
-                    ['kind' => 'execution_plan', 'label' => 'execution_plan:thresholds', 'edge_type' => 'route_to_execution_plan'],
-                ],
-                'neighbors' => [
-                    ['kind' => 'feature', 'label' => 'account', 'edge_type' => 'feature_dependency'],
-                    ['kind' => 'schema', 'label' => 'threshold', 'edge_type' => 'feature_to_input_schema'],
-                    ['kind' => 'extension', 'label' => 'auth.explain', 'edge_type' => 'extension_support'],
+            responsibilities: [
+                'items' => [
+                    'Handle POST /thresholds requests',
+                    'Dispatch the thresholds feature action',
                 ],
             ],
             executionFlow: [
-                'route' => 'POST /thresholds',
-                'guards' => [
-                    ['type' => 'auth', 'stage' => 'auth', 'strategy' => 'session'],
-                    ['type' => 'permission', 'stage' => 'permissions', 'permission' => 'thresholds.create'],
+                'entries' => [
+                    ['kind' => 'request', 'label' => 'request'],
+                    ['kind' => 'guard', 'label' => 'auth guard', 'guard' => ['stage' => 'auth']],
+                    ['kind' => 'guard', 'label' => 'permission guard (thresholds.create)', 'guard' => ['stage' => 'permissions', 'config' => ['permission' => 'thresholds.create']]],
+                    ['kind' => 'action', 'label' => 'thresholds feature action', 'action' => ['feature' => 'thresholds', 'label' => 'thresholds']],
+                    ['kind' => 'event', 'label' => 'threshold.created', 'name' => 'threshold.created'],
+                    ['kind' => 'workflow', 'label' => 'streak.update', 'workflow' => ['resource' => 'streak.update']],
+                    ['kind' => 'job', 'label' => 'notification.dispatch', 'job' => ['name' => 'notification.dispatch']],
                 ],
-                'stages' => ['request normalization', 'auth', 'permissions', 'action'],
-                'pipeline' => ['feature' => 'thresholds'],
+                'stages' => [
+                    ['kind' => 'pipeline_stage', 'label' => 'auth'],
+                    ['kind' => 'pipeline_stage', 'label' => 'permissions'],
+                    ['kind' => 'pipeline_stage', 'label' => 'action'],
+                ],
+                'guards' => [
+                    ['id' => 'guard:auth', 'type' => 'authentication', 'stage' => 'auth'],
+                    ['id' => 'guard:permission', 'type' => 'permission', 'stage' => 'permissions', 'config' => ['permission' => 'thresholds.create']],
+                ],
+                'action' => ['id' => 'feature:thresholds', 'kind' => 'feature', 'label' => 'thresholds', 'feature' => 'thresholds'],
                 'events' => [
-                    ['name' => 'threshold.created'],
+                    ['id' => 'event:threshold.created', 'kind' => 'event', 'label' => 'threshold.created'],
                 ],
                 'workflows' => [
-                    ['resource' => 'streak.update'],
+                    ['id' => 'workflow:streak.update', 'kind' => 'workflow', 'label' => 'streak.update'],
                 ],
                 'jobs' => [
-                    ['name' => 'notification.dispatch'],
+                    ['id' => 'job:notification.dispatch', 'kind' => 'job', 'label' => 'notification.dispatch'],
+                ],
+            ],
+            dependencies: [
+                'items' => [
+                    ['kind' => 'feature', 'label' => 'account'],
+                    ['kind' => 'schema', 'label' => 'threshold'],
+                ],
+            ],
+            dependents: [
+                'items' => [
+                    ['kind' => 'route', 'label' => 'POST /thresholds'],
+                    ['kind' => 'command', 'label' => 'thresholds:create'],
+                ],
+            ],
+            emits: [
+                'items' => [
+                    ['kind' => 'event', 'label' => 'threshold.created'],
+                ],
+            ],
+            triggers: [
+                'items' => [
+                    ['kind' => 'workflow', 'label' => 'streak.update'],
+                    ['kind' => 'job', 'label' => 'notification.dispatch'],
+                ],
+            ],
+            permissions: [
+                'required' => ['thresholds.create'],
+                'enforced_by' => [
+                    ['guard' => 'guard:permission', 'stage' => 'permissions', 'permission' => 'thresholds.create'],
+                ],
+                'defined_in' => [
+                    ['permission' => 'thresholds.create', 'source' => 'feature:thresholds'],
+                ],
+                'missing' => ['thresholds.create'],
+            ],
+            schemaInteraction: [
+                'items' => [
+                    ['kind' => 'schema', 'label' => 'app/features/thresholds/input.schema.json'],
+                ],
+                'reads' => [
+                    ['kind' => 'schema', 'label' => 'threshold'],
+                ],
+                'writes' => [
+                    ['kind' => 'schema', 'label' => 'threshold'],
+                ],
+                'fields' => [
+                    ['name' => 'title', 'type' => 'string'],
+                    ['name' => 'category', 'type' => 'string'],
+                ],
+                'subject' => [
+                    'kind' => 'schema',
+                    'path' => 'app/features/thresholds/input.schema.json',
+                ],
+            ],
+            graphRelationships: [
+                'inbound' => [
+                    ['kind' => 'route', 'label' => 'POST /thresholds'],
+                ],
+                'outbound' => [
+                    ['kind' => 'event', 'label' => 'threshold.created'],
+                ],
+                'lateral' => [
+                    ['kind' => 'schema', 'label' => 'threshold'],
                 ],
             ],
             diagnostics: [
@@ -189,7 +129,6 @@ final class ExplainRenderersTest extends TestCase
                         'severity' => 'error',
                         'message' => 'Missing permission mapping.',
                         'code' => 'FDY1001',
-                        'why_it_matters' => 'Requests will fail authorization.',
                         'suggested_fix' => 'Add thresholds.create to the permission map.',
                     ],
                     [
@@ -202,11 +141,51 @@ final class ExplainRenderersTest extends TestCase
             ],
             relatedCommands: [
                 'php vendor/bin/foundry inspect pipeline --json',
-                'php vendor/bin/foundry doctor --json',
+                'php vendor/bin/foundry doctor',
             ],
             relatedDocs: [
                 ['title' => 'Thresholds', 'path' => '/docs/features/thresholds'],
                 ['title' => 'Workflow Notes'],
+            ],
+            suggestedFixes: [
+                'Add thresholds.create to the permission map.',
+                'Register a workflow or job for threshold.created.',
+            ],
+            sections: [
+                [
+                    'id' => 'impact',
+                    'title' => 'Impact',
+                    'items' => [
+                        'risk' => 'medium',
+                        'affected_features' => ['thresholds'],
+                    ],
+                ],
+                [
+                    'id' => 'contributor_notes',
+                    'title' => 'Contributor Notes',
+                    'items' => [
+                        'source' => 'fixture',
+                    ],
+                ],
+            ],
+            sectionOrder: [
+                'subject',
+                'summary',
+                'responsibilities',
+                'execution_flow',
+                'dependencies',
+                'dependents',
+                'emits',
+                'triggers',
+                'permissions',
+                'schema_interaction',
+                'graph_relationships',
+                'related_commands',
+                'related_docs',
+                'diagnostics',
+                'suggested_fixes',
+                'impact',
+                'contributor_notes',
             ],
             metadata: [
                 'options' => [
@@ -221,50 +200,46 @@ final class ExplainRenderersTest extends TestCase
         $this->assertStringContainsString('Subject', $text);
         $this->assertStringContainsString('Execution Flow (Detailed)', $text);
         $this->assertStringContainsString('Responsibilities', $text);
-        $this->assertStringContainsString('Route', $text);
-        $this->assertStringContainsString('Logic', $text);
-        $this->assertStringContainsString('Event', $text);
-        $this->assertStringContainsString('Provides', $text);
-        $this->assertStringContainsString('Command', $text);
-        $this->assertStringContainsString('Job', $text);
-        $this->assertStringContainsString('Schema Interaction', $text);
-        $this->assertStringContainsString('Pipeline Stage', $text);
-        $this->assertStringContainsString('Impact', $text);
-        $this->assertStringContainsString('Notes', $text);
         $this->assertStringContainsString('Depends On', $text);
         $this->assertStringContainsString('Used By', $text);
         $this->assertStringContainsString('Emits', $text);
         $this->assertStringContainsString('Triggers', $text);
+        $this->assertStringContainsString('Permissions', $text);
+        $this->assertStringContainsString('Schema Interaction', $text);
         $this->assertStringContainsString('Graph Relationships (Expanded)', $text);
-        $this->assertStringContainsString('Diagnostics', $text);
-        $this->assertStringContainsString('Suggested Fixes', $text);
         $this->assertStringContainsString('Related Commands', $text);
         $this->assertStringContainsString('Related Docs', $text);
-        $this->assertStringContainsString('input schema: app/features/thresholds/input.schema.json', $text);
-        $this->assertStringContainsString('output schema: app/features/thresholds/output.schema.json', $text);
-        $this->assertStringContainsString('capabilities: auth.permissions', $text);
-        $this->assertStringContainsString('affected features: thresholds', $text);
-        $this->assertStringContainsString('links: Threshold docs, Workflow docs', $text);
+        $this->assertStringContainsString('Diagnostics', $text);
+        $this->assertStringContainsString('Suggested Fixes', $text);
+        $this->assertStringContainsString('Impact', $text);
+        $this->assertStringContainsString('Contributor Notes', $text);
+        $this->assertStringContainsString('Stage 3: permission guard (thresholds.create)', $text);
+        $this->assertStringContainsString('required: thresholds.create', $text);
+        $this->assertStringContainsString('feature:account', $text);
+        $this->assertStringContainsString('workflow:streak.update', $text);
+        $this->assertStringContainsString('field: title (string)', $text);
+        $this->assertStringContainsString('ERROR Missing permission mapping.', $text);
+        $this->assertStringContainsString('affected_features: ["thresholds"]', $text);
 
         $this->assertStringContainsString('## thresholds.create', $markdown);
-        $this->assertStringContainsString('### Execution Flow (Detailed)', $markdown);
+        $this->assertStringContainsString('### Summary', $markdown);
         $this->assertStringContainsString('### Responsibilities', $markdown);
-        $this->assertStringContainsString('### Route', $markdown);
-        $this->assertStringContainsString('### Logic', $markdown);
-        $this->assertStringContainsString('### Event', $markdown);
-        $this->assertStringContainsString('### Provides', $markdown);
-        $this->assertStringContainsString('### Command', $markdown);
-        $this->assertStringContainsString('### Job', $markdown);
+        $this->assertStringContainsString('### Execution Flow (Detailed)', $markdown);
+        $this->assertStringContainsString('### Dependencies', $markdown);
+        $this->assertStringContainsString('### Used By', $markdown);
+        $this->assertStringContainsString('### Emits', $markdown);
+        $this->assertStringContainsString('### Triggers', $markdown);
+        $this->assertStringContainsString('### Permissions', $markdown);
         $this->assertStringContainsString('### Schema Interaction', $markdown);
-        $this->assertStringContainsString('### Pipeline Stage', $markdown);
-        $this->assertStringContainsString('### Impact', $markdown);
         $this->assertStringContainsString('### Graph Relationships', $markdown);
-        $this->assertStringContainsString('### Diagnostics', $markdown);
-        $this->assertStringContainsString('### Suggested Fixes', $markdown);
         $this->assertStringContainsString('### Related Commands', $markdown);
         $this->assertStringContainsString('### Related Docs', $markdown);
-        $this->assertStringContainsString('[Thresholds](/docs/features/thresholds)', $markdown);
-        $this->assertStringContainsString('- WARNING: Event emitted but not handled.', $markdown);
+        $this->assertStringContainsString('### Diagnostics', $markdown);
+        $this->assertStringContainsString('### Suggested Fixes', $markdown);
+        $this->assertStringContainsString('### Impact', $markdown);
+        $this->assertStringContainsString('### Contributor Notes', $markdown);
+        $this->assertStringContainsString('- /docs/features/thresholds', $markdown);
+        $this->assertStringContainsString('- ERROR: Missing permission mapping.', $markdown);
     }
 
     public function test_renderers_handle_minimal_non_deep_plan(): void
@@ -280,6 +255,50 @@ final class ExplainRenderersTest extends TestCase
                 'deterministic' => true,
                 'deep' => false,
             ],
+            responsibilities: [
+                'items' => [],
+            ],
+            executionFlow: [
+                'entries' => [
+                    ['label' => 'load graph'],
+                    ['label' => 'run diagnostics'],
+                ],
+                'stages' => [],
+                'guards' => [],
+                'action' => null,
+                'events' => [],
+                'workflows' => [],
+                'jobs' => [],
+            ],
+            dependencies: ['items' => []],
+            dependents: ['items' => []],
+            emits: ['items' => []],
+            triggers: ['items' => []],
+            permissions: [
+                'required' => [],
+                'enforced_by' => [],
+                'defined_in' => [],
+                'missing' => [],
+            ],
+            schemaInteraction: [
+                'items' => [],
+                'reads' => [],
+                'writes' => [],
+                'fields' => [],
+                'subject' => null,
+            ],
+            graphRelationships: [
+                'inbound' => [],
+                'outbound' => [],
+                'lateral' => [],
+            ],
+            diagnostics: [
+                'summary' => ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => 0],
+                'items' => [],
+            ],
+            relatedCommands: [],
+            relatedDocs: [],
+            suggestedFixes: [],
             sections: [
                 [
                     'id' => 'impact',
@@ -297,20 +316,14 @@ final class ExplainRenderersTest extends TestCase
                     ],
                 ],
             ],
-            relationships: [
-                'depends_on' => [],
-                'depended_on_by' => [],
-                'neighbors' => [],
+            sectionOrder: [
+                'subject',
+                'summary',
+                'execution_flow',
+                'diagnostics',
+                'impact',
+                'contributor_notes',
             ],
-            executionFlow: [
-                'steps' => ['load graph', 'run diagnostics'],
-            ],
-            diagnostics: [
-                'summary' => ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => 0],
-                'items' => [],
-            ],
-            relatedCommands: [],
-            relatedDocs: [],
             metadata: [
                 'options' => [
                     'deep' => false,
@@ -323,7 +336,7 @@ final class ExplainRenderersTest extends TestCase
 
         $this->assertStringContainsString("  load graph\n  -> run diagnostics", $text);
         $this->assertStringContainsString('Impact', $text);
-        $this->assertStringContainsString('affected features: publish_post', $text);
+        $this->assertStringContainsString('affected_features: ["publish_post"]', $text);
         $this->assertStringContainsString('Contributor Notes', $text);
         $this->assertStringContainsString('OK No issues detected', $text);
         $this->assertStringNotContainsString('Graph Relationships (Expanded)', $text);

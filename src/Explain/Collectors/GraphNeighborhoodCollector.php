@@ -3,13 +3,19 @@ declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
 
+use Foundry\Compiler\ApplicationGraph;
+use Foundry\Compiler\IR\GraphNode;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
 use Foundry\Explain\ExplainSupport;
 
-final class GraphNeighborhoodCollector implements ExplainContextCollectorInterface
+final readonly class GraphNeighborhoodCollector implements ExplainContextCollectorInterface
 {
+    public function __construct(private ApplicationGraph $graph)
+    {
+    }
+
     public function supports(ExplainSubject $subject): bool
     {
         return $subject->graphNodeIds !== [];
@@ -17,23 +23,43 @@ final class GraphNeighborhoodCollector implements ExplainContextCollectorInterfa
 
     public function collect(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): void
     {
-        $dependsOn = [];
-        $dependedOnBy = [];
+        $dependencies = [];
+        $dependents = [];
 
         foreach ($subject->graphNodeIds as $nodeId) {
-            foreach ($context->graph->dependencies($nodeId) as $edge) {
-                $dependsOn[] = ExplainSupport::summarizeGraphNodeById($context->graph, $edge->to, $edge->type);
+            $node = $this->graph->node($nodeId);
+            if ($node instanceof GraphNode && $context->subjectNode() === []) {
+                $context->setSubjectNode(array_merge(
+                    ExplainSupport::summarizeGraphNode($node),
+                    ['payload' => $node->payload()],
+                ));
             }
 
-            foreach ($context->graph->dependents($nodeId) as $edge) {
-                $dependedOnBy[] = ExplainSupport::summarizeGraphNodeById($context->graph, $edge->from, $edge->type);
+            foreach ($this->graph->dependencies($nodeId) as $edge) {
+                $summary = ExplainSupport::summarizeGraphNodeById($this->graph, $edge->to, $edge->type);
+                if (($summary['kind'] ?? 'internal') === 'internal') {
+                    continue;
+                }
+
+                $dependencies[] = $summary;
+            }
+
+            foreach ($this->graph->dependents($nodeId) as $edge) {
+                $summary = ExplainSupport::summarizeGraphNodeById($this->graph, $edge->from, $edge->type);
+                if (($summary['kind'] ?? 'internal') === 'internal') {
+                    continue;
+                }
+
+                $dependents[] = $summary;
             }
         }
 
-        $context->set('graph_neighborhood', [
-            'depends_on' => ExplainSupport::uniqueRows($dependsOn),
-            'depended_on_by' => ExplainSupport::uniqueRows($dependedOnBy),
-            'neighbors' => ExplainSupport::uniqueRows(array_merge($dependsOn, $dependedOnBy)),
+        $context->setGraphNeighborhood([
+            'dependencies' => ExplainSupport::uniqueRows($dependencies),
+            'dependents' => ExplainSupport::uniqueRows($dependents),
+            'inbound' => ExplainSupport::uniqueRows($dependents),
+            'outbound' => ExplainSupport::uniqueRows($dependencies),
+            'neighbors' => ExplainSupport::uniqueRows(array_merge($dependencies, $dependents)),
         ]);
     }
 }

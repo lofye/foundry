@@ -9,9 +9,43 @@ use Foundry\Support\Paths;
 
 final class ExplainSupport
 {
-    public static function subjectKindForNodeType(string $type): string
+    /**
+     * Map raw graph node types to the canonical explain subject kinds.
+     */
+    public static function canonicalSubjectKindForNodeType(string $type): ?string
     {
-        return $type;
+        return match ($type) {
+            'feature' => 'feature',
+            'route' => 'route',
+            'event' => 'event',
+            'workflow' => 'workflow',
+            'job' => 'job',
+            'schema' => 'schema',
+            'pipeline_stage' => 'pipeline_stage',
+            default => null,
+        };
+    }
+
+    /**
+     * Map raw graph node types to stable relationship kinds that are safe to expose.
+     */
+    public static function canonicalRelationshipKindForNodeType(string $type): ?string
+    {
+        return match ($type) {
+            'feature' => 'feature',
+            'route' => 'route',
+            'event' => 'event',
+            'workflow' => 'workflow',
+            'job' => 'job',
+            'schema' => 'schema',
+            'pipeline_stage' => 'pipeline_stage',
+            'guard' => 'guard',
+            'permission' => 'permission',
+            'notification' => 'notification',
+            'query' => 'query',
+            'cache' => 'cache',
+            default => null,
+        };
     }
 
     public static function nodeLabel(GraphNode $node): string
@@ -129,9 +163,11 @@ final class ExplainSupport
      */
     public static function summarizeGraphNode(GraphNode $node, ?string $edgeType = null): array
     {
+        $kind = self::canonicalRelationshipKindForNodeType($node->type());
+
         return [
             'id' => $node->id(),
-            'kind' => self::subjectKindForNodeType($node->type()),
+            'kind' => $kind ?? 'internal',
             'label' => self::nodeLabel($node),
             'feature' => self::featureFromNode($node),
             'source_path' => $node->sourcePath(),
@@ -158,6 +194,11 @@ final class ExplainSupport
         }
 
         return self::summarizeGraphNode($node, $edgeType);
+    }
+
+    public static function isRenderableRelationshipNode(GraphNode $node): bool
+    {
+        return self::canonicalRelationshipKindForNodeType($node->type()) !== null;
     }
 
     public static function normalizeRouteSignature(string $signature): string

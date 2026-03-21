@@ -6,12 +6,17 @@ namespace Foundry\Tests\Unit;
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\BuildLayout;
 use Foundry\Compiler\IR\FeatureNode;
+use Foundry\Explain\Analyzers\SectionAnalyzerInterface;
+use Foundry\Explain\Analyzers\SubjectAnalysisResult;
+use Foundry\Explain\Analyzers\SubjectAnalyzerInterface;
 use Foundry\Explain\ExplainArtifactCatalog;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
 use Foundry\Explain\ExplainSubjectFactory;
 use Foundry\Explain\ExplanationPlanAssembler;
+use Foundry\Explain\SuggestedFixesBuilder;
+use Foundry\Explain\SummarySectionBuilder;
 use Foundry\Explain\ExplainTarget;
 use Foundry\Explain\ExplainTargetResolver;
 use Foundry\Support\ApiSurfaceRegistry;
@@ -88,14 +93,23 @@ final class ExplainFoundationTest extends TestCase
 
     public function test_context_initializes_foundation_placeholders(): void
     {
+        $subject = new ExplainSubject(
+            'feature',
+            'feature:publish_post',
+            'publish_post',
+            ['feature:publish_post'],
+            ['publish_post'],
+            ['feature' => 'publish_post'],
+        );
         $context = new ExplainContext(
-            new ApplicationGraph(1, '1.0.0', '2026-03-20T00:00:00+00:00', 'hash'),
-            new ExplainArtifactCatalog(new BuildLayout($this->paths), $this->paths, new ApiSurfaceRegistry()),
-            new ExplainSubject('feature', 'feature:publish_post', 'publish_post', ['feature:publish_post'], ['publish_post'], ['feature' => 'publish_post']),
+            $subject,
             'php vendor/bin/foundry',
         );
 
-        $this->assertArrayHasKey('graph_subject', $context->all());
+        $this->assertSame($subject, $context->subject);
+        $this->assertSame('php vendor/bin/foundry', $context->commandPrefix);
+        $this->assertArrayHasKey('subject_node', $context->all());
+        $this->assertArrayHasKey('graph_neighborhood', $context->all());
         $this->assertArrayHasKey('pipeline', $context->all());
         $this->assertArrayHasKey('commands', $context->all());
         $this->assertArrayHasKey('workflows', $context->all());
@@ -108,7 +122,6 @@ final class ExplainFoundationTest extends TestCase
 
     public function test_plan_assembler_orders_sections_and_omits_truly_empty_ones(): void
     {
-        $assembler = new ExplanationPlanAssembler();
         $subject = new ExplainSubject(
             kind: 'feature',
             id: 'feature:publish_post',
@@ -117,38 +130,144 @@ final class ExplainFoundationTest extends TestCase
             aliases: ['publish_post'],
             metadata: ['feature' => 'publish_post'],
         );
+        $context = new ExplainContext($subject, 'php vendor/bin/foundry');
+
+        $assembler = new ExplanationPlanAssembler(
+            new SummarySectionBuilder(),
+            new SuggestedFixesBuilder(),
+            [
+                new class implements SubjectAnalyzerInterface
+                {
+                    public function supports(ExplainSubject $subject): bool
+                    {
+                        return $subject->kind === 'feature';
+                    }
+
+                    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): SubjectAnalysisResult
+                    {
+                        return new SubjectAnalysisResult(
+                            responsibilities: ['Own the publish_post lifecycle'],
+                            summaryInputs: [
+                                'feature' => 'publish_post',
+                                'description' => 'publish post',
+                            ],
+                            sections: [
+                                ['id' => 'impact', 'title' => 'Impact', 'items' => ['risk' => 'low']],
+                                ['id' => 'notes', 'title' => 'Notes', 'items' => ['owner' => 'core']],
+                                ['id' => 'empty', 'title' => 'Empty', 'items' => []],
+                            ],
+                        );
+                    }
+                },
+            ],
+            [
+                new class implements SectionAnalyzerInterface
+                {
+                    public function supports(ExplainSubject $subject): bool
+                    {
+                        return true;
+                    }
+
+                    public function sectionId(): string
+                    {
+                        return 'dependencies';
+                    }
+
+                    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+                    {
+                        return [
+                            'items' => [
+                                ['kind' => 'feature', 'label' => 'account'],
+                            ],
+                        ];
+                    }
+                },
+                new class implements SectionAnalyzerInterface
+                {
+                    public function supports(ExplainSubject $subject): bool
+                    {
+                        return true;
+                    }
+
+                    public function sectionId(): string
+                    {
+                        return 'related_commands';
+                    }
+
+                    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+                    {
+                        return [
+                            'items' => [
+                                'php vendor/bin/foundry doctor',
+                                'php vendor/bin/foundry doctor',
+                            ],
+                        ];
+                    }
+                },
+                new class implements SectionAnalyzerInterface
+                {
+                    public function supports(ExplainSubject $subject): bool
+                    {
+                        return true;
+                    }
+
+                    public function sectionId(): string
+                    {
+                        return 'related_docs';
+                    }
+
+                    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+                    {
+                        return [
+                            'items' => [
+                                ['title' => 'Feature Docs', 'path' => 'docs/features.md'],
+                                ['title' => 'Feature Docs', 'path' => 'docs/features.md'],
+                            ],
+                        ];
+                    }
+                },
+                new class implements SectionAnalyzerInterface
+                {
+                    public function supports(ExplainSubject $subject): bool
+                    {
+                        return true;
+                    }
+
+                    public function sectionId(): string
+                    {
+                        return 'diagnostics';
+                    }
+
+                    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+                    {
+                        return [
+                            'summary' => ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => 0],
+                            'items' => [],
+                        ];
+                    }
+                },
+            ],
+        );
 
         $plan = $assembler->assemble(
-            subject: $subject,
-            summary: ['text' => 'publish_post is a feature that manages post publishing.', 'deterministic' => true],
-            sections: [
-                ['id' => 'impact', 'title' => 'Impact', 'items' => ['risk' => 'low']],
-                ['id' => 'notes', 'title' => 'Notes', 'items' => ['owner' => 'core']],
-                ['id' => 'contracts', 'title' => 'Contracts', 'items' => ['description' => 'Publish posts.']],
-                ['id' => 'empty', 'title' => 'Empty', 'items' => []],
-                ['id' => 'subject', 'title' => 'Subject', 'items' => ['id' => 'feature:publish_post']],
-            ],
-            relationships: [
-                'depends_on' => [['kind' => 'feature', 'label' => 'account']],
-                'depended_on_by' => [],
-                'neighbors' => [],
-            ],
-            executionFlow: [],
-            diagnostics: ['summary' => ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => 0], 'items' => []],
-            relatedCommands: ['php vendor/bin/foundry doctor', 'php vendor/bin/foundry doctor'],
-            relatedDocs: [
-                ['title' => 'Feature Docs', 'path' => 'docs/features.md'],
-                ['title' => 'Feature Docs', 'path' => 'docs/features.md'],
-            ],
+            $subject,
+            $context,
+            new ExplainOptions(type: 'feature'),
             metadata: ['options' => (new ExplainOptions(type: 'feature'))->toArray()],
         );
 
         $this->assertSame(
-            ['subject', 'contracts', 'notes', 'impact'],
+            ['subject', 'summary', 'responsibilities', 'dependencies', 'related_commands', 'related_docs', 'diagnostics', 'notes', 'impact'],
+            $plan->sectionOrder,
+        );
+        $this->assertSame(
+            ['notes', 'impact'],
             array_values(array_map(static fn (array $section): string => (string) ($section['id'] ?? ''), $plan->sections)),
         );
         $this->assertCount(1, $plan->relatedCommands);
         $this->assertCount(1, $plan->relatedDocs);
+        $this->assertSame(['items' => [['kind' => 'feature', 'label' => 'account']]], $plan->dependencies);
+        $this->assertStringContainsString('Publish post.', (string) $plan->summary['text']);
         $this->assertSame('feature', $plan->metadata['options']['type']);
     }
 }

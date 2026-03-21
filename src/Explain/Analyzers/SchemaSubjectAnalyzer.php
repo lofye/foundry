@@ -6,7 +6,6 @@ namespace Foundry\Explain\Analyzers;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
-use Foundry\Explain\ExplainSupport;
 
 final class SchemaSubjectAnalyzer implements SubjectAnalyzerInterface
 {
@@ -15,17 +14,19 @@ final class SchemaSubjectAnalyzer implements SubjectAnalyzerInterface
         return $subject->kind === 'schema';
     }
 
-    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): SubjectAnalysisResult
     {
-        $schemas = is_array($context->get('schemas')) ? $context->get('schemas') : [];
+        $schemas = $context->schemas();
 
-        return [
-            'sections' => [
-                ExplainSupport::section('schema', 'Schema', $schemas),
+        return new SubjectAnalysisResult(
+            responsibilities: [
+                'Define a deterministic data contract for validation and serialization',
             ],
-            'related_commands' => [
-                $context->commandPrefix . ' verify contracts --json',
+            summaryInputs: [
+                'path' => $subject->metadata['path'] ?? $subject->label,
+                'role' => $subject->metadata['role'] ?? 'schema',
+                'fields' => $schemas['fields'] ?? [],
             ],
-        ];
+        );
     }
 }

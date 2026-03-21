@@ -146,7 +146,7 @@ YAML);
         $this->assertSame(0, $explain['status']);
         $this->assertSame('feature:publish_post', $explain['payload']['subject']['id']);
         $this->assertSame('feature', $explain['payload']['subject']['kind']);
-        $this->assertSame('publish_post', $explain['payload']['execution_flow']['pipeline']['feature']);
+        $this->assertSame('publish_post', $explain['payload']['execution_flow']['action']['feature']);
         $this->assertNotEmpty($explain['payload']['execution_flow']['guards']);
         $this->assertNotEmpty($explain['payload']['execution_flow']['events']);
         $this->assertNotEmpty($explain['payload']['related_docs']);
@@ -181,8 +181,20 @@ YAML);
         $typed = $this->runCommand($app, ['foundry', 'explain', 'POST', '/posts', '--type=route', '--no-flow', '--no-neighbors', '--no-diagnostics', '--json']);
         $this->assertSame(0, $typed['status']);
         $this->assertSame('route', $typed['payload']['subject']['kind']);
-        $this->assertSame([], $typed['payload']['execution_flow']);
-        $this->assertSame([], $typed['payload']['relationships']['depends_on']);
+        $this->assertSame([
+            'entries' => [],
+            'stages' => [],
+            'guards' => [],
+            'action' => null,
+            'events' => [],
+            'workflows' => [],
+            'jobs' => [],
+        ], $typed['payload']['execution_flow']);
+        $this->assertSame([
+            'inbound' => [],
+            'outbound' => [],
+            'lateral' => [],
+        ], $typed['payload']['graph_relationships']);
         $this->assertSame(0, $typed['payload']['diagnostics']['summary']['total']);
 
         $markdown = $this->runCommandRaw($app, ['foundry', 'explain', 'POST', '/posts', '--type', 'route', '--markdown']);

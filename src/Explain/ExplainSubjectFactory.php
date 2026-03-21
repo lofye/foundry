@@ -7,8 +7,13 @@ use Foundry\Compiler\IR\GraphNode;
 
 final class ExplainSubjectFactory
 {
-    public function fromGraphNode(GraphNode $node): ExplainSubject
+    public function fromGraphNode(GraphNode $node): ?ExplainSubject
     {
+        $kind = ExplainSupport::canonicalSubjectKindForNodeType($node->type());
+        if ($kind === null) {
+            return null;
+        }
+
         $metadata = $node->payload();
         $metadata['source_path'] = $node->sourcePath();
         $metadata['source_region'] = $node->sourceRegion();
@@ -25,7 +30,7 @@ final class ExplainSubjectFactory
         }
 
         return new ExplainSubject(
-            kind: ExplainSupport::subjectKindForNodeType($node->type()),
+            kind: $kind,
             id: $node->id(),
             label: ExplainSupport::nodeLabel($node),
             graphNodeIds: [$node->id()],

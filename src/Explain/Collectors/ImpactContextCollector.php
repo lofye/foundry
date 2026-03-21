@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
 
+use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\Analysis\ImpactAnalyzer;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
@@ -10,7 +11,10 @@ use Foundry\Explain\ExplainSubject;
 
 final readonly class ImpactContextCollector implements ExplainContextCollectorInterface
 {
-    public function __construct(private ImpactAnalyzer $impactAnalyzer)
+    public function __construct(
+        private ImpactAnalyzer $impactAnalyzer,
+        private ApplicationGraph $graph,
+    )
     {
     }
 
@@ -26,6 +30,6 @@ final readonly class ImpactContextCollector implements ExplainContextCollectorIn
             return;
         }
 
-        $context->set('impact', $this->impactAnalyzer->reportForNode($context->graph, $nodeId));
+        $context->setImpact($this->impactAnalyzer->reportForNode($this->graph, $nodeId));
     }
 }

@@ -62,7 +62,7 @@ final class ExplainTargetResolver
         $exactNode = $this->graph->node($selector);
         if ($exactNode instanceof GraphNode) {
             $subject = $this->subjectFactory->fromGraphNode($exactNode);
-            if ($this->isExplainableSubject($subject)) {
+            if ($subject !== null) {
                 return $subject;
             }
         }
@@ -124,7 +124,10 @@ final class ExplainTargetResolver
         foreach ($this->possibleGraphNodeIds($kind, $selector) as $nodeId) {
             $node = $this->graph->node($nodeId);
             if ($node instanceof GraphNode) {
-                return $this->subjectFactory->fromGraphNode($node);
+                $subject = $this->subjectFactory->fromGraphNode($node);
+                if ($subject !== null) {
+                    return $subject;
+                }
             }
         }
 
@@ -269,8 +272,6 @@ final class ExplainTargetResolver
             'job' => ['job:' . $selector],
             'schema' => ['schema:' . $selector],
             'pipeline_stage' => ['pipeline_stage:' . $selector],
-            'guard' => ['guard:' . $selector],
-            'permission' => ['permission:' . $selector],
             default => [$kind . ':' . $selector],
         };
     }
@@ -287,7 +288,7 @@ final class ExplainTargetResolver
         $rows = [];
         foreach ($this->graph->nodes() as $node) {
             $subject = $this->subjectFactory->fromGraphNode($node);
-            if (!$this->isExplainableSubject($subject)) {
+            if ($subject === null) {
                 continue;
             }
             $rows[$subject->id] = $subject;
@@ -403,10 +404,5 @@ final class ExplainTargetResolver
         }
 
         return $candidate->kind . ':' . $selector;
-    }
-
-    private function isExplainableSubject(ExplainSubject $subject): bool
-    {
-        return in_array($subject->kind, ExplainTarget::SUPPORTED_KINDS, true);
     }
 }

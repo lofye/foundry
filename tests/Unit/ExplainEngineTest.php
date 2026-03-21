@@ -81,7 +81,7 @@ final class ExplainEngineTest extends TestCase
         $payload = $plan->toArray();
 
         $this->assertSame(
-            ['subject', 'summary', 'sections', 'relationships', 'execution_flow', 'diagnostics', 'related_commands', 'related_docs', 'metadata'],
+            ['subject', 'summary', 'responsibilities', 'execution_flow', 'dependencies', 'dependents', 'emits', 'triggers', 'permissions', 'schema_interaction', 'graph_relationships', 'diagnostics', 'related_commands', 'related_docs', 'suggested_fixes', 'sections', 'section_order', 'metadata'],
             array_keys($payload),
         );
         $this->assertSame('feature', $payload['subject']['kind']);
@@ -92,23 +92,53 @@ final class ExplainEngineTest extends TestCase
         $this->assertArrayHasKey('target', $payload['metadata']);
         $this->assertArrayHasKey('options', $payload['metadata']);
         $this->assertArrayHasKey('graph', $payload['metadata']);
-        $this->assertNotEmpty($payload['relationships']['depends_on']);
-        $this->assertSame('publish_post', $payload['execution_flow']['pipeline']['feature']);
+        $this->assertArrayNotHasKey('compiled_at', $payload['metadata']['graph']);
+        $this->assertNotEmpty($payload['responsibilities']['items']);
+        $this->assertNotEmpty($payload['dependencies']['items']);
+        $this->assertSame('publish_post', $payload['execution_flow']['action']['feature']);
         $this->assertNotEmpty($payload['execution_flow']['guards']);
+        $this->assertNotEmpty($payload['emits']['items']);
+        $this->assertNotEmpty($payload['triggers']['items']);
+        $this->assertContains('posts.create', $payload['permissions']['required']);
+        $this->assertNotEmpty($payload['schema_interaction']['items']);
+        $this->assertNotEmpty($payload['graph_relationships']['outbound']);
         $this->assertSame(1, $payload['diagnostics']['summary']['total']);
         $this->assertContains('php vendor/bin/foundry inspect feature publish_post --json', $payload['related_commands']);
         $this->assertSame('publish_post', $payload['metadata']['impact']['affected_features'][0]);
     }
 
-    private function graphFixture(): ApplicationGraph
+    public function test_engine_output_is_stable_when_graph_compile_timestamp_changes(): void
     {
-        $graph = new ApplicationGraph(1, '1.0.0', '2026-03-20T00:00:00+00:00', 'hash-baseline');
+        $this->writeExplainArtifacts($this->project->root);
+        $paths = Paths::fromCwd($this->project->root);
+
+        $first = ExplainEngineFactory::create(
+            graph: $this->graphFixture('2026-03-20T00:00:00+00:00'),
+            paths: $paths,
+            apiSurfaceRegistry: new ApiSurfaceRegistry(),
+            impactAnalyzer: new ImpactAnalyzer($paths),
+        )->explain(ExplainTarget::parse('publish_post'), new ExplainOptions())->toArray();
+
+        $second = ExplainEngineFactory::create(
+            graph: $this->graphFixture('2026-03-21T12:34:56+00:00'),
+            paths: $paths,
+            apiSurfaceRegistry: new ApiSurfaceRegistry(),
+            impactAnalyzer: new ImpactAnalyzer($paths),
+        )->explain(ExplainTarget::parse('publish_post'), new ExplainOptions())->toArray();
+
+        $this->assertSame($first, $second);
+    }
+
+    private function graphFixture(string $compiledAt = '2026-03-20T00:00:00+00:00'): ApplicationGraph
+    {
+        $graph = new ApplicationGraph(1, '1.0.0', $compiledAt, 'hash-baseline');
 
         $featureNode = new FeatureNode('feature:publish_post', 'app/features/publish_post/feature.yaml', [
             'feature' => 'publish_post',
             'description' => 'publish post',
             'route' => ['method' => 'POST', 'path' => '/posts'],
             'jobs' => ['dispatch' => ['notify_followers']],
+            'auth' => ['permissions' => ['posts.create']],
         ]);
         $routeNode = new RouteNode('route:POST:/posts', 'app/features/publish_post/feature.yaml', [
             'feature' => 'publish_post',
@@ -162,6 +192,17 @@ final class ExplainEngineTest extends TestCase
         ];
 
         file_put_contents(
+            $root . '/app/.foundry/build/projections/feature_index.php',
+            '<?php return ' . var_export([
+                'publish_post' => [
+                    'description' => 'publish post',
+                    'route' => ['method' => 'POST', 'path' => '/posts'],
+                    'auth' => ['permissions' => ['posts.create']],
+                    'jobs' => ['dispatch' => ['notify_followers']],
+                ],
+            ], true) . ';',
+        );
+        file_put_contents(
             $root . '/app/.foundry/build/projections/execution_plan_index.php',
             '<?php return ' . var_export([
                 'by_feature' => ['publish_post' => $executionPlan],
@@ -202,7 +243,22 @@ final class ExplainEngineTest extends TestCase
         );
         file_put_contents($root . '/app/.foundry/build/projections/interceptor_index.php', '<?php return [];');
         file_put_contents($root . '/app/.foundry/build/projections/workflow_index.php', '<?php return [];');
-        file_put_contents($root . '/app/.foundry/build/projections/schema_index.php', '<?php return [];');
+        file_put_contents(
+            $root . '/app/.foundry/build/projections/schema_index.php',
+            '<?php return ' . var_export([
+                'publish_post' => [
+                    'input' => 'app/features/publish_post/input.schema.json',
+                ],
+            ], true) . ';',
+        );
+        file_put_contents(
+            $root . '/app/.foundry/build/projections/permission_index.php',
+            '<?php return ' . var_export([
+                'publish_post' => [
+                    'permissions' => ['posts.create'],
+                ],
+            ], true) . ';',
+        );
 
         file_put_contents(
             $root . '/app/.foundry/build/diagnostics/latest.json',

@@ -50,13 +50,13 @@ final class ProAnalysisToolsTest extends TestCase
 
             $this->assertSame('feature:publish_post', $payload['subject']['id']);
             $this->assertSame('feature', $payload['subject']['kind']);
-            $this->assertNotEmpty($payload['relationships']['depends_on']);
-            $this->assertSame('publish_post', $payload['execution_flow']['pipeline']['feature']);
+            $this->assertNotEmpty($payload['graph_relationships']['outbound']);
+            $this->assertSame('publish_post', $payload['execution_flow']['action']['feature']);
             $this->assertNotEmpty($payload['execution_flow']['guards']);
             $this->assertNotEmpty($payload['execution_flow']['events']);
             $this->assertStringContainsString('Publish post.', $payload['summary']['text']);
-            $this->assertStringContainsString('It emits post.created.', $payload['summary']['text']);
-            $this->assertStringContainsString('It feeds posts_review.', $payload['summary']['text']);
+            $this->assertStringContainsString('It triggers posts_review.', $payload['summary']['text']);
+            $this->assertSame('post.created', $payload['emits']['items'][0]['label']);
             $this->assertArrayHasKey('subject', $payload);
             $this->assertArrayHasKey('metadata', $payload);
             $this->assertStringContainsString('Summary', $response->rendered);
@@ -78,7 +78,7 @@ final class ProAnalysisToolsTest extends TestCase
             $this->assertSame('route:POST /posts', $route['subject']['id']);
             $this->assertSame('publish_post', $route['subject']['metadata']['feature']);
             $this->assertStringContainsString('POST /posts handles requests through the compiled application graph.', $route['summary']['text']);
-            $this->assertStringContainsString('It dispatches the publish_post feature through the resolved pipeline.', $route['summary']['text']);
+            $this->assertStringContainsString('It dispatches the publish_post feature action.', $route['summary']['text']);
 
             try {
                 $explainer->explain($graph, 'missing-target');
@@ -203,6 +203,15 @@ final class ProAnalysisToolsTest extends TestCase
             'plan_version' => 1,
         ];
 
+        file_put_contents(
+            $root . '/app/.foundry/build/projections/feature_index.php',
+            '<?php return ' . var_export([
+                'publish_post' => [
+                    'description' => 'publish post',
+                    'route' => ['method' => 'POST', 'path' => '/posts'],
+                ],
+            ], true) . ';',
+        );
         file_put_contents(
             $root . '/app/.foundry/build/projections/execution_plan_index.php',
             '<?php return ' . var_export([

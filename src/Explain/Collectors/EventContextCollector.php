@@ -3,20 +3,25 @@ declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
 
+use Foundry\Explain\ExplainArtifactCatalog;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
 
-final class EventContextCollector implements ExplainContextCollectorInterface
+final readonly class EventContextCollector implements ExplainContextCollectorInterface
 {
+    public function __construct(private ExplainArtifactCatalog $artifacts)
+    {
+    }
+
     public function supports(ExplainSubject $subject): bool
     {
-        return in_array($subject->kind, ['feature', 'route', 'event', 'workflow'], true);
+        return in_array($subject->kind, ['feature', 'route', 'event', 'workflow', 'job'], true);
     }
 
     public function collect(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): void
     {
-        $index = $context->artifacts->eventIndex();
+        $index = $this->artifacts->eventIndex();
         $emit = is_array($index['emit'] ?? null) ? $index['emit'] : [];
         $subscribe = is_array($index['subscribe'] ?? null) ? $index['subscribe'] : [];
 
@@ -53,6 +58,6 @@ final class EventContextCollector implements ExplainContextCollectorInterface
             $payload['subscribers'] = array_values(array_map('strval', (array) ($subscribe[$name] ?? [])));
         }
 
-        $context->set('events', $payload);
+        $context->setEvents($payload);
     }
 }

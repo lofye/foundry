@@ -3,12 +3,17 @@ declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
 
+use Foundry\Explain\ExplainArtifactCatalog;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
 
-final class DocsContextCollector implements ExplainContextCollectorInterface
+final readonly class DocsContextCollector implements ExplainContextCollectorInterface
 {
+    public function __construct(private ExplainArtifactCatalog $artifacts)
+    {
+    }
+
     public function supports(ExplainSubject $subject): bool
     {
         return true;
@@ -17,7 +22,7 @@ final class DocsContextCollector implements ExplainContextCollectorInterface
     public function collect(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): void
     {
         $rows = [];
-        foreach ($context->artifacts->docsPages() as $row) {
+        foreach ($this->artifacts->docsPages() as $row) {
             if (!is_array($row) || !$this->matchesSubject($row, $subject)) {
                 continue;
             }
@@ -30,7 +35,7 @@ final class DocsContextCollector implements ExplainContextCollectorInterface
             ];
         }
 
-        $context->set('docs', $rows);
+        $context->setDocs(['items' => $rows]);
     }
 
     /**

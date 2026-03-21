@@ -15,21 +15,10 @@ final class GenericGraphSubjectAnalyzer implements SubjectAnalyzerInterface
         return $subject->graphNodeIds !== [];
     }
 
-    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): SubjectAnalysisResult
     {
-        $impact = is_array($context->get('impact')) ? $context->get('impact') : null;
-        $items = [
-            'id' => $subject->id,
-            'kind' => $subject->kind,
-            'graph_node_ids' => $subject->graphNodeIds,
-            'aliases' => $subject->aliases,
-            'source_path' => $subject->metadata['source_path'] ?? null,
-        ];
-        if (isset($subject->metadata['feature'])) {
-            $items['feature'] = $subject->metadata['feature'];
-        }
-
-        $sections = [ExplainSupport::section('subject', 'Subject', $items)];
+        $impact = $context->impact();
+        $sections = [];
         if (is_array($impact)) {
             $sections[] = ExplainSupport::section('impact', 'Impact', [
                 'risk' => $impact['risk'] ?? 'low',
@@ -41,14 +30,6 @@ final class GenericGraphSubjectAnalyzer implements SubjectAnalyzerInterface
             ]);
         }
 
-        $commands = [$context->commandPrefix . ' inspect node ' . $subject->id . ' --json'];
-        if (is_array($impact)) {
-            $commands = array_merge($commands, array_values(array_map('strval', (array) ($impact['recommended_verification'] ?? []))));
-        }
-
-        return [
-            'sections' => $sections,
-            'related_commands' => $commands,
-        ];
+        return new SubjectAnalysisResult(sections: $sections);
     }
 }

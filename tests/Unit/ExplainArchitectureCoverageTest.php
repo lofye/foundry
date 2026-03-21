@@ -72,15 +72,17 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $this->assertSame('feature', $feature->subject['kind']);
         $this->assertStringContainsString('Publish post.', (string) $feature->summary['text']);
         $this->assertStringContainsString('It serves POST /posts.', (string) $feature->summary['text']);
-        $this->assertSame('POST /posts', $route->executionFlow['route']);
+        $this->assertSame('request', (string) ($route->executionFlow['entries'][0]['label'] ?? ''));
         $this->assertSame('editorial', (string) ($route->executionFlow['workflows'][0]['resource'] ?? ''));
-        $this->assertSame(['publish_post'], $this->sectionItems($event->sections, 'event')['emitters']);
-        $this->assertSame('editorial', $this->sectionItems($workflow->sections, 'workflow')['resource']);
-        $this->assertSame('notify_followers', $this->sectionItems($job->sections, 'job')['name']);
-        $this->assertSame('input', $this->sectionItems($schema->sections, 'schema')['role']);
-        $this->assertSame('auth', $this->sectionItems($pipelineStage->sections, 'pipeline_stage')['name']);
-        $this->assertSame('doctor', $this->sectionItems($command->sections, 'command')['signature']);
-        $this->assertSame('test.explain', $this->sectionItems($extension->sections, 'extension')['name']);
+        $this->assertSame('post.created', (string) ($event->subject['label'] ?? ''));
+        $this->assertNotEmpty($event->dependents['items']);
+        $this->assertSame('post.created', (string) ($workflow->emits['items'][0]['label'] ?? ''));
+        $this->assertSame('notify_followers', (string) ($job->subject['label'] ?? ''));
+        $this->assertSame('input', (string) ($schema->schemaInteraction['subject']['role'] ?? ''));
+        $this->assertSame('auth', (string) ($pipelineStage->subject['label'] ?? ''));
+        $this->assertSame('doctor', (string) ($command->subject['label'] ?? ''));
+        $this->assertSame('test.explain', (string) ($extension->subject['label'] ?? ''));
+        $this->assertContains('Provide capability: explain.fixture', $extension->responsibilities['items']);
         $this->assertNotEmpty($feature->relatedDocs);
         $this->assertNotEmpty($command->relatedDocs);
     }
@@ -143,11 +145,14 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $graph = $this->graphFixture();
         $node = $graph->node('route:POST:/posts');
         self::assertNotNull($node);
-        $context = new ExplainContext($graph, $catalog, new ExplainTargetResolver($graph, $catalog)->resolve(ExplainTarget::parse('publish_post')), ExplainSupport::commandPrefix($this->paths));
-        $context->set('alpha', ['ok' => true]);
-        $this->assertTrue($context->has('alpha'));
-        $this->assertSame(['ok' => true], $context->get('alpha'));
-        $this->assertArrayHasKey('alpha', $context->all());
+        $subject = (new ExplainTargetResolver($graph, $catalog))->resolve(ExplainTarget::parse('publish_post'));
+        $context = new ExplainContext($subject, ExplainSupport::commandPrefix($this->paths));
+        $context->setDocs(['items' => [['title' => 'Fixture Docs']]]);
+        $context->setImpact(['affected_features' => ['publish_post']]);
+        $this->assertSame([['title' => 'Fixture Docs']], $context->docs()['items']);
+        $this->assertSame(['publish_post'], $context->impact()['affected_features']);
+        $this->assertArrayHasKey('docs', $context->all());
+        $this->assertArrayHasKey('impact', $context->all());
 
         $this->assertSame('POST /posts', ExplainSupport::normalizeRouteSignature(' post   /posts '));
         $this->assertSame('route:POST:/posts', ExplainSupport::routeNodeId('POST /posts'));
@@ -306,14 +311,13 @@ final class ExplainArchitectureCoverageTest extends TestCase
 
         $this->assertGreaterThan(-1, strpos($text, 'Subject'));
         $this->assertGreaterThan(strpos($text, 'Subject'), strpos($text, 'Summary'));
-        $this->assertGreaterThan(strpos($text, 'Summary'), strpos($text, 'Execution Flow'));
-        $this->assertGreaterThan(strpos($text, 'Execution Flow'), strpos($text, 'Responsibilities'));
-        $this->assertGreaterThan(strpos($text, 'Responsibilities'), strpos($text, 'Impact'));
-        $this->assertGreaterThan(strpos($text, 'Impact'), strpos($text, 'Diagnostics'));
+        $this->assertGreaterThan(strpos($text, 'Summary'), strpos($text, 'Responsibilities'));
+        $this->assertGreaterThan(strpos($text, 'Responsibilities'), strpos($text, 'Execution Flow'));
+        $this->assertGreaterThan(strpos($text, 'Execution Flow'), strpos($text, 'Related Docs'));
+        $this->assertGreaterThan(strpos($text, 'Related Docs'), strpos($text, 'Diagnostics'));
 
         $this->assertStringContainsString('Execution Flow (Detailed)', $deepText);
         $this->assertStringContainsString('Responsibilities', $deepText);
-        $this->assertStringContainsString('Impact', $deepText);
         $this->assertStringContainsString('Diagnostics', $deepText);
         $this->assertSame(array_keys($shallow->toArray()), array_keys((array) $json));
     }

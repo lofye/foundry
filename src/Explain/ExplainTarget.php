@@ -18,8 +18,6 @@ final readonly class ExplainTarget
         'schema',
         'extension',
         'pipeline_stage',
-        'guard',
-        'permission',
     ];
 
     public function __construct(

@@ -3,19 +3,27 @@ declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
 
+use Foundry\Explain\ExplainArtifactCatalog;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
 
-final class CommandContextCollector implements ExplainContextCollectorInterface
+final readonly class CommandContextCollector implements ExplainContextCollectorInterface
 {
+    public function __construct(private ExplainArtifactCatalog $artifacts)
+    {
+    }
+
     public function supports(ExplainSubject $subject): bool
     {
-        return $subject->kind === 'command';
+        return true;
     }
 
     public function collect(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): void
     {
-        $context->set('command', $subject->metadata);
+        $context->setCommands([
+            'subject' => $subject->kind === 'command' ? $subject->metadata : null,
+            'candidates' => $this->artifacts->cliCommands(),
+        ]);
     }
 }

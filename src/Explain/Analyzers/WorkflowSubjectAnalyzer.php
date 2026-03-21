@@ -6,7 +6,6 @@ namespace Foundry\Explain\Analyzers;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
-use Foundry\Explain\ExplainSupport;
 
 final class WorkflowSubjectAnalyzer implements SubjectAnalyzerInterface
 {
@@ -15,24 +14,22 @@ final class WorkflowSubjectAnalyzer implements SubjectAnalyzerInterface
         return $subject->kind === 'workflow';
     }
 
-    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): SubjectAnalysisResult
     {
         $resource = (string) ($subject->metadata['resource'] ?? $subject->label);
         $transitions = is_array($subject->metadata['transitions'] ?? null) ? $subject->metadata['transitions'] : [];
+        $responsibilities = ['Process the ' . $resource . ' workflow transitions'];
+        if ($transitions !== []) {
+            $responsibilities[] = 'Evaluate transition conditions and emit follow-up events';
+        }
 
-        return [
-            'sections' => [
-                ExplainSupport::section('workflow', 'Workflow', [
-                    'resource' => $resource,
-                    'states' => $subject->metadata['states'] ?? [],
-                    'transitions' => $transitions,
-                ]),
+        return new SubjectAnalysisResult(
+            responsibilities: $responsibilities,
+            summaryInputs: [
+                'resource' => $resource,
+                'states' => $subject->metadata['states'] ?? [],
+                'transitions' => $transitions,
             ],
-            'related_commands' => [
-                $context->commandPrefix . ' inspect workflow ' . $resource . ' --json',
-                $context->commandPrefix . ' graph inspect --workflow=' . $resource . ' --json',
-                $context->commandPrefix . ' verify workflows --json',
-            ],
-        ];
+        );
     }
 }

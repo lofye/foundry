@@ -6,7 +6,6 @@ namespace Foundry\Explain\Analyzers;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
-use Foundry\Explain\ExplainSupport;
 
 final class ExtensionSubjectAnalyzer implements SubjectAnalyzerInterface
 {
@@ -15,24 +14,49 @@ final class ExtensionSubjectAnalyzer implements SubjectAnalyzerInterface
         return $subject->kind === 'extension';
     }
 
-    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): array
+    public function analyze(ExplainSubject $subject, ExplainContext $context, ExplainOptions $options): SubjectAnalysisResult
     {
-        $extension = is_array($context->get('extension')) ? $context->get('extension') : $subject->metadata;
+        $extension = is_array($context->extensions()['subject'] ?? null) ? $context->extensions()['subject'] : $subject->metadata;
+        $responsibilities = ['Register compiler capabilities for the application graph'];
+        foreach ($this->flattenProvides($extension['provides'] ?? []) as $capability) {
+            $responsibilities[] = 'Provide capability: ' . $capability;
+        }
 
-        return [
-            'sections' => [
-                ExplainSupport::section('extension', 'Extension', [
-                    'name' => $extension['name'] ?? $subject->label,
-                    'version' => $extension['version'] ?? null,
-                    'description' => $extension['description'] ?? null,
-                    'provides' => $extension['provides'] ?? [],
-                    'packs' => $extension['packs'] ?? [],
-                ]),
+        return new SubjectAnalysisResult(
+            responsibilities: $responsibilities,
+            summaryInputs: [
+                'name' => $extension['name'] ?? $subject->label,
+                'description' => $extension['description'] ?? null,
+                'provides' => $extension['provides'] ?? [],
+                'packs' => $extension['packs'] ?? [],
             ],
-            'related_commands' => [
-                $context->commandPrefix . ' inspect extension ' . $subject->label . ' --json',
-                $context->commandPrefix . ' inspect compatibility --json',
-            ],
-        ];
+        );
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function flattenProvides(mixed $provides): array
+    {
+        $flattened = [];
+        foreach ((array) $provides as $value) {
+            if (is_array($value)) {
+                foreach ($value as $nested) {
+                    $capability = trim((string) $nested);
+                    if ($capability !== '') {
+                        $flattened[] = $capability;
+                    }
+                }
+
+                continue;
+            }
+
+            $capability = trim((string) $value);
+            if ($capability !== '') {
+                $flattened[] = $capability;
+            }
+        }
+
+        return array_values(array_unique($flattened));
     }
 }
