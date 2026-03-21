@@ -71,6 +71,8 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('experimental', $proExplain['stability']);
         $this->assertSame('pro', $proExplain['availability']);
         $this->assertSame('generate <prompt>', $proGenerate['signature']);
+        $this->assertStringContainsString('--deterministic', $proGenerate['usage']);
+        $this->assertStringContainsString('--provider=<name>', $proGenerate['usage']);
         $this->assertSame('internal', $internal['stability']);
     }
 

@@ -228,15 +228,20 @@ final class ConfigSchemaCatalog
                     'default' => ['type' => 'string', 'minLength' => 1],
                     'providers' => [
                         'type' => 'object',
-                        'additionalProperties' => false,
-                        'properties' => [
-                            'static' => [
-                                'type' => 'object',
-                                'additionalProperties' => false,
-                                'properties' => [
-                                    'content' => ['type' => 'string'],
-                                ],
+                        'additionalProperties' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'driver' => ['type' => 'string', 'minLength' => 1],
+                                'factory' => ['type' => 'string', 'minLength' => 1],
+                                'model' => ['type' => 'string', 'minLength' => 1],
+                                'content' => ['type' => 'string'],
+                                'input_tokens' => ['type' => 'integer', 'minimum' => 0],
+                                'output_tokens' => ['type' => 'integer', 'minimum' => 0],
+                                'cost_estimate' => ['type' => 'number', 'minimum' => 0],
+                                'base_url' => ['type' => 'string', 'minLength' => 1],
+                                'api_key_env' => ['type' => 'string', 'minLength' => 1],
                             ],
+                            'additionalProperties' => true,
                         ],
                     ],
                 ],

@@ -29,6 +29,7 @@ final class CLIProCommandsTest extends TestCase
         putenv('FOUNDRY_HOME=' . $this->project->root . '/.foundry-home');
         putenv('FOUNDRY_LICENSE_PATH');
         mkdir($this->project->root . '/.foundry-home', 0777, true);
+        mkdir($this->project->root . '/app/platform/config', 0777, true);
 
         $feature = $this->project->root . '/app/features/publish_post';
         mkdir($feature . '/tests', 0777, true);
@@ -123,13 +124,11 @@ YAML);
         $this->assertStringContainsString('generate <prompt> [Pro]', $help['output']);
     }
 
-    public function test_pro_commands_run_with_valid_local_license(): void
+    public function test_explain_trace_deep_and_diff_run_with_valid_local_license(): void
     {
         $app = new Application();
 
-        $enable = $this->runCommand($app, ['foundry', 'pro', 'enable', $this->validKey(), '--json']);
-        $this->assertSame(0, $enable['status']);
-        $this->assertTrue($enable['payload']['license']['valid']);
+        $this->enablePro($app);
 
         $compile = $this->runCommand($app, ['foundry', 'compile', 'graph', '--json']);
         $this->assertSame(0, $compile['status']);
@@ -137,15 +136,15 @@ YAML);
         $explain = $this->runCommand($app, ['foundry', 'explain', 'publish_post', '--json']);
         $this->assertSame(0, $explain['status']);
         $this->assertSame('feature:publish_post', $explain['payload']['resolved_node_id']);
+        $this->assertSame('publish_post', $explain['payload']['feature']);
+        $this->assertSame('publish_post', $explain['payload']['pipeline_execution']['feature']);
+        $this->assertNotEmpty($explain['payload']['guards']);
+        $this->assertNotEmpty($explain['payload']['events']);
         $this->assertArrayHasKey('pro', $explain['payload']);
 
         $trace = $this->runCommand($app, ['foundry', 'trace', 'publish', '--json']);
         $this->assertSame(0, $trace['status']);
         $this->assertSame(2, $trace['payload']['matched_events']);
-
-        $generate = $this->runCommand($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--feature-context', '--dry-run', '--json']);
-        $this->assertSame(0, $generate['status']);
-        $this->assertSame('pro_generate', $generate['payload']['mode']);
 
         $deep = $this->runCommand($app, ['foundry', 'doctor', '--deep', '--json']);
         $this->assertSame(0, $deep['status']);
@@ -162,11 +161,157 @@ YAML);
         $this->assertGreaterThanOrEqual(1, $diff['payload']['summary']['changed_nodes']);
     }
 
+    public function test_generate_requires_provider_or_deterministic_mode(): void
+    {
+        $app = new Application();
+        $this->enablePro($app);
+
+        $generate = $this->runCommand($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--dry-run', '--json']);
+
+        $this->assertSame(1, $generate['status']);
+        $this->assertSame('PRO_GENERATE_PROVIDER_NOT_CONFIGURED', $generate['payload']['error']['code']);
+    }
+
+    public function test_deterministic_generate_dry_run_is_repeatable_and_graph_aware(): void
+    {
+        $app = new Application();
+        $this->enablePro($app);
+
+        $first = $this->runCommand($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--feature-context', '--deterministic', '--dry-run', '--json']);
+        $second = $this->runCommand($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--feature-context', '--deterministic', '--dry-run', '--json']);
+
+        $this->assertSame(0, $first['status']);
+        $this->assertSame(0, $second['status']);
+        $this->assertSame($first['payload']['plan'], $second['payload']['plan']);
+        $this->assertSame($first['payload']['predicted_files'], $second['payload']['predicted_files']);
+        $this->assertSame('pro_generate', $first['payload']['mode']);
+        $this->assertTrue($first['payload']['deterministic']);
+        $this->assertSame('deterministic', $first['payload']['provider']['mode']);
+        $this->assertSame('bookmark_post', $first['payload']['plan']['feature']['feature']);
+        $this->assertSame('/posts/{id}/bookmark', $first['payload']['plan']['feature']['route']['path']);
+        $this->assertSame(['publish_post'], $first['payload']['plan']['trace']['selected_features']);
+        $this->assertNotEmpty($first['payload']['predicted_files']);
+    }
+
+    public function test_provider_backed_generate_uses_local_provider_config(): void
+    {
+        $app = new Application();
+        $this->enablePro($app);
+        $this->writeAiConfig([
+            'default' => 'static',
+            'providers' => [
+                'static' => [
+                    'driver' => 'static',
+                    'model' => 'fixture-model',
+                    'parsed' => [
+                        'feature' => [
+                            'feature' => 'favorite_post',
+                            'description' => 'Favorite a post.',
+                            'kind' => 'http',
+                            'route' => ['method' => 'POST', 'path' => '/posts/{id}/favorite'],
+                            'input' => ['fields' => ['id' => ['type' => 'string', 'required' => true]]],
+                            'output' => ['fields' => [
+                                'id' => ['type' => 'string', 'required' => true],
+                                'status' => ['type' => 'string', 'required' => true],
+                            ]],
+                            'auth' => ['required' => true, 'strategies' => ['bearer'], 'permissions' => ['posts.favorite']],
+                            'database' => ['reads' => ['posts'], 'writes' => ['posts'], 'queries' => ['favorite_post'], 'transactions' => 'required'],
+                            'cache' => ['reads' => [], 'writes' => [], 'invalidate' => ['posts:list']],
+                            'events' => ['emit' => ['post.favorited'], 'subscribe' => []],
+                            'jobs' => ['dispatch' => []],
+                            'tests' => ['required' => ['contract', 'feature', 'auth']],
+                        ],
+                        'explanation' => 'Provider plan.',
+                    ],
+                    'input_tokens' => 12,
+                    'output_tokens' => 8,
+                    'cost_estimate' => 0.42,
+                    'metadata' => ['source' => 'fixture'],
+                ],
+            ],
+        ]);
+
+        $generate = $this->runCommand($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--provider', 'static', '--model', 'override-model', '--dry-run', '--json']);
+
+        $this->assertSame(0, $generate['status']);
+        $this->assertFalse($generate['payload']['deterministic']);
+        $this->assertSame('provider', $generate['payload']['provider']['mode']);
+        $this->assertSame('static', $generate['payload']['provider']['provider']);
+        $this->assertSame('override-model', $generate['payload']['provider']['model']);
+        $this->assertSame(12, $generate['payload']['provider']['input_tokens']);
+        $this->assertSame(8, $generate['payload']['provider']['output_tokens']);
+        $this->assertSame('favorite_post', $generate['payload']['plan']['feature']['feature']);
+        $this->assertSame('/posts/{id}/favorite', $generate['payload']['plan']['feature']['route']['path']);
+        $this->assertSame('Provider plan.', $generate['payload']['plan']['explanation']);
+    }
+
+    public function test_deterministic_generate_writes_feature_and_verifies_graph(): void
+    {
+        $app = new Application();
+        $this->enablePro($app);
+
+        $generate = $this->runCommand($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--deterministic', '--json']);
+
+        $this->assertSame(0, $generate['status']);
+        $this->assertTrue($generate['payload']['ok']);
+        $this->assertTrue($generate['payload']['verification']['graph']['ok']);
+        $this->assertTrue($generate['payload']['verification']['contracts']['ok']);
+        $this->assertFileExists($this->project->root . '/app/features/bookmark_post/feature.yaml');
+        $generatedFeatureManifest = false;
+        foreach ((array) $generate['payload']['generated']['files'] as $file) {
+            if (str_ends_with((string) $file, '/app/features/bookmark_post/feature.yaml')) {
+                $generatedFeatureManifest = true;
+                break;
+            }
+        }
+        $this->assertTrue($generatedFeatureManifest);
+
+        $inspect = $this->runCommand($app, ['foundry', 'inspect', 'feature', 'bookmark_post', '--json']);
+        $this->assertSame(0, $inspect['status']);
+        $this->assertSame('bookmark_post', $inspect['payload']['feature']);
+
+        $pipeline = $this->runCommand($app, ['foundry', 'verify', 'pipeline', '--json']);
+        $this->assertSame(0, $pipeline['status']);
+        $this->assertTrue($pipeline['payload']['ok']);
+    }
+
+    public function test_generate_emits_human_readable_messages_without_json(): void
+    {
+        $app = new Application();
+        $this->enablePro($app);
+
+        $dryRun = $this->runCommandRaw($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--deterministic', '--dry-run']);
+        $this->assertSame(0, $dryRun['status']);
+        $this->assertStringContainsString('Foundry Pro generation plan prepared for bookmark_post.', $dryRun['output']);
+
+        $generated = $this->runCommandRaw($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--deterministic']);
+        $this->assertSame(0, $generated['status']);
+        $this->assertStringContainsString('Foundry Pro generated bookmark_post using deterministic mode and wrote', $generated['output']);
+    }
+
     private function validKey(): string
     {
         $body = 'FPRO-ABCD-EFGH-IJKL-MNOP';
 
         return $body . '-' . strtoupper(substr(hash('sha256', 'foundry-pro:' . $body), 0, 8));
+    }
+
+    private function enablePro(Application $app): void
+    {
+        $enable = $this->runCommand($app, ['foundry', 'pro', 'enable', $this->validKey(), '--json']);
+        $this->assertSame(0, $enable['status']);
+        $this->assertTrue($enable['payload']['license']['valid']);
+    }
+
+    /**
+     * @param array<string,mixed> $config
+     */
+    private function writeAiConfig(array $config): void
+    {
+        file_put_contents(
+            $this->project->root . '/app/platform/config/ai.php',
+            "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n",
+        );
     }
 
     private function restoreEnv(string $name, ?string $value): void

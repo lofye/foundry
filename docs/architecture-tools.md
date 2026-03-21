@@ -37,8 +37,15 @@ php vendor/bin/foundry doctor --deep --json
 php vendor/bin/foundry explain <target> --json
 php vendor/bin/foundry diff --json
 php vendor/bin/foundry trace [<target>] --json
-php vendor/bin/foundry generate "<prompt>" --feature-context --dry-run --json
+php vendor/bin/foundry generate "<prompt>" --feature-context --deterministic --dry-run --json
+php vendor/bin/foundry generate "<prompt>" --provider=<name> --model=<name> --dry-run --json
 ```
+
+`generate` is intentionally optional:
+
+- `--deterministic` produces a reproducible plan from explicit prompt + graph inputs with no provider dependency.
+- provider-backed mode loads providers from `app/platform/config/ai.php`.
+- if no provider is configured, the command fails cleanly and points the user to `--deterministic`.
 
 ## Foundry Doctor
 
@@ -155,10 +162,13 @@ Context extraction prioritizes feature matches by instruction tokens, route path
 
 ## Pro Explain, Diff, Trace, And Generate
 
-- `explain <target>` resolves a feature, route signature, or graph identifier into dependency, dependent, and impact context.
+- `explain <target>` resolves a feature, route signature, or graph identifier into dependency, dependent, pipeline, guard, event, workflow, and impact context.
 - `diff` compares the last compiled baseline graph against the current source state without changing core runtime requirements.
 - `trace [<target>]` analyzes the local trace log and summarizes matching categories.
-- `generate "<prompt>"` reuses the graph-backed prompt bundle flow, but exposes it through the Pro AI-assisted generation command surface.
+- `generate "<prompt>"` reuses the graph-backed prompt bundle flow and materializes an inspectable feature/workflow plan.
+- `generate "<prompt>" --deterministic` is reproducible across runs because it derives its plan strictly from the prompt and compiled graph context.
+- provider-backed generation is pluggable through the AI provider registry; no provider is hard-coded.
+- generation compiles the graph again after writes and returns graph/contracts verification payloads so failures stay inspectable.
 
 ## Extension Integration
 

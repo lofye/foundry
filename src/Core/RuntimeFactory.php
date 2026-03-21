@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Foundry\Core;
 
 use Foundry\AI\AIManager;
-use Foundry\AI\StaticAIProvider;
+use Foundry\AI\AIProviderRegistry;
 use Foundry\Auth\AuthorizationEngine;
 use Foundry\Auth\HeaderTokenAuthenticator;
 use Foundry\Auth\PermissionRegistry;
@@ -84,9 +84,7 @@ final class RuntimeFactory
             new DefaultEventDispatcher($eventRegistry, $traceRecorder),
             new LocalStorageDriver($storageRoot),
             $traceContext,
-            new AIManager([
-                'static' => new StaticAIProvider('static', ['content' => '', 'parsed' => []]),
-            ])
+            (new AIProviderRegistry())->managerForConfig((array) ($config['ai'] ?? []))
         );
 
         $executor = new FeatureExecutor(

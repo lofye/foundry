@@ -61,10 +61,12 @@ final class GraphDocsGeneratorTest extends TestCase
         $this->assertSame('html', $html['format']);
         $this->assertFileExists($this->project->root . '/docs/generated/features.md');
         $this->assertFileExists($this->project->root . '/docs/generated/features.html');
+        $this->assertFileExists($this->project->root . '/docs/generated/graph-overview.md');
         $this->assertFileExists($this->project->root . '/docs/generated/api-surface.md');
         $this->assertFileExists($this->project->root . '/docs/generated/cli-reference.md');
         $this->assertFileExists($this->project->root . '/docs/generated/upgrade-reference.md');
 
+        $graphOverviewMd = file_get_contents($this->project->root . '/docs/generated/graph-overview.md') ?: '';
         $featuresMd = file_get_contents($this->project->root . '/docs/generated/features.md') ?: '';
         $routesMd = file_get_contents($this->project->root . '/docs/generated/routes.md') ?: '';
         $apiSurfaceMd = file_get_contents($this->project->root . '/docs/generated/api-surface.md') ?: '';
@@ -73,6 +75,8 @@ final class GraphDocsGeneratorTest extends TestCase
         $llmMd = file_get_contents($this->project->root . '/docs/generated/llm-workflow.md') ?: '';
         $featuresHtml = file_get_contents($this->project->root . '/docs/generated/features.html') ?: '';
 
+        $this->assertStringContainsString('# Graph Overview', $graphOverviewMd);
+        $this->assertStringContainsString('inspect graph --json', $graphOverviewMd);
         $this->assertStringContainsString('# Feature Catalog', $featuresMd);
         $this->assertStringContainsString('## list_posts', $featuresMd);
         $this->assertStringContainsString('GET /posts', $routesMd);
@@ -87,6 +91,6 @@ final class GraphDocsGeneratorTest extends TestCase
         $this->assertStringContainsString('php vendor/bin/foundry upgrade-check --json', $upgradeReferenceMd);
         $this->assertStringContainsString('Config compatibility aliases', $upgradeReferenceMd);
         $this->assertStringContainsString('Recommended commands:', $llmMd);
-        $this->assertStringContainsString('<h1>Feature Catalog</h1>', $featuresHtml);
+        $this->assertStringContainsString('<h1 id="feature-catalog">Feature Catalog</h1>', $featuresHtml);
     }
 }

@@ -39,15 +39,24 @@ final readonly class ArchitectureExplainer
             $graph->dependents($node->id()),
         );
         $impact = $this->impactAnalyzer->reportForNode($graph, $node->id());
+        $feature = $this->resolvedFeature($graph, $node);
+        $pipeline = $feature !== null ? $this->pipelineContext($graph, $feature) : null;
+        $events = $feature !== null ? $this->relatedFeatureNodes($graph, $feature, 'event') : [];
+        $workflows = $feature !== null ? $this->relatedFeatureNodes($graph, $feature, 'workflow') : [];
 
         return [
             'target' => $target,
             'resolved_node_id' => $node->id(),
             'node' => $node->toArray(),
+            'feature' => $feature,
             'dependencies' => $dependencies,
             'dependents' => $dependents,
+            'pipeline_execution' => $pipeline,
+            'guards' => is_array($pipeline['guards'] ?? null) ? $pipeline['guards'] : [],
+            'events' => $events,
+            'workflows' => $workflows,
             'impact' => $impact,
-            'explanation' => $this->renderExplanation($target, $node, $dependencies, $dependents, $impact),
+            'explanation' => $this->renderExplanation($target, $node, $dependencies, $dependents, $impact, $pipeline, $events, $workflows),
         ];
     }
 
@@ -112,6 +121,9 @@ final readonly class ArchitectureExplainer
      * @param array<int,array<string,mixed>> $dependencies
      * @param array<int,array<string,mixed>> $dependents
      * @param array<string,mixed> $impact
+     * @param array<string,mixed>|null $pipeline
+     * @param array<int,array<string,mixed>> $events
+     * @param array<int,array<string,mixed>> $workflows
      */
     private function renderExplanation(
         string $target,
@@ -119,6 +131,9 @@ final readonly class ArchitectureExplainer
         array $dependencies,
         array $dependents,
         array $impact,
+        ?array $pipeline,
+        array $events,
+        array $workflows,
     ): string {
         $parts = [
             sprintf(
@@ -145,6 +160,27 @@ final readonly class ArchitectureExplainer
             $parts[] = 'Used by ' . $this->joinLabels($dependents) . '.';
         }
 
+        $stages = array_values(array_map('strval', (array) ($pipeline['stages'] ?? [])));
+        if ($stages !== []) {
+            $parts[] = 'Pipeline stages: ' . implode(', ', $stages) . '.';
+        }
+
+        $guards = array_values(array_filter(
+            (array) ($pipeline['guards'] ?? []),
+            static fn (mixed $row): bool => is_array($row),
+        ));
+        if ($guards !== []) {
+            $parts[] = 'Guards: ' . $this->joinLabels($guards) . '.';
+        }
+
+        if ($events !== []) {
+            $parts[] = 'Events: ' . $this->joinLabels($events) . '.';
+        }
+
+        if ($workflows !== []) {
+            $parts[] = 'Workflows: ' . $this->joinLabels($workflows) . '.';
+        }
+
         $affectedFeatures = array_values(array_map('strval', (array) ($impact['affected_features'] ?? [])));
         if ($affectedFeatures !== []) {
             $parts[] = 'Impact reaches features ' . implode(', ', array_slice($affectedFeatures, 0, 5)) . '.';
@@ -169,6 +205,30 @@ final readonly class ArchitectureExplainer
         }
 
         return implode(', ', array_slice($labels, 0, 5));
+    }
+
+    private function resolvedFeature(ApplicationGraph $graph, GraphNode $node): ?string
+    {
+        $feature = $this->nodeFeature($node);
+        if ($feature !== null) {
+            return $feature;
+        }
+
+        foreach (array_merge($graph->dependencies($node->id()), $graph->dependents($node->id())) as $edge) {
+            foreach ([$edge->from, $edge->to] as $candidateId) {
+                $candidate = $graph->node($candidateId);
+                if (!$candidate instanceof GraphNode) {
+                    continue;
+                }
+
+                $feature = $this->nodeFeature($candidate);
+                if ($feature !== null) {
+                    return $feature;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function nodeFeature(GraphNode $node): ?string
@@ -203,5 +263,94 @@ final readonly class ArchitectureExplainer
         }
 
         return trim((string) $route);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function pipelineContext(ApplicationGraph $graph, string $feature): array
+    {
+        $executionPlans = $this->relatedFeatureNodes($graph, $feature, 'execution_plan');
+        if ($executionPlans === []) {
+            foreach ($graph->nodesByType('execution_plan') as $node) {
+                if ($this->nodeFeature($node) === $feature) {
+                    $executionPlans[] = $this->summarizeNode($node);
+                }
+            }
+        }
+
+        usort(
+            $executionPlans,
+            static fn (array $left, array $right): int => strcmp((string) ($left['node_id'] ?? ''), (string) ($right['node_id'] ?? '')),
+        );
+
+        $stages = [];
+        $guards = [];
+        foreach ($executionPlans as $row) {
+            $planNode = $graph->node((string) ($row['node_id'] ?? ''));
+            if (!$planNode instanceof GraphNode) {
+                continue;
+            }
+
+            $stages = array_merge($stages, array_values(array_map('strval', (array) ($planNode->payload()['stages'] ?? []))));
+            foreach ($graph->dependencies($planNode->id()) as $edge) {
+                $candidate = $graph->node($edge->to);
+                if (!$candidate instanceof GraphNode || $candidate->type() !== 'guard') {
+                    continue;
+                }
+
+                $guards[$candidate->id()] = $this->summarizeNode($candidate, $edge->type);
+            }
+        }
+
+        $stages = array_values(array_unique(array_filter($stages, static fn (string $stage): bool => $stage !== '')));
+        sort($stages);
+        ksort($guards);
+
+        return [
+            'feature' => $feature,
+            'execution_plans' => $executionPlans,
+            'guards' => array_values($guards),
+            'stages' => $stages,
+        ];
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private function relatedFeatureNodes(ApplicationGraph $graph, string $feature, string $type): array
+    {
+        $featureNodeId = 'feature:' . $feature;
+        $rows = [];
+
+        foreach (array_merge($graph->dependencies($featureNodeId), $graph->dependents($featureNodeId)) as $edge) {
+            foreach ([$edge->from, $edge->to] as $candidateId) {
+                $candidate = $graph->node($candidateId);
+                if (!$candidate instanceof GraphNode || $candidate->type() !== $type) {
+                    continue;
+                }
+
+                $rows[$candidate->id()] = $this->summarizeNode($candidate, $edge->type);
+            }
+        }
+
+        ksort($rows);
+
+        return array_values($rows);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function summarizeNode(GraphNode $node, ?string $edgeType = null): array
+    {
+        return [
+            'node_id' => $node->id(),
+            'type' => $node->type(),
+            'label' => $this->nodeLabel($node),
+            'feature' => $this->nodeFeature($node),
+            'edge_type' => $edgeType,
+            'source_path' => $node->sourcePath(),
+        ];
     }
 }

@@ -6,6 +6,7 @@ namespace Foundry\Documentation;
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\IR\GraphNode;
 use Foundry\Support\ApiSurfaceRegistry;
+use Foundry\Support\Json;
 use Foundry\Support\Paths;
 use Foundry\Upgrade\FrameworkDeprecationRegistry;
 
@@ -33,19 +34,7 @@ final class GraphDocsGenerator
             mkdir($dir, 0777, true);
         }
 
-        $docs = [
-            'features' => $this->featuresDoc($graph),
-            'routes' => $this->routesDoc($graph),
-            'auth' => $this->authDoc($graph),
-            'events' => $this->eventsDoc($graph),
-            'jobs' => $this->jobsDoc($graph),
-            'caches' => $this->cachesDoc($graph),
-            'schemas' => $this->schemasDoc($graph),
-            'api-surface' => $this->apiSurfaceDoc(),
-            'cli-reference' => $this->cliReferenceDoc(),
-            'upgrade-reference' => $this->upgradeReferenceDoc(),
-            'llm-workflow' => $this->llmWorkflowDoc(),
-        ];
+        $docs = $this->documents($graph);
 
         $written = [];
         foreach ($docs as $name => $markdown) {
@@ -62,6 +51,75 @@ final class GraphDocsGenerator
             'directory' => $dir,
             'files' => $written,
         ];
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    public function documents(ApplicationGraph $graph): array
+    {
+        return [
+            'graph-overview' => $this->graphOverviewDoc($graph),
+            'features' => $this->featuresDoc($graph),
+            'routes' => $this->routesDoc($graph),
+            'auth' => $this->authDoc($graph),
+            'events' => $this->eventsDoc($graph),
+            'jobs' => $this->jobsDoc($graph),
+            'caches' => $this->cachesDoc($graph),
+            'schemas' => $this->schemasDoc($graph),
+            'api-surface' => $this->apiSurfaceDoc(),
+            'cli-reference' => $this->cliReferenceDoc(),
+            'upgrade-reference' => $this->upgradeReferenceDoc(),
+            'llm-workflow' => $this->llmWorkflowDoc(),
+        ];
+    }
+
+    private function graphOverviewDoc(ApplicationGraph $graph): string
+    {
+        $inspectSnapshot = [
+            'framework_version' => $graph->frameworkVersion(),
+            'graph_version' => $graph->graphVersion(),
+            'compiled_at' => $graph->compiledAt(),
+            'source_hash' => $graph->sourceHash(),
+            'features' => $graph->features(),
+            'node_counts' => $graph->nodeCountsByType(),
+            'edge_counts' => $graph->edgeCountsByType(),
+        ];
+        $helpSnapshot = [
+            'summary' => $this->apiSurfaceRegistry->cliHelpIndex()['summary'] ?? [],
+        ];
+
+        $lines = [
+            '# Graph Overview',
+            '',
+            '## Snapshot',
+            '- framework version: ' . $graph->frameworkVersion(),
+            '- graph version: ' . (string) $graph->graphVersion(),
+            '- compiled at: ' . $graph->compiledAt(),
+            '- source hash: ' . $graph->sourceHash(),
+            '- features: ' . implode(', ', $graph->features()),
+            '- node counts: ' . $this->inlineMap($graph->nodeCountsByType()),
+            '- edge counts: ' . $this->inlineMap($graph->edgeCountsByType()),
+            '',
+            '## Architecture',
+            '- Features remain the authored source-of-truth units; routes, schemas, caches, jobs, and events are derived graph surfaces.',
+            '- Generated docs are built from the same compiled graph used by inspect, export, verify, and runtime projection flows.',
+            '- CLI reference pages are derived from the same API surface registry used by `help --json` and command classification.',
+            '',
+            '## CLI Output Snapshots',
+            '### inspect graph --json',
+            '```json',
+            Json::encode($inspectSnapshot, true),
+            '```',
+            '',
+            '### help --json',
+            '```json',
+            Json::encode($helpSnapshot, true),
+            '```',
+            '',
+        ];
+
+        return implode("\n", $lines) . "\n";
     }
 
     private function featuresDoc(ApplicationGraph $graph): string
@@ -387,9 +445,26 @@ final class GraphDocsGenerator
         return implode("\n", $lines) . "\n";
     }
 
+    /**
+     * @param array<string,int> $values
+     */
+    private function inlineMap(array $values): string
+    {
+        if ($values === []) {
+            return '(none)';
+        }
+
+        $pairs = [];
+        foreach ($values as $key => $value) {
+            $pairs[] = $key . '=' . (string) $value;
+        }
+
+        return implode(', ', $pairs);
+    }
+
     private function toHtml(string $markdown): string
     {
-        $lines = explode("\n", $markdown);
+        $content = (new MarkdownPageRenderer())->render($markdown);
         $html = [
             '<!doctype html>',
             '<html lang="en">',
@@ -400,31 +475,10 @@ final class GraphDocsGenerator
             '  <style>body{font-family:ui-monospace,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;line-height:1.5;padding:24px;max-width:1000px;margin:0 auto;}h1,h2{line-height:1.25;}code{background:#f3f4f6;padding:1px 4px;border-radius:4px;}ul{padding-left:20px;}</style>',
             '</head>',
             '<body>',
+            $content,
+            '</body>',
+            '</html>',
         ];
-
-        foreach ($lines as $line) {
-            $escaped = htmlspecialchars($line, ENT_QUOTES);
-            if (str_starts_with($line, '# ')) {
-                $html[] = '<h1>' . htmlspecialchars(substr($line, 2), ENT_QUOTES) . '</h1>';
-                continue;
-            }
-            if (str_starts_with($line, '## ')) {
-                $html[] = '<h2>' . htmlspecialchars(substr($line, 3), ENT_QUOTES) . '</h2>';
-                continue;
-            }
-            if (str_starts_with($line, '- ')) {
-                $html[] = '<p>&bull; ' . htmlspecialchars(substr($line, 2), ENT_QUOTES) . '</p>';
-                continue;
-            }
-            if ($line === '') {
-                $html[] = '<br>';
-                continue;
-            }
-            $html[] = '<p>' . $escaped . '</p>';
-        }
-
-        $html[] = '</body>';
-        $html[] = '</html>';
 
         return implode("\n", $html) . "\n";
     }

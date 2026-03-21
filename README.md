@@ -31,6 +31,7 @@ Foundry Pro is optional and local-first:
 - Pro adds `doctor --deep`, `explain`, `diff`, `trace`, and `generate "<prompt>"`
 - Pro does not require SaaS connectivity, telemetry, or runtime calls to external services
 - Pro licensing is stored locally at `~/.foundry/license.json` by default
+- `generate` works in deterministic mode without any provider and otherwise uses whatever local/remote provider you configure in `app/platform/config/ai.php`
 
 Enable Pro locally:
 
@@ -215,6 +216,15 @@ php vendor/bin/foundry inspect api-surface --php=Foundry\\Feature\\FeatureAction
 
 Policy details live in `docs/public-api-policy.md` and are also emitted into generated docs as `docs/generated/api-surface.md` and `docs/generated/cli-reference.md`.
 
+## Documentation Site
+Framework documentation is built as a static site from curated pages plus generated graph/schema/CLI reference content:
+
+```bash
+php scripts/build-docs.php
+```
+
+The build compiles the root app graph, merges `docs/*.md` with generated reference pages, and writes the current site plus versioned snapshots to `public/docs`.
+
 ## CLI Surface
 All inspection, verification, and planning commands support `--json`.
 
@@ -246,7 +256,34 @@ php vendor/bin/foundry pro status --json
 php vendor/bin/foundry explain publish_post --json
 php vendor/bin/foundry diff --json
 php vendor/bin/foundry trace publish_post --json
-php vendor/bin/foundry generate "add bookmark support" --feature-context --dry-run --json
+php vendor/bin/foundry generate "add bookmark support" --deterministic --dry-run --json
+php vendor/bin/foundry generate "add bookmark support" --provider=static --model=fixture-model --dry-run --json
+```
+
+Provider-backed generation is still optional. If no provider is configured, `generate` exits non-zero with a clear message and suggests `--deterministic`.
+
+Minimal AI provider config:
+
+```php
+<?php
+declare(strict_types=1);
+
+return [
+    'default' => 'static',
+    'providers' => [
+        'static' => [
+            'driver' => 'static',
+            'model' => 'fixture-model',
+            'parsed' => [
+                'feature' => [
+                    'feature' => 'favorite_post',
+                    'route' => ['method' => 'POST', 'path' => '/posts/{id}/favorite'],
+                ],
+                'explanation' => 'Provider-authored generation plan.',
+            ],
+        ],
+    ],
+];
 ```
 
 Graph inspection and export:
