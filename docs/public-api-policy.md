@@ -72,13 +72,25 @@ php vendor/bin/foundry help export graph --json
 php vendor/bin/foundry inspect api-surface --json
 ```
 
+## Frozen Contracts
+
+Stable documented behavior becomes a frozen contract once it has been implemented, reviewed, and aligned with shipped examples.
+
+From that point forward:
+
+- stable contracts are not casually reworded, reshaped, or silently drifted
+- any behavioral change must be proposed, documented first, implemented second, re-aligned in examples, and then verified through deterministic output and tests
+- if a behavior matters to users or automation, it must exist in the documentation, implementation, and test suite
+
 ## Semver Rules
 
 For listed stable `public_api` and `extension_api` surface:
 
-- before 1.0, Foundry treats the surface as a compatibility promise immediately
-- breaking changes require a documented deprecation and upgrade note
-- after 1.0, breaking changes require a major release
+- before 1.0, Foundry still treats listed stable surface as a compatibility promise
+- patch releases are for bug fixes only and must not change stable contracts
+- minor releases may add new stable surface only when the change is backward compatible and extends the documented contract without rewriting existing behavior
+- breaking changes require a documented deprecation and upgrade note before 1.0, and a major release after 1.0
+- breaking changes include stable CLI behavior changes, stable JSON contract changes, stable section-structure changes, and stable explain-semantics changes
 
 For `experimental_api` surface:
 
@@ -90,6 +102,22 @@ For `internal_api` surface:
 
 - no semver guarantee is provided
 - apps and extensions should not couple to it
+
+## JSON Contract Versioning
+
+Stable JSON output is strictly versioned.
+
+- stable JSON output shapes must remain unchanged across patch and minor releases
+- adding optional data in a backward-compatible way is allowed in minor releases only when existing keys, meanings, and ordering guarantees remain intact
+- removing keys, renaming keys, changing value semantics, or restructuring stable JSON payloads requires a major release
+
+## Documentation And Example Accuracy
+
+Documentation is part of the contract surface, not marketing copy.
+
+- examples must reflect real behavior and deterministic output
+- generated or documented output must not be aspirational, fictional, timestamped, random, or environment-dependent
+- when docs and behavior disagree, the discrepancy must be resolved explicitly rather than carried forward as drift
 
 ## Configuration, Manifests, and Generated Metadata
 

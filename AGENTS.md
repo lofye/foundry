@@ -66,6 +66,21 @@ php bin/foundry doctor --feature=<feature> --json
 - If you change scaffolded app defaults, keep the scaffolded `README.md`, scaffolded `AGENTS.md`, and init-app tests aligned
 - If you change compiler or projection behavior, update both verification coverage and integration coverage
 - Do not add app-specific policy to framework internals unless it is meant to be scaffolded into every app
+- Renderers must never access graph, compiler, or runtime state directly; they consume only assembled plan data
+
+## Frozen Contracts
+
+- Once a documented contract has been implemented, reviewed, and aligned with shipped examples, treat it as frozen
+- Do not casually rewrite stable contract wording, examples, or user-visible behavior
+- Any behavioral change must follow this order: propose the change, update the contract docs first, implement it, re-align examples, then verify determinism and tests
+- Patch releases may contain bug fixes only and must not change stable contracts
+- Minor releases may extend stable contracts additively, but must remain backward compatible and keep existing JSON output shapes stable
+- Breaking changes to stable CLI behavior, JSON contracts, section structure, or explain semantics (including `foundry explain`) require a major-version plan
+- If behavior matters to users or tooling, it must be reflected in docs, implementation, and tests
+- Stable output must remain deterministic: same input must produce identical output, with no timestamps, randomness, ordering instability, or environment leakage
+- The `foundry explain` output (text, JSON, markdown, and deep mode) is a versioned contract
+- Its structure, section ordering, and JSON shape must remain stable across patch and minor releases
+- Do not "improve", reformat, or expand examples unless required to match actual behavior
 
 ## Testing Discipline
 
@@ -83,3 +98,23 @@ Stop and ask before:
 - making breaking changes to scaffolded app structure or generated file conventions
 - changing verification semantics in ways that could invalidate existing apps without a migration path
 - making a behavior choice when the existing docs, tests, and code disagree
+
+## SPEC DISCIPLINE RULE
+
+Specs are contracts, not drafts.
+
+If a spec has been implemented and aligned:
+- Do NOT modify it casually
+- Do NOT change examples unless implementation has changed
+
+If behavior needs to change:
+1. update the spec first
+2. implement the change
+3. realign examples
+4. verify tests + determinism
+
+Never let docs drift from implementation.
+Never let implementation drift from spec.
+
+Determinism and contract stability are required.
+If a change would surprise a user or break tooling, it is a contract change.
