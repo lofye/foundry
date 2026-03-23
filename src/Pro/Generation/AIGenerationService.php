@@ -12,6 +12,7 @@ use Foundry\Compiler\GraphVerifier;
 use Foundry\Compiler\Prompt\GraphPromptBuilder;
 use Foundry\Generation\FeatureGenerator;
 use Foundry\Generation\WorkflowGenerator;
+use Foundry\Support\CliCommandPrefix;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
 use Foundry\Verification\ContractsVerifier;
@@ -43,7 +44,7 @@ final class AIGenerationService
         $force = (bool) ($options['force'] ?? false);
 
         $preflight = $this->compiler->compile(new CompileOptions());
-        $builder = new GraphPromptBuilder($this->compiler->impactAnalyzer());
+        $builder = new GraphPromptBuilder($this->compiler->impactAnalyzer(), CliCommandPrefix::foundry($this->paths));
         $bundle = $builder->build($preflight->graph, $prompt, $featureContext);
 
         $planner = new PromptFeaturePlanner();

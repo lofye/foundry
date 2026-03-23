@@ -19,6 +19,7 @@ use Foundry\Doctor\DoctorContext as FrameworkDoctorContext;
 use Foundry\Doctor\DoctorSummary;
 use Foundry\Doctor\FrameworkDoctor;
 use Foundry\Pipeline\PipelineIntegrityInspector;
+use Foundry\Support\CliCommandPrefix;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
 use Foundry\Support\Paths;
@@ -195,9 +196,7 @@ final class DoctorCommand extends Command
 
     private function commandPrefix(Paths $paths): string
     {
-        return $paths->root() === $paths->frameworkRoot()
-            ? 'php bin/foundry'
-            : 'php vendor/bin/foundry';
+        return CliCommandPrefix::foundry($paths);
     }
 
     /**

@@ -65,14 +65,14 @@ Each pack declares:
 Inspect commands:
 
 ```bash
-php vendor/bin/foundry inspect packs --json
-php vendor/bin/foundry inspect pack <name> --json
+foundry inspect packs --json
+foundry inspect pack <name> --json
 ```
 
 Metadata schemas are exposed through:
 
 ```bash
-php vendor/bin/foundry inspect extensions --json
+foundry inspect extensions --json
 ```
 
 ## Compatibility Model
@@ -113,10 +113,10 @@ Diagnostics include:
 Inspect/verify commands:
 
 ```bash
-php vendor/bin/foundry inspect compatibility --json
-php vendor/bin/foundry verify extensions --json
-php vendor/bin/foundry verify compatibility --json
-php vendor/bin/foundry doctor --json
+foundry inspect compatibility --json
+foundry verify extensions --json
+foundry verify compatibility --json
+foundry doctor --json
 ```
 
 ## Definition Migration Framework
@@ -141,11 +141,11 @@ Migration behavior:
 Commands:
 
 ```bash
-php vendor/bin/foundry inspect migrations --json
-php vendor/bin/foundry inspect definition-format feature_manifest --json
-php vendor/bin/foundry migrate definitions --dry-run --json
-php vendor/bin/foundry migrate definitions --path=<path> --dry-run --json
-php vendor/bin/foundry migrate definitions --write --json
+foundry inspect migrations --json
+foundry inspect definition-format feature_manifest --json
+foundry migrate definitions --dry-run --json
+foundry migrate definitions --path=<path> --dry-run --json
+foundry migrate definitions --write --json
 ```
 
 ## Codemod Engine
@@ -159,8 +159,8 @@ Built-in codemod:
 Command:
 
 ```bash
-php vendor/bin/foundry codemod run feature-manifest-v1-to-v2 --dry-run --json
-php vendor/bin/foundry codemod run feature-manifest-v1-to-v2 --write --json
+foundry codemod run feature-manifest-v1-to-v2 --dry-run --json
+foundry codemod run feature-manifest-v1-to-v2 --write --json
 ```
 
 ## Build Artifacts and Inspection
@@ -170,7 +170,7 @@ extensions and migrations layer metadata is surfaced through existing build and 
 ## Canonical Workflow
 
 1. Edit source-of-truth definitions/files.
-2. `php vendor/bin/foundry compile graph --json`
+2. `foundry compile graph --json`
 3. Inspect diagnostics/impact/compatibility.
 4. Verify graph/extensions/compatibility.
 5. Run tests.

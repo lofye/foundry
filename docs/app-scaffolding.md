@@ -21,19 +21,19 @@ Project scaffolds also emit first-run inspectability output under:
 Generate:
 - `php vendor/bin/foundry new my-app --starter=standard --json`
 - `php vendor/bin/foundry init app my-app --starter=minimal --json`
-- `php vendor/bin/foundry generate starter server-rendered --json`
-- `php vendor/bin/foundry generate starter api --json`
-- `php vendor/bin/foundry generate resource <name> --definition=<file> --json`
-- `php vendor/bin/foundry generate admin-resource <name> --json`
-- `php vendor/bin/foundry generate uploads avatar --json`
-- `php vendor/bin/foundry generate uploads attachments --json`
+- `foundry generate starter server-rendered --json`
+- `foundry generate starter api --json`
+- `foundry generate resource <name> --definition=<file> --json`
+- `foundry generate admin-resource <name> --json`
+- `foundry generate uploads avatar --json`
+- `foundry generate uploads attachments --json`
 
 Inspect/verify:
-- `php vendor/bin/foundry inspect resource <name> --json`
-- `php vendor/bin/foundry verify resource <name> --json`
+- `foundry inspect resource <name> --json`
+- `foundry verify resource <name> --json`
 
 Codemod:
-- `php vendor/bin/foundry codemod run foundation-definition-v1-normalize --dry-run --json`
+- `foundry codemod run foundation-definition-v1-normalize --dry-run --json`
 
 ## Graph Nodes
 
@@ -60,7 +60,7 @@ App scaffolding emits additional graph-derived projections:
 ## Development Loop
 
 1. Edit or generate source definitions/features.
-2. Compile graph: `php vendor/bin/foundry compile graph --json`
+2. Compile graph: `foundry compile graph --json`
 3. Inspect resource/pipeline/impact surfaces.
 4. Verify graph/contracts/resource.
 5. Run tests.

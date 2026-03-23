@@ -5,6 +5,7 @@ namespace Foundry\Explain;
 
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\IR\GraphNode;
+use Foundry\Support\CliCommandPrefix;
 use Foundry\Support\Paths;
 
 final class ExplainSupport
@@ -292,7 +293,7 @@ final class ExplainSupport
 
     public static function commandPrefix(Paths $paths): string
     {
-        return is_file($paths->join('bin/foundry')) ? 'php bin/foundry' : 'php vendor/bin/foundry';
+        return CliCommandPrefix::foundry($paths);
     }
 
     /**

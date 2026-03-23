@@ -77,7 +77,7 @@ Optional pack fields include:
 Inspect the canonical schemas with:
 
 ```bash
-php vendor/bin/foundry inspect extensions --json
+foundry inspect extensions --json
 ```
 
 ## Lifecycle
@@ -125,10 +125,10 @@ Common diagnostics include:
 Check extension health with:
 
 ```bash
-php vendor/bin/foundry inspect extension <name> --json
-php vendor/bin/foundry inspect compatibility --json
-php vendor/bin/foundry verify extensions --json
-php vendor/bin/foundry doctor --json
+foundry inspect extension <name> --json
+foundry inspect compatibility --json
+foundry verify extensions --json
+foundry doctor --json
 ```
 
 ## Example

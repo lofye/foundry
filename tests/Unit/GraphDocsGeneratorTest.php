@@ -32,6 +32,8 @@ final class GraphDocsGeneratorTest extends TestCase
 
     public function test_generates_markdown_and_html_docs_from_graph(): void
     {
+        file_put_contents($this->project->root . '/foundry', "#!/usr/bin/env php\n<?php\n");
+
         $graph = new ApplicationGraph(1, '0.4.0', '2026-03-09T00:00:00+00:00', 'abc');
         $graph->addNode(new FeatureNode('feature:list_posts', 'app/features/list_posts/feature.yaml', [
             'feature' => 'list_posts',
@@ -88,9 +90,10 @@ final class GraphDocsGeneratorTest extends TestCase
         $this->assertStringContainsString('graph visualize [stable]', $cliReferenceMd);
         $this->assertStringContainsString('export graph [stable]', $cliReferenceMd);
         $this->assertStringContainsString('# Upgrade Reference', $upgradeReferenceMd);
-        $this->assertStringContainsString('php vendor/bin/foundry upgrade-check --json', $upgradeReferenceMd);
+        $this->assertStringContainsString('foundry upgrade-check --json', $upgradeReferenceMd);
         $this->assertStringContainsString('Config compatibility aliases', $upgradeReferenceMd);
         $this->assertStringContainsString('Recommended commands:', $llmMd);
+        $this->assertStringContainsString('foundry compile graph --json', $llmMd);
         $this->assertStringContainsString('<h1 id="feature-catalog">Feature Catalog</h1>', $featuresHtml);
     }
 }

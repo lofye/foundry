@@ -201,11 +201,11 @@ final class InitAppCommand extends Command
                 ],
             ],
             'scripts' => [
-                'foundry:compile' => 'php vendor/bin/foundry compile graph --json',
-                'foundry:inspect' => 'php vendor/bin/foundry inspect graph --json && php vendor/bin/foundry inspect pipeline --json',
-                'foundry:doctor' => 'php vendor/bin/foundry doctor --json',
-                'foundry:docs' => 'php vendor/bin/foundry generate docs --format=markdown --json && php vendor/bin/foundry generate inspect-ui --json',
-                'foundry:verify' => 'php vendor/bin/foundry verify graph --json && php vendor/bin/foundry verify pipeline --json && php vendor/bin/foundry verify contracts --json',
+                'foundry:compile' => '@php foundry compile graph --json',
+                'foundry:inspect' => '@php foundry inspect graph --json && @php foundry inspect pipeline --json',
+                'foundry:doctor' => '@php foundry doctor --json',
+                'foundry:docs' => '@php foundry generate docs --format=markdown --json && @php foundry generate inspect-ui --json',
+                'foundry:verify' => '@php foundry verify graph --json && @php foundry verify pipeline --json && @php foundry verify contracts --json',
                 'serve' => 'php -S 127.0.0.1:8000 app/platform/public/index.php',
                 'test' => 'php vendor/bin/phpunit -c phpunit.xml.dist',
             ],
@@ -245,7 +245,8 @@ Use this file when working inside a Foundry application repository.
 
 ## Command Rule
 
-- In Foundry app repos, always use `php vendor/bin/foundry ...`
+- In Foundry app repos, prefer `foundry ...`
+- If your shell does not resolve current-directory executables, use `./foundry ...`
 - Prefer `--json` for inspect, verify, doctor, prompt, export, and generation commands when an agent is consuming the output
 
 ## Source Of Truth
@@ -276,18 +277,18 @@ Use this file when working inside a Foundry application repository.
 Recommended command loop:
 
 ```bash
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry inspect pipeline --json
-php vendor/bin/foundry inspect feature <feature> --json
-php vendor/bin/foundry inspect context <feature> --json
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry inspect impact --file=app/features/<feature>/feature.yaml --json
-php vendor/bin/foundry doctor --feature=<feature> --json
-php vendor/bin/foundry generate docs --format=markdown --json
-php vendor/bin/foundry generate inspect-ui --json
-php vendor/bin/foundry verify graph --json
-php vendor/bin/foundry verify pipeline --json
-php vendor/bin/foundry verify contracts --json
+foundry inspect graph --json
+foundry inspect pipeline --json
+foundry inspect feature <feature> --json
+foundry inspect context <feature> --json
+foundry compile graph --json
+foundry inspect impact --file=app/features/<feature>/feature.yaml --json
+foundry doctor --feature=<feature> --json
+foundry generate docs --format=markdown --json
+foundry generate inspect-ui --json
+foundry verify graph --json
+foundry verify pipeline --json
+foundry verify contracts --json
 php vendor/bin/phpunit -c phpunit.xml.dist
 ```
 
@@ -319,17 +320,19 @@ Start with `AGENTS.md`. It defines the repo-local workflow and command rules for
 
 ## First Run
 
+Foundry scaffolds a project-local `foundry` launcher. If your shell does not resolve current-directory executables, use `./foundry ...` instead.
+
 ```bash
 composer install
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry inspect pipeline --json
-php vendor/bin/foundry doctor --json
-php vendor/bin/foundry generate docs --format=markdown --json
-php vendor/bin/foundry generate inspect-ui --json
-php vendor/bin/foundry verify graph --json
-php vendor/bin/foundry verify pipeline --json
-php vendor/bin/foundry verify contracts --json
+foundry compile graph --json
+foundry inspect graph --json
+foundry inspect pipeline --json
+foundry doctor --json
+foundry generate docs --format=markdown --json
+foundry generate inspect-ui --json
+foundry verify graph --json
+foundry verify pipeline --json
+foundry verify contracts --json
 php vendor/bin/phpunit -c phpunit.xml.dist
 php -S 127.0.0.1:8000 app/platform/public/index.php
 ```
@@ -346,6 +349,35 @@ php -S 127.0.0.1:8000 app/platform/public/index.php
 - {{AUTH_HINT}}
 MD, $placeholders),
             'composer.json' => Json::encode($composer, true) . "\n",
+            'foundry' => <<<'PHP'
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+$binary = __DIR__ . '/vendor/bin/foundry';
+if (!is_file($binary)) {
+    fwrite(STDERR, "Foundry dependencies are not installed. Missing vendor/bin/foundry. Run composer install first.\n");
+    exit(1);
+}
+
+require $binary;
+PHP
+            ,
+            'foundry.bat' => <<<'BAT'
+@ECHO OFF
+SETLOCAL
+IF EXIST "%~dp0vendor\bin\foundry.bat" (
+  CALL "%~dp0vendor\bin\foundry.bat" %*
+  EXIT /B %ERRORLEVEL%
+)
+IF EXIST "%~dp0vendor\bin\foundry" (
+  php "%~dp0vendor\bin\foundry" %*
+  EXIT /B %ERRORLEVEL%
+)
+ECHO Foundry dependencies are not installed. Missing vendor\bin\foundry. Run composer install first. 1>&2
+EXIT /B 1
+BAT
+            ,
             'phpunit.xml.dist' => <<<'XML'
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit bootstrap="vendor/autoload.php"
@@ -388,8 +420,8 @@ This starter already generated graph-derived docs and inspect pages so a new pro
 ## Refresh
 
 ```bash
-php vendor/bin/foundry generate docs --format=markdown --json
-php vendor/bin/foundry generate inspect-ui --json
+foundry generate docs --format=markdown --json
+foundry generate inspect-ui --json
 ```
 
 ## Source-Of-Truth Inspectability Seed
@@ -529,6 +561,9 @@ YAML
             }
 
             file_put_contents($absolute, $content);
+            if ($relativePath === 'foundry') {
+                @chmod($absolute, 0755);
+            }
             $written[] = $absolute;
         }
 
@@ -885,7 +920,7 @@ PHP);
             'status' => 'ok',
             'docs_directory' => 'docs/generated',
             'inspect_ui_directory' => 'docs/inspect-ui',
-            'next_command' => 'php vendor/bin/foundry inspect graph --json',
+            'next_command' => 'foundry inspect graph --json',
             'message' => 'Refresh docs after edits with generate docs and generate inspect-ui.',
         ];
 PHP);
@@ -1022,15 +1057,15 @@ PHP
         return [
             'cd ' . $targetPath,
             'composer install',
-            'php vendor/bin/foundry compile graph --json',
-            'php vendor/bin/foundry inspect graph --json',
-            'php vendor/bin/foundry inspect pipeline --json',
-            'php vendor/bin/foundry doctor --json',
-            'php vendor/bin/foundry generate docs --format=markdown --json',
-            'php vendor/bin/foundry generate inspect-ui --json',
-            'php vendor/bin/foundry verify graph --json',
-            'php vendor/bin/foundry verify pipeline --json',
-            'php vendor/bin/foundry verify contracts --json',
+            'foundry compile graph --json',
+            'foundry inspect graph --json',
+            'foundry inspect pipeline --json',
+            'foundry doctor --json',
+            'foundry generate docs --format=markdown --json',
+            'foundry generate inspect-ui --json',
+            'foundry verify graph --json',
+            'foundry verify pipeline --json',
+            'foundry verify contracts --json',
             'php vendor/bin/phpunit -c phpunit.xml.dist',
             'php -S 127.0.0.1:8000 app/platform/public/index.php',
         ];

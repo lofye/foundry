@@ -11,6 +11,7 @@ use Foundry\Compiler\Migration\DefinitionMigrator;
 use Foundry\Compiler\Projection\ProjectionEmitter;
 use Foundry\Compiler\Extensions\ExtensionRegistry;
 use Foundry\Compiler\GraphCompiler;
+use Foundry\Support\CliCommandPrefix;
 use Foundry\Support\Paths;
 
 final class UpgradeAnalyzer
@@ -421,9 +422,7 @@ final class UpgradeAnalyzer
 
     private function commandPrefix(): string
     {
-        return $this->paths->root() === $this->paths->frameworkRoot()
-            ? 'php bin/foundry'
-            : 'php vendor/bin/foundry';
+        return CliCommandPrefix::foundry($this->paths);
     }
 
     /**

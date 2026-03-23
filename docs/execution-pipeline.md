@@ -85,24 +85,24 @@ Pipeline diagnostics available in the execution pipeline:
 Inspect:
 
 ```bash
-php vendor/bin/foundry inspect pipeline --json
-php vendor/bin/foundry inspect execution-plan <feature|route> --json
-php vendor/bin/foundry inspect guards --json
-php vendor/bin/foundry inspect guards <feature> --json
-php vendor/bin/foundry inspect interceptors --json
-php vendor/bin/foundry inspect interceptors --stage=<stage> --json
+foundry inspect pipeline --json
+foundry inspect execution-plan <feature|route> --json
+foundry inspect guards --json
+foundry inspect guards <feature> --json
+foundry inspect interceptors --json
+foundry inspect interceptors --stage=<stage> --json
 ```
 
 Verify:
 
 ```bash
-php vendor/bin/foundry verify pipeline --json
+foundry verify pipeline --json
 ```
 
 Visualize:
 
 ```bash
-php vendor/bin/foundry inspect graph --pipeline --format=mermaid --json
+foundry inspect graph --pipeline --format=mermaid --json
 ```
 
 ## Runtime Behavior
@@ -114,8 +114,8 @@ When pipeline projections are unavailable, runtime falls back to deterministic d
 ## Development Loop
 
 1. Edit source-of-truth feature files under `app/features/*`.
-2. `php vendor/bin/foundry compile graph --json`
-3. `php vendor/bin/foundry inspect execution-plan <feature> --json`
-4. `php vendor/bin/foundry doctor --json`
-5. `php vendor/bin/foundry verify pipeline --json`
+2. `foundry compile graph --json`
+3. `foundry inspect execution-plan <feature> --json`
+4. `foundry doctor --json`
+5. `foundry verify pipeline --json`
 6. `php vendor/bin/phpunit`

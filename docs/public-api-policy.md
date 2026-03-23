@@ -66,10 +66,10 @@ CLI commands are classified independently as:
 Use the CLI itself to inspect the current classification:
 
 ```bash
-php vendor/bin/foundry help --json
-php vendor/bin/foundry help graph inspect --json
-php vendor/bin/foundry help export graph --json
-php vendor/bin/foundry inspect api-surface --json
+foundry help --json
+foundry help graph inspect --json
+foundry help export graph --json
+foundry inspect api-surface --json
 ```
 
 ## Frozen Contracts
@@ -154,11 +154,11 @@ Extension authors should:
 - depend only on symbols classified as `extension_api`
 - avoid `Foundry\Compiler\Passes\*`, `Foundry\Compiler\IR\*`, and other internal compiler namespaces
 - declare compatibility through extension descriptors and pack constraints
-- use `php vendor/bin/foundry inspect api-surface --json` and `php vendor/bin/foundry verify compatibility --json` while developing extension packages
+- use `foundry inspect api-surface --json` and `foundry verify compatibility --json` while developing extension packages
 
 ## Generated Reference Output
 
-`php vendor/bin/foundry generate docs --format=markdown --json` now emits:
+`foundry generate docs --format=markdown --json` now emits:
 
 - `docs/generated/api-surface.md`
 - `docs/generated/cli-reference.md`

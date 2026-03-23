@@ -7,6 +7,7 @@ use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
 use Foundry\Compiler\CompileOptions;
 use Foundry\Compiler\Prompt\GraphPromptBuilder;
+use Foundry\Support\CliCommandPrefix;
 use Foundry\Support\FoundryError;
 
 final class PromptCommand extends Command
@@ -34,7 +35,7 @@ final class PromptCommand extends Command
         $compile = $compiler->compile(new CompileOptions());
         $verify = $context->graphVerifier()->verify();
 
-        $builder = new GraphPromptBuilder($compiler->impactAnalyzer());
+        $builder = new GraphPromptBuilder($compiler->impactAnalyzer(), CliCommandPrefix::foundry($context->paths()));
         $bundle = $builder->build($compile->graph, $instruction, $featureContext);
 
         $compileSummary = $compile->diagnostics->summary();
@@ -102,4 +103,3 @@ final class PromptCommand extends Command
         return [$instruction, $dryRun, $featureContext];
     }
 }
-

@@ -15,12 +15,14 @@ php bin/foundry verify pipeline --json
 When you import an example into a generated Foundry app, switch to:
 
 ```bash
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry doctor --json
-php vendor/bin/foundry verify graph --json
-php vendor/bin/foundry verify pipeline --json
+foundry compile graph --json
+foundry inspect graph --json
+foundry doctor --json
+foundry verify graph --json
+foundry verify pipeline --json
 ```
+
+If your shell does not resolve current-directory executables, use `./foundry ...`.
 
 ## Official Set
 

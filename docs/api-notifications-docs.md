@@ -61,25 +61,25 @@ The integration and contract tooling layer adds:
 
 Generation:
 
-- `php vendor/bin/foundry generate notification <name> --json`
-- `php vendor/bin/foundry generate api-resource <name> --definition=<file> --json`
-- `php vendor/bin/foundry generate docs --format=markdown --json`
-- `php vendor/bin/foundry generate docs --format=html --json`
-- `php vendor/bin/foundry generate tests <target> --mode=deep --json`
-- `php vendor/bin/foundry generate tests --all-missing --mode=deep --json`
+- `foundry generate notification <name> --json`
+- `foundry generate api-resource <name> --definition=<file> --json`
+- `foundry generate docs --format=markdown --json`
+- `foundry generate docs --format=html --json`
+- `foundry generate tests <target> --mode=deep --json`
+- `foundry generate tests --all-missing --mode=deep --json`
 
 Inspect and preview:
 
-- `php vendor/bin/foundry inspect notification <name> --json`
-- `php vendor/bin/foundry inspect api <name> --json`
-- `php vendor/bin/foundry preview notification <name> --json`
+- `foundry inspect notification <name> --json`
+- `foundry inspect api <name> --json`
+- `foundry preview notification <name> --json`
 
 Verify and export:
 
-- `php vendor/bin/foundry verify notifications --json`
-- `php vendor/bin/foundry verify api --json`
-- `php vendor/bin/foundry export openapi --format=json --json`
-- `php vendor/bin/foundry export openapi --format=yaml --json`
+- `foundry verify notifications --json`
+- `foundry verify api --json`
+- `foundry export openapi --format=json --json`
+- `foundry export openapi --format=yaml --json`
 
 ## Docs and OpenAPI Derivation
 

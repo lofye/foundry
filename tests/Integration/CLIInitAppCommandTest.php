@@ -41,13 +41,15 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertSame('standard', $result['payload']['starter_mode']);
         $this->assertContains('dashboard', $result['payload']['features']);
         $this->assertContains('GET /dashboard', $result['payload']['routes']);
-        $this->assertContains('php vendor/bin/foundry compile graph --json', $result['payload']['next_steps']);
-        $this->assertContains('php vendor/bin/foundry doctor --json', $result['payload']['next_steps']);
+        $this->assertContains('foundry compile graph --json', $result['payload']['next_steps']);
+        $this->assertContains('foundry doctor --json', $result['payload']['next_steps']);
         $this->assertContains('php vendor/bin/phpunit -c phpunit.xml.dist', $result['payload']['next_steps']);
 
         $this->assertFileExists($target . '/AGENTS.md');
         $this->assertFileExists($target . '/README.md');
         $this->assertFileExists($target . '/composer.json');
+        $this->assertFileExists($target . '/foundry');
+        $this->assertFileExists($target . '/foundry.bat');
         $this->assertFileExists($target . '/phpunit.xml.dist');
         $this->assertFileExists($target . '/tests/Smoke/AppBootTest.php');
         $this->assertFileExists($target . '/app/platform/public/index.php');
@@ -68,7 +70,28 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertIsString($readme);
         $this->assertStringContainsString('This Foundry project was scaffolded in `Standard` mode.', $readme);
         $this->assertStringContainsString('x-user-id', $readme);
-        $this->assertStringContainsString('php vendor/bin/foundry compile graph --json', $readme);
+        $this->assertStringContainsString('foundry compile graph --json', $readme);
+        $this->assertStringContainsString('Foundry scaffolds a project-local `foundry` launcher.', $readme);
+
+        $agents = file_get_contents($target . '/AGENTS.md');
+        $this->assertIsString($agents);
+        $this->assertStringContainsString('prefer `foundry ...`', $agents);
+        $this->assertStringContainsString('use `./foundry ...`', $agents);
+
+        $docsReadme = file_get_contents($target . '/docs/README.md');
+        $this->assertIsString($docsReadme);
+        $this->assertStringContainsString('foundry generate docs --format=markdown --json', $docsReadme);
+
+        /** @var array<string,mixed> $composer */
+        $composer = json_decode((string) file_get_contents($target . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('@php foundry compile graph --json', $composer['scripts']['foundry:compile']);
+        $this->assertSame('@php foundry doctor --json', $composer['scripts']['foundry:doctor']);
+
+        if (DIRECTORY_SEPARATOR !== '\\') {
+            $permissions = fileperms($target . '/foundry');
+            $this->assertNotFalse($permissions);
+            $this->assertNotSame(0, $permissions & 0111);
+        }
 
         $this->seedInstalledApp($target);
 
@@ -78,6 +101,7 @@ final class CLIInitAppCommandTest extends TestCase
         $doctor = $this->runCommand($app, ['foundry', 'doctor', '--json'], $target);
         $this->assertSame(0, $doctor['status']);
         $this->assertArrayHasKey('checks', $doctor['payload']);
+        $this->assertSame('foundry', $doctor['payload']['command_prefix']);
 
         $public = $this->bootRequest($target, 'GET', '/');
         $this->assertSame(200, $public['status']);

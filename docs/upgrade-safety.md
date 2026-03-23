@@ -5,8 +5,8 @@ Foundry ships `upgrade-check` so applications can assess upgrade readiness befor
 Run:
 
 ```bash
-php vendor/bin/foundry upgrade-check --json
-php vendor/bin/foundry upgrade-check --target=1.0.0 --json
+foundry upgrade-check --json
+foundry upgrade-check --target=1.0.0 --json
 ```
 
 Reports are structured around four questions:
@@ -51,8 +51,8 @@ Feature manifest v2 is the canonical source-of-truth format. If an app still con
 Use:
 
 ```bash
-php vendor/bin/foundry inspect migrations --json
-php vendor/bin/foundry migrate definitions --path=app/features/<feature>/feature.yaml --write
+foundry inspect migrations --json
+foundry migrate definitions --path=app/features/<feature>/feature.yaml --write
 ```
 
 ## Extension Compatibility
@@ -73,5 +73,5 @@ If runtime compatibility projections exist under `app/generated/*` without match
 Rebuild projections with:
 
 ```bash
-php vendor/bin/foundry compile graph --json
+foundry compile graph --json
 ```

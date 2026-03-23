@@ -6,6 +6,7 @@ namespace Foundry\Documentation;
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\IR\GraphNode;
 use Foundry\Support\ApiSurfaceRegistry;
+use Foundry\Support\CliCommandPrefix;
 use Foundry\Support\Json;
 use Foundry\Support\Paths;
 use Foundry\Upgrade\FrameworkDeprecationRegistry;
@@ -302,6 +303,7 @@ final class GraphDocsGenerator
 
     private function llmWorkflowDoc(): string
     {
+        $commandPrefix = CliCommandPrefix::foundry($this->paths);
         $lines = [
             '# LLM Workflow',
             '',
@@ -313,12 +315,12 @@ final class GraphDocsGenerator
             '6. run phpunit',
             '',
             'Recommended commands:',
-            '- php vendor/bin/foundry compile graph --json',
-            '- php vendor/bin/foundry inspect graph --json',
-            '- php vendor/bin/foundry inspect impact --file=<path> --json',
-            '- php vendor/bin/foundry verify graph --json',
-            '- php vendor/bin/foundry verify pipeline --json',
-            '- php vendor/bin/foundry verify contracts --json',
+            '- ' . $commandPrefix . ' compile graph --json',
+            '- ' . $commandPrefix . ' inspect graph --json',
+            '- ' . $commandPrefix . ' inspect impact --file=<path> --json',
+            '- ' . $commandPrefix . ' verify graph --json',
+            '- ' . $commandPrefix . ' verify pipeline --json',
+            '- ' . $commandPrefix . ' verify contracts --json',
             '- php vendor/bin/phpunit',
             '',
         ];
@@ -420,13 +422,14 @@ final class GraphDocsGenerator
 
     private function upgradeReferenceDoc(): string
     {
+        $commandPrefix = CliCommandPrefix::foundry($this->paths);
         $registry = new FrameworkDeprecationRegistry();
         $lines = [
             '# Upgrade Reference',
             '',
             '## Upgrade Check',
-            '- Run `php vendor/bin/foundry upgrade-check --json` for the default next stable target.',
-            '- Run `php vendor/bin/foundry upgrade-check --target=1.0.0 --json` to pin a specific target version.',
+            '- Run `' . $commandPrefix . ' upgrade-check --json` for the default next stable target.',
+            '- Run `' . $commandPrefix . ' upgrade-check --target=1.0.0 --json` to pin a specific target version.',
             '- Reports include the affected surface, why the issue matters, when the upgrade rule was introduced, and how to migrate.',
             '',
             '## Structured Deprecations',

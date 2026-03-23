@@ -31,14 +31,14 @@ Foundry Pro is an optional layer on top of the same local graph and build artifa
 Current Pro command surface:
 
 ```bash
-php vendor/bin/foundry pro enable <license-key>
-php vendor/bin/foundry pro status --json
-php vendor/bin/foundry doctor --deep --json
-php vendor/bin/foundry explain <target> --json
-php vendor/bin/foundry diff --json
-php vendor/bin/foundry trace [<target>] --json
-php vendor/bin/foundry generate "<prompt>" --feature-context --deterministic --dry-run --json
-php vendor/bin/foundry generate "<prompt>" --provider=<name> --model=<name> --dry-run --json
+foundry pro enable <license-key>
+foundry pro status --json
+foundry doctor --deep --json
+foundry explain <target> --json
+foundry diff --json
+foundry trace [<target>] --json
+foundry generate "<prompt>" --feature-context --deterministic --dry-run --json
+foundry generate "<prompt>" --provider=<name> --model=<name> --dry-run --json
 ```
 
 `generate` is intentionally optional:
@@ -52,10 +52,10 @@ php vendor/bin/foundry generate "<prompt>" --provider=<name> --model=<name> --dr
 Command surface:
 
 ```bash
-php vendor/bin/foundry doctor --json
-php vendor/bin/foundry doctor --strict --json
-php vendor/bin/foundry doctor --feature=<name> --json
-php vendor/bin/foundry doctor --deep --json
+foundry doctor --json
+foundry doctor --strict --json
+foundry doctor --feature=<name> --json
+foundry doctor --deep --json
 ```
 
 Doctor compiles graph state, validates environment and build assumptions, runs extension-registered analyzers and doctor checks, and returns:
@@ -99,11 +99,11 @@ Current built-in doctor checks:
 Command surface:
 
 ```bash
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry graph inspect --workflow=posts --json
-php vendor/bin/foundry graph visualize --events --format=mermaid --json
-php vendor/bin/foundry inspect graph --command="POST /posts" --format=dot --json
-php vendor/bin/foundry export graph --extension=core --format=json --json
+foundry inspect graph --json
+foundry graph inspect --workflow=posts --json
+foundry graph visualize --events --format=mermaid --json
+foundry inspect graph --command="POST /posts" --format=dot --json
+foundry export graph --extension=core --format=json --json
 ```
 
 Visualization views:
@@ -146,8 +146,8 @@ Stable aliases:
 Command surface:
 
 ```bash
-php vendor/bin/foundry prompt "<instruction>" --json
-php vendor/bin/foundry prompt "<instruction>" --feature-context --dry-run --json
+foundry prompt "<instruction>" --json
+foundry prompt "<instruction>" --feature-context --dry-run --json
 ```
 
 Prompt flow:
@@ -173,15 +173,15 @@ Context extraction prioritizes feature matches by instruction tokens, route path
 `explain` surface:
 
 ```bash
-php vendor/bin/foundry explain publish_post --json
-php vendor/bin/foundry explain publish_post --deep
-php vendor/bin/foundry explain feature:publish_post --markdown
-php vendor/bin/foundry explain route:POST /posts --json
-php vendor/bin/foundry explain route:POST /posts --neighbors
-php vendor/bin/foundry explain command:doctor --json
-php vendor/bin/foundry explain event:post.created --json
-php vendor/bin/foundry explain workflow:editorial --json
-php vendor/bin/foundry explain auth --type=pipeline_stage --json
+foundry explain publish_post --json
+foundry explain publish_post --deep
+foundry explain feature:publish_post --markdown
+foundry explain route:POST /posts --json
+foundry explain route:POST /posts --neighbors
+foundry explain command:doctor --json
+foundry explain event:post.created --json
+foundry explain workflow:editorial --json
+foundry explain auth --type=pipeline_stage --json
 ```
 
 Supported subject kinds include:
@@ -280,9 +280,9 @@ Related Commands
   php bin/foundry inspect node route:POST:/posts --json
   php bin/foundry inspect pipeline --json
   php bin/foundry inspect route POST /posts --json
-  php vendor/bin/foundry verify feature publish_post --json
-  php vendor/bin/foundry verify graph --json
-  php vendor/bin/foundry verify pipeline --json
+  foundry verify feature publish_post --json
+  foundry verify graph --json
+  foundry verify pipeline --json
   php vendor/bin/phpunit
 
 Related Docs
@@ -368,9 +368,9 @@ Related Commands
   php bin/foundry inspect node route:POST:/posts --json
   php bin/foundry inspect pipeline --json
   php bin/foundry inspect route POST /posts --json
-  php vendor/bin/foundry verify feature publish_post --json
-  php vendor/bin/foundry verify graph --json
-  php vendor/bin/foundry verify pipeline --json
+  foundry verify feature publish_post --json
+  foundry verify graph --json
+  foundry verify pipeline --json
   php vendor/bin/phpunit
 
 Related Docs
@@ -536,9 +536,9 @@ Representative `--json` output:
     "php bin/foundry inspect node route:POST:/posts --json",
     "php bin/foundry inspect pipeline --json",
     "php bin/foundry inspect route POST /posts --json",
-    "php vendor/bin/foundry verify feature publish_post --json",
-    "php vendor/bin/foundry verify graph --json",
-    "php vendor/bin/foundry verify pipeline --json",
+    "foundry verify feature publish_post --json",
+    "foundry verify graph --json",
+    "foundry verify pipeline --json",
     "php vendor/bin/phpunit"
   ],
   "relatedDocs": [
@@ -689,9 +689,9 @@ POST /posts handles requests through the compiled application graph. It dispatch
 - `php bin/foundry inspect node route:POST:/posts --json`
 - `php bin/foundry inspect pipeline --json`
 - `php bin/foundry inspect route POST /posts --json`
-- `php vendor/bin/foundry verify feature publish_post --json`
-- `php vendor/bin/foundry verify graph --json`
-- `php vendor/bin/foundry verify pipeline --json`
+- `foundry verify feature publish_post --json`
+- `foundry verify graph --json`
+- `foundry verify pipeline --json`
 - `php vendor/bin/phpunit`
 
 ### Related Docs
@@ -795,10 +795,10 @@ The architecture tools layer introduces extension-visible graph analyzers via ex
 Recommended loop for graph-native changes:
 
 1. Edit source-of-truth manifests/schemas/tests under `app/features/*`.
-2. `php vendor/bin/foundry compile graph --json`
-3. `php vendor/bin/foundry doctor --json`
-4. `php vendor/bin/foundry inspect graph --event=post.created --format=mermaid --json`
-5. `php vendor/bin/foundry prompt "<instruction>" --json`
+2. `foundry compile graph --json`
+3. `foundry doctor --json`
+4. `foundry inspect graph --event=post.created --format=mermaid --json`
+5. `foundry prompt "<instruction>" --json`
 6. Run verify and PHPUnit commands from suggested actions.
 
 ## Related Examples
