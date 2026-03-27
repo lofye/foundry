@@ -1,0 +1,14 @@
+version: 1
+resource: editorial
+states: [draft, review, published]
+transitions:
+  submit:
+    from: [draft]
+    to: review
+    permission: editorial.submit
+    emit: [story.submitted]
+  publish:
+    from: [review]
+    to: published
+    permission: editorial.publish
+    emit: [story.published]

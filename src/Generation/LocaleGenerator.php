@@ -23,7 +23,7 @@ final class LocaleGenerator
             throw new FoundryError('LOCALE_INVALID', 'validation', ['locale' => $locale], 'Locale must match xx or xx-xx.');
         }
 
-        $langDir = $this->paths->join('app/platform/lang/' . $locale);
+        $langDir = $this->paths->join('lang/' . $locale);
         if (!is_dir($langDir)) {
             mkdir($langDir, 0777, true);
         }
@@ -61,7 +61,7 @@ PHP);
         $current['bundle'] = 'core';
         $current['default'] = (string) ($current['default'] ?? 'en');
         $current['locales'] = $locales;
-        $current['translation_paths'] = ['app/platform/lang'];
+        $current['translation_paths'] = ['lang'];
         file_put_contents($definitionPath, Yaml::dump($current));
 
         return [

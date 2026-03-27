@@ -10,7 +10,10 @@ use Foundry\Compiler\IR\GraphNode;
 
 final readonly class GraphPromptBuilder
 {
-    public function __construct(private ImpactAnalyzer $impactAnalyzer)
+    public function __construct(
+        private ImpactAnalyzer $impactAnalyzer,
+        private string $commandPrefix = 'foundry',
+    )
     {
     }
 
@@ -96,12 +99,12 @@ final readonly class GraphPromptBuilder
         ];
 
         $workflow = [
-            'php vendor/bin/foundry compile graph --json',
-            'php vendor/bin/foundry inspect execution-plan <feature> --json',
-            'php vendor/bin/foundry inspect impact --file=app/features/<feature>/feature.yaml --json',
-            'php vendor/bin/foundry verify graph --json',
-            'php vendor/bin/foundry verify pipeline --json',
-            'php vendor/bin/foundry verify contracts --json',
+            $this->commandPrefix . ' compile graph --json',
+            $this->commandPrefix . ' inspect execution-plan <feature> --json',
+            $this->commandPrefix . ' inspect impact --file=app/features/<feature>/feature.yaml --json',
+            $this->commandPrefix . ' verify graph --json',
+            $this->commandPrefix . ' verify pipeline --json',
+            $this->commandPrefix . ' verify contracts --json',
             'php vendor/bin/phpunit',
         ];
 

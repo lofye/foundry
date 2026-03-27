@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Foundry\Core;
 
 use Foundry\AI\AIManager;
-use Foundry\AI\StaticAIProvider;
+use Foundry\AI\AIProviderRegistry;
 use Foundry\Auth\AuthorizationEngine;
 use Foundry\Auth\HeaderTokenAuthenticator;
 use Foundry\Auth\PermissionRegistry;
@@ -13,6 +13,8 @@ use Foundry\Cache\CacheDefinition;
 use Foundry\Cache\CacheManager;
 use Foundry\Cache\CacheRegistry;
 use Foundry\Compiler\Extensions\ExtensionRegistry;
+use Foundry\Config\ConfigCompatibilityNormalizer;
+use Foundry\Config\ConfigValidator;
 use Foundry\DB\Connection;
 use Foundry\DB\PdoQueryExecutor;
 use Foundry\DB\QueryDefinition;
@@ -63,30 +65,31 @@ final class RuntimeFactory
         $traceContext = new TraceContext();
         $traceRecorder = new TraceRecorder($traceContext);
 
-        $connection = self::connection($paths);
         $featureLoader = new FeatureLoader($paths);
         $extensions = ExtensionRegistry::forPaths($paths);
+        $config = self::validatedRuntimeConfig($paths, $extensions);
+        $connection = self::connection($paths, (array) ($config['database'] ?? []));
         $permissions = self::permissionRegistry($paths);
         $queryRegistry = self::queryRegistry($paths);
         $cacheRegistry = self::cacheRegistry($paths);
         $eventRegistry = self::eventRegistry($paths);
         $jobRegistry = self::jobRegistry($paths);
+        $authHeader = self::authHeader((array) ($config['auth'] ?? []));
+        $storageRoot = self::storageRoot($paths, (array) ($config['storage'] ?? []));
 
         $services = new DefaultFeatureServices(
             new PdoQueryExecutor($connection, $queryRegistry),
             new CacheManager(new ArrayCacheStore(), $cacheRegistry),
             new DefaultJobDispatcher($jobRegistry, new SyncQueueDriver(), $traceRecorder),
             new DefaultEventDispatcher($eventRegistry, $traceRecorder),
-            new LocalStorageDriver($paths->join('app/platform/storage/files')),
+            new LocalStorageDriver($storageRoot),
             $traceContext,
-            new AIManager([
-                'static' => new StaticAIProvider('static', ['content' => '', 'parsed' => []]),
-            ])
+            (new AIProviderRegistry())->managerForConfig((array) ($config['ai'] ?? []))
         );
 
         $executor = new FeatureExecutor(
             $featureLoader,
-            new AuthorizationEngine($permissions, ['bearer' => new HeaderTokenAuthenticator('x-user-id')]),
+            new AuthorizationEngine($permissions, ['bearer' => new HeaderTokenAuthenticator($authHeader)]),
             new JsonSchemaValidator(),
             new TransactionManager($connection),
             $services,
@@ -122,14 +125,24 @@ final class RuntimeFactory
         return $loaded;
     }
 
-    private static function connection(Paths $paths): Connection
+    /**
+     * @param array<string,mixed> $databaseConfig
+     */
+    private static function connection(Paths $paths, array $databaseConfig = []): Connection
     {
-        $dbDir = $paths->join('app/platform/storage');
+        $dbDir = $paths->database();
         if (!is_dir($dbDir)) {
             mkdir($dbDir, 0777, true);
         }
 
-        $pdo = new \PDO('sqlite:' . $dbDir . '/foundry.sqlite');
+        $defaultConnection = (string) ($databaseConfig['default'] ?? 'sqlite');
+        $connections = is_array($databaseConfig['connections'] ?? null) ? $databaseConfig['connections'] : [];
+        $connection = is_array($connections[$defaultConnection] ?? null) ? $connections[$defaultConnection] : [];
+        $dsn = (string) ($connection['dsn'] ?? ('sqlite:' . $dbDir . '/foundry.sqlite'));
+        $dsn = self::normalizeSqliteDsn($dsn, $paths);
+        self::ensureSqliteDirectory($dsn);
+
+        $pdo = new \PDO($dsn);
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
         return new Connection($pdo);
@@ -150,6 +163,137 @@ final class RuntimeFactory
         }
 
         return $registry;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private static function validatedRuntimeConfig(Paths $paths, ExtensionRegistry $extensions): array
+    {
+        $validator = new ConfigValidator();
+        $report = $validator->validateProject($paths, extensions: $extensions);
+        if ($report->hasErrors()) {
+            throw new FoundryError(
+                'CONFIG_VALIDATION_FAILED',
+                'validation',
+                [
+                    'summary' => $report->summary(),
+                    'errors' => array_values(array_map(
+                        static fn ($issue): array => method_exists($issue, 'toArray') ? $issue->toArray() : [],
+                        array_values(array_filter($report->items, static fn ($issue): bool => $issue->severity === 'error')),
+                    )),
+                ],
+                'Configuration validation failed.',
+            );
+        }
+
+        $extensionErrors = array_values(array_filter(
+            $extensions->diagnostics(),
+            static fn (array $row): bool => (string) ($row['severity'] ?? 'error') === 'error',
+        ));
+        if ($extensionErrors !== []) {
+            throw new FoundryError(
+                'EXTENSION_CONFIG_VALIDATION_FAILED',
+                'validation',
+                ['errors' => $extensionErrors],
+                'Extension configuration validation failed.',
+            );
+        }
+
+        $normalizer = new ConfigCompatibilityNormalizer();
+        $loaded = [];
+
+        foreach ([
+            'bootstrap.app' => 'bootstrap.app',
+            'bootstrap.providers' => 'bootstrap.providers',
+            'config.app' => 'app',
+            'config.auth' => 'auth',
+            'config.database' => 'database',
+            'config.cache' => 'cache',
+            'config.queue' => 'queue',
+            'config.storage' => 'storage',
+            'config.ai' => 'ai',
+        ] as $schemaId => $key) {
+            $schema = $validator->registry()->get($schemaId) ?? [];
+            $relativePath = (string) ($schema['x-foundry-path'] ?? '');
+            if ($relativePath === '') {
+                continue;
+            }
+
+            $absolutePath = $paths->join($relativePath);
+            if (!is_file($absolutePath)) {
+                continue;
+            }
+
+            /** @var mixed $payload */
+            $payload = require $absolutePath;
+            if (!is_array($payload)) {
+                continue;
+            }
+
+            if (($schema['type'] ?? null) === 'object' && !array_is_list($payload)) {
+                $payload = $normalizer->normalize($schemaId, $payload, $relativePath)['normalized'];
+            }
+
+            $loaded[$key] = $payload;
+        }
+
+        return $loaded;
+    }
+
+    /**
+     * @param array<string,mixed> $authConfig
+     */
+    private static function authHeader(array $authConfig): string
+    {
+        $strategies = is_array($authConfig['strategies'] ?? null) ? $authConfig['strategies'] : [];
+        $bearer = is_array($strategies['bearer'] ?? null) ? $strategies['bearer'] : [];
+        $header = (string) ($bearer['header'] ?? ($authConfig['development_header'] ?? 'x-user-id'));
+
+        return $header !== '' ? $header : 'x-user-id';
+    }
+
+    /**
+     * @param array<string,mixed> $storageConfig
+     */
+    private static function storageRoot(Paths $paths, array $storageConfig): string
+    {
+        $root = (string) ($storageConfig['root'] ?? 'storage/files');
+
+        return str_starts_with($root, '/')
+            ? $root
+            : $paths->join($root);
+    }
+
+    private static function normalizeSqliteDsn(string $dsn, Paths $paths): string
+    {
+        if (!str_starts_with($dsn, 'sqlite:')) {
+            return $dsn;
+        }
+
+        $path = substr($dsn, strlen('sqlite:'));
+        if ($path === '' || $path === ':memory:' || str_starts_with($path, '/')) {
+            return $dsn;
+        }
+
+        return 'sqlite:' . $paths->join($path);
+    }
+
+    private static function ensureSqliteDirectory(string $dsn): void
+    {
+        if (!str_starts_with($dsn, 'sqlite:')) {
+            return;
+        }
+
+        $path = substr($dsn, strlen('sqlite:'));
+        if ($path === '' || $path === ':memory:') {
+            return;
+        }
+
+        $dir = dirname($path);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
     }
 
     private static function queryRegistry(Paths $paths): QueryRegistry

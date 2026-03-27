@@ -50,7 +50,7 @@ final class GenerationHelpersTest extends TestCase
         $definition = $this->project->root . '/migration.yaml';
         file_put_contents($definition, "name: add_posts\ntable: posts\n");
 
-        $path = (new MigrationGenerator())->generate($definition, $this->project->root . '/app/platform/migrations');
+        $path = (new MigrationGenerator())->generate($definition, $this->project->root . '/database/migrations');
 
         $this->assertFileExists($path);
         $this->assertStringContainsString('CREATE TABLE IF NOT EXISTS posts', (string) file_get_contents($path));

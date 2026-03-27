@@ -1,4 +1,4 @@
-version: 1
+version: 2
 feature: classify_document
 kind: http
 description: classify_document endpoint for ai-pipeline.
@@ -46,5 +46,5 @@ tests:
     - auth
 llm:
   editable: true
-  risk: low
+  risk_level: low
   notes_file: prompts.md

@@ -158,16 +158,16 @@ PHP);
 
     public function test_locale_catalog_loads_and_falls_back_by_key(): void
     {
-        mkdir($this->project->root . '/app/platform/lang/en', 0777, true);
-        mkdir($this->project->root . '/app/platform/lang/fr', 0777, true);
+        mkdir($this->project->root . '/lang/en', 0777, true);
+        mkdir($this->project->root . '/lang/fr', 0777, true);
 
-        file_put_contents($this->project->root . '/app/platform/lang/en/messages.php', <<<'PHP'
+        file_put_contents($this->project->root . '/lang/en/messages.php', <<<'PHP'
 <?php
 declare(strict_types=1);
 
 return ['greeting' => 'Hello', 'farewell' => 'Bye'];
 PHP);
-        file_put_contents($this->project->root . '/app/platform/lang/fr/messages.php', <<<'PHP'
+        file_put_contents($this->project->root . '/lang/fr/messages.php', <<<'PHP'
 <?php
 declare(strict_types=1);
 

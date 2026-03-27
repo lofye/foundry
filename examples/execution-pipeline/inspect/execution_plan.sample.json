@@ -27,7 +27,8 @@
       ],
       "guards": [
         "guard:auth:publish_post",
-        "guard:permission:publish_post:posts_create",
+        "guard:permission:publish_post:publish_post_execute",
+        "guard:rate_limit:publish_post:publish_post",
         "guard:request_validation:publish_post",
         "guard:transaction:publish_post"
       ],
@@ -35,6 +36,15 @@
         "request_received": [
           "trace.request_received"
         ],
+        "routing": [],
+        "before_auth": [],
+        "auth": [],
+        "before_validation": [],
+        "validation": [],
+        "before_action": [],
+        "action": [],
+        "after_action": [],
+        "response_serialization": [],
         "response_send": [
           "trace.response_send"
         ]
@@ -45,5 +55,53 @@
     "graph_compatibility": [
       1
     ]
-  }
+  },
+  "guards": [
+    {
+      "id": "guard:auth:publish_post",
+      "type": "guard",
+      "payload": {
+        "feature": "publish_post",
+        "type": "authentication",
+        "required": true,
+        "public": false,
+        "strategies": [
+          "bearer"
+        ]
+      }
+    },
+    {
+      "id": "guard:permission:publish_post:publish_post_execute",
+      "type": "guard",
+      "payload": {
+        "feature": "publish_post",
+        "type": "permission",
+        "permission": "publish_post.execute"
+      }
+    }
+  ],
+  "interceptors": [
+    {
+      "id": "interceptor:trace.request_received",
+      "type": "interceptor",
+      "payload": {
+        "id": "trace.request_received",
+        "stage": "request_received",
+        "priority": 50,
+        "dangerous": false
+      },
+      "stage": "request_received"
+    },
+    {
+      "id": "interceptor:trace.response_send",
+      "type": "interceptor",
+      "payload": {
+        "id": "trace.response_send",
+        "stage": "response_send",
+        "priority": 50,
+        "dangerous": false
+      },
+      "stage": "response_send"
+    }
+  ]
 }

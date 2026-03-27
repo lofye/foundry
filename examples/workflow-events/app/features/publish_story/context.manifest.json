@@ -1,0 +1,64 @@
+{
+    "version": 1,
+    "feature": "publish_story",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/publish_story/feature.yaml",
+        "app/features/publish_story/action.php",
+        "app/features/publish_story/input.schema.json",
+        "app/features/publish_story/output.schema.json",
+        "app/features/publish_story/permissions.yaml",
+        "app/features/publish_story/cache.yaml",
+        "app/features/publish_story/events.yaml",
+        "app/features/publish_story/jobs.yaml",
+        "app/features/publish_story/tests/publish_story_contract_test.php",
+        "app/features/publish_story/tests/publish_story_feature_test.php",
+        "app/features/publish_story/tests/publish_story_auth_test.php"
+    ],
+    "generated_files": [
+        "app/.foundry/build/graph/app_graph.json",
+        "app/.foundry/build/projections/routes_index.php",
+        "app/.foundry/build/projections/schema_index.php",
+        "app/.foundry/build/projections/feature_index.php",
+        "app/.foundry/build/projections/permission_index.php",
+        "app/.foundry/build/projections/event_index.php",
+        "app/.foundry/build/projections/job_index.php",
+        "app/.foundry/build/projections/cache_index.php",
+        "app/.foundry/build/projections/scheduler_index.php",
+        "app/.foundry/build/projections/webhook_index.php",
+        "app/.foundry/build/projections/query_index.php",
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php",
+        "app/generated/query_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth",
+        "queue",
+        "events",
+        "cache"
+    ],
+    "downstream_dependents": [
+        "refresh_story_feed"
+    ],
+    "contracts": {
+        "input": "app/features/publish_story/input.schema.json",
+        "output": "app/features/publish_story/output.schema.json"
+    },
+    "tests": [
+        "publish_story_auth_test",
+        "publish_story_contract_test",
+        "publish_story_feature_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "medium"
+}

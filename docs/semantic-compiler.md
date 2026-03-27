@@ -77,35 +77,35 @@ Compatibility mirrors are still written to `app/generated/*` for runtime and exi
 ## CLI Surface
 Compile:
 ```bash
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry compile graph --feature=<feature> --json
-php vendor/bin/foundry compile graph --changed-only --json
+foundry compile graph --json
+foundry compile graph --feature=<feature> --json
+foundry compile graph --changed-only --json
 ```
 
 Inspect:
 ```bash
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry inspect build --json
-php vendor/bin/foundry inspect node <node-id> --json
-php vendor/bin/foundry inspect dependencies <node-id> --json
-php vendor/bin/foundry inspect dependents <node-id> --json
-php vendor/bin/foundry inspect impact <node-id> --json
-php vendor/bin/foundry inspect impact --file=<path> --json
-php vendor/bin/foundry inspect affected-tests <node-id> --json
-php vendor/bin/foundry inspect affected-features <node-id> --json
-php vendor/bin/foundry inspect extensions --json
-php vendor/bin/foundry inspect migrations --json
+foundry inspect graph --json
+foundry inspect build --json
+foundry inspect node <node-id> --json
+foundry inspect dependencies <node-id> --json
+foundry inspect dependents <node-id> --json
+foundry inspect impact <node-id> --json
+foundry inspect impact --file=<path> --json
+foundry inspect affected-tests <node-id> --json
+foundry inspect affected-features <node-id> --json
+foundry inspect extensions --json
+foundry inspect migrations --json
 ```
 
 Verify graph:
 ```bash
-php vendor/bin/foundry verify graph --json
+foundry verify graph --json
 ```
 
 Migrate definitions:
 ```bash
-php vendor/bin/foundry migrate definitions --dry-run --json
-php vendor/bin/foundry migrate definitions --write --json
+foundry migrate definitions --dry-run --json
+foundry migrate definitions --write --json
 ```
 
 ## Diagnostics
@@ -150,7 +150,7 @@ Current extension registry supports contributions for:
 
 Inspect registered extensions:
 ```bash
-php vendor/bin/foundry inspect extensions --json
+foundry inspect extensions --json
 ```
 
 ## Definition migration and codemods
@@ -171,10 +171,10 @@ Current core migration upgrades feature manifests to v2 conventions.
 
 Example:
 ```bash
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry inspect impact --file=app/features/publish_post/feature.yaml --json
-php vendor/bin/foundry verify graph --json
-php vendor/bin/foundry verify contracts --json
+foundry compile graph --json
+foundry inspect graph --json
+foundry inspect impact --file=app/features/publish_post/feature.yaml --json
+foundry verify graph --json
+foundry verify contracts --json
 php vendor/bin/phpunit
 ```

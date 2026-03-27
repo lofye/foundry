@@ -51,9 +51,24 @@ final readonly class BuildLayout
         return $this->diagnosticsDir() . '/latest.json';
     }
 
+    public function configValidationPath(): string
+    {
+        return $this->diagnosticsDir() . '/config_validation.json';
+    }
+
     public function compileManifestPath(): string
     {
         return $this->manifestsDir() . '/compile_manifest.json';
+    }
+
+    public function compileCachePath(): string
+    {
+        return $this->manifestsDir() . '/compile_cache.json';
+    }
+
+    public function configSchemasPath(): string
+    {
+        return $this->manifestsDir() . '/config_schemas.json';
     }
 
     public function integrityHashesPath(): string

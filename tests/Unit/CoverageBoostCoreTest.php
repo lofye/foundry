@@ -180,11 +180,11 @@ final class CoverageBoostCoreTest extends TestCase
     public function test_runtime_factory_connection_and_http_kernel_factory_work_without_prebuilt_indexes(): void
     {
         $paths = Paths::fromCwd($this->project->root);
-        @rmdir($this->project->root . '/app/platform/storage');
+        @rmdir($this->project->root . '/storage');
 
         $connection = $this->invokeRuntimeFactory('connection', $paths);
         $this->assertInstanceOf(Connection::class, $connection);
-        $this->assertFileExists($this->project->root . '/app/platform/storage/foundry.sqlite');
+        $this->assertFileExists($this->project->root . '/database/foundry.sqlite');
 
         $kernel = RuntimeFactory::httpKernel($paths);
         $this->assertInstanceOf(HttpKernel::class, $kernel);
@@ -283,7 +283,7 @@ final class CoverageBoostCoreTest extends TestCase
         $this->assertFalse($err->ok);
         $this->assertSame('boom', $err->error);
 
-        $storage = new LocalStorageDriver($this->project->root . '/app/platform/storage/files');
+        $storage = new LocalStorageDriver($this->project->root . '/storage/files');
         $descriptor = $storage->write('docs/readme.txt', 'hi');
         $this->assertSame('docs/readme.txt', $descriptor->path);
         $this->assertTrue($storage->exists('docs/readme.txt'));

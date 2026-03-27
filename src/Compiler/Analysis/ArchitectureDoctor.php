@@ -14,6 +14,7 @@ final readonly class ArchitectureDoctor
     public function __construct(
         private array $analyzers,
         private ImpactAnalyzer $impactAnalyzer,
+        private string $commandPrefix = 'foundry',
     ) {
     }
 
@@ -78,16 +79,16 @@ final readonly class ArchitectureDoctor
      */
     private function suggestedActions(array $summary, ?string $featureFilter): array
     {
-        $actions = ['php vendor/bin/foundry compile graph --json'];
+        $actions = [$this->commandPrefix . ' compile graph --json'];
 
         if ((int) ($summary['error'] ?? 0) > 0 || (int) ($summary['warning'] ?? 0) > 0) {
             if ($featureFilter !== null && $featureFilter !== '') {
-                $actions[] = 'php vendor/bin/foundry verify feature ' . $featureFilter . ' --json';
-                $actions[] = 'php vendor/bin/foundry inspect impact feature:' . $featureFilter . ' --json';
+                $actions[] = $this->commandPrefix . ' verify feature ' . $featureFilter . ' --json';
+                $actions[] = $this->commandPrefix . ' inspect impact feature:' . $featureFilter . ' --json';
             }
 
-            $actions[] = 'php vendor/bin/foundry verify graph --json';
-            $actions[] = 'php vendor/bin/foundry verify contracts --json';
+            $actions[] = $this->commandPrefix . ' verify graph --json';
+            $actions[] = $this->commandPrefix . ' verify contracts --json';
             $actions[] = 'php vendor/bin/phpunit';
         }
 
@@ -112,4 +113,3 @@ final readonly class ArchitectureDoctor
         return 'low';
     }
 }
-

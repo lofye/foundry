@@ -1,13 +1,34 @@
 {
-  "graph_version": 1,
+  "ok": false,
+  "exit_code": 1,
   "feature_filter": "publish_post",
   "strict": true,
+  "command_prefix": "foundry",
   "risk": "medium",
   "diagnostics_summary": {
     "error": 0,
-    "warning": 2,
+    "warning": 1,
     "info": 1,
-    "total": 3
+    "total": 2
+  },
+  "checks": {
+    "metadata_freshness": {
+      "result": {
+        "status": "passed",
+        "stale_context_features": []
+      }
+    },
+    "pipeline_consistency": {
+      "result": {
+        "status": "passed",
+        "summary": {
+          "stage_count": 11,
+          "execution_plan_count": 1,
+          "guard_count": 5,
+          "interceptor_count": 2
+        }
+      }
+    }
   },
   "analyzers": {
     "auth_coverage": {
@@ -17,12 +38,46 @@
           {
             "feature": "publish_post",
             "missing_permissions": [
-              "posts.create"
+              "publish_post.execute"
             ]
           }
         ]
       }
     }
-  }
+  },
+  "impact_preview": {
+    "node_id": "feature:publish_post",
+    "node_type": "feature",
+    "risk": "medium",
+    "affected_features": [
+      "publish_post"
+    ],
+    "affected_routes": [
+      "POST /posts"
+    ],
+    "affected_projections": [
+      "execution_plan_index.php",
+      "feature_index.php",
+      "routes_index.php"
+    ],
+    "recommended_verification": [
+      "foundry verify feature publish_post --json",
+      "foundry verify graph --json",
+      "foundry verify pipeline --json",
+      "php vendor/bin/phpunit"
+    ],
+    "recommended_tests": [
+      "publish_post_auth_test",
+      "publish_post_contract_test",
+      "publish_post_feature_test"
+    ]
+  },
+  "suggested_actions": [
+    "foundry compile graph --json",
+    "foundry inspect impact feature:publish_post --json",
+    "foundry verify contracts --json",
+    "foundry verify feature publish_post --json",
+    "foundry verify graph --json",
+    "php vendor/bin/phpunit"
+  ]
 }
-

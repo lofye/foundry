@@ -11,8 +11,10 @@ use Foundry\Compiler\IR\EventNode;
 use Foundry\Compiler\IR\FeatureNode;
 use Foundry\Compiler\IR\GuardNode;
 use Foundry\Compiler\IR\InterceptorNode;
+use Foundry\Compiler\IR\PermissionNode;
 use Foundry\Compiler\IR\PipelineStageNode;
 use Foundry\Compiler\IR\RouteNode;
+use Foundry\Compiler\IR\WorkflowNode;
 use Foundry\Compiler\Visualization\GraphVisualizer;
 use PHPUnit\Framework\TestCase;
 
@@ -32,6 +34,8 @@ final class GraphVisualizerTest extends TestCase
         $graph->addNode(new ExecutionPlanNode('execution_plan:feature:publish_post', 'app/features/publish_post/feature.yaml', ['feature' => 'publish_post']));
         $graph->addNode(new GuardNode('guard:auth:publish_post', 'app/features/publish_post/feature.yaml', ['type' => 'authentication']));
         $graph->addNode(new InterceptorNode('interceptor:trace.auth', 'app/.foundry/extensions', ['id' => 'trace.auth', 'stage' => 'auth']));
+        $graph->addNode(new PermissionNode('permission:posts.create', 'app/features/publish_post/permissions.yaml', ['name' => 'posts.create']));
+        $graph->addNode(new WorkflowNode('workflow:posts', 'app/definitions/workflows/posts.workflow.yaml', ['resource' => 'posts']));
 
         $graph->addEdge(GraphEdge::make('event_publisher_to_subscriber', 'feature:publish_post', 'feature:update_feed', ['event' => 'post.created']));
         $graph->addEdge(GraphEdge::make('feature_to_event_emit', 'feature:publish_post', 'event:post.created'));
@@ -45,6 +49,8 @@ final class GraphVisualizerTest extends TestCase
         $graph->addEdge(GraphEdge::make('execution_plan_to_interceptor', 'execution_plan:feature:publish_post', 'interceptor:trace.auth'));
         $graph->addEdge(GraphEdge::make('guard_to_pipeline_stage', 'guard:auth:publish_post', 'pipeline_stage:auth'));
         $graph->addEdge(GraphEdge::make('interceptor_to_pipeline_stage', 'interceptor:trace.auth', 'pipeline_stage:auth'));
+        $graph->addEdge(GraphEdge::make('workflow_to_permission', 'workflow:posts', 'permission:posts.create'));
+        $graph->addEdge(GraphEdge::make('workflow_to_event_emit', 'workflow:posts', 'event:post.created'));
 
         $visualizer = new GraphVisualizer();
 
@@ -71,6 +77,27 @@ final class GraphVisualizerTest extends TestCase
         $this->assertNotEmpty($pipeline['nodes']);
         $this->assertNotEmpty($pipeline['edges']);
 
+        $workflowInspection = $visualizer->inspect($graph, ['workflow' => 'posts']);
+        $this->assertSame('workflows', $workflowInspection['view']);
+        $this->assertSame('posts', $workflowInspection['filters']['workflow']);
+        $this->assertContains('posts', $workflowInspection['summary']['workflows']);
+
+        $commandInspection = $visualizer->inspect($graph, ['command' => 'POST /posts']);
+        $this->assertSame('command', $commandInspection['view']);
+        $this->assertSame('POST /posts', $commandInspection['filters']['command']);
+        $this->assertContains('POST /posts', $commandInspection['summary']['routes']);
+
+        $extensionInspection = $visualizer->inspect($graph, ['extension' => 'core'], [[
+            'name' => 'core',
+            'source_path' => 'src/Compiler/Extensions/CoreCompilerExtension.php',
+            'packs' => ['core.foundation'],
+            'pipeline_stages' => ['auth'],
+            'pipeline_interceptors' => ['trace.auth'],
+        ]]);
+        $this->assertSame('extensions', $extensionInspection['view']);
+        $this->assertSame('core', $extensionInspection['filters']['extension']);
+        $this->assertContains('core', $extensionInspection['summary']['extensions']);
+
         $mermaid = $visualizer->render($dependencies, 'mermaid');
         $this->assertStringContainsString('graph TD', $mermaid);
         $this->assertStringContainsString('post.created', $mermaid);
@@ -89,6 +116,10 @@ final class GraphVisualizerTest extends TestCase
 
         $pipelineMermaid = $visualizer->render($pipeline, 'mermaid');
         $this->assertStringContainsString('trace.auth', $pipelineMermaid);
+
+        $summary = $visualizer->renderSummary($commandInspection);
+        $this->assertStringContainsString('Command graph for POST /posts', $summary);
+        $this->assertStringContainsString('routes: POST /posts', $summary);
     }
 
     public function test_unknown_view_and_format_fall_back_deterministically(): void

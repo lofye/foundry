@@ -2,11 +2,10 @@
 declare(strict_types=1);
 
 /**
- * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Source: app/features/<feature>/feature.yaml
- * Regenerate with: foundry generate indexes
+ * GENERATED FILE - DO NOT EDIT
+ * Built by Foundry semantic compiler.
+ * Regenerate with: foundry compile graph
  */
-
 return array (
   'classify_document' => 
   array (
@@ -30,6 +29,7 @@ return array (
       array (
         0 => 'classify_document.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -55,10 +55,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -70,26 +76,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'classify_document',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/classify_document/tests/classify_document_auth_test.php',
+        1 => 'app/features/classify_document/tests/classify_document_contract_test.php',
+        2 => 'app/features/classify_document/tests/classify_document_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/classify_document',
@@ -117,6 +147,7 @@ return array (
       array (
         0 => 'extract_summary.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -142,10 +173,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -157,26 +194,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'extract_summary',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/extract_summary/tests/extract_summary_auth_test.php',
+        1 => 'app/features/extract_summary/tests/extract_summary_contract_test.php',
+        2 => 'app/features/extract_summary/tests/extract_summary_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/extract_summary',
@@ -204,6 +265,7 @@ return array (
       array (
         0 => 'fetch_ai_result.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -229,10 +291,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -244,26 +312,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'fetch_ai_result',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/fetch_ai_result/tests/fetch_ai_result_auth_test.php',
+        1 => 'app/features/fetch_ai_result/tests/fetch_ai_result_contract_test.php',
+        2 => 'app/features/fetch_ai_result/tests/fetch_ai_result_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/fetch_ai_result',
@@ -291,6 +383,7 @@ return array (
       array (
         0 => 'queue_ai_summary_job.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -316,10 +409,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -331,26 +430,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'queue_ai_summary_job',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/queue_ai_summary_job/tests/queue_ai_summary_job_auth_test.php',
+        1 => 'app/features/queue_ai_summary_job/tests/queue_ai_summary_job_contract_test.php',
+        2 => 'app/features/queue_ai_summary_job/tests/queue_ai_summary_job_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/queue_ai_summary_job',
@@ -378,6 +501,7 @@ return array (
       array (
         0 => 'submit_document.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -403,10 +527,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -418,26 +548,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'submit_document',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/submit_document/tests/submit_document_auth_test.php',
+        1 => 'app/features/submit_document/tests/submit_document_contract_test.php',
+        2 => 'app/features/submit_document/tests/submit_document_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/submit_document',

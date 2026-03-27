@@ -219,7 +219,7 @@ final class StarterGenerator
      */
     private function writeStarterMigrations(string $starter, bool $force): array
     {
-        $dir = $this->paths->join('app/platform/migrations');
+        $dir = $this->paths->join('database/migrations');
         if (!is_dir($dir)) {
             mkdir($dir, 0777, true);
         }

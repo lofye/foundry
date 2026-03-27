@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - editorial.publish
+rules:
+  editorial.publish:
+    description: Publish a reviewed story.

@@ -93,6 +93,8 @@ YAML);
         $docs = $this->runCommand($app, ['foundry', 'generate', 'docs', '--format=markdown', '--json']);
         $this->assertSame(0, $docs['status']);
         $this->assertFileExists($this->project->root . '/docs/generated/features.md');
+        $this->assertFileExists($this->project->root . '/docs/generated/api-surface.md');
+        $this->assertFileExists($this->project->root . '/docs/generated/cli-reference.md');
 
         $deepTests = $this->runCommand($app, ['foundry', 'generate', 'tests', 'api_create_post', '--mode=deep', '--json']);
         $this->assertSame(0, $deepTests['status']);

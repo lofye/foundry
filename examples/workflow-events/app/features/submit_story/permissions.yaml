@@ -1,0 +1,6 @@
+version: 1
+permissions:
+  - editorial.submit
+rules:
+  editorial.submit:
+    description: Submit a story into the editorial workflow.

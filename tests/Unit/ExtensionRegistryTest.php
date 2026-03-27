@@ -14,7 +14,6 @@ use Foundry\Compiler\Extensions\PackDefinition;
 use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Migration\DefinitionFormat;
 use Foundry\Compiler\Projection\GenericProjectionEmitter;
-use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
 use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
@@ -82,6 +81,7 @@ final class ExtensionRegistryTest extends TestCase
                     version: $this->version(),
                     frameworkVersionConstraint: '^1',
                     graphVersionConstraint: '^1',
+                    requiredExtensions: ['a-ext'],
                     providedNodeTypes: ['custom_node_a'],
                     providedProjectionOutputs: ['z.php'],
                 );
@@ -94,6 +94,7 @@ final class ExtensionRegistryTest extends TestCase
                     extension: $this->name(),
                     providedCapabilities: ['cap.z'],
                     requiredCapabilities: ['cap.a'],
+                    dependencies: ['a-pack'],
                     graphVersionConstraint: '^1',
                     frameworkVersionConstraint: '^1',
                 )];
@@ -149,6 +150,9 @@ final class ExtensionRegistryTest extends TestCase
         $rows = $registry->inspectRows();
         $this->assertSame('a-ext', $rows[0]['name']);
         $this->assertSame('b-ext', $rows[1]['name']);
+        $this->assertTrue($rows[0]['enabled']);
+        $this->assertSame('runtime_enabled', $rows[0]['lifecycle']['current_stage']);
+        $this->assertSame(['a-ext', 'b-ext'], $registry->loadOrder());
 
         $emitters = $registry->projectionEmitters();
         $this->assertSame('a-projection', $emitters[0]->id());
@@ -170,6 +174,8 @@ final class ExtensionRegistryTest extends TestCase
         $this->assertFalse($report->ok);
         $codes = array_values(array_map(static fn (array $row): string => (string) ($row['code'] ?? ''), $report->diagnostics));
         $this->assertContains('FDY7006_CONFLICTING_NODE_PROVIDER', $codes);
+        $this->assertSame(['a-ext', 'b-ext'], $report->loadOrder);
+        $this->assertNotEmpty($report->lifecycle);
     }
 
     public function test_registry_loads_extensions_from_explicit_registration_file(): void
@@ -190,12 +196,13 @@ PHP);
             $this->assertTrue($registry->packRegistry()->has('demo.notes'));
             $this->assertContains('foundry.extensions.php', $registry->registrationSources());
             $this->assertNotEmpty($registry->graphAnalyzers());
+            $this->assertContains('foundry.demo', $registry->loadOrder());
         } finally {
             $project->cleanup();
         }
     }
 
-    public function test_registry_rejects_invalid_registered_extension_classes(): void
+    public function test_registry_reports_invalid_registered_extension_classes(): void
     {
         $project = new TempProject();
         try {
@@ -206,14 +213,20 @@ declare(strict_types=1);
 return ['Missing\\Extension\\ClassName'];
 PHP);
 
-            $this->expectException(FoundryError::class);
-            ExtensionRegistry::forPaths(Paths::fromCwd($project->root));
+            $registry = ExtensionRegistry::forPaths(Paths::fromCwd($project->root));
+            $codes = array_values(array_map(
+                static fn (array $row): string => (string) ($row['code'] ?? ''),
+                $registry->diagnostics(),
+            ));
+
+            $this->assertContains('FDY7011_EXTENSION_CLASS_NOT_FOUND', $codes);
+            $this->assertCount(4, $registry->all());
         } finally {
             $project->cleanup();
         }
     }
 
-    public function test_registry_rejects_non_array_registration_payloads(): void
+    public function test_registry_reports_non_array_registration_payloads(): void
     {
         $project = new TempProject();
         try {
@@ -224,10 +237,101 @@ declare(strict_types=1);
 return 'invalid';
 PHP);
 
-            $this->expectException(FoundryError::class);
-            ExtensionRegistry::forPaths(Paths::fromCwd($project->root));
+            $registry = ExtensionRegistry::forPaths(Paths::fromCwd($project->root));
+            $codes = array_values(array_map(
+                static fn (array $row): string => (string) ($row['code'] ?? ''),
+                $registry->diagnostics(),
+            ));
+
+            $this->assertContains('FDY7010_EXTENSION_REGISTRATION_INVALID', $codes);
         } finally {
             $project->cleanup();
         }
+    }
+
+    public function test_registry_disables_extensions_with_missing_dependencies_and_pack_conflicts(): void
+    {
+        $first = new class extends AbstractCompilerExtension {
+            public function name(): string { return 'alpha'; }
+            public function version(): string { return '1.0.0'; }
+            public function descriptor(): ExtensionDescriptor
+            {
+                return new ExtensionDescriptor(
+                    name: $this->name(),
+                    version: $this->version(),
+                    frameworkVersionConstraint: '^1',
+                    graphVersionConstraint: '^1',
+                );
+            }
+            public function packs(): array
+            {
+                return [
+                    new PackDefinition(
+                        name: 'alpha.pack',
+                        version: '1.0.0',
+                        extension: $this->name(),
+                        conflictsWith: ['beta.pack'],
+                        frameworkVersionConstraint: '^1',
+                        graphVersionConstraint: '^1',
+                    ),
+                ];
+            }
+        };
+
+        $missingDependency = new class extends AbstractCompilerExtension {
+            public function name(): string { return 'missing-ext'; }
+            public function version(): string { return '1.0.0'; }
+            public function descriptor(): ExtensionDescriptor
+            {
+                return new ExtensionDescriptor(
+                    name: $this->name(),
+                    version: $this->version(),
+                    frameworkVersionConstraint: '^1',
+                    graphVersionConstraint: '^1',
+                    requiredExtensions: ['not-installed'],
+                );
+            }
+        };
+
+        $conflicting = new class extends AbstractCompilerExtension {
+            public function name(): string { return 'beta'; }
+            public function version(): string { return '1.0.0'; }
+            public function descriptor(): ExtensionDescriptor
+            {
+                return new ExtensionDescriptor(
+                    name: $this->name(),
+                    version: $this->version(),
+                    frameworkVersionConstraint: '^1',
+                    graphVersionConstraint: '^1',
+                );
+            }
+            public function packs(): array
+            {
+                return [
+                    new PackDefinition(
+                        name: 'beta.pack',
+                        version: '1.0.0',
+                        extension: $this->name(),
+                        frameworkVersionConstraint: '^1',
+                        graphVersionConstraint: '^1',
+                    ),
+                ];
+            }
+        };
+
+        $registry = new ExtensionRegistry([$first, $missingDependency, $conflicting]);
+
+        $this->assertSame(['alpha'], $registry->loadOrder());
+        $this->assertCount(1, $registry->all());
+
+        $missingRow = $registry->inspectRow('missing-ext');
+        $this->assertFalse($missingRow['enabled']);
+        $missingCodes = array_values(array_map(static fn (array $row): string => (string) ($row['code'] ?? ''), $missingRow['diagnostics']));
+        $this->assertContains('FDY7014_EXTENSION_DEPENDENCY_MISSING', $missingCodes);
+
+        $conflictingRow = $registry->inspectRow('beta');
+        $this->assertFalse($conflictingRow['enabled']);
+        $conflictCodes = array_values(array_map(static fn (array $row): string => (string) ($row['code'] ?? ''), $conflictingRow['diagnostics']));
+        $this->assertContains('FDY7022_PACK_CONFLICT', $conflictCodes);
     }
 }

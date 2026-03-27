@@ -1,0 +1,52 @@
+version: 2
+feature: submit_story
+kind: http
+description: Create a draft story and emit the initial editorial event.
+owners:
+  - examples
+route:
+  method: POST
+  path: /editorial/stories
+input:
+  schema: app/features/submit_story/input.schema.json
+output:
+  schema: app/features/submit_story/output.schema.json
+auth:
+  required: true
+  strategies:
+    - bearer
+  permissions:
+    - editorial.submit
+database:
+  reads: []
+  writes: []
+  transactions: required
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate:
+    - stories:list
+events:
+  emit:
+    - story.submitted
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: submit_story
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - auth
+    - contract
+    - feature
+llm:
+  editable: true
+  risk_level: low
+  notes_file: prompts.md

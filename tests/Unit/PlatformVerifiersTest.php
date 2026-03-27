@@ -35,17 +35,17 @@ final class PlatformVerifiersTest extends TestCase
         mkdir($this->project->root . '/app/definitions/locales', 0777, true);
         mkdir($this->project->root . '/app/definitions/roles', 0777, true);
         mkdir($this->project->root . '/app/definitions/policies', 0777, true);
-        mkdir($this->project->root . '/app/platform/lang/en', 0777, true);
-        mkdir($this->project->root . '/app/platform/lang/fr', 0777, true);
+        mkdir($this->project->root . '/lang/en', 0777, true);
+        mkdir($this->project->root . '/lang/fr', 0777, true);
 
-        file_put_contents($this->project->root . '/app/platform/lang/en/messages.php', <<<'PHP'
+        file_put_contents($this->project->root . '/lang/en/messages.php', <<<'PHP'
 <?php
 declare(strict_types=1);
 
 return ['greeting' => 'Hello', 'farewell' => 'Bye'];
 PHP);
 
-        file_put_contents($this->project->root . '/app/platform/lang/fr/messages.php', <<<'PHP'
+        file_put_contents($this->project->root . '/lang/fr/messages.php', <<<'PHP'
 <?php
 declare(strict_types=1);
 
@@ -110,7 +110,7 @@ version: 1
 bundle: core
 default: en
 locales: [en, fr]
-translation_paths: [app/platform/lang]
+translation_paths: [lang]
 YAML);
 
         file_put_contents($this->project->root . '/app/definitions/roles/default.roles.yaml', <<<'YAML'
@@ -236,7 +236,7 @@ version: 1
 bundle: core
 default: en
 locales: [fr]
-translation_paths: [app/platform/lang]
+translation_paths: [lang]
 YAML);
         file_put_contents($this->project->root . '/app/definitions/roles/default.roles.yaml', <<<'YAML'
 version: 1

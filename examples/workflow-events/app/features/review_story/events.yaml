@@ -1,0 +1,12 @@
+version: 1
+emit:
+  - name: story.review_requested
+    schema:
+      type: object
+      additionalProperties: false
+      required: [story_id]
+      properties:
+        story_id:
+          type: string
+subscribe:
+  - story.submitted

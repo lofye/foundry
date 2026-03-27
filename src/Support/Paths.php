@@ -44,9 +44,59 @@ final class Paths
         return $this->join('app/generated');
     }
 
-    public function platform(): string
+    public function bootstrap(): string
     {
-        return $this->join('app/platform');
+        return $this->join('bootstrap');
+    }
+
+    public function config(): string
+    {
+        return $this->join('config');
+    }
+
+    public function foundryConfig(): string
+    {
+        return $this->join('config/foundry');
+    }
+
+    public function database(): string
+    {
+        return $this->join('database');
+    }
+
+    public function migrations(): string
+    {
+        return $this->join('database/migrations');
+    }
+
+    public function lang(): string
+    {
+        return $this->join('lang');
+    }
+
+    public function public(): string
+    {
+        return $this->join('public');
+    }
+
+    public function storage(): string
+    {
+        return $this->join('storage');
+    }
+
+    public function logs(): string
+    {
+        return $this->join('storage/logs');
+    }
+
+    public function tmp(): string
+    {
+        return $this->join('storage/tmp');
+    }
+
+    public function storageFiles(): string
+    {
+        return $this->join('storage/files');
     }
 
     public function stubs(): string

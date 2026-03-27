@@ -2,11 +2,10 @@
 declare(strict_types=1);
 
 /**
- * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Source: app/features/<feature>/feature.yaml
- * Regenerate with: foundry generate indexes
+ * GENERATED FILE - DO NOT EDIT
+ * Built by Foundry semantic compiler.
+ * Regenerate with: foundry compile graph
  */
-
 return array (
   'current_user' => 
   array (
@@ -30,6 +29,7 @@ return array (
       array (
         0 => 'current_user.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -55,10 +55,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -70,26 +76,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'current_user',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/current_user/tests/current_user_auth_test.php',
+        1 => 'app/features/current_user/tests/current_user_contract_test.php',
+        2 => 'app/features/current_user/tests/current_user_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/current_user',
@@ -117,6 +147,7 @@ return array (
       array (
         0 => 'list_notifications.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -142,10 +173,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -157,26 +194,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'list_notifications',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/list_notifications/tests/list_notifications_auth_test.php',
+        1 => 'app/features/list_notifications/tests/list_notifications_contract_test.php',
+        2 => 'app/features/list_notifications/tests/list_notifications_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/list_notifications',
@@ -204,6 +265,7 @@ return array (
       array (
         0 => 'login.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -229,10 +291,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -244,26 +312,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'login',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/login/tests/login_auth_test.php',
+        1 => 'app/features/login/tests/login_contract_test.php',
+        2 => 'app/features/login/tests/login_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/login',
@@ -291,6 +383,7 @@ return array (
       array (
         0 => 'upload_avatar.execute',
       ),
+      'public' => false,
     ),
     'database' => 
     array (
@@ -316,10 +409,16 @@ return array (
       'invalidate' => 
       array (
       ),
+      'entries' => 
+      array (
+      ),
     ),
     'events' => 
     array (
       'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
       array (
       ),
       'subscribe' => 
@@ -331,26 +430,50 @@ return array (
       'dispatch' => 
       array (
       ),
+      'definitions' => 
+      array (
+      ),
     ),
     'rate_limit' => 
     array (
-      'strategy' => 'user',
       'bucket' => 'upload_avatar',
       'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (
       'required' => 
       array (
-        0 => 'contract',
-        1 => 'feature',
-        2 => 'auth',
+        0 => 'auth',
+        1 => 'contract',
+        2 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/upload_avatar/tests/upload_avatar_auth_test.php',
+        1 => 'app/features/upload_avatar/tests/upload_avatar_contract_test.php',
+        2 => 'app/features/upload_avatar/tests/upload_avatar_feature_test.php',
       ),
     ),
     'llm' => 
     array (
       'editable' => true,
-      'risk' => 'low',
+      'risk_level' => 'low',
       'notes_file' => 'prompts.md',
     ),
     'base_path' => 'app/features/upload_avatar',

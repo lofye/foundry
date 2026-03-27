@@ -128,7 +128,7 @@ emit:
 YAML);
         file_put_contents($this->project->root . '/app/generated/schema_index.php', '<?php return "invalid";');
 
-        file_put_contents($this->project->root . '/app/platform/migrations/20260101000000_danger.sql', <<<'SQL'
+        file_put_contents($this->project->root . '/database/migrations/20260101000000_danger.sql', <<<'SQL'
 DROP TABLE users;
 DELETE FROM posts;
 SQL);

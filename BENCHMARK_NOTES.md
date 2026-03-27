@@ -26,5 +26,5 @@ Initial benchmark guidance for low-latency JSON endpoints in Foundry v1.
 ## Next benchmark step
 Add a repeatable script that:
 1. primes generated indexes and schemas
-2. sends steady-state request load to `app/platform/public/index.php`
+2. sends steady-state request load to `public/index.php`
 3. records latency distribution and CPU/memory profile

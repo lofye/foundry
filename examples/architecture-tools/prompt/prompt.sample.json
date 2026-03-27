@@ -1,27 +1,69 @@
 {
   "instruction": "add bookmark endpoint for posts",
+  "dry_run": true,
   "feature_context": true,
   "selected_features": [
+    "delete_post",
     "publish_post",
-    "list_posts"
+    "list_posts",
+    "update_post",
+    "view_post"
   ],
-  "context": {
-    "node_counts": {
-      "feature": 2,
-      "route": 2,
-      "schema": 4
+  "impact": [
+    {
+      "node_id": "feature:publish_post",
+      "node_type": "feature",
+      "risk": "medium",
+      "affected_routes": [
+        "POST /posts"
+      ],
+      "affected_projections": [
+        "execution_plan_index.php",
+        "feature_index.php",
+        "routes_index.php"
+      ],
+      "recommended_verification": [
+        "foundry verify feature publish_post --json",
+        "foundry verify graph --json",
+        "foundry verify pipeline --json",
+        "php vendor/bin/phpunit"
+      ],
+      "recommended_tests": [
+        "publish_post_auth_test",
+        "publish_post_contract_test",
+        "publish_post_feature_test"
+      ]
     }
-  },
+  ],
   "prompt": {
     "constraints": [
-      "Edit only source-of-truth files under app/features/*.",
-      "Do not hand-edit app/.foundry/build/* or app/generated/*."
+      "Edit only source-of-truth files under app/features/* and app/definitions/*.",
+      "Do not hand-edit app/.foundry/build/* or app/generated/*.",
+      "Preserve existing graph node IDs and naming conventions when possible."
     ],
     "workflow": [
-      "php vendor/bin/foundry compile graph --json",
-      "php vendor/bin/foundry verify graph --json",
+      "foundry compile graph --json",
+      "foundry inspect execution-plan <feature> --json",
+      "foundry inspect impact --file=app/features/<feature>/feature.yaml --json",
+      "foundry verify graph --json",
+      "foundry verify pipeline --json",
+      "foundry verify contracts --json",
       "php vendor/bin/phpunit"
-    ]
-  }
+    ],
+    "text": "Instruction:\nadd bookmark endpoint for posts\n\nRelevant features: delete_post, publish_post, list_posts, update_post, view_post\n...",
+    "correction_template": "The previous attempt produced diagnostics.\nUse the diagnostic JSON as authoritative feedback.\nRevise only the impacted source-of-truth files.\nRe-run compile and verify commands after changes."
+  },
+  "recommended_commands": [
+    "foundry compile graph --json",
+    "foundry inspect execution-plan <feature> --json",
+    "foundry inspect impact --file=app/features/<feature>/feature.yaml --json",
+    "foundry verify feature publish_post --json",
+    "foundry verify graph --json",
+    "foundry verify pipeline --json",
+    "foundry verify contracts --json",
+    "php vendor/bin/phpunit",
+    "php vendor/bin/phpunit --filter=publish_post_auth_test",
+    "php vendor/bin/phpunit --filter=publish_post_contract_test",
+    "php vendor/bin/phpunit --filter=publish_post_feature_test"
+  ]
 }
-

@@ -109,7 +109,7 @@ version: 2
 bundle: core
 default: en
 locales: [fr]
-translation_paths: [app/platform/lang]
+translation_paths: [lang]
 YAML);
 
         file_put_contents($this->project->root . '/app/definitions/roles/default.roles.yaml', <<<'YAML'

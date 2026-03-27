@@ -1,0 +1,7 @@
+version: 1
+entries:
+  - key: stories:list
+    kind: computed
+    ttl_seconds: 120
+    invalidated_by:
+      - publish_story

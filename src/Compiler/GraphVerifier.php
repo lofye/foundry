@@ -24,8 +24,11 @@ final class GraphVerifier
             $this->layout->graphJsonPath(),
             $this->layout->graphPhpPath(),
             $this->layout->compileManifestPath(),
+            $this->layout->compileCachePath(),
             $this->layout->integrityHashesPath(),
             $this->layout->diagnosticsPath(),
+            $this->layout->configValidationPath(),
+            $this->layout->configSchemasPath(),
             $this->layout->projectionPath('routes_index.php'),
             $this->layout->projectionPath('feature_index.php'),
             $this->layout->projectionPath('schema_index.php'),
@@ -70,6 +73,11 @@ final class GraphVerifier
             $errors[] = 'compile_manifest.json is missing or invalid JSON.';
         }
 
+        $cache = $this->readJsonFile($this->layout->compileCachePath());
+        if ($cache === null) {
+            $errors[] = 'compile_cache.json is missing or invalid JSON.';
+        }
+
         $diagnostics = $this->readJsonFile($this->layout->diagnosticsPath());
         if ($diagnostics === null) {
             $errors[] = 'diagnostics/latest.json is missing or invalid JSON.';
@@ -78,6 +86,16 @@ final class GraphVerifier
             if ((int) ($summary['error'] ?? 0) > 0) {
                 $errors[] = 'Compiled graph contains error diagnostics.';
             }
+        }
+
+        $configValidation = $this->readJsonFile($this->layout->configValidationPath());
+        if ($configValidation === null) {
+            $errors[] = 'diagnostics/config_validation.json is missing or invalid JSON.';
+        }
+
+        $configSchemas = $this->readJsonFile($this->layout->configSchemasPath());
+        if ($configSchemas === null) {
+            $errors[] = 'manifests/config_schemas.json is missing or invalid JSON.';
         }
 
         $integrity = $this->readJsonFile($this->layout->integrityHashesPath());

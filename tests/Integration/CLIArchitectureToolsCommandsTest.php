@@ -53,6 +53,19 @@ final class CLIArchitectureToolsCommandsTest extends TestCase
             requiredTests: ['feature'],
             createTests: [],
         );
+
+        mkdir($this->project->root . '/app/definitions/workflows', 0777, true);
+        file_put_contents($this->project->root . '/app/definitions/workflows/posts.workflow.yaml', <<<'YAML'
+version: 1
+resource: posts
+states: [draft, published]
+transitions:
+  publish:
+    from: [draft]
+    to: published
+    permission: posts.create
+    emit: [post.created]
+YAML);
     }
 
     protected function tearDown(): void
@@ -70,9 +83,16 @@ final class CLIArchitectureToolsCommandsTest extends TestCase
 
         $doctor = $this->runCommand($app, ['foundry', 'doctor', '--feature=list_posts', '--json']);
         $this->assertSame(0, $doctor['status']);
+        $this->assertTrue($doctor['payload']['ok']);
+        $this->assertSame(0, $doctor['payload']['exit_code']);
+        $this->assertSame('foundry', $doctor['payload']['command_prefix']);
         $this->assertSame('list_posts', $doctor['payload']['feature_filter']);
+        $this->assertArrayHasKey('checks', $doctor['payload']);
         $this->assertArrayHasKey('analyzers', $doctor['payload']);
         $this->assertArrayHasKey('diagnostics_summary', $doctor['payload']);
+        $this->assertArrayHasKey('extension_diagnostics', $doctor['payload']);
+        $this->assertArrayHasKey('extension_lifecycle', $doctor['payload']);
+        $this->assertArrayHasKey('extension_load_order', $doctor['payload']);
 
         $doctorStrict = $this->runCommand($app, ['foundry', 'doctor', '--feature=list_posts', '--strict', '--json']);
         $this->assertSame(1, $doctorStrict['status']);
@@ -102,6 +122,57 @@ final class CLIArchitectureToolsCommandsTest extends TestCase
         $this->assertSame('pipeline', $pipelineViz['payload']['view']);
         $this->assertArrayHasKey('edges', $pipelineViz['payload']['graph']);
 
+        $pipelineFeatureViz = $this->runCommand($app, ['foundry', 'graph', 'visualize', '--pipeline', '--feature=publish_post', '--json']);
+        $this->assertSame(0, $pipelineFeatureViz['status']);
+        $this->assertSame('publish_post', $pipelineFeatureViz['payload']['feature_filter']);
+        $this->assertNotEmpty($pipelineFeatureViz['payload']['summary']['features']);
+
+        $inspectGraph = $this->runCommand($app, ['foundry', 'inspect', 'graph', '--command', 'POST /posts', '--format=dot', '--json']);
+        $this->assertSame(0, $inspectGraph['status']);
+        $this->assertSame('command', $inspectGraph['payload']['view']);
+        $this->assertSame('POST /posts', $inspectGraph['payload']['command_filter']);
+        $this->assertArrayHasKey('summary', $inspectGraph['payload']);
+        $this->assertStringContainsString('digraph foundry', (string) $inspectGraph['payload']['rendered']);
+
+        $inspectGraphBadFormat = $this->runCommand($app, ['foundry', 'inspect', 'graph', '--format=bad', '--json']);
+        $this->assertSame(1, $inspectGraphBadFormat['status']);
+        $this->assertSame('CLI_GRAPH_FORMAT_INVALID', $inspectGraphBadFormat['payload']['error']['code']);
+
+        $inspectGraphMissingFeature = $this->runCommand($app, ['foundry', 'inspect', 'graph', '--feature=missing', '--json']);
+        $this->assertSame(1, $inspectGraphMissingFeature['status']);
+        $this->assertSame('FEATURE_NOT_FOUND', $inspectGraphMissingFeature['payload']['error']['code']);
+
+        $inspectGraphHuman = $this->runRawCommand($app, ['foundry', 'inspect', 'graph']);
+        $this->assertSame(0, $inspectGraphHuman['status']);
+        $this->assertStringContainsString('Application graph overview', $inspectGraphHuman['output']);
+        $this->assertStringNotContainsString('"graph_version"', $inspectGraphHuman['output']);
+
+        $graphInspect = $this->runCommand($app, ['foundry', 'graph', 'inspect', '--workflow=posts', '--json']);
+        $this->assertSame(0, $graphInspect['status']);
+        $this->assertSame('workflows', $graphInspect['payload']['view']);
+        $this->assertSame('posts', $graphInspect['payload']['workflow_filter']);
+        $this->assertContains('posts', $graphInspect['payload']['summary']['workflows']);
+
+        $exportGraph = $this->runCommand($app, ['foundry', 'export', 'graph', '--extension=core', '--format=json', '--json']);
+        $this->assertSame(0, $exportGraph['status']);
+        $this->assertSame('extensions', $exportGraph['payload']['view']);
+        $this->assertSame('core', $exportGraph['payload']['extension_filter']);
+        $this->assertFileExists($exportGraph['payload']['file']);
+        $this->assertStringContainsString('"view": "extensions"', (string) $exportGraph['payload']['rendered']);
+
+        $exportGraphBadFormat = $this->runCommand($app, ['foundry', 'export', 'graph', '--format=bad', '--json']);
+        $this->assertSame(1, $exportGraphBadFormat['status']);
+        $this->assertSame('CLI_GRAPH_FORMAT_INVALID', $exportGraphBadFormat['payload']['error']['code']);
+
+        $exportGraphMissingFeature = $this->runCommand($app, ['foundry', 'export', 'graph', '--feature=missing', '--json']);
+        $this->assertSame(1, $exportGraphMissingFeature['status']);
+        $this->assertSame('FEATURE_NOT_FOUND', $exportGraphMissingFeature['payload']['error']['code']);
+
+        $exportGraphHuman = $this->runRawCommand($app, ['foundry', 'export', 'graph', '--workflow=posts', '--format=json']);
+        $this->assertSame(0, $exportGraphHuman['status']);
+        $this->assertStringContainsString('Workflow graph for posts', $exportGraphHuman['output']);
+        $this->assertStringContainsString('file:', $exportGraphHuman['output']);
+
         $prompt = $this->runCommand($app, ['foundry', 'prompt', 'Add', 'bookmark', 'support', '--feature-context', '--dry-run', '--json']);
         $this->assertSame(0, $prompt['status']);
         $this->assertTrue($prompt['payload']['dry_run']);
@@ -113,6 +184,37 @@ final class CLIArchitectureToolsCommandsTest extends TestCase
         $promptMissingInstruction = $this->runCommand($app, ['foundry', 'prompt', '--json']);
         $this->assertSame(1, $promptMissingInstruction['status']);
         $this->assertSame('CLI_PROMPT_INSTRUCTION_REQUIRED', $promptMissingInstruction['payload']['error']['code']);
+    }
+
+    public function test_doctor_loads_extension_registered_checks_and_renders_human_output(): void
+    {
+        file_put_contents($this->project->root . '/foundry.extensions.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+
+return [
+    \Foundry\Tests\Fixtures\CustomDoctorExtension::class,
+];
+PHP);
+
+        $app = new Application();
+
+        $doctor = $this->runCommand($app, ['foundry', 'doctor', '--feature=list_posts', '--json']);
+        $this->assertSame(0, $doctor['status']);
+        $this->assertArrayHasKey('fixture_custom_doctor', $doctor['payload']['checks']);
+
+        $codes = array_values(array_map(
+            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            (array) ($doctor['payload']['doctor_diagnostics']['items'] ?? []),
+        ));
+        $this->assertContains('FDY9901_FIXTURE_DOCTOR_CHECK', $codes);
+
+        $human = $this->runRawCommand($app, ['foundry', 'doctor', '--feature=list_posts']);
+        $this->assertSame(0, $human['status']);
+        $this->assertStringContainsString('Foundry doctor completed with warnings.', $human['output']);
+        $this->assertStringContainsString('fixture_custom_doctor: warning', $human['output']);
+        $this->assertStringContainsString('FDY9901_FIXTURE_DOCTOR_CHECK', $human['output']);
+        $this->assertStringNotContainsString('"checks"', $human['output']);
     }
 
     /**
@@ -223,5 +325,18 @@ YAML);
         $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
         return ['status' => $status, 'payload' => $payload];
+    }
+
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,output:string}
+     */
+    private function runRawCommand(Application $app, array $argv): array
+    {
+        ob_start();
+        $status = $app->run($argv);
+        $output = ob_get_clean() ?: '';
+
+        return ['status' => $status, 'output' => $output];
     }
 }

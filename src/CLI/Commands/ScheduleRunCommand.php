@@ -20,7 +20,7 @@ final class ScheduleRunCommand extends Command
         $command = (string) ($args[0] ?? '');
 
         if ($command === 'trace:tail') {
-            $traceFile = $context->paths()->join('app/platform/logs/trace.log');
+            $traceFile = $context->paths()->join('storage/logs/trace.log');
             if (!is_file($traceFile)) {
                 return [
                     'status' => 0,

@@ -56,5 +56,45 @@ final class SchemaValidatorTest extends TestCase
 
         $this->assertFalse($result->isValid);
         $this->assertNotEmpty($result->errors);
+        $this->assertSame('$.title', $result->errors[0]->path);
+        $this->assertNotNull($result->errors[0]->expected);
+        $this->assertNotNull($result->errors[0]->actual);
+        $this->assertNotNull($result->errors[0]->suggestedFix);
+    }
+
+    public function test_empty_php_array_is_accepted_for_object_schema_without_required_fields(): void
+    {
+        $path = sys_get_temp_dir() . '/schema-empty-object-' . bin2hex(random_bytes(4)) . '.json';
+        file_put_contents($path, json_encode([
+            '$schema' => 'https://json-schema.org/draft/2020-12/schema',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'properties' => [],
+        ], JSON_UNESCAPED_SLASHES));
+
+        $validator = new JsonSchemaValidator();
+        $result = $validator->validate([], $path);
+
+        @unlink($path);
+
+        $this->assertTrue($result->isValid);
+        $this->assertSame([], $result->errors);
+    }
+
+    public function test_validate_data_supports_array_items_and_uniqueness_constraints(): void
+    {
+        $validator = new JsonSchemaValidator();
+        $result = $validator->validateData(['a', 'a'], [
+            'type' => 'array',
+            'uniqueItems' => true,
+            'items' => [
+                'type' => 'string',
+                'minLength' => 1,
+            ],
+        ]);
+
+        $this->assertFalse($result->isValid);
+        $this->assertSame('$', $result->errors[0]->path);
+        $this->assertSame('unique items', $result->errors[0]->expected);
     }
 }

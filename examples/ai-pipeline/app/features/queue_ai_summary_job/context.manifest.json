@@ -16,6 +16,17 @@
         "app/features/queue_ai_summary_job/tests/queue_ai_summary_job_auth_test.php"
     ],
     "generated_files": [
+        "app/.foundry/build/graph/app_graph.json",
+        "app/.foundry/build/projections/routes_index.php",
+        "app/.foundry/build/projections/schema_index.php",
+        "app/.foundry/build/projections/feature_index.php",
+        "app/.foundry/build/projections/permission_index.php",
+        "app/.foundry/build/projections/event_index.php",
+        "app/.foundry/build/projections/job_index.php",
+        "app/.foundry/build/projections/cache_index.php",
+        "app/.foundry/build/projections/scheduler_index.php",
+        "app/.foundry/build/projections/webhook_index.php",
+        "app/.foundry/build/projections/query_index.php",
         "app/generated/routes.php",
         "app/generated/schema_index.php",
         "app/generated/feature_index.php",
@@ -24,7 +35,8 @@
         "app/generated/job_index.php",
         "app/generated/cache_index.php",
         "app/generated/scheduler_index.php",
-        "app/generated/webhook_index.php"
+        "app/generated/webhook_index.php",
+        "app/generated/query_index.php"
     ],
     "upstream_dependencies": [
         "auth"

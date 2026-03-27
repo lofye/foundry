@@ -96,6 +96,8 @@ final class CompatibilityCheckerTest extends TestCase
         $this->assertContains('FDY7008_INCOMPATIBLE_PACK_VERSION', $codes);
         $this->assertContains('FDY7009_PACK_CAPABILITY_MISSING', $codes);
         $this->assertContains('FDY7003_UNSUPPORTED_DEFINITION_VERSION', $codes);
+        $this->assertSame(['a-ext', 'b-ext'], $report->loadOrder);
+        $this->assertCount(2, $report->lifecycle);
     }
 
     public function test_checker_returns_ok_for_core_extension_defaults(): void
@@ -110,5 +112,33 @@ final class CompatibilityCheckerTest extends TestCase
         $this->assertTrue($report->ok);
         $this->assertSame([], $report->diagnostics);
         $this->assertSame(1, $report->versionMatrix['graph_version']);
+        $this->assertSame(['core'], $report->loadOrder);
+    }
+
+    public function test_checker_includes_registry_dependency_diagnostics(): void
+    {
+        $extension = new class extends AbstractCompilerExtension {
+            public function name(): string { return 'dependent'; }
+            public function version(): string { return '1.0.0'; }
+            public function descriptor(): ExtensionDescriptor
+            {
+                return new ExtensionDescriptor(
+                    name: $this->name(),
+                    version: $this->version(),
+                    frameworkVersionConstraint: '^1',
+                    graphVersionConstraint: '^1',
+                    requiredExtensions: ['missing'],
+                );
+            }
+        };
+
+        $registry = new ExtensionRegistry([$extension]);
+        $checker = new CompatibilityChecker($registry, $registry->packRegistry());
+        $report = $checker->check('1.0.0', 1);
+
+        $this->assertFalse($report->ok);
+        $codes = array_values(array_map(static fn (array $row): string => (string) ($row['code'] ?? ''), $report->diagnostics));
+        $this->assertContains('FDY7014_EXTENSION_DEPENDENCY_MISSING', $codes);
+        $this->assertSame([], $report->loadOrder);
     }
 }

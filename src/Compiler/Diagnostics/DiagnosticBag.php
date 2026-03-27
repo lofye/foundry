@@ -14,6 +14,7 @@ final class DiagnosticBag
 
     /**
      * @param array<int,string> $relatedNodes
+     * @param array<string,mixed> $details
      */
     public function add(
         string $code,
@@ -26,6 +27,8 @@ final class DiagnosticBag
         array $relatedNodes = [],
         ?string $suggestedFix = null,
         ?string $pass = null,
+        ?string $whyItMatters = null,
+        array $details = [],
     ): Diagnostic {
         $this->sequence++;
         $diagnostic = new Diagnostic(
@@ -40,6 +43,8 @@ final class DiagnosticBag
             relatedNodes: array_values(array_unique(array_map('strval', $relatedNodes))),
             suggestedFix: $suggestedFix,
             pass: $pass,
+            whyItMatters: $whyItMatters,
+            details: $details,
         );
 
         $this->diagnostics[] = $diagnostic;
@@ -49,6 +54,7 @@ final class DiagnosticBag
 
     /**
      * @param array<int,string> $relatedNodes
+     * @param array<string,mixed> $details
      */
     public function error(
         string $code,
@@ -60,12 +66,15 @@ final class DiagnosticBag
         array $relatedNodes = [],
         ?string $suggestedFix = null,
         ?string $pass = null,
+        ?string $whyItMatters = null,
+        array $details = [],
     ): Diagnostic {
-        return $this->add($code, 'error', $category, $message, $nodeId, $sourcePath, $sourceLine, $relatedNodes, $suggestedFix, $pass);
+        return $this->add($code, 'error', $category, $message, $nodeId, $sourcePath, $sourceLine, $relatedNodes, $suggestedFix, $pass, $whyItMatters, $details);
     }
 
     /**
      * @param array<int,string> $relatedNodes
+     * @param array<string,mixed> $details
      */
     public function warning(
         string $code,
@@ -77,12 +86,15 @@ final class DiagnosticBag
         array $relatedNodes = [],
         ?string $suggestedFix = null,
         ?string $pass = null,
+        ?string $whyItMatters = null,
+        array $details = [],
     ): Diagnostic {
-        return $this->add($code, 'warning', $category, $message, $nodeId, $sourcePath, $sourceLine, $relatedNodes, $suggestedFix, $pass);
+        return $this->add($code, 'warning', $category, $message, $nodeId, $sourcePath, $sourceLine, $relatedNodes, $suggestedFix, $pass, $whyItMatters, $details);
     }
 
     /**
      * @param array<int,string> $relatedNodes
+     * @param array<string,mixed> $details
      */
     public function info(
         string $code,
@@ -94,8 +106,10 @@ final class DiagnosticBag
         array $relatedNodes = [],
         ?string $suggestedFix = null,
         ?string $pass = null,
+        ?string $whyItMatters = null,
+        array $details = [],
     ): Diagnostic {
-        return $this->add($code, 'info', $category, $message, $nodeId, $sourcePath, $sourceLine, $relatedNodes, $suggestedFix, $pass);
+        return $this->add($code, 'info', $category, $message, $nodeId, $sourcePath, $sourceLine, $relatedNodes, $suggestedFix, $pass, $whyItMatters, $details);
     }
 
     /**

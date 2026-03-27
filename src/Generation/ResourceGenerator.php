@@ -411,7 +411,7 @@ final class ResourceGenerator
      */
     private function writeResourceMigration(array $canonical, string $resource, bool $force): array
     {
-        $dir = $this->paths->join('app/platform/migrations');
+        $dir = $this->paths->join('database/migrations');
         if (!is_dir($dir)) {
             mkdir($dir, 0777, true);
         }

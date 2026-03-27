@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PHP_BIN="${PHP_BIN:-$(command -v php)}"
+
+if [[ -z "${PHP_BIN}" ]]; then
+    echo "Unable to locate a PHP binary." >&2
+    exit 1
+fi
+
+if "${PHP_BIN}" -m | grep -qi '^xdebug$'; then
+    export XDEBUG_MODE="${XDEBUG_MODE:-coverage}"
+    exec "${PHP_BIN}" "${ROOT_DIR}/vendor/bin/phpunit" "$@"
+fi
+
+find_xdebug() {
+    local api_version extension_dir candidate
+
+    api_version="$("${PHP_BIN}" -i | awk -F'=> ' '/^PHP API / {gsub(/^ +| +$/, "", $2); print $2; exit}')"
+    extension_dir="$("${PHP_BIN}" -i | awk -F'=> ' '/^extension_dir / {gsub(/^ +| +$/, "", $2); print $2; exit}')"
+
+    for candidate in \
+        "${extension_dir%/}/xdebug.so" \
+        "/opt/homebrew/lib/php/pecl/${api_version}/xdebug.so" \
+        "/usr/local/lib/php/pecl/${api_version}/xdebug.so" \
+        "/opt/homebrew/lib/php/extensions/no-debug-non-zts-${api_version}/xdebug.so" \
+        "/usr/local/lib/php/extensions/no-debug-non-zts-${api_version}/xdebug.so"; do
+        if [[ -f "${candidate}" ]]; then
+            printf '%s\n' "${candidate}"
+            return 0
+        fi
+    done
+
+    while IFS= read -r candidate; do
+        if [[ -n "${candidate}" ]]; then
+            printf '%s\n' "${candidate}"
+            return 0
+        fi
+    done < <(find /opt/homebrew/lib/php /usr/local/lib/php -name xdebug.so 2>/dev/null | grep -m1 "/${api_version}/" || true)
+
+    while IFS= read -r candidate; do
+        if [[ -n "${candidate}" ]]; then
+            printf '%s\n' "${candidate}"
+            return 0
+        fi
+    done < <(find /opt/homebrew/lib/php /usr/local/lib/php -name xdebug.so 2>/dev/null | head -n 1 || true)
+
+    return 1
+}
+
+XDEBUG_SO="$(find_xdebug || true)"
+
+if [[ -z "${XDEBUG_SO}" ]]; then
+    echo "Unable to locate xdebug.so for coverage runs." >&2
+    echo "Set PHP_BIN to the desired PHP executable or install Xdebug for the active PHP runtime." >&2
+    exit 1
+fi
+
+SCAN_DIR="$("${PHP_BIN}" -i | awk -F'=> ' '/^Scan this dir for additional \\.ini files / {gsub(/^ +| +$/, "", $2); print $2; exit}')"
+TMP_INI_DIR="$(mktemp -d "${TMPDIR:-/tmp}/foundry-coverage.XXXXXX")"
+
+cleanup() {
+    rm -rf "${TMP_INI_DIR}"
+}
+
+trap cleanup EXIT
+
+cat > "${TMP_INI_DIR}/99-foundry-xdebug.ini" <<EOF
+zend_extension=${XDEBUG_SO}
+xdebug.mode=coverage
+EOF
+
+if [[ -n "${SCAN_DIR}" && "${SCAN_DIR}" != "(none)" ]]; then
+    export PHP_INI_SCAN_DIR="${TMP_INI_DIR}:${SCAN_DIR}"
+else
+    export PHP_INI_SCAN_DIR="${TMP_INI_DIR}"
+fi
+
+export XDEBUG_MODE="${XDEBUG_MODE:-coverage}"
+
+exec "${PHP_BIN}" "${ROOT_DIR}/vendor/bin/phpunit" "$@"

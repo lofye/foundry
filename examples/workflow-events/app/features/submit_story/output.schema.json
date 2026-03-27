@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "submit_story_output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "feature",
+    "state",
+    "event"
+  ],
+  "properties": {
+    "feature": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "event": {
+      "type": "string"
+    }
+  }
+}

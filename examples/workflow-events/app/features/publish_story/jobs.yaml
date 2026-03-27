@@ -1,0 +1,12 @@
+version: 1
+dispatch:
+  - name: refresh_story_feed
+    queue: feeds
+    timeout_seconds: 30
+    input_schema:
+      type: object
+      additionalProperties: false
+      required: [story_id]
+      properties:
+        story_id:
+          type: string

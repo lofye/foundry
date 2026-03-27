@@ -1,0 +1,61 @@
+{
+    "version": 1,
+    "feature": "submit_story",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/submit_story/feature.yaml",
+        "app/features/submit_story/action.php",
+        "app/features/submit_story/input.schema.json",
+        "app/features/submit_story/output.schema.json",
+        "app/features/submit_story/permissions.yaml",
+        "app/features/submit_story/cache.yaml",
+        "app/features/submit_story/events.yaml",
+        "app/features/submit_story/jobs.yaml",
+        "app/features/submit_story/tests/submit_story_contract_test.php",
+        "app/features/submit_story/tests/submit_story_feature_test.php",
+        "app/features/submit_story/tests/submit_story_auth_test.php"
+    ],
+    "generated_files": [
+        "app/.foundry/build/graph/app_graph.json",
+        "app/.foundry/build/projections/routes_index.php",
+        "app/.foundry/build/projections/schema_index.php",
+        "app/.foundry/build/projections/feature_index.php",
+        "app/.foundry/build/projections/permission_index.php",
+        "app/.foundry/build/projections/event_index.php",
+        "app/.foundry/build/projections/job_index.php",
+        "app/.foundry/build/projections/cache_index.php",
+        "app/.foundry/build/projections/scheduler_index.php",
+        "app/.foundry/build/projections/webhook_index.php",
+        "app/.foundry/build/projections/query_index.php",
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php",
+        "app/generated/query_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth",
+        "events",
+        "cache"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/submit_story/input.schema.json",
+        "output": "app/features/submit_story/output.schema.json"
+    },
+    "tests": [
+        "submit_story_auth_test",
+        "submit_story_contract_test",
+        "submit_story_feature_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "low"
+}

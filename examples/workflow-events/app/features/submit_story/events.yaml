@@ -1,0 +1,11 @@
+version: 1
+emit:
+  - name: story.submitted
+    schema:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title:
+          type: string
+subscribe: []

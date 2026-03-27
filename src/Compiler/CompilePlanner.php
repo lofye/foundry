@@ -18,6 +18,7 @@ final class CompilePlanner
         bool $hasPreviousGraph,
         SourceScanner $scanner,
         string $frameworkVersion,
+        ?string $forcedFullReason = null,
     ): CompilePlan {
         sort($currentFeatures);
         $mode = $options->mode();
@@ -74,6 +75,19 @@ final class CompilePlanner
                 changedFeatures: array_values(array_unique(array_merge($changedFeatures, $removedFeatures))),
                 changedFiles: $changedFiles,
                 reason: $frameworkChanged ? 'framework version changed; full compile required' : 'no previous build state; full compile required',
+            );
+        }
+
+        if ($forcedFullReason !== null && $forcedFullReason !== '') {
+            return new CompilePlan(
+                mode: $mode,
+                incremental: false,
+                noChanges: false,
+                fallbackToFull: true,
+                selectedFeatures: $currentFeatures,
+                changedFeatures: array_values(array_unique(array_merge($changedFeatures, $removedFeatures))),
+                changedFiles: $changedFiles,
+                reason: $forcedFullReason,
             );
         }
 

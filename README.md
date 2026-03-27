@@ -3,6 +3,9 @@
 Foundry is a production-minded, explicit, deterministic, LLM-first PHP framework for building feature-local web apps.
 Visit [FoundryFramework.org](https://foundryframework.org) for extensive documentation.
 
+Core Foundry remains MIT-licensed and fully usable without restriction.
+Foundry Pro is an optional, additive layer for deeper diagnostics, architecture understanding, trace analysis, graph diffing, and AI-assisted workflows.
+
 It is optimized for:
 - explicit contracts
 - deterministic generation
@@ -20,9 +23,31 @@ Architect: ChatGPT-5.3
 Engineer: GPT-5.3-Codex (Extra High)
 License: MIT.
 
+## Foundry Pro
+
+Foundry Pro is optional and local-first:
+
+- core compile, inspect, verify, scaffold, runtime, and prompt flows remain available without Pro
+- Pro adds `doctor --deep`, `explain`, `diff`, `trace`, and `generate "<prompt>"`
+- Pro does not require SaaS connectivity, telemetry, or runtime calls to external services
+- Pro licensing is stored locally at `~/.foundry/license.json` by default
+- `generate` works in deterministic mode without any provider and otherwise uses whatever local/remote provider you configure in `config/ai.php`
+- `explain` derives architecture explanations from the compiled graph, projections, diagnostics, and docs metadata, not from an LLM
+
+Enable Pro locally:
+
+```bash
+foundry pro enable <license-key>
+foundry pro status --json
+```
+
+Without a valid license, Pro commands stay visible in help, return a clear message, and exit non-zero without affecting core framework behavior.
+
 ## Runtime and Language
 - PHP `^8.4`
 - Composer-based
+
+In installed Foundry apps, use the project-local `foundry` launcher from the app root. If your shell does not resolve current-directory executables, use `./foundry ...`. In this framework repository, continue to use `php bin/foundry ...`.
 
 ## Install and Run (Packagist)
 ```bash
@@ -34,24 +59,37 @@ cd my-foundry-app
 composer require lofye/foundry-framework
 
 # Initialize a new Foundry app in this folder
-php vendor/bin/foundry init app . --name=acme/my-foundry-app
+foundry new --starter=standard --name=acme/my-foundry-app
 
 # Install project dependencies
 composer install
 
-# Generate indexes and verify contracts
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry verify graph --json
-php vendor/bin/foundry verify contracts --json
-php -S 127.0.0.1:8000 app/platform/public/index.php
+# Compile, inspect, and verify contracts
+foundry compile graph --json
+foundry inspect graph --json
+foundry inspect pipeline --json
+foundry doctor --json
+foundry verify graph --json
+foundry verify pipeline --json
+foundry verify contracts --json
+php -S 127.0.0.1:8000 public/index.php
+```
+
+From a Foundry-enabled parent directory, you can also scaffold into a child folder directly:
+
+```bash
+composer require lofye/foundry-framework
+foundry new website --starter=standard --json
+cd website
+composer install
 ```
 
 ## Upgrade Foundry in an App
 ```bash
-composer update lofye/foundry
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry verify graph --json
-php vendor/bin/foundry verify contracts --json
+composer update lofye/foundry-framework
+foundry compile graph --json
+foundry verify graph --json
+foundry verify contracts --json
 ```
 
 ## Local MinIO (Fix + Verify)
@@ -100,19 +138,19 @@ Use this loop for every change:
 
 Recommended command sequence:
 ```bash
-php vendor/bin/foundry inspect feature <feature> --json
-php vendor/bin/foundry inspect context <feature> --json
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry inspect impact --file=app/features/<feature>/feature.yaml --json
-php vendor/bin/foundry verify graph --json
-php vendor/bin/foundry generate context <feature> --json
-php vendor/bin/foundry verify feature <feature> --json
-php vendor/bin/foundry verify contracts --json
-php vendor/bin/foundry verify auth --json
-php vendor/bin/foundry verify cache --json
-php vendor/bin/foundry verify events --json
-php vendor/bin/foundry verify jobs --json
+foundry inspect feature <feature> --json
+foundry inspect context <feature> --json
+foundry compile graph --json
+foundry inspect graph --json
+foundry inspect impact --file=app/features/<feature>/feature.yaml --json
+foundry verify graph --json
+foundry generate context <feature> --json
+foundry verify feature <feature> --json
+foundry verify contracts --json
+foundry verify auth --json
+foundry verify cache --json
+foundry verify events --json
+foundry verify jobs --json
 vendor/bin/phpunit
 ```
 
@@ -149,11 +187,27 @@ app/
       projections/
       manifests/
       diagnostics/
-  platform/
-    bootstrap/
-    config/
-    migrations/
-    public/index.php
+bootstrap/
+  app.php
+  providers.php
+config/
+  app.php
+  auth.php
+  database.php
+  cache.php
+  queue.php
+  storage.php
+  ai.php
+database/
+  migrations/
+lang/
+  en/
+public/
+  index.php
+storage/
+  files/
+  logs/
+  tmp/
 ```
 
 Rules:
@@ -173,136 +227,221 @@ Each feature must define:
 Optional feature-local files:
 - `queries.sql`, `permissions.yaml`, `cache.yaml`, `events.yaml`, `jobs.yaml`, `prompts.md`
 
+## API Stability
+Foundry now classifies framework surface area explicitly:
+- `public_api`: safe for apps and automation to depend on
+- `extension_api`: safe for extensions to implement against
+- `experimental_api`: available, but still allowed to change in minor releases
+- `internal_api`: implementation detail, not a supported dependency
+
+Stable CLI commands and the API surface registry are inspectable:
+```bash
+foundry help --json
+foundry help compile graph --json
+foundry inspect api-surface --json
+foundry inspect api-surface --php=Foundry\\Feature\\FeatureAction --json
+```
+
+Policy details live in `docs/public-api-policy.md` and are also emitted into generated docs as `docs/generated/api-surface.md` and `docs/generated/cli-reference.md`.
+
+## Documentation Site
+Framework documentation is built as a static site from curated pages plus generated graph/schema/CLI reference content:
+
+```bash
+php scripts/build-docs.php
+```
+
+The build compiles the root app graph, merges `docs/*.md` with generated reference pages, and writes the current site plus versioned snapshots to `public/docs`.
+
 ## CLI Surface
 All inspection, verification, and planning commands support `--json`.
 
 Compile:
 ```bash
-php vendor/bin/foundry compile graph --json
-php vendor/bin/foundry compile graph --feature=<feature> --json
-php vendor/bin/foundry compile graph --changed-only --json
+foundry compile graph --json
+foundry compile graph --feature=<feature> --json
+foundry compile graph --changed-only --json
 ```
 
 Architecture analysis:
 ```bash
-php vendor/bin/foundry doctor --json
-php vendor/bin/foundry doctor --strict --json
-php vendor/bin/foundry doctor --feature=<feature> --json
+foundry doctor --json
+foundry doctor --strict --json
+foundry doctor --feature=<feature> --json
+foundry doctor --deep --json
 ```
 
-Graph visualization:
+Core vs Pro:
+
+- Free/core: `compile`, `inspect`, `verify`, `doctor`, `prompt`, scaffold generators, runtime commands
+- Pro: `doctor --deep`, `explain <target>`, `diff`, `trace [<target>]`, `generate "<prompt>"`, `pro enable`, `pro status`
+
+Pro command surface:
+
 ```bash
-php vendor/bin/foundry graph visualize --json
-php vendor/bin/foundry graph visualize --events --format=mermaid --json
-php vendor/bin/foundry graph visualize --routes --format=dot --json
-php vendor/bin/foundry graph visualize --caches --feature=<feature> --format=svg --json
-php vendor/bin/foundry graph visualize --pipeline --format=mermaid --json
+foundry pro enable <license-key>
+foundry pro status --json
+foundry explain publish_post --json
+foundry explain publish_post --deep
+foundry explain route:POST /posts --markdown
+foundry explain route:POST /posts --neighbors
+foundry diff --json
+foundry trace publish_post --json
+foundry generate "add bookmark support" --deterministic --dry-run --json
+foundry generate "add bookmark support" --provider=static --model=fixture-model --dry-run --json
+```
+
+`explain` supports typed selectors such as `feature:publish_post`, `route:POST /posts`, `command:doctor`, `event:post.created`, `workflow:editorial`, and `extension:core`.
+Default text output starts with `Subject` and `Summary`, then renders canonical sections such as `Responsibilities`, `Execution Flow`, `Depends On`, `Emits`, `Triggers`, `Permissions`, `Schema Interaction`, `Graph Relationships`, `Related Commands`, `Related Docs`, `Diagnostics`, and `Suggested Fixes` when present. Extra sections such as `Impact` render afterward through the assembler-owned `sectionOrder`.
+`--deep` expands the same structure with detailed flow stages and expanded graph relationships instead of switching to a different format.
+`--json` returns a deliberate machine-readable contract with `executionFlow`, `relationships`, `relatedCommands`, `relatedDocs`, `diagnostics`, `suggestedFixes`, `sections`, and `sectionOrder` keys rather than renderer-specific text fragments.
+Extensions can enrich explain output deterministically by implementing `Foundry\Explain\Contributors\ExplainContributorInterface` and returning `Foundry\Explain\Contributors\ExplainContribution` entries that the registry merges before rendering. Contributor sections are normalized through `Foundry\Explain\ExplainSection`.
+
+Provider-backed generation is still optional. If no provider is configured, `generate` exits non-zero with a clear message and suggests `--deterministic`.
+
+Minimal AI provider config:
+
+```php
+<?php
+declare(strict_types=1);
+
+return [
+    'default' => 'static',
+    'providers' => [
+        'static' => [
+            'driver' => 'static',
+            'model' => 'fixture-model',
+            'parsed' => [
+                'feature' => [
+                    'feature' => 'favorite_post',
+                    'route' => ['method' => 'POST', 'path' => '/posts/{id}/favorite'],
+                ],
+                'explanation' => 'Provider-authored generation plan.',
+            ],
+        ],
+    ],
+];
+```
+
+Graph inspection and export:
+```bash
+foundry inspect graph --json
+foundry inspect graph --command="POST /posts" --format=dot --json
+foundry graph inspect --workflow=posts --json
+foundry graph visualize --pipeline --feature=<feature> --format=mermaid --json
+foundry export graph --extension=core --format=json --json
 ```
 
 AI prompt loop:
 ```bash
-php vendor/bin/foundry prompt "add bookmark endpoint for posts" --json
-php vendor/bin/foundry prompt "add bookmark endpoint for posts" --feature-context --dry-run --json
-php vendor/bin/foundry preview notification <name> --json
+foundry prompt "add bookmark endpoint for posts" --json
+foundry prompt "add bookmark endpoint for posts" --feature-context --dry-run --json
+foundry preview notification <name> --json
+foundry upgrade-check --json
+foundry upgrade-check --target=1.0.0 --json
 ```
 
 Inspect:
 ```bash
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry inspect build --json
-php vendor/bin/foundry inspect node <node-id> --json
-php vendor/bin/foundry inspect dependencies <node-id> --json
-php vendor/bin/foundry inspect dependents <node-id> --json
-php vendor/bin/foundry inspect pipeline --json
-php vendor/bin/foundry inspect execution-plan <feature|route> --json
-php vendor/bin/foundry inspect guards --json
-php vendor/bin/foundry inspect guards <feature> --json
-php vendor/bin/foundry inspect interceptors --json
-php vendor/bin/foundry inspect interceptors --stage=<stage> --json
-php vendor/bin/foundry inspect impact <node-id> --json
-php vendor/bin/foundry inspect impact --file=<path> --json
-php vendor/bin/foundry inspect affected-tests <node-id> --json
-php vendor/bin/foundry inspect affected-features <node-id> --json
-php vendor/bin/foundry inspect extensions --json
-php vendor/bin/foundry inspect extension <name> --json
-php vendor/bin/foundry inspect packs --json
-php vendor/bin/foundry inspect pack <name> --json
-php vendor/bin/foundry inspect compatibility --json
-php vendor/bin/foundry inspect migrations --json
-php vendor/bin/foundry inspect definition-format <name> --json
-php vendor/bin/foundry inspect resource <name> --json
-php vendor/bin/foundry inspect notification <name> --json
-php vendor/bin/foundry inspect api <name> --json
-php vendor/bin/foundry inspect feature <feature> --json
-php vendor/bin/foundry inspect route <METHOD> <PATH> --json
-php vendor/bin/foundry inspect auth <feature> --json
-php vendor/bin/foundry inspect cache <feature> --json
-php vendor/bin/foundry inspect events <feature> --json
-php vendor/bin/foundry inspect jobs <feature> --json
-php vendor/bin/foundry inspect context <feature> --json
-php vendor/bin/foundry inspect dependencies <feature> --json
+foundry help --json
+foundry help inspect graph --json
+foundry inspect graph --json
+foundry inspect build --json
+foundry inspect node <node-id> --json
+foundry inspect dependencies <node-id> --json
+foundry inspect dependents <node-id> --json
+foundry inspect pipeline --json
+foundry inspect execution-plan <feature|route> --json
+foundry inspect guards --json
+foundry inspect guards <feature> --json
+foundry inspect interceptors --json
+foundry inspect interceptors --stage=<stage> --json
+foundry inspect impact <node-id> --json
+foundry inspect impact --file=<path> --json
+foundry inspect affected-tests <node-id> --json
+foundry inspect affected-features <node-id> --json
+foundry inspect extensions --json
+foundry inspect extension <name> --json
+foundry inspect packs --json
+foundry inspect pack <name> --json
+foundry inspect compatibility --json
+foundry inspect migrations --json
+foundry inspect definition-format <name> --json
+foundry inspect api-surface --json
+foundry inspect resource <name> --json
+foundry inspect notification <name> --json
+foundry inspect api <name> --json
+foundry inspect feature <feature> --json
+foundry inspect route <METHOD> <PATH> --json
+foundry inspect auth <feature> --json
+foundry inspect cache <feature> --json
+foundry inspect events <feature> --json
+foundry inspect jobs <feature> --json
+foundry inspect context <feature> --json
+foundry inspect dependencies <feature> --json
 ```
 
 Generate:
 ```bash
-php vendor/bin/foundry generate feature <definition.yaml> --json
-php vendor/bin/foundry generate starter server-rendered --json
-php vendor/bin/foundry generate starter api --json
-php vendor/bin/foundry generate resource <name> --definition=<file> --json
-php vendor/bin/foundry generate admin-resource <name> --json
-php vendor/bin/foundry generate uploads avatar --json
-php vendor/bin/foundry generate uploads attachments --json
-php vendor/bin/foundry generate notification <name> --json
-php vendor/bin/foundry generate api-resource <name> --definition=<file> --json
-php vendor/bin/foundry generate docs --format=markdown --json
-php vendor/bin/foundry generate docs --format=html --json
-php vendor/bin/foundry generate indexes --json
-php vendor/bin/foundry generate tests <feature> --json
-php vendor/bin/foundry generate tests <target> --mode=deep --json
-php vendor/bin/foundry generate tests --all-missing --mode=deep --json
-php vendor/bin/foundry generate migration <definition.yaml> --json
-php vendor/bin/foundry generate context <feature> --json
+foundry generate feature <definition.yaml> --json
+foundry generate starter server-rendered --json
+foundry generate starter api --json
+foundry generate resource <name> --definition=<file> --json
+foundry generate admin-resource <name> --json
+foundry generate uploads avatar --json
+foundry generate uploads attachments --json
+foundry generate notification <name> --json
+foundry generate api-resource <name> --definition=<file> --json
+foundry generate docs --format=markdown --json
+foundry generate docs --format=html --json
+foundry generate indexes --json
+foundry generate tests <feature> --json
+foundry generate tests <target> --mode=deep --json
+foundry generate tests --all-missing --mode=deep --json
+foundry generate migration <definition.yaml> --json
+foundry generate context <feature> --json
 ```
 
 Export:
 ```bash
-php vendor/bin/foundry export openapi --format=json --json
-php vendor/bin/foundry export openapi --format=yaml --json
+foundry export openapi --format=json --json
+foundry export openapi --format=yaml --json
 ```
 
 Verify:
 ```bash
-php vendor/bin/foundry verify feature <feature> --json
-php vendor/bin/foundry verify graph --json
-php vendor/bin/foundry verify pipeline --json
-php vendor/bin/foundry verify extensions --json
-php vendor/bin/foundry verify compatibility --json
-php vendor/bin/foundry verify contracts --json
-php vendor/bin/foundry verify auth --json
-php vendor/bin/foundry verify cache --json
-php vendor/bin/foundry verify events --json
-php vendor/bin/foundry verify jobs --json
-php vendor/bin/foundry verify migrations --json
-php vendor/bin/foundry verify resource <name> --json
-php vendor/bin/foundry verify notifications --json
-php vendor/bin/foundry verify api --json
+foundry verify feature <feature> --json
+foundry verify graph --json
+foundry verify pipeline --json
+foundry verify extensions --json
+foundry verify compatibility --json
+foundry verify contracts --json
+foundry verify auth --json
+foundry verify cache --json
+foundry verify events --json
+foundry verify jobs --json
+foundry verify migrations --json
+foundry verify resource <name> --json
+foundry verify notifications --json
+foundry verify api --json
 ```
 
 Runtime / planning:
 ```bash
-php vendor/bin/foundry init app <path> [--name=vendor/app] [--version=^0.1] [--force]
-php vendor/bin/foundry serve
-php vendor/bin/foundry queue:work
-php vendor/bin/foundry queue:inspect --json
-php vendor/bin/foundry schedule:run --json
-php vendor/bin/foundry trace:tail --json
-php vendor/bin/foundry affected-files <feature> --json
-php vendor/bin/foundry impacted-features <permission|event:<name>|cache:<key>> --json
-php vendor/bin/foundry migrate definitions --dry-run --json
-php vendor/bin/foundry migrate definitions --path=<path> --dry-run --json
-php vendor/bin/foundry migrate definitions --write --json
-php vendor/bin/foundry codemod run <name> --dry-run --json
-php vendor/bin/foundry codemod run <name> --write --json
+foundry new [path] [--starter=minimal|standard|api-first] [--name=vendor/app] [--version=^0.1] [--force]
+foundry init app <path> [--starter=minimal|standard|api-first] [--name=vendor/app] [--version=^0.1] [--force]
+foundry serve
+foundry queue:work
+foundry queue:inspect --json
+foundry schedule:run --json
+foundry trace:tail --json
+foundry affected-files <feature> --json
+foundry impacted-features <permission|event:<name>|cache:<key>> --json
+foundry migrate definitions --dry-run --json
+foundry migrate definitions --path=<path> --dry-run --json
+foundry migrate definitions --write --json
+foundry codemod run <name> --dry-run --json
+foundry codemod run <name> --write --json
 ```
 
 ## Tests
@@ -340,17 +479,27 @@ Coverage note:
   `php -dzend_extension=/path/to/xdebug.so -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text`
 
 ## Examples
-Included example apps:
+Start with `docs/example-applications.md` or `examples/README.md`.
+
+Official example set:
+- `examples/hello-world`
 - `examples/blog-api`
+- `examples/extensions-migrations`
+- `examples/workflow-events`
+- `examples/reference-blog`
+
+Supplemental app examples:
 - `examples/dashboard`
 - `examples/ai-pipeline`
+
+Framework/tooling examples:
 - `examples/compiler-core`
-- `examples/extensions-migrations`
 - `examples/architecture-tools`
 - `examples/execution-pipeline`
 - `examples/app-scaffolding`
+- `examples/integration-tooling`
 
-Each example includes feature folders plus generated indexes.
+Thresholds should be treated as the richer real-app reference; the smaller examples stay focused on one teachable pattern at a time.
 
 ## Additional Docs
 - `ARCHITECTURE.md`
@@ -358,8 +507,12 @@ Each example includes feature folders plus generated indexes.
 - `BENCHMARK_NOTES.md`
 - `docs/semantic-compiler.md`
 - `docs/extensions-and-migrations.md`
+- `docs/extension-author-guide.md`
+- `docs/upgrade-safety.md`
 - `docs/architecture-tools.md`
 - `docs/execution-pipeline.md`
 - `docs/app-scaffolding.md`
+- `docs/example-applications.md`
+- `docs/public-api-policy.md`
 - `docs/api-notifications-docs.md`
 - `docs/contributor-vocabulary.md`

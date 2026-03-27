@@ -11,7 +11,7 @@ use Foundry\Http\RequestContext;
 final class Action implements FeatureAction
 {
     #[\Override]
-    public function handle(array , RequestContext , AuthContext , FeatureServices ): array
+    public function handle(array $input, RequestContext $request, AuthContext $auth, FeatureServices $services): array
     {
         return [
             'ok' => true,

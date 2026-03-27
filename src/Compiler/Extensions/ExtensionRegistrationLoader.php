@@ -3,35 +3,41 @@ declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
 
-use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
 
 final class ExtensionRegistrationLoader
 {
     /**
-     * @return array{source_paths:array<int,string>,classes:array<int,string>}
+     * @return array{
+     *   source_paths:array<int,string>,
+     *   entries:array<int,array{class:string,source_path:string}>,
+     *   diagnostics:array<int,array<string,mixed>>
+     * }
      */
     public function load(Paths $paths): array
     {
         $sourcePaths = [];
-        $classes = [];
+        $entries = [];
+        $diagnostics = [];
 
         foreach ($this->registrationPaths($paths) as $path) {
             if (!is_file($path)) {
                 continue;
             }
 
-            $sourcePaths[] = $this->relativePath($paths, $path);
+            $relativePath = $this->relativePath($paths, $path);
+            $sourcePaths[] = $relativePath;
 
             /** @var mixed $payload */
             $payload = require $path;
             if (!is_array($payload)) {
-                throw new FoundryError(
-                    'FDY7010_EXTENSION_REGISTRATION_INVALID',
-                    'extensions',
-                    ['path' => $path],
-                    'Extension registration file must return an array of extension class names.',
+                $diagnostics[] = $this->diagnostic(
+                    code: 'FDY7010_EXTENSION_REGISTRATION_INVALID',
+                    message: 'Extension registration file must return an array of extension class names.',
+                    sourcePath: $relativePath,
+                    details: ['path' => $path],
                 );
+                continue;
             }
 
             foreach ($payload as $class) {
@@ -39,15 +45,21 @@ final class ExtensionRegistrationLoader
                 if ($className === '') {
                     continue;
                 }
-                $classes[] = $className;
+
+                $entries[] = [
+                    'class' => $className,
+                    'source_path' => $relativePath,
+                ];
             }
         }
 
-        $classes = array_values(array_unique($classes));
+        $sourcePaths = array_values(array_unique($sourcePaths));
+        sort($sourcePaths);
 
         return [
             'source_paths' => $sourcePaths,
-            'classes' => $classes,
+            'entries' => $entries,
+            'diagnostics' => $diagnostics,
         ];
     }
 
@@ -58,7 +70,7 @@ final class ExtensionRegistrationLoader
     {
         return [
             $paths->join('foundry.extensions.php'),
-            $paths->join('app/platform/foundry/extensions.php'),
+            $paths->join('config/foundry/extensions.php'),
         ];
     }
 
@@ -69,5 +81,21 @@ final class ExtensionRegistrationLoader
         return str_starts_with($absolute, $root)
             ? substr($absolute, strlen($root))
             : $absolute;
+    }
+
+    /**
+     * @param array<string,mixed> $details
+     * @return array<string,mixed>
+     */
+    private function diagnostic(string $code, string $message, string $sourcePath, array $details = []): array
+    {
+        return [
+            'code' => $code,
+            'severity' => 'error',
+            'category' => 'extensions',
+            'message' => $message,
+            'source_path' => $sourcePath,
+            'details' => $details,
+        ];
     }
 }

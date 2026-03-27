@@ -35,7 +35,7 @@ final class GenerateIndexesCommand extends Command
             throw new FoundryError('CLI_MIGRATION_DEFINITION_REQUIRED', 'validation', [], 'Migration definition path required.');
         }
 
-        $out = $context->paths()->join('app/platform/migrations');
+        $out = $context->paths()->join('database/migrations');
         $file = $context->migrationGenerator()->generate($definitionPath, $out);
 
         return [

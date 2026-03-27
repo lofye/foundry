@@ -18,7 +18,7 @@ final class ServeCommand extends Command
     public function run(array $args, CommandContext $context): array
     {
         $host = (string) ($args[1] ?? '127.0.0.1:8000');
-        $publicIndex = $context->paths()->join('app/platform/public/index.php');
+        $publicIndex = $context->paths()->join('public/index.php');
 
         return [
             'status' => 0,

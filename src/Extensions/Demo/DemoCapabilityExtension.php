@@ -38,6 +38,7 @@ final class DemoCapabilityExtension extends AbstractCompilerExtension
             providedInspectSurfaces: ['extensions', 'packs'],
             providedVerifiers: ['extensions', 'compatibility'],
             providedCapabilities: ['demo.notes.annotate'],
+            requiredExtensions: ['core'],
         );
     }
 
@@ -62,6 +63,7 @@ final class DemoCapabilityExtension extends AbstractCompilerExtension
                 description: 'Demo pack providing notes annotation capability.',
                 providedCapabilities: ['demo.notes.annotate'],
                 requiredCapabilities: ['compiler.core'],
+                inspectSurfaces: ['extensions', 'packs'],
                 frameworkVersionConstraint: '*',
                 graphVersionConstraint: '^1',
                 generators: ['demo-note-generator'],

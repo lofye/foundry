@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
+use Foundry\CLI\Commands\CacheClearCommand;
+use Foundry\CLI\Commands\CacheInspectCommand;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
 use Foundry\CLI\Commands\GenerateScaffoldCommand;
@@ -20,6 +22,7 @@ use Foundry\CLI\Commands\InspectResourceCommand;
 use Foundry\CLI\Commands\InspectRouteCommand;
 use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\DoctorCommand;
+use Foundry\CLI\Commands\ExportGraphCommand;
 use Foundry\CLI\Commands\ExportOpenApiCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
 use Foundry\CLI\Commands\PromptCommand;
@@ -28,6 +31,7 @@ use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
 use Foundry\CLI\Commands\CodemodRunCommand;
 use Foundry\CLI\Commands\CompileGraphCommand;
+use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
 use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyPipelineCommand;
@@ -36,6 +40,12 @@ use Foundry\CLI\Commands\VerifyFeatureCommand;
 use Foundry\CLI\Commands\VerifyIntegrationCommand;
 use Foundry\CLI\Commands\VerifyPlatformCommand;
 use Foundry\CLI\Commands\VerifyResourceCommand;
+use Foundry\Pro\CLI\DeepDoctorCommand;
+use Foundry\Pro\CLI\DiffCommand;
+use Foundry\Pro\CLI\ExplainCommand;
+use Foundry\Pro\CLI\GenerateCommand as ProGenerateCommand;
+use Foundry\Pro\CLI\ProCommand;
+use Foundry\Pro\CLI\TraceCommand;
 use PHPUnit\Framework\TestCase;
 
 final class CLICommandMatchesTest extends TestCase
@@ -48,6 +58,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new InspectResourceCommand())->matches(['inspect', 'resource', 'posts']));
         $this->assertFalse((new InspectFeatureCommand())->matches(['other']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'graph']));
+        $this->assertTrue((new InspectGraphCommand())->matches(['graph', 'inspect']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'impact', '--file=app/features/x/feature.yaml']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'dependencies', 'feature:x']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'extension', 'core']));
@@ -55,6 +66,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'pack', 'core.foundation']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'compatibility']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'definition-format', 'feature_manifest']));
+        $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'api-surface']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'pipeline']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'execution-plan', 'publish_post']));
         $this->assertTrue((new InspectGraphCommand())->matches(['inspect', 'guards', 'publish_post']));
@@ -63,6 +75,7 @@ final class CLICommandMatchesTest extends TestCase
 
         $this->assertTrue((new InspectRouteCommand())->matches(['inspect', 'route', 'GET', '/']));
         $this->assertTrue((new InitAppCommand())->matches(['init', 'app', './my-app']));
+        $this->assertTrue((new InitAppCommand())->matches(['new', './my-app']));
         $this->assertTrue((new GenerateFeatureCommand())->matches(['generate', 'feature', 'x.yaml']));
         $this->assertTrue((new GenerateScaffoldCommand())->matches(['generate', 'starter', 'api']));
         $this->assertTrue((new GenerateScaffoldCommand())->matches(['generate', 'resource', 'posts', '--definition=definitions/posts.resource.yaml']));
@@ -82,10 +95,20 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new GeneratePlatformCommand())->matches(['generate', 'inspect-ui']));
         $this->assertTrue((new GenerateFeatureCommand())->matches(['generate', 'tests', '--all-missing']));
         $this->assertTrue((new GenerateIndexesCommand())->matches(['generate', 'indexes']));
+        $this->assertTrue((new ExportGraphCommand())->matches(['export', 'graph', '--format=json']));
         $this->assertTrue((new ExportOpenApiCommand())->matches(['export', 'openapi', '--format=json']));
         $this->assertTrue((new PreviewNotificationCommand())->matches(['preview', 'notification', 'welcome_email']));
         $this->assertTrue((new CompileGraphCommand())->matches(['compile', 'graph']));
+        $this->assertTrue((new CacheInspectCommand())->matches(['cache', 'inspect']));
+        $this->assertTrue((new CacheClearCommand())->matches(['cache', 'clear']));
+        $this->assertTrue((new DeepDoctorCommand())->matches(['doctor', '--deep']));
         $this->assertTrue((new DoctorCommand())->matches(['doctor']));
+        $this->assertTrue((new ExplainCommand())->matches(['explain', 'publish_post']));
+        $this->assertTrue((new DiffCommand())->matches(['diff']));
+        $this->assertTrue((new TraceCommand())->matches(['trace', 'publish_post']));
+        $this->assertTrue((new ProCommand())->matches(['pro', 'enable', 'key']));
+        $this->assertTrue((new ProGenerateCommand())->matches(['generate', 'add', 'bookmark', 'support']));
+        $this->assertTrue((new UpgradeCheckCommand())->matches(['upgrade-check']));
         $this->assertTrue((new GraphVisualizeCommand())->matches(['graph', 'visualize']));
         $this->assertTrue((new PromptCommand())->matches(['prompt', 'add', 'feature']));
         $this->assertTrue((new InspectPlatformCommand())->matches(['inspect', 'billing']));

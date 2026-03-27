@@ -5,12 +5,13 @@ namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
-use Foundry\Compiler\CompileOptions;
-use Foundry\Compiler\Visualization\GraphVisualizer;
+use Foundry\CLI\Commands\Concerns\InteractsWithGraphInspection;
 use Foundry\Support\FoundryError;
 
 final class GraphVisualizeCommand extends Command
 {
+    use InteractsWithGraphInspection;
+
     /**
      * @var array<int,string>
      */
@@ -25,7 +26,9 @@ final class GraphVisualizeCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        [$view, $format, $feature] = $this->parseOptions($args);
+        $options = $this->parseGraphOptions($args);
+        $format = strtolower((string) ($options['format'] ?? 'mermaid'));
+        $options['format'] = $format;
 
         if (!in_array($format, $this->allowedFormats, true)) {
             throw new FoundryError(
@@ -36,6 +39,7 @@ final class GraphVisualizeCommand extends Command
             );
         }
 
+        $feature = is_string($options['feature'] ?? null) ? $options['feature'] : null;
         if ($feature !== null && !$this->featureExists($context, $feature)) {
             throw new FoundryError(
                 'FEATURE_NOT_FOUND',
@@ -45,92 +49,13 @@ final class GraphVisualizeCommand extends Command
             );
         }
 
-        $compiler = $context->graphCompiler();
-        $graph = $compiler->loadGraph() ?? $compiler->compile(new CompileOptions())->graph;
-
-        $visualizer = new GraphVisualizer();
-        $graphData = $visualizer->build($graph, $view, $feature);
-        $rendered = $visualizer->render($graphData, $format);
+        $payload = $this->buildGraphInspectionPayload($context, $options);
 
         return [
             'status' => 0,
-            'message' => $rendered,
-            'payload' => [
-                'graph_version' => $graph->graphVersion(),
-                'framework_version' => $graph->frameworkVersion(),
-                'compiled_at' => $graph->compiledAt(),
-                'source_hash' => $graph->sourceHash(),
-                'view' => $view,
-                'format' => $format,
-                'feature_filter' => $feature,
-                'graph' => $graphData,
-                'rendered' => $rendered,
-            ],
+            'message' => $context->expectsJson() ? null : $this->renderGraphInspectionMessage($payload, true),
+            'payload' => $context->expectsJson() ? $payload : null,
         ];
-    }
-
-    /**
-     * @param array<int,string> $args
-     * @return array{0:string,1:string,2:?string}
-     */
-    private function parseOptions(array $args): array
-    {
-        $view = 'dependencies';
-        $format = 'mermaid';
-        $feature = null;
-
-        foreach ($args as $index => $arg) {
-            if ($arg === '--events') {
-                $view = 'events';
-                continue;
-            }
-
-            if ($arg === '--routes') {
-                $view = 'routes';
-                continue;
-            }
-
-            if ($arg === '--caches') {
-                $view = 'caches';
-                continue;
-            }
-
-            if ($arg === '--pipeline') {
-                $view = 'pipeline';
-                continue;
-            }
-
-            if (str_starts_with($arg, '--format=')) {
-                $format = strtolower((string) substr($arg, strlen('--format=')));
-                continue;
-            }
-
-            if ($arg === '--format') {
-                $value = strtolower((string) ($args[$index + 1] ?? ''));
-                if ($value !== '') {
-                    $format = $value;
-                }
-                continue;
-            }
-
-            if (str_starts_with($arg, '--feature=')) {
-                $feature = substr($arg, strlen('--feature='));
-                continue;
-            }
-
-            if ($arg === '--feature') {
-                $value = (string) ($args[$index + 1] ?? '');
-                if ($value !== '') {
-                    $feature = $value;
-                }
-            }
-        }
-
-        if ($feature === '') {
-            $feature = null;
-        }
-
-        return [$view, $format, $feature];
     }
 
     private function featureExists(CommandContext $context, string $feature): bool

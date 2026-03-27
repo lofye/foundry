@@ -55,7 +55,10 @@ final class SmallEdgeCaseTest extends TestCase
 
         $paths = Paths::fromCwd('/tmp/project');
         $this->assertSame('/tmp/project/app', $paths->app());
-        $this->assertSame('/tmp/project/app/platform', $paths->platform());
+        $this->assertSame('/tmp/project/bootstrap', $paths->bootstrap());
+        $this->assertSame('/tmp/project/config', $paths->config());
+        $this->assertSame('/tmp/project/database/migrations', $paths->migrations());
+        $this->assertSame('/tmp/project/storage/files', $paths->storageFiles());
         $this->assertSame($paths->frameworkRoot() . '/examples', $paths->examples());
         $this->assertSame($paths->frameworkRoot() . '/stubs', $paths->stubs());
     }

@@ -8,6 +8,7 @@ use Foundry\Compiler\Codemod\Codemod;
 use Foundry\Compiler\CompilerPass;
 use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Migration\DefinitionFormat;
+use Foundry\Doctor\DoctorCheck;
 use Foundry\Compiler\Projection\ProjectionEmitter;
 use Foundry\Pipeline\PipelineStageDefinition;
 use Foundry\Pipeline\StageInterceptor;
@@ -84,6 +85,11 @@ interface CompilerExtension
      * @return array<int,GraphAnalyzer>
      */
     public function graphAnalyzers(): array;
+
+    /**
+     * @return array<int,DoctorCheck>
+     */
+    public function doctorChecks(): array;
 
     /**
      * @return array<int,PipelineStageDefinition>

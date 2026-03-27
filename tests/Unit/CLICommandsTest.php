@@ -23,7 +23,7 @@ final class CLICommandsTest extends TestCase
 
         file_put_contents($this->project->root . '/app/generated/job_index.php', '<?php return ["notify" => ["queue" => "default"]];');
         file_put_contents($this->project->root . '/app/generated/scheduler_index.php', '<?php return ["task" => ["frequency" => "always"]];');
-        file_put_contents($this->project->root . '/app/platform/logs/trace.log', "line1\nline2\n");
+        file_put_contents($this->project->root . '/storage/logs/trace.log', "line1\nline2\n");
     }
 
     protected function tearDown(): void

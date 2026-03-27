@@ -78,7 +78,7 @@ YAML);
         file_put_contents($base . '/tests/publish_post_auth_test.php', '<?php declare(strict_types=1);');
 
         file_put_contents($this->project->root . '/app/generated/schema_index.php', '<?php return [];');
-        file_put_contents($this->project->root . '/app/platform/migrations/20260101000000_add.sql', 'CREATE TABLE x (id TEXT);');
+        file_put_contents($this->project->root . '/database/migrations/20260101000000_add.sql', 'CREATE TABLE x (id TEXT);');
     }
 
     protected function tearDown(): void

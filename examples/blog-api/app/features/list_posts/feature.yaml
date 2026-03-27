@@ -1,4 +1,4 @@
-version: 1
+version: 2
 feature: list_posts
 kind: http
 description: list_posts endpoint for blog-api.
@@ -46,5 +46,5 @@ tests:
     - auth
 llm:
   editable: true
-  risk: low
+  risk_level: low
   notes_file: prompts.md

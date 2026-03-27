@@ -26,12 +26,6 @@ final class VerifyCompatibilityCommand extends Command
         );
 
         $diagnostics = $report->diagnostics;
-        if ($target === 'extensions') {
-            $diagnostics = array_values(array_filter(
-                $diagnostics,
-                static fn (array $row): bool => str_starts_with((string) ($row['code'] ?? ''), 'FDY700'),
-            ));
-        }
 
         $ok = true;
         foreach ($diagnostics as $row) {
@@ -49,6 +43,8 @@ final class VerifyCompatibilityCommand extends Command
                 'target' => $target,
                 'diagnostics' => $diagnostics,
                 'version_matrix' => $report->versionMatrix,
+                'lifecycle' => $report->lifecycle,
+                'load_order' => $report->loadOrder,
             ],
         ];
     }

@@ -1,5 +1,8 @@
 # Compiler Core Examples
 
+Run these commands from the Foundry framework repository root with `php bin/foundry ...`.
+If you copy the example slice into a generated app, switch the prefix to `foundry ...`.
+
 ## Example A: Simple App Compile
 
 Source files (authored truth):
@@ -14,7 +17,7 @@ Source files (authored truth):
 
 Compile:
 ```bash
-php vendor/bin/foundry compile graph --json
+php bin/foundry compile graph --json
 ```
 
 Expected outputs:
@@ -25,8 +28,8 @@ Expected outputs:
 
 Quick check:
 ```bash
-php vendor/bin/foundry inspect graph --json
-php vendor/bin/foundry inspect build --json
+php bin/foundry inspect graph --json
+php bin/foundry inspect build --json
 ```
 
 ## Example B: Impact Analysis
@@ -36,7 +39,7 @@ Change:
 
 Inspect impact:
 ```bash
-php vendor/bin/foundry inspect impact --file=app/features/publish_post/input.schema.json --json
+php bin/foundry inspect impact --file=app/features/publish_post/input.schema.json --json
 ```
 
 Expected response includes:
@@ -51,9 +54,9 @@ Expected response includes:
 
 Outdated manifest (`version: 1`, legacy `llm.risk` field):
 ```bash
-php vendor/bin/foundry inspect migrations --json
-php vendor/bin/foundry migrate definitions --dry-run --json
-php vendor/bin/foundry migrate definitions --write --json
+php bin/foundry inspect migrations --json
+php bin/foundry migrate definitions --dry-run --json
+php bin/foundry migrate definitions --write --json
 ```
 
 Typical rewrite performed by core migration rule:
@@ -66,7 +69,7 @@ Typical rewrite performed by core migration rule:
 
 Inspect registered compiler extensions:
 ```bash
-php vendor/bin/foundry inspect extensions --json
+php bin/foundry inspect extensions --json
 ```
 
 Extension foundation supports contributions for:

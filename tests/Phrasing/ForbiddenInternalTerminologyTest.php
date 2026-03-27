@@ -4,6 +4,10 @@ declare(strict_types=1);
 namespace Foundry\Tests\Phrasing;
 
 use PHPUnit\Framework\TestCase;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 
 final class ForbiddenInternalTerminologyTest extends TestCase
 {

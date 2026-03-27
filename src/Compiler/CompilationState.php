@@ -32,7 +32,22 @@ final class CompilationState
     /**
      * @var array<string,mixed>
      */
+    public array $cache = [];
+
+    /**
+     * @var array<string,mixed>
+     */
     public array $manifest = [];
+
+    /**
+     * @var array<string,array<string,mixed>>
+     */
+    public array $configSchemas = [];
+
+    /**
+     * @var array<string,mixed>
+     */
+    public array $configValidation = [];
 
     /**
      * @var array<string,string>

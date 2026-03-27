@@ -35,6 +35,7 @@ use Foundry\Generation\TestGenerator;
 use Foundry\Generation\UploadsGenerator;
 use Foundry\Generation\WorkflowGenerator;
 use Foundry\Notifications\NotificationPreviewer;
+use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\Paths;
 use Foundry\Verification\ApiVerifier;
 use Foundry\Verification\AuthVerifier;
@@ -53,6 +54,7 @@ use Foundry\Verification\ResourceVerifier;
 use Foundry\Verification\SearchVerifier;
 use Foundry\Verification\StreamsVerifier;
 use Foundry\Verification\WorkflowVerifier;
+use Foundry\Upgrade\UpgradeAnalyzer;
 
 final class CommandContext
 {
@@ -63,9 +65,19 @@ final class CommandContext
     private ?GraphVerifier $graphVerifier = null;
     private ?DefinitionMigrator $definitionMigrator = null;
     private ?CodemodEngine $codemodEngine = null;
+    private ?ApiSurfaceRegistry $apiSurfaceRegistry = null;
+    private ?UpgradeAnalyzer $upgradeAnalyzer = null;
 
-    public function __construct(private readonly ?string $cwd = null)
+    public function __construct(
+        private readonly ?string $cwd = null,
+        private readonly bool $jsonOutput = false,
+    )
     {
+    }
+
+    public function expectsJson(): bool
+    {
+        return $this->jsonOutput;
     }
 
     public function paths(): Paths
@@ -108,6 +120,21 @@ final class CommandContext
         return $this->codemodEngine ??= new CodemodEngine(
             $this->paths(),
             $this->extensionRegistry()->codemods(),
+        );
+    }
+
+    public function apiSurfaceRegistry(): ApiSurfaceRegistry
+    {
+        return $this->apiSurfaceRegistry ??= new ApiSurfaceRegistry();
+    }
+
+    public function upgradeAnalyzer(): UpgradeAnalyzer
+    {
+        return $this->upgradeAnalyzer ??= new UpgradeAnalyzer(
+            $this->paths(),
+            $this->graphCompiler(),
+            $this->extensionRegistry(),
+            $this->definitionMigrator(),
         );
     }
 
@@ -217,7 +244,7 @@ final class CommandContext
 
     public function docsGenerator(): GraphDocsGenerator
     {
-        return new GraphDocsGenerator($this->paths());
+        return new GraphDocsGenerator($this->paths(), $this->apiSurfaceRegistry());
     }
 
     public function inspectUiGenerator(): InspectUiGenerator

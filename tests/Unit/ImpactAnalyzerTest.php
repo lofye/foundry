@@ -81,6 +81,8 @@ YAML);
 
     public function test_reports_node_and_file_impact(): void
     {
+        file_put_contents($this->project->root . '/foundry', "#!/usr/bin/env php\n<?php\n");
+
         $compiler = new GraphCompiler(Paths::fromCwd($this->project->root));
         $result = $compiler->compile(new CompileOptions());
 
@@ -91,6 +93,7 @@ YAML);
         $this->assertContains('publish_post', $nodeReport['affected_features']);
         $this->assertContains('feature_index.php', $nodeReport['affected_projections']);
         $this->assertNotEmpty($nodeReport['recommended_verification']);
+        $this->assertContains('foundry verify graph --json', $nodeReport['recommended_verification']);
 
         $fileReport = $analyzer->reportForFile($result->graph, 'app/features/publish_post/feature.yaml');
         $this->assertSame('app/features/publish_post/feature.yaml', $fileReport['file']);

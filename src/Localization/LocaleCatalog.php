@@ -26,7 +26,7 @@ final class LocaleCatalog
             return $this->cache[$locale];
         }
 
-        $dir = $this->paths->join('app/platform/lang/' . $locale);
+        $dir = $this->paths->join('lang/' . $locale);
         if (!is_dir($dir)) {
             $this->cache[$locale] = [];
 

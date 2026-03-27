@@ -7,6 +7,7 @@ final readonly class Diagnostic
 {
     /**
      * @param array<int,string> $relatedNodes
+     * @param array<string,mixed> $details
      */
     public function __construct(
         public string $id,
@@ -20,6 +21,8 @@ final readonly class Diagnostic
         public array $relatedNodes = [],
         public ?string $suggestedFix = null,
         public ?string $pass = null,
+        public ?string $whyItMatters = null,
+        public array $details = [],
     ) {
     }
 
@@ -40,6 +43,8 @@ final readonly class Diagnostic
             'related_nodes' => $this->relatedNodes,
             'suggested_fix' => $this->suggestedFix,
             'pass' => $this->pass,
+            'why_it_matters' => $this->whyItMatters,
+            'details' => $this->details,
         ];
     }
 }

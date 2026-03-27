@@ -80,6 +80,7 @@ final class PlatformCompilerExtension extends AbstractCompilerExtension
                 'auth.roles_policies',
                 'inspect.ui',
             ],
+            requiredExtensions: ['core'],
         );
     }
 
@@ -148,14 +149,14 @@ final class PlatformCompilerExtension extends AbstractCompilerExtension
     public function packs(): array
     {
         return [
-            new PackDefinition(name: 'platform.billing', version: '1.0.0', extension: $this->name(), providedCapabilities: ['billing.stripe'], requiredCapabilities: ['compiler.core', 'runtime.pipeline'], generators: ['generate billing stripe'], definitionFormats: ['billing_definition'], verifiers: ['verify billing']),
-            new PackDefinition(name: 'platform.workflows', version: '1.0.0', extension: $this->name(), providedCapabilities: ['workflow.fsm'], requiredCapabilities: ['compiler.core'], generators: ['generate workflow <name> --definition=<file>'], definitionFormats: ['workflow_definition'], verifiers: ['verify workflows']),
-            new PackDefinition(name: 'platform.orchestration', version: '1.0.0', extension: $this->name(), providedCapabilities: ['orchestration.graph'], requiredCapabilities: ['compiler.core', 'workflow.fsm'], generators: ['generate orchestration <name> --definition=<file>'], definitionFormats: ['orchestration_definition'], verifiers: ['verify orchestrations']),
-            new PackDefinition(name: 'platform.search', version: '1.0.0', extension: $this->name(), providedCapabilities: ['search.adapters'], requiredCapabilities: ['compiler.core'], generators: ['generate search-index <name> --definition=<file>'], definitionFormats: ['search_definition'], verifiers: ['verify search']),
-            new PackDefinition(name: 'platform.streams', version: '1.0.0', extension: $this->name(), providedCapabilities: ['streams.sse'], requiredCapabilities: ['compiler.core', 'runtime.pipeline'], generators: ['generate stream <name>'], definitionFormats: ['stream_definition'], verifiers: ['verify streams']),
-            new PackDefinition(name: 'platform.locales', version: '1.0.0', extension: $this->name(), providedCapabilities: ['localization.i18n'], requiredCapabilities: ['compiler.core'], generators: ['generate locale <locale>'], definitionFormats: ['locale_definition'], verifiers: ['verify locales']),
-            new PackDefinition(name: 'platform.roles', version: '1.0.0', extension: $this->name(), providedCapabilities: ['auth.roles_policies'], requiredCapabilities: ['compiler.core'], generators: ['generate roles', 'generate policy <name>'], definitionFormats: ['roles_definition', 'policy_definition'], verifiers: ['verify policies']),
-            new PackDefinition(name: 'platform.inspect_ui', version: '1.0.0', extension: $this->name(), providedCapabilities: ['inspect.ui'], requiredCapabilities: ['compiler.core'], generators: ['generate inspect-ui'], definitionFormats: ['inspect_ui_definition'], verifiers: ['verify graph']),
+            new PackDefinition(name: 'platform.billing', version: '1.0.0', extension: $this->name(), providedCapabilities: ['billing.stripe'], requiredCapabilities: ['compiler.core', 'runtime.pipeline'], generators: ['generate billing stripe'], inspectSurfaces: ['billing', 'extensions'], definitionFormats: ['billing_definition'], verifiers: ['verify billing']),
+            new PackDefinition(name: 'platform.workflows', version: '1.0.0', extension: $this->name(), providedCapabilities: ['workflow.fsm'], requiredCapabilities: ['compiler.core'], generators: ['generate workflow <name> --definition=<file>'], inspectSurfaces: ['workflow', 'extensions'], definitionFormats: ['workflow_definition'], verifiers: ['verify workflows']),
+            new PackDefinition(name: 'platform.orchestration', version: '1.0.0', extension: $this->name(), providedCapabilities: ['orchestration.graph'], requiredCapabilities: ['compiler.core', 'workflow.fsm'], dependencies: ['platform.workflows'], generators: ['generate orchestration <name> --definition=<file>'], inspectSurfaces: ['orchestration', 'extensions'], definitionFormats: ['orchestration_definition'], verifiers: ['verify orchestrations']),
+            new PackDefinition(name: 'platform.search', version: '1.0.0', extension: $this->name(), providedCapabilities: ['search.adapters'], requiredCapabilities: ['compiler.core'], generators: ['generate search-index <name> --definition=<file>'], inspectSurfaces: ['search', 'extensions'], definitionFormats: ['search_definition'], verifiers: ['verify search']),
+            new PackDefinition(name: 'platform.streams', version: '1.0.0', extension: $this->name(), providedCapabilities: ['streams.sse'], requiredCapabilities: ['compiler.core', 'runtime.pipeline'], generators: ['generate stream <name>'], inspectSurfaces: ['streams', 'extensions'], definitionFormats: ['stream_definition'], verifiers: ['verify streams']),
+            new PackDefinition(name: 'platform.locales', version: '1.0.0', extension: $this->name(), providedCapabilities: ['localization.i18n'], requiredCapabilities: ['compiler.core'], generators: ['generate locale <locale>'], inspectSurfaces: ['locales', 'extensions'], definitionFormats: ['locale_definition'], verifiers: ['verify locales']),
+            new PackDefinition(name: 'platform.roles', version: '1.0.0', extension: $this->name(), providedCapabilities: ['auth.roles_policies'], requiredCapabilities: ['compiler.core'], generators: ['generate roles', 'generate policy <name>'], inspectSurfaces: ['roles', 'extensions'], definitionFormats: ['roles_definition', 'policy_definition'], verifiers: ['verify policies']),
+            new PackDefinition(name: 'platform.inspect_ui', version: '1.0.0', extension: $this->name(), providedCapabilities: ['inspect.ui'], requiredCapabilities: ['compiler.core'], generators: ['generate inspect-ui'], inspectSurfaces: ['graph', 'extensions'], definitionFormats: ['inspect_ui_definition'], verifiers: ['verify graph']),
         ];
     }
 }

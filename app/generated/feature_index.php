@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * GENERATED FILE - DO NOT EDIT
  * Built by Foundry semantic compiler.
- * Regenerate with: php vendor/bin/foundry compile graph
+ * Regenerate with: foundry compile graph
  */
 return array (
   'publish_post' => 
@@ -161,6 +161,21 @@ return array (
       'bucket' => 'post_create',
       'cost' => 1,
       'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
     ),
     'tests' => 
     array (

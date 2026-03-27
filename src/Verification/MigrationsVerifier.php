@@ -16,7 +16,7 @@ final class MigrationsVerifier
         $errors = [];
         $warnings = [];
 
-        $dir = $this->paths->join('app/platform/migrations');
+        $dir = $this->paths->join('database/migrations');
         if (!is_dir($dir)) {
             return new VerificationResult(true, [], []);
         }

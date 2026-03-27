@@ -39,7 +39,12 @@ final class RolesGenerator
         ];
         file_put_contents($definitionPath, Yaml::dump($definition));
 
-        $migrationPath = $this->paths->join('app/platform/migrations/20260309_create_roles_tables.sql');
+        $migrationPath = $this->paths->join('database/migrations/20260309_create_roles_tables.sql');
+        $migrationDir = dirname($migrationPath);
+        if (!is_dir($migrationDir)) {
+            mkdir($migrationDir, 0777, true);
+        }
+
         if (!is_file($migrationPath) || $force) {
             file_put_contents($migrationPath, <<<'SQL'
 -- Foundry roles scaffolding

@@ -82,7 +82,7 @@ YAML);
         (new ContextManifestGenerator($paths))->write('publish_post', $manifest);
 
         file_put_contents($this->project->root . '/migration.yaml', "name: add_posts\ntable: posts\n");
-        file_put_contents($this->project->root . '/app/platform/logs/trace.log', "event-1\n");
+        file_put_contents($this->project->root . '/storage/logs/trace.log', "event-1\n");
     }
 
     protected function tearDown(): void
