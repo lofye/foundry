@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Schema;
@@ -11,8 +12,7 @@ final readonly class ValidationError
         public readonly ?string $expected = null,
         public readonly ?string $actual = null,
         public readonly ?string $suggestedFix = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{path:string,message:string,expected:?string,actual:?string,suggested_fix:?string}

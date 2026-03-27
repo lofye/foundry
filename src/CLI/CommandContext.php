@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI;
@@ -7,27 +8,27 @@ use Foundry\Compiler\Codemod\CodemodEngine;
 use Foundry\Compiler\Extensions\ExtensionRegistry;
 use Foundry\Compiler\GraphCompiler;
 use Foundry\Compiler\GraphVerifier;
-use Foundry\Compiler\Migration\ManifestVersionResolver;
 use Foundry\Compiler\Migration\DefinitionMigrator;
+use Foundry\Compiler\Migration\ManifestVersionResolver;
 use Foundry\Documentation\GraphDocsGenerator;
 use Foundry\Documentation\InspectUiGenerator;
 use Foundry\Export\OpenApiExporter;
-use Foundry\Generation\BillingGenerator;
-use Foundry\Generation\ApiResourceGenerator;
 use Foundry\Feature\FeatureLoader;
+use Foundry\Generation\AdminResourceGenerator;
+use Foundry\Generation\ApiResourceGenerator;
+use Foundry\Generation\BillingGenerator;
 use Foundry\Generation\ContextManifestGenerator;
 use Foundry\Generation\DeepTestGenerator;
 use Foundry\Generation\FeatureGenerator;
 use Foundry\Generation\FormSchemaRenderer;
-use Foundry\Generation\AdminResourceGenerator;
 use Foundry\Generation\IndexGenerator;
+use Foundry\Generation\LocaleGenerator;
 use Foundry\Generation\MigrationGenerator;
 use Foundry\Generation\NotificationGenerator;
-use Foundry\Generation\LocaleGenerator;
 use Foundry\Generation\OrchestrationGenerator;
 use Foundry\Generation\PolicyGenerator;
-use Foundry\Generation\RolesGenerator;
 use Foundry\Generation\ResourceGenerator;
+use Foundry\Generation\RolesGenerator;
 use Foundry\Generation\SearchIndexGenerator;
 use Foundry\Generation\StarterGenerator;
 use Foundry\Generation\StreamGenerator;
@@ -37,6 +38,7 @@ use Foundry\Generation\WorkflowGenerator;
 use Foundry\Notifications\NotificationPreviewer;
 use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\Paths;
+use Foundry\Upgrade\UpgradeAnalyzer;
 use Foundry\Verification\ApiVerifier;
 use Foundry\Verification\AuthVerifier;
 use Foundry\Verification\BillingVerifier;
@@ -54,7 +56,6 @@ use Foundry\Verification\ResourceVerifier;
 use Foundry\Verification\SearchVerifier;
 use Foundry\Verification\StreamsVerifier;
 use Foundry\Verification\WorkflowVerifier;
-use Foundry\Upgrade\UpgradeAnalyzer;
 
 final class CommandContext
 {
@@ -71,9 +72,7 @@ final class CommandContext
     public function __construct(
         private readonly ?string $cwd = null,
         private readonly bool $jsonOutput = false,
-    )
-    {
-    }
+    ) {}
 
     public function expectsJson(): bool
     {

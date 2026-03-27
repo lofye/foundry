@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis;
@@ -10,9 +11,7 @@ use Foundry\Support\Paths;
 
 final readonly class ImpactAnalyzer
 {
-    public function __construct(private Paths $paths)
-    {
-    }
+    public function __construct(private Paths $paths) {}
 
     /**
      * @return array<string,mixed>

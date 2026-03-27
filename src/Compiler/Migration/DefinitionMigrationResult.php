@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Migration;
@@ -16,8 +17,7 @@ final readonly class DefinitionMigrationResult
         public array $diagnostics,
         public array $plans = [],
         public ?string $pathFilter = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

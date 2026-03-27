@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -14,8 +15,7 @@ final readonly class ExplainOptions
         public bool $includeRelatedCommands = true,
         public bool $includeRelatedDocs = true,
         public ?string $type = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

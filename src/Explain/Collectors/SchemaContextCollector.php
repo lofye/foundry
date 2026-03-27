@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
@@ -10,9 +11,7 @@ use Foundry\Explain\ExplainSubject;
 
 final readonly class SchemaContextCollector implements ExplainContextCollectorInterface
 {
-    public function __construct(private ExplainArtifactCatalog $artifacts)
-    {
-    }
+    public function __construct(private ExplainArtifactCatalog $artifacts) {}
 
     public function supports(ExplainSubject $subject): bool
     {

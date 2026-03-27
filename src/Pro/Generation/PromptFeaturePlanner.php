@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pro\Generation;
@@ -288,7 +289,7 @@ final class PromptFeaturePlanner
         }
 
         $states = array_values(array_map('strval', (array) ($definition['states'] ?? [])));
-        $states = array_values(array_unique(array_filter($states, static fn (string $state): bool => $state !== '')));
+        $states = array_values(array_unique(array_filter($states, static fn(string $state): bool => $state !== '')));
         sort($states);
 
         $transitions = is_array($definition['transitions'] ?? null) ? $definition['transitions'] : [];
@@ -322,7 +323,7 @@ final class PromptFeaturePlanner
                 continue;
             }
 
-            $segments = array_values(array_filter(explode('/', trim($path, '/')), static fn (string $segment): bool => $segment !== '' && !str_starts_with($segment, '{')));
+            $segments = array_values(array_filter(explode('/', trim($path, '/')), static fn(string $segment): bool => $segment !== '' && !str_starts_with($segment, '{')));
             if ($segments !== []) {
                 return Str::toSnakeCase(end($segments) ?: 'items');
             }
@@ -529,8 +530,8 @@ final class PromptFeaturePlanner
     private function normalizeStringList(array $values): array
     {
         $normalized = array_values(array_unique(array_filter(
-            array_map(static fn (mixed $value): string => trim((string) $value), $values),
-            static fn (string $value): bool => $value !== '',
+            array_map(static fn(mixed $value): string => trim((string) $value), $values),
+            static fn(string $value): bool => $value !== '',
         )));
         sort($normalized);
 

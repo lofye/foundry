@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Codemod;
@@ -15,8 +16,7 @@ final readonly class CodemodResult
         public array $changes,
         public array $diagnostics,
         public ?string $pathFilter = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

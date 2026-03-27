@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -14,8 +15,7 @@ final class ResourceGenerator
         private readonly Paths $paths,
         private readonly FeatureGenerator $featureGenerator,
         private readonly FormSchemaRenderer $formRenderer,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -129,17 +129,17 @@ final class ResourceGenerator
             $features = ['list', 'view', 'create', 'update', 'delete'];
         }
 
-        $features = array_values(array_unique(array_filter($features, static fn (string $operation): bool => in_array($operation, ['list', 'view', 'create', 'update', 'delete'], true))));
+        $features = array_values(array_unique(array_filter($features, static fn(string $operation): bool => in_array($operation, ['list', 'view', 'create', 'update', 'delete'], true))));
 
         $listing = is_array($document['listing'] ?? null) ? $document['listing'] : [];
         if ($listing === []) {
             $listing = [
                 'search' => [
-                    'fields' => array_values(array_keys(array_filter($canonicalFields, static fn (array $field): bool => (bool) ($field['search'] ?? false)))),
+                    'fields' => array_values(array_keys(array_filter($canonicalFields, static fn(array $field): bool => (bool) ($field['search'] ?? false)))),
                 ],
                 'filters' => $this->defaultFilters($canonicalFields),
                 'sort' => [
-                    'allowed' => array_values(array_keys(array_filter($canonicalFields, static fn (array $field): bool => (bool) ($field['sort'] ?? false)))),
+                    'allowed' => array_values(array_keys(array_filter($canonicalFields, static fn(array $field): bool => (bool) ($field['sort'] ?? false)))),
                     'default' => '-created_at',
                 ],
                 'pagination' => [

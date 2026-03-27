@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -41,8 +42,7 @@ final class ExtensionDescriptor
         public readonly array $requiredExtensions = [],
         public readonly array $optionalExtensions = [],
         public readonly array $conflictsWithExtensions = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -90,7 +90,7 @@ final class ExtensionDescriptor
      */
     private function sortedUnique(array $values): array
     {
-        $values = array_values(array_filter(array_map('strval', $values), static fn (string $value): bool => $value !== ''));
+        $values = array_values(array_filter(array_map('strval', $values), static fn(string $value): bool => $value !== ''));
         $values = array_values(array_unique($values));
         sort($values);
 

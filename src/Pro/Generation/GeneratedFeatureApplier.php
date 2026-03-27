@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pro\Generation;
@@ -14,8 +15,7 @@ final class GeneratedFeatureApplier
         private readonly Paths $paths,
         private readonly FeatureGenerator $featureGenerator,
         private readonly WorkflowGenerator $workflowGenerator,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $plan

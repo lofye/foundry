@@ -1,11 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
+use Foundry\Compiler\Migration\DefinitionMigrator;
 use Foundry\Compiler\Migration\FeatureManifestV2Rule;
 use Foundry\Compiler\Migration\ManifestVersionResolver;
-use Foundry\Compiler\Migration\DefinitionMigrator;
 use Foundry\Support\Paths;
 use Foundry\Support\Yaml;
 use Foundry\Tests\Fixtures\TempProject;

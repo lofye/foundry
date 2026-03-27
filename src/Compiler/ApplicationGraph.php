@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -28,8 +29,7 @@ final class ApplicationGraph
         private string $compiledAt,
         private string $sourceHash,
         private array $metadata = [],
-    ) {
-    }
+    ) {}
 
     public function graphVersion(): int
     {
@@ -116,7 +116,7 @@ final class ApplicationGraph
     {
         $nodes = array_filter(
             $this->nodes,
-            static fn (GraphNode $node): bool => $node->type() === $type,
+            static fn(GraphNode $node): bool => $node->type() === $type,
         );
         ksort($nodes);
 
@@ -150,10 +150,10 @@ final class ApplicationGraph
     {
         $edges = array_values(array_filter(
             $this->edges,
-            static fn (GraphEdge $edge): bool => $edge->from === $nodeId,
+            static fn(GraphEdge $edge): bool => $edge->from === $nodeId,
         ));
 
-        usort($edges, static fn (GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id));
+        usort($edges, static fn(GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id));
 
         return $edges;
     }
@@ -165,10 +165,10 @@ final class ApplicationGraph
     {
         $edges = array_values(array_filter(
             $this->edges,
-            static fn (GraphEdge $edge): bool => $edge->to === $nodeId,
+            static fn(GraphEdge $edge): bool => $edge->to === $nodeId,
         ));
 
-        usort($edges, static fn (GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id));
+        usort($edges, static fn(GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id));
 
         return $edges;
     }

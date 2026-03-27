@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -68,6 +69,5 @@ final class CompilationState
         public readonly ApplicationGraph $graph,
         public readonly array $sourceHashes,
         public readonly array $previousManifest,
-    ) {
-    }
+    ) {}
 }

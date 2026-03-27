@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\AI;
@@ -16,8 +17,7 @@ final class AIManager
         private readonly array $providers,
         private readonly ?AIResultCache $cache = null,
         private readonly ?TraceRecorder $traceRecorder = null,
-    ) {
-    }
+    ) {}
 
     public function complete(AIRequest $request): AIResponse
     {
@@ -80,7 +80,7 @@ final class AIManager
         @unlink($tmpFile);
 
         if (!$result->isValid) {
-            throw new FoundryError('AI_RESPONSE_SCHEMA_VIOLATION', 'validation', ['errors' => array_map(static fn ($e): array => $e->toArray(), $result->errors)], 'AI response schema violation.');
+            throw new FoundryError('AI_RESPONSE_SCHEMA_VIOLATION', 'validation', ['errors' => array_map(static fn($e): array => $e->toArray(), $result->errors)], 'AI response schema violation.');
         }
     }
 
@@ -97,7 +97,7 @@ final class AIManager
                 'output_tokens' => $response->outputTokens,
                 'cost_estimate' => $response->costEstimate,
                 'cache_hit' => $response->cacheHit,
-            ]
+            ],
         );
     }
 }

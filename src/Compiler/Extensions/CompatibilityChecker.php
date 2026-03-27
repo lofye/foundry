@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -10,8 +11,7 @@ final class CompatibilityChecker
     public function __construct(
         private readonly ExtensionRegistry $extensions,
         private readonly PackRegistry $packs,
-    ) {
-    }
+    ) {}
 
     public function check(string $frameworkVersion, int $graphVersion): CompatibilityReport
     {
@@ -177,7 +177,7 @@ final class CompatibilityChecker
 
         usort(
             $diagnostics,
-            static fn (array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
+            static fn(array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
                 ?: strcmp((string) ($a['message'] ?? ''), (string) ($b['message'] ?? '')),
         );
 
@@ -196,14 +196,14 @@ final class CompatibilityChecker
                 'framework_version' => $frameworkVersion,
                 'graph_version' => $graphVersion,
                 'extension_versions' => array_values(array_map(
-                    static fn (CompilerExtension $extension): array => [
+                    static fn(CompilerExtension $extension): array => [
                         'name' => $extension->name(),
                         'version' => $extension->version(),
                     ],
                     $loadedExtensions,
                 )),
                 'pack_versions' => array_values(array_map(
-                    static fn (PackDefinition $pack): array => [
+                    static fn(PackDefinition $pack): array => [
                         'name' => $pack->name,
                         'version' => $pack->version,
                         'extension' => $pack->extension,
@@ -272,7 +272,7 @@ final class CompatibilityChecker
             }
         }
 
-        usort($formats, static fn (DefinitionFormat $a, DefinitionFormat $b): int => strcmp($a->name, $b->name));
+        usort($formats, static fn(DefinitionFormat $a, DefinitionFormat $b): int => strcmp($a->name, $b->name));
 
         return $formats;
     }
@@ -295,7 +295,7 @@ final class CompatibilityChecker
         $diagnostics = array_values($unique);
         usort(
             $diagnostics,
-            static fn (array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
+            static fn(array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
                 ?: strcmp((string) ($a['extension'] ?? ''), (string) ($b['extension'] ?? ''))
                 ?: strcmp((string) ($a['pack'] ?? ''), (string) ($b['pack'] ?? ''))
                 ?: strcmp((string) ($a['message'] ?? ''), (string) ($b['message'] ?? '')),

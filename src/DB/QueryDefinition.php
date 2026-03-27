@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\DB;
@@ -13,8 +14,7 @@ final readonly class QueryDefinition
         public readonly string $name,
         public readonly string $sql,
         public readonly array $placeholders,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI;
@@ -13,8 +14,7 @@ final class CliSurfaceVerifier
     public function __construct(
         private readonly ApiSurfaceRegistry $registry,
         private readonly array $commands,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -124,7 +124,7 @@ final class CliSurfaceVerifier
                 'status' => $status,
                 'registry_entry_count' => count($entries),
                 'handler_candidates' => array_values(array_map(
-                    static fn (array $candidate): string => (string) ($candidate['handler'] ?? ''),
+                    static fn(array $candidate): string => (string) ($candidate['handler'] ?? ''),
                     $handlerCandidates,
                 )),
             ];
@@ -135,7 +135,7 @@ final class CliSurfaceVerifier
         foreach ($this->commands as $command) {
             $signatures = array_values(array_unique(array_values(array_filter(
                 array_map('strval', $command->supportedSignatures()),
-                static fn (string $signature): bool => trim($signature) !== '',
+                static fn(string $signature): bool => trim($signature) !== '',
             ))));
             sort($signatures);
 
@@ -154,7 +154,7 @@ final class CliSurfaceVerifier
 
         usort(
             $handlerRows,
-            static fn (array $a, array $b): int => strcmp((string) ($a['handler'] ?? ''), (string) ($b['handler'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['handler'] ?? ''), (string) ($b['handler'] ?? '')),
         );
         sort($invalid);
         sort($ambiguous);
@@ -207,7 +207,7 @@ final class CliSurfaceVerifier
 
         usort(
             $candidates,
-            static fn (array $a, array $b): int => strcmp((string) ($a['handler'] ?? ''), (string) ($b['handler'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['handler'] ?? ''), (string) ($b['handler'] ?? '')),
         );
 
         return $candidates;
@@ -257,7 +257,7 @@ final class CliSurfaceVerifier
             'inspect pack' => ['inspect', 'pack', 'example'],
             'inspect definition-format' => ['inspect', 'definition-format', 'example'],
             'inspect route' => ['inspect', 'route', 'GET', '/example'],
-            default => array_values(array_filter(explode(' ', $signature), static fn (string $part): bool => $part !== '')),
+            default => array_values(array_filter(explode(' ', $signature), static fn(string $part): bool => $part !== '')),
         };
     }
 
@@ -296,7 +296,7 @@ final class CliSurfaceVerifier
     {
         $values = array_values(array_unique(array_values(array_filter(
             array_map('strval', $values),
-            static fn (string $value): bool => trim($value) !== '',
+            static fn(string $value): bool => trim($value) !== '',
         ))));
         sort($values);
 

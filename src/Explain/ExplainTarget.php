@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -24,8 +25,7 @@ final readonly class ExplainTarget
         public string $raw,
         public ?string $kind,
         public string $selector,
-    ) {
-    }
+    ) {}
 
     public static function parse(string $raw, ?string $kindOverride = null): self
     {

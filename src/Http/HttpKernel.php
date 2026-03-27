@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Http;
@@ -12,8 +13,7 @@ final class HttpKernel
     public function __construct(
         private readonly FeatureExecutor $executor,
         private readonly Logger $logger,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{status:int,headers:array<string,string>,body:array<string,mixed>}

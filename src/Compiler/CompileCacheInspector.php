@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -29,8 +30,7 @@ final class CompileCacheInspector
         private readonly Paths $paths,
         private readonly BuildLayout $layout,
         private readonly SourceScanner $scanner,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,string> $sourceHashes
@@ -59,7 +59,7 @@ final class CompileCacheInspector
         $requiredArtifacts = $this->requiredArtifactPaths($extensions);
         $missingArtifacts = array_values(array_filter(
             $requiredArtifacts,
-            static fn (string $path): bool => !is_file($path),
+            static fn(string $path): bool => !is_file($path),
         ));
         sort($missingArtifacts);
 
@@ -411,7 +411,7 @@ final class CompileCacheInspector
         $srcDir = $this->paths->frameworkJoin('src');
         if (is_dir($srcDir)) {
             $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($srcDir, \FilesystemIterator::SKIP_DOTS)
+                new \RecursiveDirectoryIterator($srcDir, \FilesystemIterator::SKIP_DOTS),
             );
 
             foreach ($iterator as $fileInfo) {

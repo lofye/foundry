@@ -1,10 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Phrasing;
 
-use PHPUnit\Framework\TestCase;
 use FilesystemIterator;
+use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -58,7 +59,7 @@ final class ForbiddenInternalTerminologyTest extends TestCase
         $violations = [];
 
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
         );
 
         /** @var SplFileInfo $file */
@@ -94,7 +95,7 @@ final class ForbiddenInternalTerminologyTest extends TestCase
                     $violations[] = sprintf(
                         '%s contains forbidden term "%s"',
                         $this->relativePath($path, $root),
-                        $term
+                        $term,
                     );
                 }
             }
@@ -104,9 +105,9 @@ final class ForbiddenInternalTerminologyTest extends TestCase
             sort($violations);
 
             $this->fail(
-                "Forbidden internal terminology found:\n\n" .
-                implode("\n", $violations) .
-                "\n\nUse feature or architecture names instead."
+                "Forbidden internal terminology found:\n\n"
+                . implode("\n", $violations)
+                . "\n\nUse feature or architecture names instead.",
             );
         }
 

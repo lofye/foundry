@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Auth;
@@ -16,8 +17,7 @@ final class AuthContext
         private readonly array $roles = [],
         private readonly array $permissions = [],
         private readonly array $metadata = [],
-    ) {
-    }
+    ) {}
 
     public static function guest(): self
     {

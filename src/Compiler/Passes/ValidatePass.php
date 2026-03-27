@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -173,7 +174,7 @@ final class ValidatePass implements CompilerPass
                     message: 'Duplicate route detected for ' . (string) ($routeNode->payload()['signature'] ?? $routeNode->id()) . '.',
                     nodeId: $routeNode->id(),
                     sourcePath: $routeNode->sourcePath(),
-                    relatedNodes: array_map(static fn (string $feature): string => 'feature:' . $feature, $features),
+                    relatedNodes: array_map(static fn(string $feature): string => 'feature:' . $feature, $features),
                     suggestedFix: 'Rename or remove one of the conflicting routes.',
                     pass: $this->name(),
                 );

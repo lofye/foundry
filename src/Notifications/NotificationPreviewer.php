@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Notifications;
@@ -15,8 +16,7 @@ final class NotificationPreviewer
         private readonly Paths $paths,
         private readonly GraphCompiler $compiler,
         private readonly NotificationTemplateRenderer $renderer = new NotificationTemplateRenderer(),
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

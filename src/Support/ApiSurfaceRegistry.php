@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Support;
@@ -129,7 +130,7 @@ final class ApiSurfaceRegistry
     {
         $args = array_values(array_filter(
             array_map('strval', $args),
-            static fn (string $arg): bool => $arg !== '--json',
+            static fn(string $arg): bool => $arg !== '--json',
         ));
 
         $first = (string) ($args[0] ?? '');
@@ -163,7 +164,7 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace' => $first,
+            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions' => $first,
             'compile', 'graph', 'export', 'preview', 'init', 'migrate', 'codemod', 'cache' => match ($first) {
                 'compile' => $second === 'graph' ? 'compile graph' : null,
                 'graph' => match ($second) {
@@ -277,7 +278,7 @@ final class ApiSurfaceRegistry
         foreach ($groups as &$entries) {
             usort(
                 $entries,
-                static fn (array $a, array $b): int => strcmp((string) ($a['signature'] ?? ''), (string) ($b['signature'] ?? '')),
+                static fn(array $a, array $b): int => strcmp((string) ($a['signature'] ?? ''), (string) ($b['signature'] ?? '')),
             );
         }
         unset($entries);
@@ -342,8 +343,13 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('compile graph', 'compile graph [--feature=<feature>] [--changed-only] [--no-cache]', 'stable', 'Compile source-of-truth files into the canonical application graph.'),
             $this->cliCommandEntry('cache inspect', 'cache inspect', 'stable', 'Inspect deterministic compile cache state, keys, and invalidation reasons.'),
             $this->cliCommandEntry('cache clear', 'cache clear', 'stable', 'Clear deterministic compile cache artifacts and generated projections.'),
-            $this->cliCommandEntry('doctor', 'doctor [--feature=<feature>] [--strict] [--cli] [--deep]', 'experimental', 'Diagnose environment, install, build, and architecture issues from current Foundry state. Deep diagnostics require Foundry Pro.'),
+            $this->cliCommandEntry('doctor', 'doctor [--feature=<feature>] [--strict] [--cli] [--deep] [--static] [--style] [--quality] [--tests]', 'experimental', 'Diagnose environment, install, build, architecture, and optional quality-tool issues from current Foundry state. Deep diagnostics require Foundry Pro.'),
             $this->cliCommandEntry('upgrade-check', 'upgrade-check [--target=<version>]', 'stable', 'Assess whether the current app is ready for a target framework upgrade.'),
+            $this->cliCommandEntry('observe:trace', 'observe:trace [<feature>] [--feature=<feature>] [--route=<METHOD PATH>]', 'experimental', 'Capture a graph-aware execution trace summary mapped to features, execution plans, guards, and interceptors.'),
+            $this->cliCommandEntry('observe:profile', 'observe:profile [<feature>] [--feature=<feature>] [--route=<METHOD PATH>]', 'experimental', 'Capture graph-aware timing, memory, and hotspot summaries for current execution plans.'),
+            $this->cliCommandEntry('observe:compare', 'observe:compare <run-a> <run-b>', 'experimental', 'Compare two stored quality or observability runs for regressions, performance changes, and execution-path drift.'),
+            $this->cliCommandEntry('history', 'history [--kind=<build|quality|trace|profile|comparison>]', 'experimental', 'List persisted build, quality, and observability history entries.'),
+            $this->cliCommandEntry('regressions', 'regressions', 'experimental', 'Detect new failures, performance regressions, and static-analysis regressions from the latest stored history.'),
             $this->cliCommandEntry('graph inspect', 'graph inspect [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Inspect graph summaries and filtered architecture slices through the stable graph surface.'),
             $this->cliCommandEntry('graph visualize', 'graph visualize [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Render graph slices through the stable graph inspection surface.'),
             $this->cliCommandEntry('prompt', 'prompt <instruction...> [--feature-context] [--dry-run]', 'experimental', 'Build structured AI-edit prompts from current graph state.'),
@@ -488,7 +494,7 @@ final class ApiSurfaceRegistry
 
         usort(
             $commands,
-            static fn (array $a, array $b): int => strcmp((string) ($a['signature'] ?? ''), (string) ($b['signature'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['signature'] ?? ''), (string) ($b['signature'] ?? '')),
         );
 
         return $commands;
@@ -583,6 +589,9 @@ final class ApiSurfaceRegistry
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/manifests/integrity_hashes.json', 'internal_api', 'internal', 'Compiler integrity hash artifact.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/diagnostics/latest.json', 'internal_api', 'internal', 'Latest compiler diagnostics artifact.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/diagnostics/config_validation.json', 'internal_api', 'internal', 'Latest config validation diagnostics artifact.'),
+            $this->surfaceEntry('generated_metadata', 'app/.foundry/build/quality/*.json', 'internal_api', 'internal', 'Persisted quality-tool and doctor-quality artifacts.'),
+            $this->surfaceEntry('generated_metadata', 'app/.foundry/build/observability/*.json', 'internal_api', 'internal', 'Persisted trace, profile, and comparison artifacts.'),
+            $this->surfaceEntry('generated_metadata', 'app/.foundry/build/history/*.json', 'internal_api', 'internal', 'Persisted build, quality, and observability history records.'),
         ];
     }
 

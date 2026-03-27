@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Verification;
@@ -13,8 +14,7 @@ final class FeatureVerifier
     public function __construct(
         private readonly Paths $paths,
         private readonly SqlFileLoader $sqlLoader = new SqlFileLoader(),
-    ) {
-    }
+    ) {}
 
     public function verify(string $feature): VerificationResult
     {
@@ -82,7 +82,7 @@ final class FeatureVerifier
         $queriesPath = $base . '/queries.sql';
         if (is_file($queriesPath)) {
             $definitions = $this->sqlLoader->load($feature, $queriesPath);
-            $knownQueries = array_map(static fn ($d): string => $d->name, $definitions);
+            $knownQueries = array_map(static fn($d): string => $d->name, $definitions);
             foreach ((array) ($manifest['database']['queries'] ?? []) as $query) {
                 if (!in_array((string) $query, $knownQueries, true)) {
                     $errors[] = "Referenced query not found: {$query}";

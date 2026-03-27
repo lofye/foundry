@@ -1,12 +1,13 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Application;
+use Foundry\CLI\CliSurfaceVerifier;
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
-use Foundry\CLI\CliSurfaceVerifier;
 use Foundry\Support\FoundryError;
 
 final class VerifyContractsCommand extends Command

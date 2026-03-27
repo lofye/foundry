@@ -1,12 +1,13 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Application;
+use Foundry\CLI\CliSurfaceVerifier;
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
-use Foundry\CLI\CliSurfaceVerifier;
 use Foundry\Compiler\Analysis\ArchitectureDoctor;
 use Foundry\Compiler\CompileOptions;
 use Foundry\Doctor\Checks\CompileHealthCheck;
@@ -23,10 +24,12 @@ use Foundry\Doctor\FrameworkDoctor;
 use Foundry\Pipeline\PipelineIntegrityInspector;
 use Foundry\Pro\CLI\Concerns\InteractsWithPro;
 use Foundry\Pro\DeepDiagnosticsBuilder;
+use Foundry\Quality\QualityToolRunner;
 use Foundry\Support\CliCommandPrefix;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
 use Foundry\Support\Paths;
+use Foundry\Tooling\BuildArtifactStore;
 
 final class DoctorCommand extends Command
 {
@@ -47,7 +50,10 @@ final class DoctorCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        [$feature, $strict, $includeCli, $deep] = $this->parseOptions($args);
+        [$feature, $strict, $includeCli, $deep, $staticMode, $styleMode, $qualityMode, $includeTests] = $this->parseOptions($args);
+        $runStatic = $qualityMode || $staticMode;
+        $runStyle = $qualityMode || $styleMode;
+
         if ($feature !== null && $feature !== '' && !$this->featureExists($context, $feature)) {
             throw new FoundryError(
                 'FEATURE_NOT_FOUND',
@@ -67,6 +73,8 @@ final class DoctorCommand extends Command
             changedOnly: false,
             emit: true,
         ));
+        $artifactStore = new BuildArtifactStore($compiler->buildLayout());
+        $artifactStore->persistBuildSummary($compileResult);
         $extensionReport = $extensionRegistry->compatibilityReport(
             frameworkVersion: $compileResult->graph->frameworkVersion(),
             graphVersion: $compileResult->graph->graphVersion(),
@@ -98,16 +106,57 @@ final class DoctorCommand extends Command
         $doctorSummary = is_array($analysis['diagnostics']['summary'] ?? null)
             ? $analysis['diagnostics']['summary']
             : ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => 0];
+        $qualityRunner = new QualityToolRunner($paths);
+        $staticAnalysis = $runStatic ? $qualityRunner->runStaticAnalysis() : $this->skippedToolResult('phpstan');
+        $styleViolations = $runStyle ? $qualityRunner->runStyleCheck() : $this->skippedToolResult('pint');
+        $testSummary = ($qualityMode && $includeTests) ? $qualityRunner->runTests() : null;
+
+        $qualityDiagnostics = array_merge(
+            array_values((array) ($staticAnalysis['diagnostics'] ?? [])),
+            array_values((array) ($styleViolations['diagnostics'] ?? [])),
+        );
+        $qualitySummary = DoctorSummary::fromRows($qualityDiagnostics);
+
+        $checkRows = is_array($analysis['checks'] ?? null) ? $analysis['checks'] : [];
+        if ($runStatic) {
+            $checkRows['static_analysis'] = [
+                'description' => 'Runs PHPStan static analysis over the current project root.',
+                'result' => [
+                    'status' => (string) ($staticAnalysis['status'] ?? 'passed'),
+                    'diagnostics_summary' => DoctorSummary::fromRows((array) ($staticAnalysis['diagnostics'] ?? [])),
+                    'summary' => $staticAnalysis['summary'] ?? [],
+                ],
+            ];
+        }
+        if ($runStyle) {
+            $checkRows['style'] = [
+                'description' => 'Runs Pint formatting checks over the current project root.',
+                'result' => [
+                    'status' => (string) ($styleViolations['status'] ?? 'passed'),
+                    'diagnostics_summary' => DoctorSummary::fromRows((array) ($styleViolations['diagnostics'] ?? [])),
+                    'summary' => $styleViolations['summary'] ?? [],
+                ],
+            ];
+        }
 
         $combinedSummary = [
-            'error' => (int) ($compileSummary['error'] ?? 0) + (int) ($doctorSummary['error'] ?? 0),
-            'warning' => (int) ($compileSummary['warning'] ?? 0) + (int) ($doctorSummary['warning'] ?? 0),
-            'info' => (int) ($compileSummary['info'] ?? 0) + (int) ($doctorSummary['info'] ?? 0),
-            'total' => (int) ($compileSummary['total'] ?? 0) + (int) ($doctorSummary['total'] ?? 0),
+            'error' => (int) ($compileSummary['error'] ?? 0) + (int) ($doctorSummary['error'] ?? 0) + (int) ($qualitySummary['error'] ?? 0),
+            'warning' => (int) ($compileSummary['warning'] ?? 0) + (int) ($doctorSummary['warning'] ?? 0) + (int) ($qualitySummary['warning'] ?? 0),
+            'info' => (int) ($compileSummary['info'] ?? 0) + (int) ($doctorSummary['info'] ?? 0) + (int) ($qualitySummary['info'] ?? 0),
+            'total' => (int) ($compileSummary['total'] ?? 0) + (int) ($doctorSummary['total'] ?? 0) + (int) ($qualitySummary['total'] ?? 0),
         ];
 
         $status = (int) ($combinedSummary['error'] ?? 0) > 0 ? 1 : 0;
         if ($strict && ((int) ($combinedSummary['warning'] ?? 0) > 0 || (int) ($combinedSummary['error'] ?? 0) > 0)) {
+            $status = 1;
+        }
+        if ($runStatic && (int) ($staticAnalysis['summary']['total'] ?? 0) > 0) {
+            $status = 1;
+        }
+        if ($runStyle && (int) ($styleViolations['summary']['total'] ?? 0) > 0) {
+            $status = 1;
+        }
+        if (is_array($testSummary) && (($testSummary['ok'] ?? false) !== true)) {
             $status = 1;
         }
 
@@ -120,6 +169,12 @@ final class DoctorCommand extends Command
             'strict' => $strict,
             'cli' => $includeCli,
             'command_prefix' => $commandPrefix,
+            'quality_mode' => [
+                'static' => $runStatic,
+                'style' => $runStyle,
+                'quality' => $qualityMode,
+                'tests' => $includeTests,
+            ],
             'project_type' => $paths->root() === $paths->frameworkRoot() ? 'framework_repository' : 'application',
             'risk' => DoctorSummary::risk($combinedSummary),
             'compile_diagnostics' => [
@@ -132,14 +187,25 @@ final class DoctorCommand extends Command
                 'path' => (string) (($compileResult->manifest['config_schemas']['path'] ?? '')),
             ],
             'doctor_diagnostics' => $analysis['diagnostics'] ?? ['summary' => [], 'items' => []],
+            'static_analysis' => $staticAnalysis,
+            'style_violations' => $styleViolations,
+            'test_summary' => $testSummary,
             'extension_diagnostics' => $extensionReport->diagnostics,
             'extension_lifecycle' => $extensionReport->lifecycle,
             'extension_load_order' => $extensionReport->loadOrder,
             'diagnostics_summary' => $combinedSummary,
-            'checks' => $analysis['checks'] ?? [],
+            'checks' => $checkRows,
             'analyzers' => $analysis['analyzers'] ?? [],
             'impact_preview' => $analysis['impact_preview'] ?? null,
-            'suggested_actions' => $analysis['suggested_actions'] ?? [],
+            'suggested_actions' => $this->qualitySuggestedActions(
+                array_values(array_map('strval', (array) ($analysis['suggested_actions'] ?? []))),
+                $runStatic,
+                $runStyle,
+                $includeTests,
+                $staticAnalysis,
+                $styleViolations,
+                $testSummary,
+            ),
         ];
         if ($deep && is_array($deepLicense)) {
             $payload['deep'] = true;
@@ -149,6 +215,14 @@ final class DoctorCommand extends Command
                     $compileResult->graph,
                     $feature,
                 ),
+            ];
+        }
+
+        if ($runStatic || $runStyle || $qualityMode) {
+            $qualityRecord = $artifactStore->persistQualityReport($payload);
+            $payload['quality_record'] = [
+                'id' => (string) ($qualityRecord['id'] ?? ''),
+                'sequence' => (int) ($qualityRecord['sequence'] ?? 0),
             ];
         }
 
@@ -178,7 +252,7 @@ final class DoctorCommand extends Command
 
     /**
      * @param array<int,string> $args
-     * @return array{0:?string,1:bool,2:bool,3:bool}
+     * @return array{0:?string,1:bool,2:bool,3:bool,4:bool,5:bool,6:bool,7:bool}
      */
     private function parseOptions(array $args): array
     {
@@ -186,6 +260,10 @@ final class DoctorCommand extends Command
         $strict = false;
         $includeCli = false;
         $deep = false;
+        $staticMode = false;
+        $styleMode = false;
+        $qualityMode = false;
+        $includeTests = false;
 
         foreach ($args as $index => $arg) {
             if ($arg === '--strict') {
@@ -200,6 +278,26 @@ final class DoctorCommand extends Command
 
             if ($arg === '--deep') {
                 $deep = true;
+                continue;
+            }
+
+            if ($arg === '--static') {
+                $staticMode = true;
+                continue;
+            }
+
+            if ($arg === '--style') {
+                $styleMode = true;
+                continue;
+            }
+
+            if ($arg === '--quality') {
+                $qualityMode = true;
+                continue;
+            }
+
+            if ($arg === '--tests') {
+                $includeTests = true;
                 continue;
             }
 
@@ -220,7 +318,7 @@ final class DoctorCommand extends Command
             $feature = null;
         }
 
-        return [$feature, $strict, $includeCli, $deep];
+        return [$feature, $strict, $includeCli, $deep, $staticMode, $styleMode, $qualityMode, $includeTests];
     }
 
     private function featureExists(CommandContext $context, string $feature): bool
@@ -329,6 +427,28 @@ final class DoctorCommand extends Command
             }
         }
 
+        $staticAnalysis = is_array($payload['static_analysis'] ?? null) ? $payload['static_analysis'] : null;
+        if ($staticAnalysis !== null && (string) ($staticAnalysis['status'] ?? 'skipped') !== 'skipped') {
+            $lines[] = '';
+            $lines[] = 'Static analysis:';
+            $lines[] = sprintf(
+                'PHPStan: %s (%d issue(s))',
+                (string) ($staticAnalysis['status'] ?? 'unknown'),
+                (int) (($staticAnalysis['summary']['total'] ?? 0)),
+            );
+        }
+
+        $styleViolations = is_array($payload['style_violations'] ?? null) ? $payload['style_violations'] : null;
+        if ($styleViolations !== null && (string) ($styleViolations['status'] ?? 'skipped') !== 'skipped') {
+            $lines[] = '';
+            $lines[] = 'Style:';
+            $lines[] = sprintf(
+                'Pint: %s (%d issue(s))',
+                (string) ($styleViolations['status'] ?? 'unknown'),
+                (int) (($styleViolations['summary']['total'] ?? 0)),
+            );
+        }
+
         $deep = is_array($payload['pro']['deep_diagnostics'] ?? null)
             ? $payload['pro']['deep_diagnostics']
             : [];
@@ -342,7 +462,7 @@ final class DoctorCommand extends Command
 
             $hotspots = array_values(array_filter(
                 (array) ($deep['hotspots'] ?? []),
-                static fn (mixed $row): bool => is_array($row),
+                static fn(mixed $row): bool => is_array($row),
             ));
             if ($hotspots !== []) {
                 $lines[] = 'Top hotspots:';
@@ -374,6 +494,8 @@ final class DoctorCommand extends Command
         $diagnostics = array_merge(
             array_values((array) (($payload['compile_diagnostics']['items'] ?? []))),
             array_values((array) (($payload['doctor_diagnostics']['items'] ?? []))),
+            array_values((array) (($payload['static_analysis']['diagnostics'] ?? []))),
+            array_values((array) (($payload['style_violations']['diagnostics'] ?? []))),
         );
         if ($diagnostics !== []) {
             $lines[] = '';
@@ -413,5 +535,58 @@ final class DoctorCommand extends Command
         }
 
         return implode(PHP_EOL, $lines);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function skippedToolResult(string $tool): array
+    {
+        return [
+            'tool' => $tool,
+            'available' => false,
+            'ok' => true,
+            'status' => 'skipped',
+            'exit_code' => null,
+            'command' => [],
+            'summary' => ['total' => 0],
+            'issues' => [],
+            'diagnostics' => [],
+        ];
+    }
+
+    /**
+     * @param array<int,string> $existing
+     * @param array<string,mixed> $staticAnalysis
+     * @param array<string,mixed> $styleViolations
+     * @param array<string,mixed>|null $testSummary
+     * @return array<int,string>
+     */
+    private function qualitySuggestedActions(
+        array $existing,
+        bool $runStatic,
+        bool $runStyle,
+        bool $includeTests,
+        array $staticAnalysis,
+        array $styleViolations,
+        ?array $testSummary,
+    ): array {
+        $actions = $existing;
+
+        if ($runStatic && (int) ($staticAnalysis['summary']['total'] ?? 0) > 0) {
+            $actions[] = 'composer analyse';
+        }
+
+        if ($runStyle && (int) ($styleViolations['summary']['total'] ?? 0) > 0) {
+            $actions[] = 'composer lint:fix';
+        }
+
+        if ($includeTests && is_array($testSummary) && (($testSummary['ok'] ?? false) !== true)) {
+            $actions[] = 'vendor/bin/phpunit';
+        }
+
+        sort($actions);
+
+        return array_values(array_unique($actions));
     }
 }

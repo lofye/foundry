@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Verification;
@@ -12,9 +13,7 @@ final class NotificationsVerifier
     public function __construct(
         private readonly GraphCompiler $compiler,
         private readonly Paths $paths,
-    )
-    {
-    }
+    ) {}
 
     public function verify(?string $name = null): VerificationResult
     {

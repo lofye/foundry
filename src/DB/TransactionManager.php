@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\DB;
@@ -7,9 +8,7 @@ final class TransactionManager
 {
     private int $depth = 0;
 
-    public function __construct(private readonly Connection $connection)
-    {
-    }
+    public function __construct(private readonly Connection $connection) {}
 
     public function begin(): void
     {

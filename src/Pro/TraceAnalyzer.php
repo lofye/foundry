@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pro;
@@ -26,15 +27,15 @@ final class TraceAnalyzer
 
         $lines = file($path, FILE_IGNORE_NEW_LINES) ?: [];
         $events = array_values(array_filter(
-            array_map(static fn (string $line): string => trim($line), $lines),
-            static fn (string $line): bool => $line !== '',
+            array_map(static fn(string $line): string => trim($line), $lines),
+            static fn(string $line): bool => $line !== '',
         ));
 
         $matched = $needle === ''
             ? $events
             : array_values(array_filter(
                 $events,
-                static fn (string $line): bool => stripos($line, $needle) !== false,
+                static fn(string $line): bool => stripos($line, $needle) !== false,
             ));
 
         $categories = [];

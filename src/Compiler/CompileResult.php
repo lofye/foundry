@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -27,8 +28,7 @@ final readonly class CompileResult
         public array $projections,
         public array $cache,
         public array $writtenFiles,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

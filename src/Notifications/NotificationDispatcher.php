@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Notifications;
@@ -10,8 +11,7 @@ final class NotificationDispatcher
     public function __construct(
         private readonly NotificationRegistry $registry,
         private readonly NotificationTemplateRenderer $renderer = new NotificationTemplateRenderer(),
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $input

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -7,9 +8,7 @@ use Foundry\Support\Paths;
 
 final readonly class SourceScanner
 {
-    public function __construct(private Paths $paths)
-    {
-    }
+    public function __construct(private Paths $paths) {}
 
     /**
      * @return array<int,string>
@@ -22,7 +21,7 @@ final readonly class SourceScanner
 
         foreach ($featureDirs as $dir) {
             $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)
+                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
             );
 
             foreach ($iterator as $fileInfo) {

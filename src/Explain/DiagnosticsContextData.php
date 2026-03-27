@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -40,7 +41,7 @@ final class DiagnosticsContextData extends ExplainArrayView
 
         usort(
             $filtered,
-            static fn (array $left, array $right): int => strcmp((string) ($left['severity'] ?? ''), (string) ($right['severity'] ?? ''))
+            static fn(array $left, array $right): int => strcmp((string) ($left['severity'] ?? ''), (string) ($right['severity'] ?? ''))
                 ?: strcmp((string) ($left['code'] ?? ''), (string) ($right['code'] ?? ''))
                 ?: strcmp((string) ($left['message'] ?? ''), (string) ($right['message'] ?? '')),
         );

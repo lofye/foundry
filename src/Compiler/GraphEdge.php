@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -14,8 +15,7 @@ final readonly class GraphEdge
         public string $from,
         public string $to,
         public array $payload = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

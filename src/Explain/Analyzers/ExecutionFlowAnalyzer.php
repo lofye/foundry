@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -83,7 +84,7 @@ final class ExecutionFlowAnalyzer implements SectionAnalyzerInterface
             'guards' => array_values(array_filter((array) ($pipeline['guards'] ?? []), 'is_array')),
             'action' => is_array($pipeline['action'] ?? null) ? $pipeline['action'] : null,
             'events' => array_values(array_map(
-                static fn (string $name): array => ['id' => 'event:' . $name, 'kind' => 'event', 'label' => $name, 'name' => $name],
+                static fn(string $name): array => ['id' => 'event:' . $name, 'kind' => 'event', 'label' => $name, 'name' => $name],
                 array_values(array_map('strval', array_keys((array) ($events['emitted'] ?? [])))),
             )),
             'workflows' => array_values(array_filter((array) ($workflows['items'] ?? []), 'is_array')),

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -46,7 +47,7 @@ final class PipelineCompilerIntegrationTest extends TestCase
         $this->assertNotNull($graph->node('guard:auth:publish_post'));
 
         $edgeTypes = array_values(array_unique(array_map(
-            static fn ($edge): string => $edge->type,
+            static fn($edge): string => $edge->type,
             $graph->edges(),
         )));
         $this->assertContains('pipeline_stage_next', $edgeTypes);
@@ -68,7 +69,7 @@ final class PipelineCompilerIntegrationTest extends TestCase
         $result = $compiler->compile(new CompileOptions());
 
         $codes = array_values(array_unique(array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             $result->diagnostics->toArray(),
         )));
 

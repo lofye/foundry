@@ -1,10 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
 
-use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\Analysis\ImpactAnalyzer;
+use Foundry\Compiler\ApplicationGraph;
 use Foundry\Explain\ExplainContext;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
@@ -14,9 +15,7 @@ final readonly class ImpactContextCollector implements ExplainContextCollectorIn
     public function __construct(
         private ImpactAnalyzer $impactAnalyzer,
         private ApplicationGraph $graph,
-    )
-    {
-    }
+    ) {}
 
     public function supports(ExplainSubject $subject): bool
     {

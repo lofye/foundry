@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\AI;
@@ -11,8 +12,7 @@ final class StaticAIProvider implements AIProvider
     public function __construct(
         private readonly string $providerName,
         private readonly array $response,
-    ) {
-    }
+    ) {}
 
     #[\Override]
     public function name(): string

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -33,8 +34,7 @@ final class ExplainArtifactCatalog
         private readonly Paths $paths,
         private readonly ApiSurfaceRegistry $apiSurfaceRegistry,
         private readonly array $extensionRows = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -201,7 +201,7 @@ final class ExplainArtifactCatalog
 
         usort(
             $rows,
-            static fn (array $left, array $right): int => strcmp((string) ($left['title'] ?? ''), (string) ($right['title'] ?? ''))
+            static fn(array $left, array $right): int => strcmp((string) ($left['title'] ?? ''), (string) ($right['title'] ?? ''))
                 ?: strcmp((string) ($left['path'] ?? ''), (string) ($right['path'] ?? ''))
                 ?: strcmp((string) ($left['id'] ?? ''), (string) ($right['id'] ?? '')),
         );

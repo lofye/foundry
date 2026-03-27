@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Notifications;
@@ -13,9 +14,7 @@ final class NotificationRegistry
      */
     private ?array $notifications = null;
 
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     /**
      * @return array<string,array<string,mixed>>

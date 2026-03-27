@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -34,7 +35,7 @@ final class AuthTest extends TestCase
             [],
             [],
             [],
-            '/tmp'
+            '/tmp',
         );
 
         $auth = $engine->authenticate($feature, new RequestContext('POST', '/posts', ['x-user-id' => 'u-1']));
@@ -66,7 +67,7 @@ final class AuthTest extends TestCase
             [],
             [],
             [],
-            '/tmp'
+            '/tmp',
         );
 
         $decision = $engine->authorize($feature, \Foundry\Auth\AuthContext::guest());

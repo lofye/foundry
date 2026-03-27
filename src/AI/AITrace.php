@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\AI;
@@ -16,6 +17,5 @@ final readonly class AITrace
         public readonly float $costEstimate,
         public readonly bool $cacheHit,
         public readonly array $metadata = [],
-    ) {
-    }
+    ) {}
 }

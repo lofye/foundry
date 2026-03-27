@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -10,9 +11,7 @@ use Foundry\Support\Yaml;
 
 final class NotificationGenerator
 {
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     /**
      * @return array<string,mixed>

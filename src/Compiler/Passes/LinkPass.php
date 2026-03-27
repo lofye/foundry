@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -15,8 +16,8 @@ use Foundry\Compiler\IR\PermissionNode;
 use Foundry\Compiler\IR\QueryNode;
 use Foundry\Compiler\IR\RateLimitNode;
 use Foundry\Compiler\IR\RouteNode;
-use Foundry\Compiler\IR\SchemaNode;
 use Foundry\Compiler\IR\SchedulerNode;
+use Foundry\Compiler\IR\SchemaNode;
 use Foundry\Compiler\IR\TestNode;
 use Foundry\Compiler\IR\WebhookNode;
 
@@ -481,7 +482,7 @@ final class LinkPass implements CompilerPass
     private function sortedUniqueStrings(array $values): array
     {
         $values = array_values(array_unique(array_map('strval', $values)));
-        $values = array_values(array_filter($values, static fn (string $value): bool => $value !== ''));
+        $values = array_values(array_filter($values, static fn(string $value): bool => $value !== ''));
         sort($values);
 
         return $values;

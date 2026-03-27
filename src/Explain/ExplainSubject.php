@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -17,8 +18,7 @@ final readonly class ExplainSubject
         public array $graphNodeIds,
         public array $aliases,
         public array $metadata = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

@@ -1,13 +1,14 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
 use Foundry\Compiler\Diagnostics\DiagnosticBag;
-use Foundry\Compiler\Migration\ManifestVersionResolver;
-use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Migration\DefinitionFormat;
 use Foundry\Compiler\Migration\DefinitionMigrator;
+use Foundry\Compiler\Migration\ManifestVersionResolver;
+use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Support\Paths;
 use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
@@ -59,13 +60,35 @@ final class DefinitionMigratorEdgeCasesTest extends TestCase
         file_put_contents($missingPathDir . '/feature.yaml', "version: 1\nfeature: missing_path\nkind: http\n");
 
         $rule = new class implements MigrationRule {
-            public function id(): string { return 'MIGRATE_2_TO_3'; }
-            public function description(): string { return '2->3'; }
-            public function sourceType(): string { return 'feature_manifest'; }
-            public function fromVersion(): int { return 2; }
-            public function toVersion(): int { return 3; }
-            public function applies(string $path, array $document): bool { return true; }
-            public function migrate(string $path, array $document): array { $document['version'] = 3; return $document; }
+            public function id(): string
+            {
+                return 'MIGRATE_2_TO_3';
+            }
+            public function description(): string
+            {
+                return '2->3';
+            }
+            public function sourceType(): string
+            {
+                return 'feature_manifest';
+            }
+            public function fromVersion(): int
+            {
+                return 2;
+            }
+            public function toVersion(): int
+            {
+                return 3;
+            }
+            public function applies(string $path, array $document): bool
+            {
+                return true;
+            }
+            public function migrate(string $path, array $document): array
+            {
+                $document['version'] = 3;
+                return $document;
+            }
         };
 
         $resolver = new ManifestVersionResolver(3);
@@ -80,7 +103,7 @@ final class DefinitionMigratorEdgeCasesTest extends TestCase
         $this->assertSame('FDY7003_UNSUPPORTED_DEFINITION_VERSION', $unsupported->diagnostics[0]['code']);
 
         $missingPath = $migrator->migrate(false, 'app/features/missing_path/feature.yaml');
-        $codes = array_values(array_map(static fn (array $row): string => (string) ($row['code'] ?? ''), $missingPath->diagnostics));
+        $codes = array_values(array_map(static fn(array $row): string => (string) ($row['code'] ?? ''), $missingPath->diagnostics));
         $this->assertContains('FDY7004_NO_MIGRATION_PATH', $codes);
         $this->assertSame('missing_path', $missingPath->plans[0]['status']);
     }

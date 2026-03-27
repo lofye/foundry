@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -24,7 +25,6 @@ use Foundry\Observability\StructuredLogger;
 use Foundry\Observability\TraceContext;
 use Foundry\Observability\TraceRecorder;
 use Foundry\Queue\DatabaseQueueDriver;
-use Foundry\Queue\JobRegistry;
 use Foundry\Schema\JsonSchemaValidator;
 use Foundry\Schema\Schema;
 use Foundry\Schema\SchemaRegistry;

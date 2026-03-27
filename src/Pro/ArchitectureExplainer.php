@@ -1,10 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pro;
 
-use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\Analysis\ImpactAnalyzer;
+use Foundry\Compiler\ApplicationGraph;
 use Foundry\Explain\Contributors\ExplainContributorInterface;
 use Foundry\Explain\ExplainEngineFactory;
 use Foundry\Explain\ExplainOptions;
@@ -28,8 +29,7 @@ final readonly class ArchitectureExplainer
         private array $contributors = [],
         private ?string $commandPrefix = null,
         private ?ExplanationRendererFactory $rendererFactory = null,
-    ) {
-    }
+    ) {}
 
     public function explain(ApplicationGraph $graph, string|ExplainTarget $target, ExplainOptions $options = new ExplainOptions()): ExplainResponse
     {

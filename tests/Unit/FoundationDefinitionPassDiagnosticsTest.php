@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -96,7 +97,7 @@ YAML);
         $result = $compiler->compile(new CompileOptions());
 
         $codes = array_values(array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             $result->diagnostics->toArray(),
         ));
 

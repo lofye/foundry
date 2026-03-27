@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis\Analyzers;
@@ -47,7 +48,7 @@ final class DependencyAnalyzer implements GraphAnalyzer
         $rows = [];
         foreach ($cycles as $cycle) {
             $features = array_values(array_map(
-                static fn (string $nodeId): string => substr($nodeId, strlen('feature:')),
+                static fn(string $nodeId): string => substr($nodeId, strlen('feature:')),
                 $cycle,
             ));
 
@@ -67,7 +68,7 @@ final class DependencyAnalyzer implements GraphAnalyzer
                 message: 'Feature dependency cycle detected: ' . implode(' -> ', $features),
                 nodeId: 'feature:' . $core[0],
                 relatedNodes: array_values(array_map(
-                    static fn (string $feature): string => 'feature:' . $feature,
+                    static fn(string $feature): string => 'feature:' . $feature,
                     $core,
                 )),
                 suggestedFix: 'Break one dependency edge in the cycle.',
@@ -77,7 +78,7 @@ final class DependencyAnalyzer implements GraphAnalyzer
 
         usort(
             $rows,
-            static fn (array $a, array $b): int => strcmp((string) ($a['message'] ?? ''), (string) ($b['message'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['message'] ?? ''), (string) ($b['message'] ?? '')),
         );
 
         return [
@@ -202,4 +203,3 @@ final class DependencyAnalyzer implements GraphAnalyzer
         return is_array($best['cycle'] ?? null) ? $best['cycle'] : $cycle;
     }
 }
-

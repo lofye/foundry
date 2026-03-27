@@ -1,10 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
-use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\Analysis\ImpactAnalyzer;
+use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\GraphEdge;
 use Foundry\Compiler\IR\EventNode;
 use Foundry\Compiler\IR\ExecutionPlanNode;

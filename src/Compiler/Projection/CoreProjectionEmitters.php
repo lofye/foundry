@@ -1,10 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Projection;
 
 use Foundry\Compiler\ApplicationGraph;
-use Foundry\Compiler\IR\GraphNode;
 
 final class CoreProjectionEmitters
 {
@@ -375,7 +375,7 @@ final class CoreProjectionEmitters
 
             uasort(
                 $stages,
-                static fn (array $a, array $b): int => ((int) ($a['order'] ?? 0) <=> (int) ($b['order'] ?? 0))
+                static fn(array $a, array $b): int => ((int) ($a['order'] ?? 0) <=> (int) ($b['order'] ?? 0))
                     ?: strcmp((string) ($a['extension'] ?? ''), (string) ($b['extension'] ?? '')),
             );
 
@@ -394,7 +394,7 @@ final class CoreProjectionEmitters
             }
             usort(
                 $links,
-                static fn (array $a, array $b): int => strcmp((string) ($a['from'] ?? '') . '->' . (string) ($a['to'] ?? ''), (string) ($b['from'] ?? '') . '->' . (string) ($b['to'] ?? '')),
+                static fn(array $a, array $b): int => strcmp((string) ($a['from'] ?? '') . '->' . (string) ($a['to'] ?? ''), (string) ($b['from'] ?? '') . '->' . (string) ($b['to'] ?? '')),
             );
 
             return [
@@ -463,7 +463,7 @@ final class CoreProjectionEmitters
 
             uasort(
                 $interceptors,
-                static fn (array $a, array $b): int => strcmp((string) ($a['stage'] ?? ''), (string) ($b['stage'] ?? ''))
+                static fn(array $a, array $b): int => strcmp((string) ($a['stage'] ?? ''), (string) ($b['stage'] ?? ''))
                     ?: ((int) ($a['priority'] ?? 0) <=> (int) ($b['priority'] ?? 0))
                     ?: strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
             );

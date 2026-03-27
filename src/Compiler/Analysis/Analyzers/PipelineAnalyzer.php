@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis\Analyzers;
@@ -136,7 +137,7 @@ final class PipelineAnalyzer implements GraphAnalyzer
         $missingExecutionPlans = array_values(array_unique($missingExecutionPlans));
         usort(
             $dangerousInterceptors,
-            static fn (array $a, array $b): int => strcmp((string) ($a['stage'] ?? '') . ':' . (string) ($a['id'] ?? ''), (string) ($b['stage'] ?? '') . ':' . (string) ($b['id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['stage'] ?? '') . ':' . (string) ($a['id'] ?? ''), (string) ($b['stage'] ?? '') . ':' . (string) ($b['id'] ?? '')),
         );
 
         return [

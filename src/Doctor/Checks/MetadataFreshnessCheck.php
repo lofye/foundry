@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Doctor\Checks;
@@ -103,7 +104,7 @@ final class MetadataFreshnessCheck implements DoctorCheck
     {
         $latest = 0;
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($featureDir, \FilesystemIterator::SKIP_DOTS)
+            new \RecursiveDirectoryIterator($featureDir, \FilesystemIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $fileInfo) {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Webhook;
@@ -13,6 +14,5 @@ final readonly class IncomingWebhookDefinition
         public readonly string $path,
         public readonly string $secret,
         public readonly array $schema,
-    ) {
-    }
+    ) {}
 }

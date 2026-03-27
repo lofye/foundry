@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\DB;
@@ -45,7 +46,7 @@ final class QueryRegistry
 
         usort(
             $rows,
-            static fn (array $a, array $b): int => ($a['feature'] <=> $b['feature']) ?: ($a['name'] <=> $b['name'])
+            static fn(array $a, array $b): int => ($a['feature'] <=> $b['feature']) ?: ($a['name'] <=> $b['name']),
         );
 
         return $rows;

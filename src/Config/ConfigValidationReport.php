@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Config;
@@ -14,8 +15,7 @@ final readonly class ConfigValidationReport
         public array $items,
         public array $schemas,
         public array $validatedSources = [],
-    ) {
-    }
+    ) {}
 
     public function hasErrors(): bool
     {
@@ -62,7 +62,7 @@ final readonly class ConfigValidationReport
         return [
             'summary' => $this->summary(),
             'items' => array_values(array_map(
-                static fn (ConfigValidationIssue $item): array => $item->toArray(),
+                static fn(ConfigValidationIssue $item): array => $item->toArray(),
                 $this->items,
             )),
             'schema_ids' => $schemaIds,

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Documentation;
@@ -213,7 +214,7 @@ final class DocsSiteBuilder
             $versions[$this->normalizeVersion($entry)] = $pages;
         }
 
-        uksort($versions, fn (string $a, string $b): int => $this->compareVersions($a, $b));
+        uksort($versions, fn(string $a, string $b): int => $this->compareVersions($a, $b));
 
         return $versions;
     }
@@ -487,7 +488,7 @@ HTML;
         $ordered = array_values($pages);
         usort(
             $ordered,
-            static fn (array $a, array $b): int => ((int) ($a['order'] ?? 0) <=> (int) ($b['order'] ?? 0))
+            static fn(array $a, array $b): int => ((int) ($a['order'] ?? 0) <=> (int) ($b['order'] ?? 0))
                 ?: strcmp((string) ($a['title'] ?? ''), (string) ($b['title'] ?? '')),
         );
 
@@ -754,9 +755,9 @@ HTML;
 
         $snapshotVersions = array_values(array_unique(array_filter(
             array_map([$this, 'normalizeVersion'], $snapshotVersions),
-            static fn (string $version): bool => $version !== '',
+            static fn(string $version): bool => $version !== '',
         )));
-        usort($snapshotVersions, fn (string $a, string $b): int => $this->compareVersions($a, $b));
+        usort($snapshotVersions, fn(string $a, string $b): int => $this->compareVersions($a, $b));
 
         foreach ($snapshotVersions as $version) {
             if ($version === $currentVersion) {

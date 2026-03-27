@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Localization;
@@ -12,9 +13,7 @@ final class LocaleCatalog
      */
     private array $cache = [];
 
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     /**
      * @return array<string,string>

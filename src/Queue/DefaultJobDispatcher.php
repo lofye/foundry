@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Queue;
@@ -14,8 +15,7 @@ final class DefaultJobDispatcher implements JobDispatcher
         private readonly JobRegistry $jobs,
         private readonly QueueDriver $driver,
         private readonly ?TraceRecorder $traceRecorder = null,
-    ) {
-    }
+    ) {}
 
     #[\Override]
     public function dispatch(string $jobName, array $payload): void

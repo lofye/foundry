@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -287,9 +288,7 @@ final class CoverageBoostCoverageHarnessTest extends TestCase
         ));
 
         $dispatcher = new DefaultJobDispatcher($registry, new class implements QueueDriver {
-            public function enqueue(string $queue, string $jobName, array $payload): void
-            {
-            }
+            public function enqueue(string $queue, string $jobName, array $payload): void {}
 
             public function dequeue(string $queue): ?array
             {
@@ -317,7 +316,7 @@ final class CoverageBoostCoverageHarnessTest extends TestCase
      */
     private function suppressWarnings(callable $callback): mixed
     {
-        set_error_handler(static fn (): bool => true);
+        set_error_handler(static fn(): bool => true);
 
         try {
             return $callback();

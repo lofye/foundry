@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Verification;
@@ -8,9 +9,7 @@ use Foundry\Support\Yaml;
 
 final class EventsVerifier
 {
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     public function verify(): VerificationResult
     {
@@ -62,7 +61,7 @@ final class EventsVerifier
             }
 
             $events = Yaml::parseFile($eventsPath);
-            $emits = array_values(array_map(static fn (array $row): string => (string) ($row['name'] ?? ''), array_filter((array) ($events['emit'] ?? []), 'is_array')));
+            $emits = array_values(array_map(static fn(array $row): string => (string) ($row['name'] ?? ''), array_filter((array) ($events['emit'] ?? []), 'is_array')));
             $subs = $subscribesByFeature[$feature] ?? [];
             foreach ($emits as $eventName) {
                 if (in_array($eventName, $subs, true)) {

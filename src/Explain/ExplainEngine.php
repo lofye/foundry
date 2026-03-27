@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -17,8 +18,7 @@ final class ExplainEngine implements ExplainEngineInterface
         private readonly ExplanationPlanAssembler $planAssembler,
         private readonly array $collectors,
         private readonly string $commandPrefix,
-    ) {
-    }
+    ) {}
 
     public function explain(ExplainTarget $target, ExplainOptions $options): ExplanationPlan
     {

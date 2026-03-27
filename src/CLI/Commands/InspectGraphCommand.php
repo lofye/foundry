@@ -1,12 +1,13 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Application;
+use Foundry\CLI\CliSurfaceVerifier;
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
-use Foundry\CLI\CliSurfaceVerifier;
 use Foundry\CLI\Commands\Concerns\InteractsWithGraphInspection;
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\CompileOptions;
@@ -118,7 +119,7 @@ final class InspectGraphCommand extends Command
 
         if ($target === 'impact') {
             $nodeId = (string) ($args[2] ?? '');
-            $fileFlag = array_find($args, static fn (string $arg): bool => str_starts_with($arg, '--file'));
+            $fileFlag = array_find($args, static fn(string $arg): bool => str_starts_with($arg, '--file'));
 
             return str_contains($nodeId, ':') || is_string($fileFlag);
         }
@@ -156,7 +157,7 @@ final class InspectGraphCommand extends Command
                 'message' => null,
                 'payload' => [
                     'packs' => array_values(array_map(
-                        static fn (PackDefinition $pack): array => $pack->toArray(),
+                        static fn(PackDefinition $pack): array => $pack->toArray(),
                         $context->extensionRegistry()->loadedPacks(),
                     )),
                     'diagnostics' => $context->extensionRegistry()->diagnostics(),
@@ -301,7 +302,7 @@ final class InspectGraphCommand extends Command
                 'extension' => $extension->describe(),
                 'descriptor' => $extension->descriptor()->toArray(),
                 'packs' => array_values(array_map(
-                    static fn (PackDefinition $pack): array => $pack->toArray(),
+                    static fn(PackDefinition $pack): array => $pack->toArray(),
                     $extension->packs(),
                 )),
                 'diagnostics' => $row['diagnostics'] ?? [],
@@ -442,8 +443,8 @@ final class InspectGraphCommand extends Command
             'payload' => [
                 'node' => $node->toArray(),
                 'related_nodes' => [
-                    'dependencies' => array_values(array_map(static fn (GraphEdge $edge): string => $edge->to, $graph->dependencies($nodeId))),
-                    'dependents' => array_values(array_map(static fn (GraphEdge $edge): string => $edge->from, $graph->dependents($nodeId))),
+                    'dependencies' => array_values(array_map(static fn(GraphEdge $edge): string => $edge->to, $graph->dependencies($nodeId))),
+                    'dependents' => array_values(array_map(static fn(GraphEdge $edge): string => $edge->from, $graph->dependents($nodeId))),
                 ],
                 'diagnostics' => $this->diagnosticsForNode($nodeId, $context),
             ],
@@ -476,7 +477,7 @@ final class InspectGraphCommand extends Command
         }
 
         $edges = array_values(array_map(
-            static fn (GraphEdge $edge): array => $edge->toArray(),
+            static fn(GraphEdge $edge): array => $edge->toArray(),
             $graph->dependencies($nodeId),
         ));
 
@@ -501,7 +502,7 @@ final class InspectGraphCommand extends Command
         }
 
         $edges = array_values(array_map(
-            static fn (GraphEdge $edge): array => $edge->toArray(),
+            static fn(GraphEdge $edge): array => $edge->toArray(),
             $graph->dependents($nodeId),
         ));
 
@@ -538,7 +539,7 @@ final class InspectGraphCommand extends Command
 
         usort(
             $stages,
-            static fn (array $a, array $b): int => ((int) ($a['order'] ?? 0) <=> (int) ($b['order'] ?? 0))
+            static fn(array $a, array $b): int => ((int) ($a['order'] ?? 0) <=> (int) ($b['order'] ?? 0))
                 ?: strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')),
         );
 
@@ -558,14 +559,14 @@ final class InspectGraphCommand extends Command
 
         usort(
             $links,
-            static fn (array $a, array $b): int => strcmp((string) ($a['from'] ?? '') . '->' . (string) ($a['to'] ?? ''), (string) ($b['from'] ?? '') . '->' . (string) ($b['to'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['from'] ?? '') . '->' . (string) ($a['to'] ?? ''), (string) ($b['from'] ?? '') . '->' . (string) ($b['to'] ?? '')),
         );
 
         return [
             'status' => 0,
             'message' => null,
             'payload' => [
-                'order' => array_values(array_map(static fn (array $row): string => (string) ($row['name'] ?? ''), $stages)),
+                'order' => array_values(array_map(static fn(array $row): string => (string) ($row['name'] ?? ''), $stages)),
                 'stages' => $stages,
                 'links' => $links,
             ],
@@ -609,7 +610,7 @@ final class InspectGraphCommand extends Command
         }
         usort(
             $guardRows,
-            static fn (array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
         );
 
         $interceptorRows = [];
@@ -627,7 +628,7 @@ final class InspectGraphCommand extends Command
         }
         usort(
             $interceptorRows,
-            static fn (array $a, array $b): int => strcmp((string) ($a['stage'] ?? '') . ':' . (string) ($a['id'] ?? ''), (string) ($b['stage'] ?? '') . ':' . (string) ($b['id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['stage'] ?? '') . ':' . (string) ($a['id'] ?? ''), (string) ($b['stage'] ?? '') . ':' . (string) ($b['id'] ?? '')),
         );
 
         return [
@@ -665,7 +666,7 @@ final class InspectGraphCommand extends Command
 
         usort(
             $guardRows,
-            static fn (array $a, array $b): int => strcmp((string) ($a['feature'] ?? '') . ':' . (string) ($a['id'] ?? ''), (string) ($b['feature'] ?? '') . ':' . (string) ($b['id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['feature'] ?? '') . ':' . (string) ($a['id'] ?? ''), (string) ($b['feature'] ?? '') . ':' . (string) ($b['id'] ?? '')),
         );
 
         return [
@@ -704,7 +705,7 @@ final class InspectGraphCommand extends Command
 
         usort(
             $rows,
-            static fn (array $a, array $b): int => strcmp((string) ($a['stage'] ?? ''), (string) ($b['stage'] ?? ''))
+            static fn(array $a, array $b): int => strcmp((string) ($a['stage'] ?? ''), (string) ($b['stage'] ?? ''))
                 ?: ((int) ($a['priority'] ?? 0) <=> (int) ($b['priority'] ?? 0))
                 ?: strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
         );
@@ -883,7 +884,7 @@ final class InspectGraphCommand extends Command
 
         usort(
             $filtered,
-            static fn (array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
         );
 
         return $filtered;

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\DB;
@@ -14,6 +15,5 @@ final readonly class QueryTrace
         public readonly array $params,
         public readonly float $durationMs,
         public readonly int $rows,
-    ) {
-    }
+    ) {}
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Doctor\Checks;
@@ -11,9 +12,7 @@ use Foundry\Pipeline\PipelineIntegrityInspector;
 
 final class PipelineConsistencyCheck implements DoctorCheck
 {
-    public function __construct(private readonly PipelineIntegrityInspector $inspector = new PipelineIntegrityInspector())
-    {
-    }
+    public function __construct(private readonly PipelineIntegrityInspector $inspector = new PipelineIntegrityInspector()) {}
 
     public function id(): string
     {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Doctor\Checks;
@@ -31,7 +32,7 @@ final class ExtensionCompatibilityCheck implements DoctorCheck
             'load_order' => $context->extensionReport->loadOrder,
             'registration_sources' => $context->extensionRegistry->registrationSources(),
             'diagnostic_codes' => array_values(array_map(
-                static fn (array $row): string => (string) ($row['code'] ?? ''),
+                static fn(array $row): string => (string) ($row['code'] ?? ''),
                 $context->extensionReport->diagnostics,
             )),
         ];

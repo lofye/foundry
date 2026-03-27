@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -52,7 +53,7 @@ final class CommandSubjectAnalyzer implements SubjectAnalyzerInterface
                         'usage' => $usage,
                         'classification' => $classification,
                         'aliases' => $aliases,
-                    ], static fn (mixed $value): bool => $value !== [] && $value !== ''),
+                    ], static fn(mixed $value): bool => $value !== [] && $value !== ''),
                 ),
             ],
         );

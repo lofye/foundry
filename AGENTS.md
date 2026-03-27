@@ -118,3 +118,6 @@ Never let implementation drift from spec.
 
 Determinism and contract stability are required.
 If a change would surprise a user or break tooling, it is a contract change.
+
+There is additional important information in docs/philosophy/foundry-philosophy.md
+If you haven't already read it in this session, go read it now.

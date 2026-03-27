@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -7,9 +8,7 @@ use Foundry\Support\Paths;
 
 final readonly class BuildLayout
 {
-    public function __construct(private Paths $paths)
-    {
-    }
+    public function __construct(private Paths $paths) {}
 
     public function buildRoot(): string
     {
@@ -34,6 +33,21 @@ final readonly class BuildLayout
     public function diagnosticsDir(): string
     {
         return $this->buildRoot() . '/diagnostics';
+    }
+
+    public function qualityDir(): string
+    {
+        return $this->buildRoot() . '/quality';
+    }
+
+    public function observabilityDir(): string
+    {
+        return $this->buildRoot() . '/observability';
+    }
+
+    public function historyDir(): string
+    {
+        return $this->buildRoot() . '/history';
     }
 
     public function graphJsonPath(): string
@@ -76,6 +90,51 @@ final readonly class BuildLayout
         return $this->manifestsDir() . '/integrity_hashes.json';
     }
 
+    public function qualitySummaryPath(): string
+    {
+        return $this->qualityDir() . '/summary.json';
+    }
+
+    public function qualityStaticAnalysisPath(): string
+    {
+        return $this->qualityDir() . '/phpstan.json';
+    }
+
+    public function qualityStylePath(): string
+    {
+        return $this->qualityDir() . '/pint.json';
+    }
+
+    public function qualityTestSummaryPath(): string
+    {
+        return $this->qualityDir() . '/phpunit.json';
+    }
+
+    public function observeTracePath(): string
+    {
+        return $this->observabilityDir() . '/trace.json';
+    }
+
+    public function observeProfilePath(): string
+    {
+        return $this->observabilityDir() . '/profile.json';
+    }
+
+    public function observeComparePath(): string
+    {
+        return $this->observabilityDir() . '/compare.json';
+    }
+
+    public function historyIndexPath(): string
+    {
+        return $this->historyDir() . '/index.json';
+    }
+
+    public function historyRecordPath(string $id): string
+    {
+        return $this->historyDir() . '/' . $id . '.json';
+    }
+
     public function projectionPath(string $file): string
     {
         return $this->projectionDir() . '/' . $file;
@@ -94,6 +153,9 @@ final readonly class BuildLayout
             $this->projectionDir(),
             $this->manifestsDir(),
             $this->diagnosticsDir(),
+            $this->qualityDir(),
+            $this->observabilityDir(),
+            $this->historyDir(),
             $this->paths->generated(),
         ] as $dir) {
             if (!is_dir($dir)) {

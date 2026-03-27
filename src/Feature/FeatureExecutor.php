@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Feature;
@@ -41,8 +42,7 @@ final class FeatureExecutor
         private readonly RouteMatcher $matcher = new RouteMatcher(),
         private readonly array $registeredInterceptors = [],
         private readonly ?array $configuredStageOrder = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -58,7 +58,7 @@ final class FeatureExecutor
                 'ROUTE_NOT_FOUND',
                 'not_found',
                 ['method' => $request->method(), 'path' => $request->path()],
-                'No route matched this request.'
+                'No route matched this request.',
             );
         }
 
@@ -139,7 +139,7 @@ final class FeatureExecutor
                                 throw new FoundryError(
                                     'FEATURE_INPUT_SCHEMA_VIOLATION',
                                     'validation',
-                                    ['feature' => $feature->name, 'errors' => array_map(static fn ($e): array => $e->toArray(), $inputValidation->errors)],
+                                    ['feature' => $feature->name, 'errors' => array_map(static fn($e): array => $e->toArray(), $inputValidation->errors)],
                                     'Input does not match schema.',
                                 );
                             }
@@ -172,7 +172,7 @@ final class FeatureExecutor
                             throw new FoundryError(
                                 'FEATURE_OUTPUT_SCHEMA_VIOLATION',
                                 'validation',
-                                ['feature' => $feature->name, 'errors' => array_map(static fn ($e): array => $e->toArray(), $outputValidation->errors)],
+                                ['feature' => $feature->name, 'errors' => array_map(static fn($e): array => $e->toArray(), $outputValidation->errors)],
                                 'Output does not match schema.',
                             );
                         }
@@ -377,7 +377,7 @@ final class FeatureExecutor
         foreach ($byStage as &$interceptors) {
             usort(
                 $interceptors,
-                static fn (StageInterceptor $a, StageInterceptor $b): int => ($a->priority() <=> $b->priority())
+                static fn(StageInterceptor $a, StageInterceptor $b): int => ($a->priority() <=> $b->priority())
                     ?: strcmp($a->id(), $b->id()),
             );
         }

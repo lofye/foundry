@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -72,7 +73,7 @@ final class EnrichPass implements CompilerPass
 
         usort(
             $routeSummaries,
-            static fn (array $a, array $b): int => strcmp(($a['method'] . ' ' . $a['path']), ($b['method'] . ' ' . $b['path'])),
+            static fn(array $a, array $b): int => strcmp(($a['method'] . ' ' . $a['path']), ($b['method'] . ' ' . $b['path'])),
         );
 
         $state->analysis['feature_summaries'] = $featureSummaries;

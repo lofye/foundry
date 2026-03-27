@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Documentation;
@@ -9,9 +10,7 @@ use Foundry\Support\Paths;
 
 final class InspectUiGenerator
 {
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     /**
      * @return array<string,mixed>
@@ -74,7 +73,7 @@ final class InspectUiGenerator
 
         usort(
             $rows,
-            static fn (array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
         );
 
         return $rows;

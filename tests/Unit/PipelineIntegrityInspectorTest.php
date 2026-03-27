@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -32,7 +33,7 @@ final class PipelineIntegrityInspectorTest extends TestCase
 
         $report = (new PipelineIntegrityInspector())->inspect($graph, 'publish_post');
         $codes = array_values(array_map(
-            static fn (array $issue): string => (string) ($issue['code'] ?? ''),
+            static fn(array $issue): string => (string) ($issue['code'] ?? ''),
             (array) ($report['issues'] ?? []),
         ));
         sort($codes);

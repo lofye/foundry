@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis;
@@ -9,8 +10,7 @@ final readonly class AnalyzerContext
 {
     public function __construct(
         public ?string $featureFilter = null,
-    ) {
-    }
+    ) {}
 
     public function includesFeature(string $feature): bool
     {

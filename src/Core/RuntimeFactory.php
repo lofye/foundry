@@ -1,9 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Core;
 
-use Foundry\AI\AIManager;
 use Foundry\AI\AIProviderRegistry;
 use Foundry\Auth\AuthorizationEngine;
 use Foundry\Auth\HeaderTokenAuthenticator;
@@ -84,7 +84,7 @@ final class RuntimeFactory
             new DefaultEventDispatcher($eventRegistry, $traceRecorder),
             new LocalStorageDriver($storageRoot),
             $traceContext,
-            (new AIProviderRegistry())->managerForConfig((array) ($config['ai'] ?? []))
+            (new AIProviderRegistry())->managerForConfig((array) ($config['ai'] ?? [])),
         );
 
         $executor = new FeatureExecutor(
@@ -179,8 +179,8 @@ final class RuntimeFactory
                 [
                     'summary' => $report->summary(),
                     'errors' => array_values(array_map(
-                        static fn ($issue): array => method_exists($issue, 'toArray') ? $issue->toArray() : [],
-                        array_values(array_filter($report->items, static fn ($issue): bool => $issue->severity === 'error')),
+                        static fn($issue): array => method_exists($issue, 'toArray') ? $issue->toArray() : [],
+                        array_values(array_filter($report->items, static fn($issue): bool => $issue->severity === 'error')),
                     )),
                 ],
                 'Configuration validation failed.',
@@ -189,7 +189,7 @@ final class RuntimeFactory
 
         $extensionErrors = array_values(array_filter(
             $extensions->diagnostics(),
-            static fn (array $row): bool => (string) ($row['severity'] ?? 'error') === 'error',
+            static fn(array $row): bool => (string) ($row['severity'] ?? 'error') === 'error',
         ));
         if ($extensionErrors !== []) {
             throw new FoundryError(
@@ -361,7 +361,7 @@ final class RuntimeFactory
                     kind: (string) ($row['kind'] ?? 'computed'),
                     ttlSeconds: (int) ($row['ttl_seconds'] ?? 300),
                     invalidatedBy: array_values(array_map('strval', (array) ($row['invalidated_by'] ?? []))),
-                )
+                ),
             );
         }
 
@@ -383,7 +383,7 @@ final class RuntimeFactory
                 new EventDefinition(
                     name: $eventName,
                     schema: is_array($row['schema'] ?? null) ? $row['schema'] : [],
-                )
+                ),
             );
         }
 
@@ -404,7 +404,7 @@ final class RuntimeFactory
             $maxAttempts = max(1, (int) ($retry['max_attempts'] ?? 1));
 
             $backoff = array_values(array_map('intval', (array) ($retry['backoff_seconds'] ?? [1, 5, 30])));
-            $backoff = array_values(array_filter($backoff, static fn (int $delay): bool => $delay >= 0));
+            $backoff = array_values(array_filter($backoff, static fn(int $delay): bool => $delay >= 0));
             if ($backoff === []) {
                 $backoff = [1];
             }
@@ -417,7 +417,7 @@ final class RuntimeFactory
                     retry: new RetryPolicy($maxAttempts, $backoff),
                     timeoutSeconds: max(1, (int) ($row['timeout_seconds'] ?? 60)),
                     idempotencyKey: isset($row['idempotency_key']) ? (string) $row['idempotency_key'] : null,
-                )
+                ),
             );
         }
 

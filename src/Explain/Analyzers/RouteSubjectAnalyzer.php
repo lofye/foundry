@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -23,7 +24,7 @@ final class RouteSubjectAnalyzer implements SubjectAnalyzerInterface
         $events = $context->events();
         $workflows = $context->workflows();
         $jobs = array_values(array_map(
-            static fn (array $job): string => (string) ($job['name'] ?? $job['label'] ?? ''),
+            static fn(array $job): string => (string) ($job['name'] ?? $job['label'] ?? ''),
             array_values(array_filter((array) ($pipeline['jobs'] ?? []), 'is_array')),
         ));
 
@@ -31,13 +32,13 @@ final class RouteSubjectAnalyzer implements SubjectAnalyzerInterface
             responsibilities: ExplainSupport::orderedUniqueStrings(array_filter([
                 'Handle ' . $signature . ' requests',
                 $feature !== '' ? 'Dispatch the ' . $feature . ' feature action' : null,
-            ], static fn (?string $value): bool => $value !== null)),
+            ], static fn(?string $value): bool => $value !== null)),
             summaryInputs: [
                 'signature' => $signature,
                 'feature' => $feature,
                 'emits' => array_keys((array) ($events['emitted'] ?? [])),
                 'workflows' => array_values(array_map(
-                    static fn (array $workflow): string => (string) ($workflow['resource'] ?? $workflow['label'] ?? 'workflow'),
+                    static fn(array $workflow): string => (string) ($workflow['resource'] ?? $workflow['label'] ?? 'workflow'),
                     array_values(array_filter((array) ($workflows['items'] ?? []), 'is_array')),
                 )),
                 'jobs' => $jobs,

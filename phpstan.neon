@@ -1,0 +1,19 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+        - tests
+        - app
+    tmpDir: app/.foundry/build/quality/phpstan-tmp
+    parallel:
+        maximumNumberOfProcesses: 1
+    reportUnmatchedIgnoredErrors: true
+    treatPhpDocTypesAsCertain: false
+    excludePaths:
+        analyse:
+            - app/generated/*
+            - app/.foundry/*
+            - vendor/*

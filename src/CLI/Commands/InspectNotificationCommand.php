@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
@@ -42,8 +43,8 @@ final class InspectNotificationCommand extends Command
             'message' => null,
             'payload' => [
                 'notification' => $node->toArray(),
-                'dependencies' => array_values(array_map(static fn (GraphEdge $edge): array => $edge->toArray(), $graph->dependencies($node->id()))),
-                'dependents' => array_values(array_map(static fn (GraphEdge $edge): array => $edge->toArray(), $graph->dependents($node->id()))),
+                'dependencies' => array_values(array_map(static fn(GraphEdge $edge): array => $edge->toArray(), $graph->dependencies($node->id()))),
+                'dependents' => array_values(array_map(static fn(GraphEdge $edge): array => $edge->toArray(), $graph->dependents($node->id()))),
             ],
         ];
     }

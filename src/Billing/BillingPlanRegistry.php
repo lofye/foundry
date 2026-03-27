@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Billing;
@@ -12,9 +13,7 @@ final class BillingPlanRegistry
      */
     private ?array $plans = null;
 
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     /**
      * @return array<string,mixed>

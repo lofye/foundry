@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Diagnostics;
@@ -23,8 +24,7 @@ final readonly class Diagnostic
         public ?string $pass = null,
         public ?string $whyItMatters = null,
         public array $details = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

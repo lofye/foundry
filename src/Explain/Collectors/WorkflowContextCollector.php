@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
@@ -16,8 +17,7 @@ final readonly class WorkflowContextCollector implements ExplainContextCollector
     public function __construct(
         private ApplicationGraph $graph,
         private ExplainArtifactCatalog $artifacts,
-    ) {
-    }
+    ) {}
 
     public function supports(ExplainSubject $subject): bool
     {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -12,8 +13,7 @@ final class IndexGenerator
     public function __construct(
         private readonly Paths $paths,
         private readonly ?GraphCompiler $compiler = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int,string>

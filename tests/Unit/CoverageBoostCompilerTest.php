@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -21,8 +22,8 @@ use Foundry\Compiler\IR\JobNode;
 use Foundry\Compiler\IR\PermissionNode;
 use Foundry\Compiler\IR\QueryNode;
 use Foundry\Compiler\IR\RouteNode;
-use Foundry\Compiler\IR\SchemaNode;
 use Foundry\Compiler\IR\SchedulerNode;
+use Foundry\Compiler\IR\SchemaNode;
 use Foundry\Compiler\IR\WebhookNode;
 use Foundry\Compiler\SourceScanner;
 use Foundry\Support\FoundryError;

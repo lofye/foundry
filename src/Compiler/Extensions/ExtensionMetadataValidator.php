@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -25,7 +26,7 @@ final class ExtensionMetadataValidator
 
         usort(
             $diagnostics,
-            static fn (array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
+            static fn(array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
                 ?: strcmp((string) ($a['message'] ?? ''), (string) ($b['message'] ?? '')),
         );
 
@@ -101,7 +102,7 @@ final class ExtensionMetadataValidator
             'optional_extensions' => $descriptor->optionalExtensions,
             'conflicts_with_extensions' => $descriptor->conflictsWithExtensions,
         ] as $field => $values) {
-            $clean = array_values(array_filter(array_map('strval', $values), static fn (string $value): bool => $value !== ''));
+            $clean = array_values(array_filter(array_map('strval', $values), static fn(string $value): bool => $value !== ''));
             if (count($clean) !== count(array_unique($clean))) {
                 $diagnostics[] = $this->diagnostic(
                     code: 'FDY7016_EXTENSION_METADATA_INVALID',
@@ -199,7 +200,7 @@ final class ExtensionMetadataValidator
                 pack: $pack->name,
             ));
 
-            $clean = array_values(array_filter(array_map('strval', $values), static fn (string $value): bool => $value !== ''));
+            $clean = array_values(array_filter(array_map('strval', $values), static fn(string $value): bool => $value !== ''));
             if (count($clean) !== count(array_unique($clean))) {
                 $diagnostics[] = $this->diagnostic(
                     code: 'FDY7017_PACK_METADATA_INVALID',
@@ -290,7 +291,7 @@ final class ExtensionMetadataValidator
             'pack' => $pack,
             'details' => array_filter([
                 'field' => $field,
-            ], static fn (mixed $value): bool => $value !== null && $value !== ''),
+            ], static fn(mixed $value): bool => $value !== null && $value !== ''),
         ];
     }
 }

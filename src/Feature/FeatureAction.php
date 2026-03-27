@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Feature;
@@ -16,6 +17,6 @@ interface FeatureAction
         array $input,
         RequestContext $request,
         AuthContext $auth,
-        FeatureServices $services
+        FeatureServices $services,
     ): array;
 }

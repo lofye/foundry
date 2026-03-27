@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Queue;
@@ -38,7 +39,7 @@ final class RedisQueueDriver implements QueueDriver
                 ['host' => $host, 'port' => $port],
                 'Failed to connect to Redis.',
                 0,
-                $e
+                $e,
             );
         }
 

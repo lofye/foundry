@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Workflow;
@@ -10,9 +11,7 @@ final class WorkflowEngine
     /**
      * @param array<string,mixed> $definition
      */
-    public function __construct(private readonly array $definition)
-    {
-    }
+    public function __construct(private readonly array $definition) {}
 
     /**
      * @param array<int,string> $permissions

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Auth;
@@ -8,9 +9,7 @@ use Foundry\Http\RequestContext;
 
 final class HeaderTokenAuthenticator implements Authenticator
 {
-    public function __construct(private readonly string $headerName = 'x-user-id')
-    {
-    }
+    public function __construct(private readonly string $headerName = 'x-user-id') {}
 
     #[\Override]
     public function strategy(): string
@@ -31,7 +30,7 @@ final class HeaderTokenAuthenticator implements Authenticator
             $userId,
             [],
             array_values(array_map('strval', (array) ($feature->auth['permissions'] ?? []))),
-            ['source' => 'header']
+            ['source' => 'header'],
         );
     }
 }

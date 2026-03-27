@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
@@ -156,7 +157,7 @@ final class InitAppCommand extends Command
             $routes[] = sprintf(
                 '%s %s',
                 strtoupper((string) ($definition['route']['method'] ?? 'GET')),
-                (string) ($definition['route']['path'] ?? '/')
+                (string) ($definition['route']['path'] ?? '/'),
             );
         }
 
@@ -1051,7 +1052,7 @@ final class Action implements FeatureAction
 {{BODY}}
     }
 }
-PHP
+PHP,
         );
     }
 
@@ -1187,13 +1188,13 @@ PHP
             throw new FoundryError('CLI_INIT_APP_TARGET_UNREADABLE', 'io', ['path' => $targetPath], 'Unable to read target directory.');
         }
 
-        $nonDotItems = array_values(array_filter($items, static fn (string $item): bool => $item !== '.' && $item !== '..'));
+        $nonDotItems = array_values(array_filter($items, static fn(string $item): bool => $item !== '.' && $item !== '..'));
         if ($nonDotItems !== [] && !$force && !$this->canBootstrapIntoExistingDirectory($nonDotItems)) {
             throw new FoundryError(
                 'CLI_INIT_APP_TARGET_NOT_EMPTY',
                 'validation',
                 ['path' => $targetPath],
-                'Target directory is not empty. Use --force to scaffold anyway.'
+                'Target directory is not empty. Use --force to scaffold anyway.',
             );
         }
     }

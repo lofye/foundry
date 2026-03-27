@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Doctor;
@@ -14,8 +15,7 @@ final readonly class FrameworkDoctor
     public function __construct(
         private array $checks,
         private ArchitectureDoctor $architectureDoctor,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -68,10 +68,10 @@ final readonly class FrameworkDoctor
     {
         $checks = array_values(array_filter(
             $this->checks,
-            static fn (mixed $check): bool => $check instanceof DoctorCheck,
+            static fn(mixed $check): bool => $check instanceof DoctorCheck,
         ));
 
-        usort($checks, static fn (DoctorCheck $a, DoctorCheck $b): int => strcmp($a->id(), $b->id()));
+        usort($checks, static fn(DoctorCheck $a, DoctorCheck $b): int => strcmp($a->id(), $b->id()));
 
         return $checks;
     }

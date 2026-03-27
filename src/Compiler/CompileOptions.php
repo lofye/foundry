@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -10,8 +11,7 @@ final readonly class CompileOptions
         public bool $changedOnly = false,
         public bool $emit = true,
         public bool $useCache = true,
-    ) {
-    }
+    ) {}
 
     public function mode(): string
     {

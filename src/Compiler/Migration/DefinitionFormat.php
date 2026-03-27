@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Migration;
@@ -13,8 +14,7 @@ final class DefinitionFormat
         public readonly string $description,
         public readonly int $currentVersion,
         public readonly array $supportedVersions,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

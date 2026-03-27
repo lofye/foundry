@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Integration;
@@ -74,7 +75,7 @@ final class HttpKernelIntegrationTest extends TestCase
             ],
             'default',
             new RetryPolicy(3, [1, 5, 30]),
-            60
+            60,
         ));
 
         $traceContext = new TraceContext('trace-fixed');
@@ -87,7 +88,7 @@ final class HttpKernelIntegrationTest extends TestCase
             new DefaultEventDispatcher($eventRegistry, $trace),
             new LocalStorageDriver(sys_get_temp_dir() . '/foundry-storage-http'),
             $traceContext,
-            new AIManager(['static' => new StaticAIProvider('static', ['content' => 'ok'])])
+            new AIManager(['static' => new StaticAIProvider('static', ['content' => 'ok'])]),
         );
 
         $executor = new FeatureExecutor(
@@ -98,7 +99,7 @@ final class HttpKernelIntegrationTest extends TestCase
             $services,
             $trace,
             new AuditRecorder(),
-            $paths
+            $paths,
         );
 
         $kernel = new HttpKernel($executor, new StructuredLogger());

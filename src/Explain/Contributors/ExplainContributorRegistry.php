@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Contributors;
@@ -12,9 +13,7 @@ final readonly class ExplainContributorRegistry
     /**
      * @param array<int,ExplainContributorInterface> $contributors
      */
-    public function __construct(private array $contributors = [])
-    {
-    }
+    public function __construct(private array $contributors = []) {}
 
     /**
      * @return array<int,ExplainContribution>

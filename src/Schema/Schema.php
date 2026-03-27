@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Schema;
@@ -11,6 +12,5 @@ final class Schema
     public function __construct(
         public readonly string $path,
         public readonly array $definition,
-    ) {
-    }
+    ) {}
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
@@ -43,11 +44,11 @@ final class InspectResourceCommand extends Command
         }
 
         $dependencies = array_values(array_map(
-            static fn (GraphEdge $edge): array => $edge->toArray(),
+            static fn(GraphEdge $edge): array => $edge->toArray(),
             $graph->dependencies($resourceNode->id()),
         ));
         $dependents = array_values(array_map(
-            static fn (GraphEdge $edge): array => $edge->toArray(),
+            static fn(GraphEdge $edge): array => $edge->toArray(),
             $graph->dependents($resourceNode->id()),
         ));
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\AI;
@@ -21,6 +22,5 @@ final readonly class AIRequest
         public readonly bool $cacheable = false,
         public readonly ?int $cacheTtlSeconds = null,
         public readonly array $metadata = [],
-    ) {
-    }
+    ) {}
 }

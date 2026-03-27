@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Verification;
@@ -8,9 +9,7 @@ use Foundry\Compiler\GraphCompiler;
 
 final class BillingVerifier
 {
-    public function __construct(private readonly GraphCompiler $compiler)
-    {
-    }
+    public function __construct(private readonly GraphCompiler $compiler) {}
 
     public function verify(?string $provider = null): VerificationResult
     {

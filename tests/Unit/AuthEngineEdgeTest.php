@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -31,7 +32,7 @@ final class AuthEngineEdgeTest extends TestCase
             [],
             [],
             [],
-            '/tmp'
+            '/tmp',
         );
 
         $this->expectException(FoundryError::class);
@@ -57,7 +58,7 @@ final class AuthEngineEdgeTest extends TestCase
             [],
             [],
             [],
-            '/tmp'
+            '/tmp',
         );
 
         $auth = $engine->authenticate($feature, new RequestContext('GET', '/f'));

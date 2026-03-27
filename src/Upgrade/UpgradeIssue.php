@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Upgrade;
@@ -21,8 +22,7 @@ final readonly class UpgradeIssue
         public string $migration,
         public ?string $reference = null,
         public array $details = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

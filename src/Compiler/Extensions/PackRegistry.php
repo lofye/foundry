@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -56,7 +57,7 @@ final class PackRegistry
             }
         }
 
-        $capabilities = array_values(array_filter($capabilities, static fn (string $value): bool => $value !== ''));
+        $capabilities = array_values(array_filter($capabilities, static fn(string $value): bool => $value !== ''));
         $capabilities = array_values(array_unique($capabilities));
         sort($capabilities);
 
@@ -69,7 +70,7 @@ final class PackRegistry
     public function inspectRows(): array
     {
         return array_values(array_map(
-            static fn (PackDefinition $pack): array => $pack->toArray(),
+            static fn(PackDefinition $pack): array => $pack->toArray(),
             $this->all(),
         ));
     }

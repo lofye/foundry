@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Verification;
@@ -7,9 +8,7 @@ use Foundry\Support\Paths;
 
 final class MigrationsVerifier
 {
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     public function verify(): VerificationResult
     {
@@ -27,7 +26,7 @@ final class MigrationsVerifier
 
         usort(
             $ordered,
-            static fn (string $a, string $b): int => strcmp(basename($a), basename($b))
+            static fn(string $a, string $b): int => strcmp(basename($a), basename($b)),
         );
 
         if ($ordered !== $files) {

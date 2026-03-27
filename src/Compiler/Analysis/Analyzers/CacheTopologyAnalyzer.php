@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis\Analyzers;
@@ -126,7 +127,7 @@ final class CacheTopologyAnalyzer implements GraphAnalyzer
         $neverInvalidated = array_values(array_unique($neverInvalidated));
         usort(
             $invalidationGaps,
-            static fn (array $a, array $b): int => strcmp(
+            static fn(array $a, array $b): int => strcmp(
                 (string) ($a['feature'] ?? '') . ':' . (string) ($a['namespace'] ?? ''),
                 (string) ($b['feature'] ?? '') . ':' . (string) ($b['namespace'] ?? ''),
             ),
@@ -145,4 +146,3 @@ final class CacheTopologyAnalyzer implements GraphAnalyzer
         return (string) ($parts[0] ?? $key);
     }
 }
-

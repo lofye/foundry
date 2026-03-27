@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Cache;
@@ -13,6 +14,5 @@ final readonly class CacheDefinition
         public readonly string $kind,
         public readonly int $ttlSeconds,
         public readonly array $invalidatedBy = [],
-    ) {
-    }
+    ) {}
 }

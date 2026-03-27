@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -82,10 +83,10 @@ final class PipelinePass implements CompilerPass
 
             $planId = 'execution_plan:feature:' . $feature;
             $guardIds = array_values(array_map(
-                static fn (array $guard): string => (string) ($guard['id'] ?? ''),
+                static fn(array $guard): string => (string) ($guard['id'] ?? ''),
                 $guards,
             ));
-            $guardIds = array_values(array_unique(array_filter($guardIds, static fn (string $id): bool => $id !== '')));
+            $guardIds = array_values(array_unique(array_filter($guardIds, static fn(string $id): bool => $id !== '')));
             sort($guardIds);
 
             $interceptorMap = [];
@@ -301,7 +302,7 @@ final class PipelinePass implements CompilerPass
         $method = strtoupper((string) ($route['method'] ?? 'GET'));
 
         $auth = is_array($featurePayload['auth'] ?? null) ? $featurePayload['auth'] : [];
-        $permissions = array_values(array_unique(array_filter(array_map('strval', (array) ($auth['permissions'] ?? [])), static fn (string $value): bool => $value !== '')));
+        $permissions = array_values(array_unique(array_filter(array_map('strval', (array) ($auth['permissions'] ?? [])), static fn(string $value): bool => $value !== '')));
         sort($permissions);
         $authRequired = (bool) ($auth['required'] ?? false);
         $authPublic = (bool) ($auth['public'] ?? false);
@@ -422,7 +423,7 @@ final class PipelinePass implements CompilerPass
 
         usort(
             $guards,
-            static fn (array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
         );
 
         return $guards;

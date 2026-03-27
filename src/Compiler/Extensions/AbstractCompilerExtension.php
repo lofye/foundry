@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -6,10 +7,10 @@ namespace Foundry\Compiler\Extensions;
 use Foundry\Compiler\Analysis\GraphAnalyzer;
 use Foundry\Compiler\Codemod\Codemod;
 use Foundry\Compiler\CompilerPass;
-use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Migration\DefinitionFormat;
-use Foundry\Doctor\DoctorCheck;
+use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Projection\ProjectionEmitter;
+use Foundry\Doctor\DoctorCheck;
 use Foundry\Pipeline\PipelineStageDefinition;
 use Foundry\Pipeline\StageInterceptor;
 
@@ -145,39 +146,39 @@ abstract class AbstractCompilerExtension implements CompilerExtension
             'emit_passes' => count($this->emitPasses()),
             'analyze_passes' => count($this->analyzePasses()),
             'projection_emitters' => array_values(array_map(
-                static fn (ProjectionEmitter $emitter): string => $emitter->id(),
+                static fn(ProjectionEmitter $emitter): string => $emitter->id(),
                 $this->projectionEmitters(),
             )),
             'migration_rules' => array_values(array_map(
-                static fn (MigrationRule $rule): string => $rule->id(),
+                static fn(MigrationRule $rule): string => $rule->id(),
                 $this->migrationRules(),
             )),
             'packs' => array_values(array_map(
-                static fn (PackDefinition $pack): string => $pack->name,
+                static fn(PackDefinition $pack): string => $pack->name,
                 $packs,
             )),
             'definition_formats' => array_values(array_map(
-                static fn (DefinitionFormat $format): string => $format->name,
+                static fn(DefinitionFormat $format): string => $format->name,
                 $this->definitionFormats(),
             )),
             'codemods' => array_values(array_map(
-                static fn (Codemod $codemod): string => $codemod->id(),
+                static fn(Codemod $codemod): string => $codemod->id(),
                 $this->codemods(),
             )),
             'graph_analyzers' => array_values(array_map(
-                static fn (GraphAnalyzer $analyzer): string => $analyzer->id(),
+                static fn(GraphAnalyzer $analyzer): string => $analyzer->id(),
                 $this->graphAnalyzers(),
             )),
             'doctor_checks' => array_values(array_map(
-                static fn (DoctorCheck $check): string => $check->id(),
+                static fn(DoctorCheck $check): string => $check->id(),
                 $this->doctorChecks(),
             )),
             'pipeline_stages' => array_values(array_map(
-                static fn (PipelineStageDefinition $stage): string => $stage->name,
+                static fn(PipelineStageDefinition $stage): string => $stage->name,
                 $this->pipelineStages(),
             )),
             'pipeline_interceptors' => array_values(array_map(
-                static fn (StageInterceptor $interceptor): string => $interceptor->id(),
+                static fn(StageInterceptor $interceptor): string => $interceptor->id(),
                 $this->pipelineInterceptors(),
             )),
             'provides' => $descriptor['provides'] ?? [],
@@ -193,25 +194,25 @@ abstract class AbstractCompilerExtension implements CompilerExtension
                         'emit' => count($this->emitPasses()),
                     ],
                     'projection_emitters' => array_values(array_map(
-                        static fn (ProjectionEmitter $emitter): string => $emitter->id(),
+                        static fn(ProjectionEmitter $emitter): string => $emitter->id(),
                         $this->projectionEmitters(),
                     )),
                 ],
                 'diagnostics' => [
                     'graph_analyzers' => array_values(array_map(
-                        static fn (GraphAnalyzer $analyzer): string => $analyzer->id(),
+                        static fn(GraphAnalyzer $analyzer): string => $analyzer->id(),
                         $this->graphAnalyzers(),
                     )),
                     'doctor_checks' => array_values(array_map(
-                        static fn (DoctorCheck $check): string => $check->id(),
+                        static fn(DoctorCheck $check): string => $check->id(),
                         $this->doctorChecks(),
                     )),
                     'migration_rules' => array_values(array_map(
-                        static fn (MigrationRule $rule): string => $rule->id(),
+                        static fn(MigrationRule $rule): string => $rule->id(),
                         $this->migrationRules(),
                     )),
                     'codemods' => array_values(array_map(
-                        static fn (Codemod $codemod): string => $codemod->id(),
+                        static fn(Codemod $codemod): string => $codemod->id(),
                         $this->codemods(),
                     )),
                 ],
@@ -223,11 +224,11 @@ abstract class AbstractCompilerExtension implements CompilerExtension
                 ],
                 'runtime' => [
                     'pipeline_stages' => array_values(array_map(
-                        static fn (PipelineStageDefinition $stage): string => $stage->name,
+                        static fn(PipelineStageDefinition $stage): string => $stage->name,
                         $this->pipelineStages(),
                     )),
                     'pipeline_interceptors' => array_values(array_map(
-                        static fn (StageInterceptor $interceptor): string => $interceptor->id(),
+                        static fn(StageInterceptor $interceptor): string => $interceptor->id(),
                         $this->pipelineInterceptors(),
                     )),
                 ],

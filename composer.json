@@ -12,7 +12,10 @@
   },
   "require-dev": {
     "phpunit/phpunit": "^11.5",
-    "aws/aws-sdk-php": "^3.357"
+    "aws/aws-sdk-php": "^3.357",
+    "phpstan/phpstan": "^2.1",
+    "laravel/pint": "^1.29",
+    "rector/rector": "^2.3"
   },
   "suggest": {
     "aws/aws-sdk-php": "Enable real MinIO/S3 object storage via MinioStorageDriver.",
@@ -35,7 +38,22 @@
   ],
   "scripts": {
     "test": "phpunit",
-    "test:coverage": "bin/phpunit-coverage --coverage-text"
+    "test:coverage": "bin/phpunit-coverage --coverage-text",
+    "lint": "@php vendor/bin/pint --test",
+    "lint:fix": "@php vendor/bin/pint",
+    "analyse": "@php vendor/bin/phpstan analyse --memory-limit=1G --debug",
+    "refactor": "@php vendor/bin/rector process --dry-run",
+    "quality": [
+      "@lint",
+      "@analyse",
+      "@php bin/foundry doctor --quality --json"
+    ],
+    "quality:strict": [
+      "@lint",
+      "@analyse",
+      "@refactor",
+      "@php bin/foundry doctor --quality --strict --json"
+    ]
   },
   "minimum-stability": "stable",
   "prefer-stable": true

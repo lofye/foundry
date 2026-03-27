@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -22,8 +23,14 @@ final class GraphCompilerExtensionFailuresTest extends TestCase
 
         try {
             $extension = new class extends AbstractCompilerExtension {
-                public function name(): string { return 'broken-ext'; }
-                public function version(): string { return '1.0.0'; }
+                public function name(): string
+                {
+                    return 'broken-ext';
+                }
+                public function version(): string
+                {
+                    return '1.0.0';
+                }
                 public function descriptor(): ExtensionDescriptor
                 {
                     return new ExtensionDescriptor(
@@ -37,7 +44,10 @@ final class GraphCompilerExtensionFailuresTest extends TestCase
                 {
                     return [
                         new class implements CompilerPass {
-                            public function name(): string { return 'broken.enrich'; }
+                            public function name(): string
+                            {
+                                return 'broken.enrich';
+                            }
                             public function run(CompilationState $state): void
                             {
                                 throw new \RuntimeException('boom');
@@ -54,7 +64,7 @@ final class GraphCompilerExtensionFailuresTest extends TestCase
 
             $result = $compiler->compile();
             $codes = array_values(array_map(
-                static fn (array $row): string => (string) ($row['code'] ?? ''),
+                static fn(array $row): string => (string) ($row['code'] ?? ''),
                 $result->diagnostics->toArray(),
             ));
 

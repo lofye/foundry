@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Verification;
@@ -13,8 +14,7 @@ final class LocalesVerifier
     public function __construct(
         private readonly GraphCompiler $compiler,
         private readonly Paths $paths,
-    ) {
-    }
+    ) {}
 
     public function verify(?string $bundle = null): VerificationResult
     {

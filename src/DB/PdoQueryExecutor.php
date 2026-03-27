@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\DB;
@@ -17,8 +18,7 @@ final class PdoQueryExecutor implements QueryExecutor
         private readonly Connection $connection,
         private readonly QueryRegistry $queries,
         private readonly ?TraceRecorder $traceRecorder = null,
-    ) {
-    }
+    ) {}
 
     #[\Override]
     public function select(string $feature, string $queryName, array $params = []): array
@@ -82,7 +82,7 @@ final class PdoQueryExecutor implements QueryExecutor
                     'QUERY_PARAM_MISSING',
                     'validation',
                     ['feature' => $definition->feature, 'query' => $definition->name, 'param' => $placeholder],
-                    'Query parameter missing.'
+                    'Query parameter missing.',
                 );
             }
         }

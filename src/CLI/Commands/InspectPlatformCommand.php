@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
@@ -71,8 +72,8 @@ final class InspectPlatformCommand extends Command
             'message' => null,
             'payload' => [
                 'node' => $node->toArray(),
-                'dependencies' => array_values(array_map(static fn (GraphEdge $edge): array => $edge->toArray(), $graph->dependencies($nodeId))),
-                'dependents' => array_values(array_map(static fn (GraphEdge $edge): array => $edge->toArray(), $graph->dependents($nodeId))),
+                'dependencies' => array_values(array_map(static fn(GraphEdge $edge): array => $edge->toArray(), $graph->dependencies($nodeId))),
+                'dependents' => array_values(array_map(static fn(GraphEdge $edge): array => $edge->toArray(), $graph->dependents($nodeId))),
             ],
         ];
     }

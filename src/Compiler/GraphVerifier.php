@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -12,8 +13,7 @@ final class GraphVerifier
     public function __construct(
         private readonly Paths $paths,
         private readonly BuildLayout $layout,
-    ) {
-    }
+    ) {}
 
     public function verify(): VerificationResult
     {

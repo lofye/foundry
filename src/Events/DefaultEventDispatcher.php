@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Events;
@@ -12,8 +13,7 @@ final class DefaultEventDispatcher implements EventDispatcher
     public function __construct(
         private readonly EventRegistry $events,
         private readonly ?TraceRecorder $traceRecorder = null,
-    ) {
-    }
+    ) {}
 
     #[\Override]
     public function emit(string $eventName, array $payload): void

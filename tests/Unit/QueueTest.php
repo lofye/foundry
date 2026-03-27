@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -27,7 +28,7 @@ final class QueueTest extends TestCase
             'default',
             new RetryPolicy(3, [1, 5, 10]),
             30,
-            'post_id'
+            'post_id',
         ));
 
         $driver = new SyncQueueDriver();
@@ -45,7 +46,7 @@ final class QueueTest extends TestCase
             ['type' => 'object', 'additionalProperties' => false, 'properties' => []],
             'default',
             new RetryPolicy(2, [1, 1]),
-            30
+            30,
         ));
 
         $driver = new SyncQueueDriver();

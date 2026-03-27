@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -56,7 +57,7 @@ final class JobSubjectAnalyzer implements SubjectAnalyzerInterface
                     array_filter([
                         'features' => $features,
                         'queues' => $queues,
-                    ], static fn (mixed $value): bool => $value !== []),
+                    ], static fn(mixed $value): bool => $value !== []),
                 ),
             ],
         );

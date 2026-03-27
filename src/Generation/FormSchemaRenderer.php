@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -98,7 +99,7 @@ final class FormSchemaRenderer
                 '    <input type="datetime-local" value="<?= htmlspecialchars(' . $oldKey . ', ENT_QUOTES) ?>" ' . implode(' ', $attrs) . ' />',
             ],
             'hidden' => [
-                '    <input type="hidden" value="<?= htmlspecialchars(' . $oldKey . ', ENT_QUOTES) ?>" ' . implode(' ', array_values(array_filter($attrs, static fn (string $attr): bool => !str_starts_with($attr, 'aria-describedby=')))) . ' />',
+                '    <input type="hidden" value="<?= htmlspecialchars(' . $oldKey . ', ENT_QUOTES) ?>" ' . implode(' ', array_values(array_filter($attrs, static fn(string $attr): bool => !str_starts_with($attr, 'aria-describedby=')))) . ' />',
             ],
             'file' => [
                 '    <input type="file" ' . implode(' ', $attrs) . ' />',

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Core;
@@ -11,8 +12,7 @@ final class Kernel
     public function __construct(
         private readonly RuntimeMode $mode,
         private readonly ?HttpKernel $httpKernel = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{status:int,headers:array<string,string>,body:array<string,mixed>}

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -11,15 +12,15 @@ use Foundry\Explain\Analyzers\SubjectAnalysisResult;
 use Foundry\Explain\Analyzers\SubjectAnalyzerInterface;
 use Foundry\Explain\ExplainArtifactCatalog;
 use Foundry\Explain\ExplainContext;
-use Foundry\Explain\ExplainSection;
 use Foundry\Explain\ExplainOptions;
+use Foundry\Explain\ExplainSection;
 use Foundry\Explain\ExplainSubject;
 use Foundry\Explain\ExplainSubjectFactory;
+use Foundry\Explain\ExplainTarget;
+use Foundry\Explain\ExplainTargetResolver;
 use Foundry\Explain\ExplanationPlanAssembler;
 use Foundry\Explain\SuggestedFixesBuilder;
 use Foundry\Explain\SummarySectionBuilder;
-use Foundry\Explain\ExplainTarget;
-use Foundry\Explain\ExplainTargetResolver;
 use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
@@ -137,8 +138,7 @@ final class ExplainFoundationTest extends TestCase
             new SummarySectionBuilder(),
             new SuggestedFixesBuilder(),
             [
-                new class implements SubjectAnalyzerInterface
-                {
+                new class implements SubjectAnalyzerInterface {
                     public function supports(ExplainSubject $subject): bool
                     {
                         return $subject->kind === 'feature';
@@ -162,8 +162,7 @@ final class ExplainFoundationTest extends TestCase
                 },
             ],
             [
-                new class implements SectionAnalyzerInterface
-                {
+                new class implements SectionAnalyzerInterface {
                     public function supports(ExplainSubject $subject): bool
                     {
                         return true;
@@ -183,8 +182,7 @@ final class ExplainFoundationTest extends TestCase
                         ];
                     }
                 },
-                new class implements SectionAnalyzerInterface
-                {
+                new class implements SectionAnalyzerInterface {
                     public function supports(ExplainSubject $subject): bool
                     {
                         return true;
@@ -205,8 +203,7 @@ final class ExplainFoundationTest extends TestCase
                         ];
                     }
                 },
-                new class implements SectionAnalyzerInterface
-                {
+                new class implements SectionAnalyzerInterface {
                     public function supports(ExplainSubject $subject): bool
                     {
                         return true;
@@ -227,8 +224,7 @@ final class ExplainFoundationTest extends TestCase
                         ];
                     }
                 },
-                new class implements SectionAnalyzerInterface
-                {
+                new class implements SectionAnalyzerInterface {
                     public function supports(ExplainSubject $subject): bool
                     {
                         return true;
@@ -263,7 +259,7 @@ final class ExplainFoundationTest extends TestCase
         );
         $this->assertSame(
             ['notes', 'impact'],
-            array_values(array_map(static fn (ExplainSection $section): string => $section->id(), $plan->sections)),
+            array_values(array_map(static fn(ExplainSection $section): string => $section->id(), $plan->sections)),
         );
         $this->assertCount(1, $plan->relatedCommands);
         $this->assertCount(1, $plan->relatedDocs);

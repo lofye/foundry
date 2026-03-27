@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Integration;
@@ -172,7 +173,7 @@ YAML);
         $this->assertGreaterThan(0, (int) $inspectCliSurface['payload']['summary']['total_signatures']);
         $helpRow = array_find(
             $inspectCliSurface['payload']['signatures'],
-            static fn (array $row): bool => (string) ($row['signature'] ?? '') === 'help',
+            static fn(array $row): bool => (string) ($row['signature'] ?? '') === 'help',
         );
         $this->assertIsArray($helpRow);
         $this->assertSame('Application::helpResult', $helpRow['handler']);

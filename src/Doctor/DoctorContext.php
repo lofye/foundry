@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Doctor;
@@ -25,8 +26,7 @@ final readonly class DoctorContext
         public string $composerPath,
         public ?array $composerConfig = null,
         public ?string $composerError = null,
-    ) {
-    }
+    ) {}
 
     public function projectType(): string
     {

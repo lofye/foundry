@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -19,8 +20,7 @@ final readonly class CompilePlan
         public array $changedFeatures,
         public array $changedFiles,
         public string $reason,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

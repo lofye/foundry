@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Documentation;
@@ -20,7 +21,7 @@ final class MarkdownPageRenderer
                 return;
             }
 
-            $text = trim(implode(' ', array_map(static fn (string $line): string => trim($line), $paragraph)));
+            $text = trim(implode(' ', array_map(static fn(string $line): string => trim($line), $paragraph)));
             if ($text !== '') {
                 $html[] = '<p>' . $this->renderInline($text) . '</p>';
             }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -94,11 +95,11 @@ YAML);
         $this->assertFalse($result->written);
         $this->assertGreaterThanOrEqual(9, count($result->changes));
         $this->assertContains('billing_definition', array_values(array_map(
-            static fn (array $row): string => (string) ($row['format'] ?? ''),
+            static fn(array $row): string => (string) ($row['format'] ?? ''),
             $result->changes,
         )));
         $this->assertContains('FDY2485_PLATFORM_DEFINITION_PARSE_ERROR', array_values(array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             $result->diagnostics,
         )));
     }

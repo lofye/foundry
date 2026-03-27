@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -49,7 +50,7 @@ final class SchemaSubjectAnalyzer implements SubjectAnalyzerInterface
                         'role' => $role,
                         'feature' => $feature,
                         'field_count' => $fields !== [] ? (string) count($fields) : '',
-                    ], static fn (mixed $value): bool => $value !== ''),
+                    ], static fn(mixed $value): bool => $value !== ''),
                 ),
             ],
         );

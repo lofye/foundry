@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -134,7 +135,7 @@ final class CompilePlanner
             }
         }
 
-        $selected = array_values(array_filter(array_unique($selected), static fn (string $feature): bool => $feature !== ''));
+        $selected = array_values(array_filter(array_unique($selected), static fn(string $feature): bool => $feature !== ''));
         sort($selected);
 
         return new CompilePlan(

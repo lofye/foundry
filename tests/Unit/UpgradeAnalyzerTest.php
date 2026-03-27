@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -9,8 +10,8 @@ use Foundry\Compiler\GraphCompiler;
 use Foundry\Compiler\Migration\DefinitionMigrator;
 use Foundry\Compiler\Migration\ManifestVersionResolver;
 use Foundry\Support\Paths;
-use Foundry\Upgrade\UpgradeAnalyzer;
 use Foundry\Tests\Fixtures\TempProject;
+use Foundry\Upgrade\UpgradeAnalyzer;
 use PHPUnit\Framework\TestCase;
 
 final class UpgradeAnalyzerTest extends TestCase
@@ -41,7 +42,7 @@ final class UpgradeAnalyzerTest extends TestCase
         $this->assertGreaterThanOrEqual(5, (int) $payload['summary']['total']);
 
         $codes = array_values(array_map(
-            static fn (array $issue): string => (string) ($issue['code'] ?? ''),
+            static fn(array $issue): string => (string) ($issue['code'] ?? ''),
             (array) $payload['issues'],
         ));
 
@@ -119,7 +120,7 @@ PHP);
 
         $cliIssues = array_values(array_filter(
             (array) $payload['issues'],
-            static fn (array $issue): bool => (string) ($issue['code'] ?? '') === 'FDY1301_DEPRECATED_CLI_USAGE',
+            static fn(array $issue): bool => (string) ($issue['code'] ?? '') === 'FDY1301_DEPRECATED_CLI_USAGE',
         ));
 
         $this->assertGreaterThanOrEqual(3, count($cliIssues));

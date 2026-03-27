@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Cache;
@@ -49,8 +50,8 @@ final class CacheRegistry
         return array_values(
             array_filter(
                 $this->entries,
-                static fn (CacheDefinition $entry): bool => in_array($feature, $entry->invalidatedBy, true)
-            )
+                static fn(CacheDefinition $entry): bool => in_array($feature, $entry->invalidatedBy, true),
+            ),
         );
     }
 }

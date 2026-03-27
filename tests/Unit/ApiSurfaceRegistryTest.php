@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -56,6 +57,11 @@ final class ApiSurfaceRegistryTest extends TestCase
         $graphExport = $registry->classifyCliCommand(['export', 'graph']);
         $proExplain = $registry->classifyCliCommand(['explain', 'publish_post']);
         $proGenerate = $registry->classifyCliCommand(['generate', 'Add', 'bookmarks']);
+        $observeTrace = $registry->classifyCliCommand(['observe:trace', 'publish_post']);
+        $observeProfile = $registry->classifyCliCommand(['observe:profile']);
+        $observeCompare = $registry->classifyCliCommand(['observe:compare', 'run-a', 'run-b']);
+        $history = $registry->classifyCliCommand(['history']);
+        $regressions = $registry->classifyCliCommand(['regressions']);
         $inspectCliSurface = $registry->classifyCliCommand(['inspect', 'cli-surface']);
         $verifyCliSurface = $registry->classifyCliCommand(['verify', 'cli-surface']);
         $internal = $registry->classifyCliCommand(['queue:work']);
@@ -68,6 +74,11 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($graphExport);
         $this->assertNotNull($proExplain);
         $this->assertNotNull($proGenerate);
+        $this->assertNotNull($observeTrace);
+        $this->assertNotNull($observeProfile);
+        $this->assertNotNull($observeCompare);
+        $this->assertNotNull($history);
+        $this->assertNotNull($regressions);
         $this->assertNotNull($inspectCliSurface);
         $this->assertNotNull($verifyCliSurface);
         $this->assertNotNull($internal);
@@ -84,6 +95,11 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('generate <prompt>', $proGenerate['signature']);
         $this->assertStringContainsString('--deterministic', $proGenerate['usage']);
         $this->assertStringContainsString('--provider=<name>', $proGenerate['usage']);
+        $this->assertSame('experimental', $observeTrace['stability']);
+        $this->assertSame('experimental', $observeProfile['stability']);
+        $this->assertSame('experimental', $observeCompare['stability']);
+        $this->assertSame('experimental', $history['stability']);
+        $this->assertSame('experimental', $regressions['stability']);
         $this->assertSame('stable', $inspectCliSurface['stability']);
         $this->assertSame('stable', $verifyCliSurface['stability']);
         $this->assertSame('internal', $internal['stability']);
@@ -93,7 +109,7 @@ final class ApiSurfaceRegistryTest extends TestCase
     {
         $registry = new ApiSurfaceRegistry();
         $signatures = array_values(array_map(
-            static fn (array $entry): string => (string) ($entry['signature'] ?? ''),
+            static fn(array $entry): string => (string) ($entry['signature'] ?? ''),
             $registry->cliCommands(),
         ));
 
@@ -108,14 +124,20 @@ final class ApiSurfaceRegistryTest extends TestCase
         $platformConfig = $registry->classifyConfigurationArtifact('config/cache.php');
         $generated = $registry->classifyGeneratedMetadata('app/generated/routes.php');
         $cacheMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/manifests/compile_cache.json');
+        $qualityMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/quality/summary.json');
+        $historyMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/history/build-abc.json');
 
         $this->assertNotNull($manifest);
         $this->assertNotNull($platformConfig);
         $this->assertNotNull($generated);
         $this->assertNotNull($cacheMetadata);
+        $this->assertNotNull($qualityMetadata);
+        $this->assertNotNull($historyMetadata);
         $this->assertSame('public_api', $manifest['classification']);
         $this->assertSame('experimental_api', $platformConfig['classification']);
         $this->assertSame('internal_api', $generated['classification']);
         $this->assertSame('internal_api', $cacheMetadata['classification']);
+        $this->assertSame('internal_api', $qualityMetadata['classification']);
+        $this->assertSame('internal_api', $historyMetadata['classification']);
     }
 }

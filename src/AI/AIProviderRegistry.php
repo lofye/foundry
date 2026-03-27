@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\AI;
@@ -12,8 +13,7 @@ final class AIProviderRegistry
      */
     public function __construct(
         private readonly array $factories = ['static' => new StaticAIProviderFactory()],
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $config

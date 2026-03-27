@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Cache;
@@ -9,8 +10,7 @@ final class CacheManager
         private readonly CacheStore $store,
         private readonly CacheRegistry $registry,
         private readonly CacheKeyBuilder $keys = new CacheKeyBuilder(),
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $params

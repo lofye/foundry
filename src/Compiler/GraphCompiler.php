@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler;
@@ -353,14 +354,14 @@ final class GraphCompiler
 
         usort(
             $rows,
-            static fn (array $a, array $b): int => ((int) ($a['priority'] ?? 0) <=> (int) ($b['priority'] ?? 0))
+            static fn(array $a, array $b): int => ((int) ($a['priority'] ?? 0) <=> (int) ($b['priority'] ?? 0))
                 ?: ((int) ($a['load_index'] ?? PHP_INT_MAX) <=> (int) ($b['load_index'] ?? PHP_INT_MAX))
                 ?: strcmp((string) ($a['extension'] ?? ''), (string) ($b['extension'] ?? ''))
                 ?: strcmp(get_class($a['pass']), get_class($b['pass'])),
         );
 
         return array_values(array_map(
-            static fn (array $row): array => [
+            static fn(array $row): array => [
                 'pass' => $row['pass'],
                 'stage' => (string) $row['stage'],
                 'extension' => (string) $row['extension'],

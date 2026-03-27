@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -6,10 +7,10 @@ namespace Foundry\Compiler\Extensions;
 use Foundry\Compiler\Analysis\GraphAnalyzer;
 use Foundry\Compiler\Codemod\Codemod;
 use Foundry\Compiler\CompilerPass;
-use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Migration\DefinitionFormat;
-use Foundry\Doctor\DoctorCheck;
+use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Projection\ProjectionEmitter;
+use Foundry\Doctor\DoctorCheck;
 use Foundry\Pipeline\PipelineStageDefinition;
 use Foundry\Pipeline\StageInterceptor;
 

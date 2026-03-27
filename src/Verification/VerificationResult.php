@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Verification;
@@ -13,8 +14,7 @@ final class VerificationResult
         public readonly bool $ok,
         public readonly array $errors = [],
         public readonly array $warnings = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{ok:bool,errors:array<int,string>,warnings:array<int,string>}

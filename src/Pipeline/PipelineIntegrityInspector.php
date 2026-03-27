@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pipeline;
@@ -62,7 +63,7 @@ final class PipelineIntegrityInspector
 
         $executionPlans = array_values(array_filter(
             $graph->nodesByType('execution_plan'),
-            fn (GraphNode $node): bool => $this->includesFeature($node, $featureFilter),
+            fn(GraphNode $node): bool => $this->includesFeature($node, $featureFilter),
         ));
 
         if ($executionPlans === []) {
@@ -239,7 +240,7 @@ final class PipelineIntegrityInspector
 
         usort(
             $issues,
-            static fn (array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
+            static fn(array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
                 ?: strcmp((string) ($a['message'] ?? ''), (string) ($b['message'] ?? '')),
         );
 
@@ -251,7 +252,7 @@ final class PipelineIntegrityInspector
                 'execution_plan_count' => count($executionPlans),
                 'guard_count' => count(array_filter(
                     $graph->nodesByType('guard'),
-                    fn (GraphNode $node): bool => $this->includesFeature($node, $featureFilter),
+                    fn(GraphNode $node): bool => $this->includesFeature($node, $featureFilter),
                 )),
                 'interceptor_count' => count($graph->nodesByType('interceptor')),
             ],

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -9,9 +10,7 @@ use Foundry\Compiler\CompilerPass;
 
 final class AnalyzePass implements CompilerPass
 {
-    public function __construct(private readonly ImpactAnalyzer $impactAnalyzer)
-    {
-    }
+    public function __construct(private readonly ImpactAnalyzer $impactAnalyzer) {}
 
     public function name(): string
     {

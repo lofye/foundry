@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -55,7 +56,7 @@ final class GraphCompilerTest extends TestCase
 
         $this->assertSame(1, $graph['graph_version']);
         $nodeIds = array_values(array_map(
-            static fn (array $row): string => (string) ($row['id'] ?? ''),
+            static fn(array $row): string => (string) ($row['id'] ?? ''),
             (array) ($graph['nodes'] ?? []),
         ));
         $this->assertContains('feature:publish_post', $nodeIds);
@@ -76,7 +77,7 @@ final class GraphCompilerTest extends TestCase
         $result = $compiler->compile(new CompileOptions());
 
         $codes = array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             $result->diagnostics->toArray(),
         );
 
@@ -98,7 +99,7 @@ final class GraphCompilerTest extends TestCase
         $this->assertSame('hit', $result->cache['status']);
 
         $codes = array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             $result->diagnostics->toArray(),
         );
         $this->assertContains('FDY0001_NO_CHANGES', $codes);

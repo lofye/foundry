@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Storage;
@@ -7,9 +8,7 @@ use Foundry\Support\FoundryError;
 
 final class LocalStorageDriver implements StorageDriver
 {
-    public function __construct(private readonly string $root)
-    {
-    }
+    public function __construct(private readonly string $root) {}
 
     #[\Override]
     public function write(string $path, string $content): FileDescriptor

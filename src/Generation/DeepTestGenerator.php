@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -14,8 +15,7 @@ final class DeepTestGenerator
         private readonly Paths $paths,
         private readonly GraphCompiler $compiler,
         private readonly TestGenerator $tests,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -180,7 +180,7 @@ final class DeepTestGenerator
     private function missingRequiredTests(string $feature, array $payload): array
     {
         $required = array_values(array_map('strval', (array) ($payload['tests']['required'] ?? [])));
-        $required = array_values(array_unique(array_filter($required, static fn (string $value): bool => $value !== '')));
+        $required = array_values(array_unique(array_filter($required, static fn(string $value): bool => $value !== '')));
         sort($required);
 
         $missing = [];

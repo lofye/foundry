@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Core;
@@ -32,8 +33,7 @@ final class App
         private readonly TraceRecorder $traceRecorder,
         private readonly MetricsRecorder $metrics,
         private readonly AuditRecorder $audit,
-    ) {
-    }
+    ) {}
 
     public function httpKernel(FeatureExecutor $executor): HttpKernel
     {

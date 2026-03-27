@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pipeline\Interceptors;
@@ -39,4 +40,3 @@ final class ResponseTraceInterceptor implements StageInterceptor
         return false;
     }
 }
-

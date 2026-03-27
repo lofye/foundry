@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -149,8 +150,7 @@ final class ExplainPolishTest extends TestCase
         ]);
 
         $registry = new ExplainContributorRegistry([
-            new class implements ExplainContributorInterface
-            {
+            new class implements ExplainContributorInterface {
                 public function supports(ExplainSubject $subject): bool
                 {
                     return false;
@@ -161,11 +161,8 @@ final class ExplainPolishTest extends TestCase
                     return new ExplainContribution();
                 }
             },
-            new class($stringList) implements ExplainContributorInterface
-            {
-                public function __construct(private ExplainSection $section)
-                {
-                }
+            new class ($stringList) implements ExplainContributorInterface {
+                public function __construct(private ExplainSection $section) {}
 
                 public function supports(ExplainSubject $subject): bool
                 {
@@ -181,11 +178,8 @@ final class ExplainPolishTest extends TestCase
                     );
                 }
             },
-            new class($keyValue) implements ExplainContributorInterface
-            {
-                public function __construct(private ExplainSection $section)
-                {
-                }
+            new class ($keyValue) implements ExplainContributorInterface {
+                public function __construct(private ExplainSection $section) {}
 
                 public function supports(ExplainSubject $subject): bool
                 {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -13,8 +14,7 @@ final class AdminResourceGenerator
     public function __construct(
         private readonly Paths $paths,
         private readonly FeatureGenerator $featureGenerator,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Observability;
@@ -15,8 +16,7 @@ final class TraceRecorder
     public function __construct(
         private readonly TraceContext $traceContext,
         private readonly Clock $clock = new Clock(),
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $metadata

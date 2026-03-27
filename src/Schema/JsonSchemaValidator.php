@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Schema;
@@ -76,7 +77,7 @@ final class JsonSchemaValidator implements SchemaValidator
                     $path,
                     'Value not in enum set.',
                     expected: 'one of ' . implode(', ', array_map(
-                        static fn (mixed $candidate): string => is_scalar($candidate) || $candidate === null
+                        static fn(mixed $candidate): string => is_scalar($candidate) || $candidate === null
                             ? var_export($candidate, true)
                             : gettype($candidate),
                         $schema['enum'],
@@ -210,7 +211,7 @@ final class JsonSchemaValidator implements SchemaValidator
         }
 
         if (($schema['uniqueItems'] ?? false) === true) {
-            $encoded = array_map(static fn (mixed $item): string => serialize($item), $value);
+            $encoded = array_map(static fn(mixed $item): string => serialize($item), $value);
             if (count($encoded) !== count(array_unique($encoded))) {
                 $errors[] = new ValidationError(
                     $path,

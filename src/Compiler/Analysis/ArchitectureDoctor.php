@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis;
@@ -15,8 +16,7 @@ final readonly class ArchitectureDoctor
         private array $analyzers,
         private ImpactAnalyzer $impactAnalyzer,
         private string $commandPrefix = 'foundry',
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -62,12 +62,12 @@ final readonly class ArchitectureDoctor
     {
         $rows = array_values(array_filter(
             $this->analyzers,
-            static fn (mixed $analyzer): bool => $analyzer instanceof GraphAnalyzer,
+            static fn(mixed $analyzer): bool => $analyzer instanceof GraphAnalyzer,
         ));
 
         usort(
             $rows,
-            static fn (GraphAnalyzer $a, GraphAnalyzer $b): int => strcmp($a->id(), $b->id()),
+            static fn(GraphAnalyzer $a, GraphAnalyzer $b): int => strcmp($a->id(), $b->id()),
         );
 
         return $rows;

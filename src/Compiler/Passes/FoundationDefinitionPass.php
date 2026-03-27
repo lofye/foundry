@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -510,7 +511,7 @@ final class FoundationDefinitionPass implements CompilerPass
 
         usort(
             $result,
-            fn (string $a, string $b): int => array_search($a, $this->allowedCrudOperations, true)
+            fn(string $a, string $b): int => array_search($a, $this->allowedCrudOperations, true)
                 <=> array_search($b, $this->allowedCrudOperations, true),
         );
 
@@ -596,7 +597,7 @@ final class FoundationDefinitionPass implements CompilerPass
 
         usort(
             $rows,
-            static fn (array $a, array $b): int => strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')),
         );
 
         return $rows;
@@ -609,7 +610,7 @@ final class FoundationDefinitionPass implements CompilerPass
     private function sortedStrings(array $values): array
     {
         $values = array_values(array_map('strval', $values));
-        $values = array_values(array_filter($values, static fn (string $value): bool => $value !== ''));
+        $values = array_values(array_filter($values, static fn(string $value): bool => $value !== ''));
         $values = array_values(array_unique($values));
         sort($values);
 

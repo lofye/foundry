@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Auth;
@@ -7,9 +8,7 @@ use Foundry\Support\Paths;
 
 final class RolePolicyRegistry
 {
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     /**
      * @return array<string,mixed>

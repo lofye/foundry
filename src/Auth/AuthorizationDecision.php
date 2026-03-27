@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Auth;
@@ -8,8 +9,7 @@ final readonly class AuthorizationDecision
     public function __construct(
         public readonly bool $allowed,
         public readonly string $reason,
-    ) {
-    }
+    ) {}
 
     public static function allow(string $reason = 'allowed'): self
     {

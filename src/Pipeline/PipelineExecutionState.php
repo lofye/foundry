@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pipeline;
@@ -43,4 +44,3 @@ final class PipelineExecutionState
         $this->input = $request->input();
     }
 }
-

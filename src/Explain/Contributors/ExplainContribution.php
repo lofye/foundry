@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Contributors;
@@ -16,8 +17,7 @@ final readonly class ExplainContribution
         public array $sections = [],
         public array $relatedCommands = [],
         public array $relatedDocs = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $payload
@@ -27,16 +27,16 @@ final readonly class ExplainContribution
         return new self(
             sections: array_values(array_filter(
                 array_map(
-                    static fn (mixed $section): ?ExplainSection => $section instanceof ExplainSection
+                    static fn(mixed $section): ?ExplainSection => $section instanceof ExplainSection
                         ? $section
                         : (is_array($section) ? ExplainSection::fromArray($section) : null),
                     (array) ($payload['sections'] ?? []),
                 ),
             )),
             relatedCommands: array_values(array_filter(array_map(
-                static fn (mixed $value): string => trim((string) $value),
+                static fn(mixed $value): string => trim((string) $value),
                 (array) ($payload['related_commands'] ?? $payload['relatedCommands'] ?? []),
-            ), static fn (string $value): bool => $value !== '')),
+            ), static fn(string $value): bool => $value !== '')),
             relatedDocs: array_values(array_filter(
                 (array) ($payload['related_docs'] ?? $payload['relatedDocs'] ?? []),
                 'is_array',

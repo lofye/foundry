@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -11,9 +12,7 @@ use Foundry\Support\Yaml;
 
 final class DiscoveryPass implements CompilerPass
 {
-    public function __construct(private readonly SqlFileLoader $sqlLoader = new SqlFileLoader())
-    {
-    }
+    public function __construct(private readonly SqlFileLoader $sqlLoader = new SqlFileLoader()) {}
 
     public function name(): string
     {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Export;
@@ -160,7 +161,7 @@ final class OpenApiExporter
             return $name;
         }
 
-        $parts = array_values(array_filter(explode('/', trim($path, '/')), static fn (string $part): bool => $part !== '' && $part !== 'api'));
+        $parts = array_values(array_filter(explode('/', trim($path, '/')), static fn(string $part): bool => $part !== '' && $part !== 'api'));
         if ($parts !== []) {
             return (string) $parts[0];
         }
@@ -218,9 +219,9 @@ final class OpenApiExporter
         }
 
         $parts = explode('_', $name);
-        $parts = array_values(array_filter($parts, static fn (string $part): bool => $part !== ''));
+        $parts = array_values(array_filter($parts, static fn(string $part): bool => $part !== ''));
 
-        return implode('', array_map(static fn (string $part): string => ucfirst(strtolower($part)), $parts));
+        return implode('', array_map(static fn(string $part): string => ucfirst(strtolower($part)), $parts));
     }
 
     /**

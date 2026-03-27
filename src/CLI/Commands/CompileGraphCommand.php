@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
@@ -6,6 +7,7 @@ namespace Foundry\CLI\Commands;
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
 use Foundry\Compiler\CompileOptions;
+use Foundry\Tooling\BuildArtifactStore;
 
 final class CompileGraphCommand extends Command
 {
@@ -32,6 +34,7 @@ final class CompileGraphCommand extends Command
             emit: true,
             useCache: $useCache,
         ));
+        (new BuildArtifactStore($context->graphCompiler()->buildLayout()))->persistBuildSummary($result);
 
         $summary = $result->diagnostics->summary();
         $status = ((int) ($summary['error'] ?? 0) > 0) ? 1 : 0;

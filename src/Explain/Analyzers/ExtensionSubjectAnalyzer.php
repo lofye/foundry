@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -42,9 +43,9 @@ final class ExtensionSubjectAnalyzer implements SubjectAnalyzerInterface
                     'extension_capabilities',
                     'Extension Capabilities',
                     array_merge(
-                        array_map(static fn (string $capability): string => 'capability: ' . $capability, $capabilities),
-                        array_map(static fn (string $pack): string => 'pack: ' . $pack, $packs),
-                        array_map(static fn (string $dependency): string => 'dependency: ' . $dependency, $dependencies),
+                        array_map(static fn(string $capability): string => 'capability: ' . $capability, $capabilities),
+                        array_map(static fn(string $pack): string => 'pack: ' . $pack, $packs),
+                        array_map(static fn(string $dependency): string => 'dependency: ' . $dependency, $dependencies),
                     ),
                     'string_list',
                 ),

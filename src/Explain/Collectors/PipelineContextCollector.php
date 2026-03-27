@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
@@ -11,9 +12,7 @@ use Foundry\Explain\ExplainSupport;
 
 final readonly class PipelineContextCollector implements ExplainContextCollectorInterface
 {
-    public function __construct(private ExplainArtifactCatalog $artifacts)
-    {
-    }
+    public function __construct(private ExplainArtifactCatalog $artifacts) {}
 
     public function supports(ExplainSubject $subject): bool
     {

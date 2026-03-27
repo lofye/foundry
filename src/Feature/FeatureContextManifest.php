@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Feature;
@@ -26,8 +27,7 @@ final readonly class FeatureContextManifest
         public readonly array $tests,
         public readonly array $forbiddenPaths,
         public readonly string $riskLevel,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $data

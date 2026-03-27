@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Observability;
@@ -12,9 +13,7 @@ final class StructuredLogger implements Logger
      */
     private array $records = [];
 
-    public function __construct(private readonly Clock $clock = new Clock())
-    {
-    }
+    public function __construct(private readonly Clock $clock = new Clock()) {}
 
     #[\Override]
     public function log(string $level, string $message, array $context = []): void

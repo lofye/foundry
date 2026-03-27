@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -14,9 +15,9 @@ use Foundry\Compiler\Analysis\GraphAnalyzer;
 use Foundry\Compiler\Codemod\Codemod;
 use Foundry\Compiler\Codemod\FeatureManifestV2Codemod;
 use Foundry\Compiler\CompilerPass;
+use Foundry\Compiler\Migration\DefinitionFormat;
 use Foundry\Compiler\Migration\FeatureManifestV2Rule;
 use Foundry\Compiler\Migration\MigrationRule;
-use Foundry\Compiler\Migration\DefinitionFormat;
 use Foundry\Compiler\Passes\PipelinePass;
 use Foundry\Compiler\Projection\CoreProjectionEmitters;
 use Foundry\Compiler\Projection\ProjectionEmitter;

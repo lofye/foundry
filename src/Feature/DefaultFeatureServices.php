@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Feature;
@@ -21,8 +22,7 @@ final class DefaultFeatureServices implements FeatureServices
         private readonly StorageDriver $storage,
         private readonly TraceContext $trace,
         private readonly AIManager $ai,
-    ) {
-    }
+    ) {}
 
     #[\Override]
     public function db(): QueryExecutor

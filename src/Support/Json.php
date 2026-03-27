@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Support;
@@ -29,7 +30,7 @@ final class Json
         try {
             return json_encode(
                 $value,
-                JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | ($pretty ? JSON_PRETTY_PRINT : 0)
+                JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | ($pretty ? JSON_PRETTY_PRINT : 0),
             );
         } catch (\JsonException $e) {
             throw new FoundryError('JSON_ENCODE_ERROR', 'serialization', [], $e->getMessage(), 0, $e);

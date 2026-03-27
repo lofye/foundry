@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -114,7 +115,7 @@ final class IntegrationDefinitionPass implements CompilerPass
 
             $inputSchemaField = $document['input_schema'] ?? ('app/notifications/schemas/' . $name . '.input.schema.json');
             $inputSchemaPath = $this->schemaPath(
-                is_string($inputSchemaField) ? $inputSchemaField : ('app/notifications/schemas/' . $name . '.input.schema.json')
+                is_string($inputSchemaField) ? $inputSchemaField : ('app/notifications/schemas/' . $name . '.input.schema.json'),
             );
             $schemaDocument = is_array($inputSchemaField)
                 ? (array) $inputSchemaField
@@ -337,7 +338,7 @@ final class IntegrationDefinitionPass implements CompilerPass
 
         usort(
             $normalized,
-            static fn (string $a, string $b): int => array_search($a, $allowed, true) <=> array_search($b, $allowed, true),
+            static fn(string $a, string $b): int => array_search($a, $allowed, true) <=> array_search($b, $allowed, true),
         );
 
         return $normalized;
@@ -448,7 +449,7 @@ final class IntegrationDefinitionPass implements CompilerPass
     private function sortedStrings(array $values): array
     {
         $values = array_values(array_map('strval', $values));
-        $values = array_values(array_filter($values, static fn (string $value): bool => $value !== ''));
+        $values = array_values(array_filter($values, static fn(string $value): bool => $value !== ''));
         $values = array_values(array_unique($values));
         sort($values);
 

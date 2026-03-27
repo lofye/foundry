@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -134,7 +135,7 @@ final class ExplainTargetResolver
         $matches = $this->exactAliasMatches($selector, includeRouteAndCommand: true, onlyRouteAndCommand: $kind === 'route');
         $matches = array_values(array_filter(
             $matches,
-            static fn (ExplainSubject $subject): bool => $subject->kind === $kind,
+            static fn(ExplainSubject $subject): bool => $subject->kind === $kind,
         ));
 
         if (count($matches) === 1) {
@@ -211,7 +212,7 @@ final class ExplainTargetResolver
 
         usort(
             $matches,
-            static fn (ExplainSubject $left, ExplainSubject $right): int => strcmp($left->kind, $right->kind)
+            static fn(ExplainSubject $left, ExplainSubject $right): int => strcmp($left->kind, $right->kind)
                 ?: strcmp($left->label, $right->label)
                 ?: strcmp($left->id, $right->id),
         );
@@ -304,7 +305,7 @@ final class ExplainTargetResolver
 
         usort(
             $rows,
-            static fn (ExplainSubject $left, ExplainSubject $right): int => strcmp($left->kind, $right->kind)
+            static fn(ExplainSubject $left, ExplainSubject $right): int => strcmp($left->kind, $right->kind)
                 ?: strcmp($left->label, $right->label)
                 ?: strcmp($left->id, $right->id),
         );

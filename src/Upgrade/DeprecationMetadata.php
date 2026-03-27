@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Upgrade;
@@ -15,8 +16,7 @@ final readonly class DeprecationMetadata
         public string $whyItMatters,
         public string $migration,
         public string $reference,
-    ) {
-    }
+    ) {}
 
     public function appliesTo(string $targetVersion): bool
     {

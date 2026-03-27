@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -53,7 +54,7 @@ final class PipelineDefinitionResolverTest extends TestCase
         ], $diagnostics);
 
         $codes = array_values(array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             $diagnostics->toArray(),
         ));
 

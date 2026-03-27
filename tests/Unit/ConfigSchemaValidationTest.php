@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -138,7 +139,7 @@ PHP);
         $this->assertGreaterThanOrEqual(3, (int) ($result->configValidation['summary']['warning'] ?? 0));
 
         $messages = array_values(array_map(
-            static fn (array $item): string => (string) ($item['message'] ?? ''),
+            static fn(array $item): string => (string) ($item['message'] ?? ''),
             (array) ($result->configValidation['items'] ?? []),
         ));
 

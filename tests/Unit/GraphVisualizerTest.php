@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -6,8 +7,8 @@ namespace Foundry\Tests\Unit;
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\GraphEdge;
 use Foundry\Compiler\IR\CacheNode;
-use Foundry\Compiler\IR\ExecutionPlanNode;
 use Foundry\Compiler\IR\EventNode;
+use Foundry\Compiler\IR\ExecutionPlanNode;
 use Foundry\Compiler\IR\FeatureNode;
 use Foundry\Compiler\IR\GuardNode;
 use Foundry\Compiler\IR\InterceptorNode;

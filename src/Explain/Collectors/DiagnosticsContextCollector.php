@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Collectors;
@@ -14,8 +15,7 @@ final readonly class DiagnosticsContextCollector implements ExplainContextCollec
     public function __construct(
         private ApplicationGraph $graph,
         private ExplainArtifactCatalog $artifacts,
-    ) {
-    }
+    ) {}
 
     public function supports(ExplainSubject $subject): bool
     {
@@ -26,7 +26,7 @@ final readonly class DiagnosticsContextCollector implements ExplainContextCollec
     {
         $diagnostics = array_values(array_filter(
             (array) ($this->artifacts->diagnosticsReport()['diagnostics'] ?? []),
-            fn (mixed $row): bool => $this->matchesSubject($row, $subject),
+            fn(mixed $row): bool => $this->matchesSubject($row, $subject),
         ));
 
         $summary = ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => count($diagnostics)];

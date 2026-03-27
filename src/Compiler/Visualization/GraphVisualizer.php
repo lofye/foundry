@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Visualization;
@@ -121,7 +122,7 @@ final class GraphVisualizer
             'pipeline_stages' => 'pipeline stages',
             'extensions' => 'extensions',
         ] as $key => $label) {
-            $values = array_values(array_filter(array_map('strval', (array) ($summary[$key] ?? [])), static fn (string $value): bool => $value !== ''));
+            $values = array_values(array_filter(array_map('strval', (array) ($summary[$key] ?? [])), static fn(string $value): bool => $value !== ''));
             if ($values !== []) {
                 $lines[] = $label . ': ' . implode(', ', $values);
             }
@@ -139,7 +140,7 @@ final class GraphVisualizer
         }
 
         if ($filters === []) {
-            return implode("\n", array_values(array_filter($lines, static fn (string $line): bool => $line !== '')));
+            return implode("\n", array_values(array_filter($lines, static fn(string $line): bool => $line !== '')));
         }
 
         return rtrim(implode("\n", $lines));
@@ -344,7 +345,7 @@ final class GraphVisualizer
         $rows = array_values($selected);
         usort(
             $rows,
-            static fn (GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id),
+            static fn(GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id),
         );
 
         return $rows;
@@ -405,7 +406,7 @@ final class GraphVisualizer
 
         usort(
             $edges,
-            static fn (GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id),
+            static fn(GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id),
         );
 
         return [
@@ -419,7 +420,7 @@ final class GraphVisualizer
             'workflow_filter' => $filters['workflow'] ?? null,
             'filters' => $filters,
             'nodes' => $nodes,
-            'edges' => array_values(array_map(fn (GraphEdge $edge): array => $this->edgeRow($edge), $edges)),
+            'edges' => array_values(array_map(fn(GraphEdge $edge): array => $this->edgeRow($edge), $edges)),
         ];
     }
 
@@ -444,7 +445,7 @@ final class GraphVisualizer
 
         usort(
             $selectedExtensions,
-            static fn (array $a, array $b): int => strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')),
         );
 
         $nodes = [];
@@ -620,7 +621,7 @@ final class GraphVisualizer
         $rows = array_values($selected);
         usort(
             $rows,
-            static fn (GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id),
+            static fn(GraphEdge $a, GraphEdge $b): int => strcmp($a->id, $b->id),
         );
 
         return $rows;
@@ -905,7 +906,7 @@ final class GraphVisualizer
             'edge_types' => $edgeTypes,
             'focus' => array_filter(
                 $filters,
-                static fn (mixed $value): bool => is_string($value) && $value !== '',
+                static fn(mixed $value): bool => is_string($value) && $value !== '',
             ),
         ];
         $summary['highlights'] = $this->summaryHighlights($summary);
@@ -966,7 +967,7 @@ final class GraphVisualizer
             }
         }
 
-        $labels = array_values(array_unique(array_filter($labels, static fn (string $value): bool => $value !== '')));
+        $labels = array_values(array_unique(array_filter($labels, static fn(string $value): bool => $value !== '')));
         sort($labels);
 
         return $labels;

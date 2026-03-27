@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Diagnostics;
@@ -157,7 +158,7 @@ final class DiagnosticBag
     public function toArray(): array
     {
         return array_map(
-            static fn (Diagnostic $diagnostic): array => $diagnostic->toArray(),
+            static fn(Diagnostic $diagnostic): array => $diagnostic->toArray(),
             $this->diagnostics,
         );
     }

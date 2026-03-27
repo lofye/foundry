@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -19,8 +20,7 @@ final class ExplanationPlanAssembler
         private readonly array $subjectAnalyzers,
         private readonly array $sectionAnalyzers,
         private readonly ExplainContributorRegistry $contributors = new ExplainContributorRegistry(),
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $metadata
@@ -145,7 +145,7 @@ final class ExplanationPlanAssembler
         });
 
         return array_values(array_map(
-            static fn (array $row): ExplainSection => $row['section'],
+            static fn(array $row): ExplainSection => $row['section'],
             $rows,
         ));
     }
@@ -268,7 +268,7 @@ final class ExplanationPlanAssembler
 
         usort(
             $unique,
-            static fn (array $left, array $right): int => strcmp((string) ($left['title'] ?? ''), (string) ($right['title'] ?? ''))
+            static fn(array $left, array $right): int => strcmp((string) ($left['title'] ?? ''), (string) ($right['title'] ?? ''))
                 ?: strcmp((string) ($left['path'] ?? ''), (string) ($right['path'] ?? '')),
         );
 

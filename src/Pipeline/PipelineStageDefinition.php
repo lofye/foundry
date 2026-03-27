@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pipeline;
@@ -11,8 +12,7 @@ final readonly class PipelineStageDefinition
         public ?string $beforeStage = null,
         public int $priority = 100,
         public ?string $extension = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -28,4 +28,3 @@ final readonly class PipelineStageDefinition
         ];
     }
 }
-

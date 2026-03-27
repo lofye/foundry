@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Upgrade;
@@ -19,8 +20,7 @@ final readonly class UpgradeReport
         public array $summary,
         public array $issues,
         public array $checks,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -35,7 +35,7 @@ final readonly class UpgradeReport
             'command_prefix' => $this->commandPrefix,
             'summary' => $this->summary,
             'issues' => array_values(array_map(
-                static fn (UpgradeIssue $issue): array => $issue->toArray(),
+                static fn(UpgradeIssue $issue): array => $issue->toArray(),
                 $this->issues,
             )),
             'checks' => $this->checks,

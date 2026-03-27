@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -48,11 +49,11 @@ final class FeatureSubjectAnalyzer implements SubjectAnalyzerInterface
                 'route_signature' => $pipeline['route_signature'] ?? null,
                 'emits' => array_keys((array) ($events['emitted'] ?? [])),
                 'workflows' => array_values(array_map(
-                    static fn (array $workflow): string => (string) ($workflow['resource'] ?? $workflow['label'] ?? 'workflow'),
+                    static fn(array $workflow): string => (string) ($workflow['resource'] ?? $workflow['label'] ?? 'workflow'),
                     array_values(array_filter((array) ($workflows['items'] ?? []), 'is_array')),
                 )),
                 'jobs' => array_values(array_map(
-                    static fn (array $job): string => (string) ($job['name'] ?? $job['label'] ?? ''),
+                    static fn(array $job): string => (string) ($job['name'] ?? $job['label'] ?? ''),
                     array_values(array_filter((array) ($pipeline['jobs'] ?? []), 'is_array')),
                 )),
             ],

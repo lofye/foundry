@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Config;
@@ -21,8 +22,7 @@ final readonly class ConfigValidationIssue
         public ?string $suggestedFix = null,
         public ?string $nodeId = null,
         public array $details = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

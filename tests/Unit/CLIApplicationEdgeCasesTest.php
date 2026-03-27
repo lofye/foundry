@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -98,7 +99,7 @@ final class CLIApplicationEdgeCasesTest extends TestCase
                 {
                     return [
                         'status' => 1,
-                        'message' => "Ambiguous target: \"create\"",
+                        'message' => 'Ambiguous target: "create"',
                         'payload' => [
                             'error' => [
                                 'code' => 'EXPLAIN_TARGET_AMBIGUOUS',

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Migration;
@@ -18,8 +19,7 @@ final class DefinitionMigrator
         private readonly ManifestVersionResolver $resolver,
         private readonly array $rules,
         private readonly array $formats = [],
-    ) {
-    }
+    ) {}
 
     public function migrate(bool $write = false, ?string $path = null, ?DiagnosticBag $diagnostics = null): DefinitionMigrationResult
     {
@@ -179,7 +179,7 @@ final class DefinitionMigrator
             ];
         }
 
-        usort($rows, static fn (array $a, array $b): int => strcmp((string) $a['id'], (string) $b['id']));
+        usort($rows, static fn(array $a, array $b): int => strcmp((string) $a['id'], (string) $b['id']));
 
         return $rows;
     }
@@ -201,10 +201,10 @@ final class DefinitionMigrator
             ];
         }
 
-        usort($formats, static fn (DefinitionFormat $a, DefinitionFormat $b): int => strcmp($a->name, $b->name));
+        usort($formats, static fn(DefinitionFormat $a, DefinitionFormat $b): int => strcmp($a->name, $b->name));
 
         return array_values(array_map(
-            static fn (DefinitionFormat $format): array => $format->toArray(),
+            static fn(DefinitionFormat $format): array => $format->toArray(),
             $formats,
         ));
     }

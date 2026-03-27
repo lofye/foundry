@@ -1,0 +1,38 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: json, pdo
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Pint
+        run: composer lint
+
+      - name: PHPStan
+        run: composer analyse
+
+      - name: PHPUnit
+        run: php vendor/bin/phpunit
+
+      - name: Foundry Doctor Quality
+        run: php bin/foundry doctor --quality --json
+
+      - name: Verify CLI Surface
+        run: php bin/foundry verify cli-surface --json

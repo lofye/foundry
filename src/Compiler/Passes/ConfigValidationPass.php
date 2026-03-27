@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -12,8 +13,7 @@ final class ConfigValidationPass implements CompilerPass
 {
     public function __construct(
         private readonly ConfigValidator $validator = new ConfigValidator(),
-    ) {
-    }
+    ) {}
 
     public function name(): string
     {
@@ -42,7 +42,7 @@ final class ConfigValidationPass implements CompilerPass
                 'config_path' => $issue->configPath,
                 'expected' => $issue->expected,
                 'actual' => $issue->actual,
-            ] + $issue->details, static fn (mixed $value): bool => $value !== null && $value !== '');
+            ] + $issue->details, static fn(mixed $value): bool => $value !== null && $value !== '');
 
             match ($issue->severity) {
                 'warning' => $state->diagnostics->warning(

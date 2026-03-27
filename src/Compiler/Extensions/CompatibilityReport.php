@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -17,8 +18,7 @@ final readonly class CompatibilityReport
         public array $versionMatrix,
         public array $lifecycle,
         public array $loadOrder,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

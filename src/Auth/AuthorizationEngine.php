@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Auth;
@@ -15,8 +16,7 @@ final class AuthorizationEngine
     public function __construct(
         private readonly PermissionRegistry $permissions,
         private readonly array $authenticators = [],
-    ) {
-    }
+    ) {}
 
     public function authenticate(FeatureDefinition $feature, RequestContext $request): AuthContext
     {
@@ -45,7 +45,7 @@ final class AuthorizationEngine
                 'AUTHENTICATION_REQUIRED',
                 'authentication',
                 ['feature' => $feature->name, 'strategies' => $strategies],
-                'Authentication required.'
+                'Authentication required.',
             );
         }
 

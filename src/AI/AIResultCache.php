@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\AI;
@@ -7,9 +8,7 @@ use Foundry\Cache\CacheManager;
 
 final class AIResultCache
 {
-    public function __construct(private readonly CacheManager $cache)
-    {
-    }
+    public function __construct(private readonly CacheManager $cache) {}
 
     public function get(string $key): ?AIResponse
     {

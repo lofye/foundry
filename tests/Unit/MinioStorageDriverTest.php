@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -198,9 +199,7 @@ final class FakeMinioClient
 
 final class FakeBodyStream
 {
-    public function __construct(private readonly string $content)
-    {
-    }
+    public function __construct(private readonly string $content) {}
 
     public function getContents(): string
     {

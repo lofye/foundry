@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Renderers;
@@ -164,9 +165,9 @@ final class TextExplanationRenderer implements ExplanationRendererInterface
     private function appendStringItems(array &$lines, string $title, array $items, bool $bullet = false): void
     {
         $rows = array_values(array_filter(array_map(
-            static fn (mixed $item): string => trim((string) $item),
+            static fn(mixed $item): string => trim((string) $item),
             $items,
-        ), static fn (string $item): bool => $item !== ''));
+        ), static fn(string $item): bool => $item !== ''));
         if ($rows === []) {
             return;
         }
@@ -376,9 +377,9 @@ final class TextExplanationRenderer implements ExplanationRendererInterface
     private function sectionOrder(array $payload): array
     {
         $order = array_values(array_filter(array_map(
-            static fn (mixed $id): string => trim((string) $id),
+            static fn(mixed $id): string => trim((string) $id),
             (array) ($payload['sectionOrder'] ?? []),
-        ), static fn (string $id): bool => $id !== ''));
+        ), static fn(string $id): bool => $id !== ''));
 
         return $order !== [] ? $order : self::CANONICAL_SECTION_IDS;
     }
@@ -467,14 +468,14 @@ final class TextExplanationRenderer implements ExplanationRendererInterface
         foreach ($items as $key => $value) {
             if (is_array($value) && array_is_list($value)) {
                 $lines[] = (string) $key . ': ' . implode(', ', array_values(array_map(
-                    fn (mixed $item): string => is_array($item) ? $this->rowLabel($item) : trim((string) $item),
+                    fn(mixed $item): string => is_array($item) ? $this->rowLabel($item) : trim((string) $item),
                     $value,
                 )));
                 continue;
             }
             if (is_array($value)) {
                 $lines[] = (string) $key . ': ' . implode(', ', array_map(
-                    static fn (string $nestedKey, mixed $nestedValue): string => $nestedKey . '=' . trim((string) $nestedValue),
+                    static fn(string $nestedKey, mixed $nestedValue): string => $nestedKey . '=' . trim((string) $nestedValue),
                     array_keys($value),
                     array_values($value),
                 ));
@@ -494,7 +495,7 @@ final class TextExplanationRenderer implements ExplanationRendererInterface
     private function stringListLines(array $items): array
     {
         return array_values(array_map(
-            static fn (mixed $item): string => '- ' . trim((string) $item),
+            static fn(mixed $item): string => '- ' . trim((string) $item),
             array_values($items),
         ));
     }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -14,8 +15,14 @@ final class ExtensionMetadataValidatorTest extends TestCase
     public function test_validator_reports_invalid_extension_and_pack_metadata(): void
     {
         $extension = new class extends AbstractCompilerExtension {
-            public function name(): string { return 'Bad Name'; }
-            public function version(): string { return 'not-a-version'; }
+            public function name(): string
+            {
+                return 'Bad Name';
+            }
+            public function version(): string
+            {
+                return 'not-a-version';
+            }
             public function descriptor(): ExtensionDescriptor
             {
                 return new ExtensionDescriptor(
@@ -45,13 +52,13 @@ final class ExtensionMetadataValidatorTest extends TestCase
 
         $validator = new ExtensionMetadataValidator();
         $diagnostics = $validator->validateExtension($extension);
-        $codes = array_values(array_map(static fn (array $row): string => (string) ($row['code'] ?? ''), $diagnostics));
+        $codes = array_values(array_map(static fn(array $row): string => (string) ($row['code'] ?? ''), $diagnostics));
 
         $this->assertContains('FDY7016_EXTENSION_METADATA_INVALID', $codes);
         $this->assertContains('FDY7017_PACK_METADATA_INVALID', $codes);
         $this->assertNotEmpty(array_filter(
             $diagnostics,
-            static fn (array $row): bool => (string) (($row['details'] ?? [])['field'] ?? '') === 'name',
+            static fn(array $row): bool => (string) (($row['details'] ?? [])['field'] ?? '') === 'name',
         ));
     }
 }

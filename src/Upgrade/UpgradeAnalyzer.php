@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Upgrade;
@@ -6,11 +7,11 @@ namespace Foundry\Upgrade;
 use Foundry\Compiler\CompileOptions;
 use Foundry\Compiler\CompileResult;
 use Foundry\Compiler\Extensions\CompatibilityReport;
+use Foundry\Compiler\Extensions\ExtensionRegistry;
+use Foundry\Compiler\GraphCompiler;
 use Foundry\Compiler\Migration\DefinitionMigrationResult;
 use Foundry\Compiler\Migration\DefinitionMigrator;
 use Foundry\Compiler\Projection\ProjectionEmitter;
-use Foundry\Compiler\Extensions\ExtensionRegistry;
-use Foundry\Compiler\GraphCompiler;
 use Foundry\Support\CliCommandPrefix;
 use Foundry\Support\Paths;
 
@@ -70,7 +71,7 @@ final class UpgradeAnalyzer
 
         usort(
             $issues,
-            static fn (UpgradeIssue $a, UpgradeIssue $b): int => self::severityRank($a->severity) <=> self::severityRank($b->severity)
+            static fn(UpgradeIssue $a, UpgradeIssue $b): int => self::severityRank($a->severity) <=> self::severityRank($b->severity)
                 ?: strcmp($a->category, $b->category)
                 ?: strcmp($a->code, $b->code)
                 ?: strcmp((string) ($a->affected['source_path'] ?? ''), (string) ($b->affected['source_path'] ?? '')),
@@ -257,7 +258,7 @@ final class UpgradeAnalyzer
                 affected: array_filter([
                     'extension' => (string) ($diagnostic['extension'] ?? ''),
                     'pack' => (string) ($diagnostic['pack'] ?? ''),
-                ], static fn (mixed $value): bool => $value !== ''),
+                ], static fn(mixed $value): bool => $value !== ''),
                 whyItMatters: $why,
                 introducedIn: $targetVersion,
                 targetVersion: $targetVersion,

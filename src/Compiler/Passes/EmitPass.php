@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -116,7 +117,7 @@ final class EmitPass implements CompilerPass
             'artifacts' => [
                 'required_count' => count($artifactPaths),
                 'paths' => array_values(array_map(
-                    fn (string $path): string => $this->relativePath($state, $path),
+                    fn(string $path): string => $this->relativePath($state, $path),
                     $artifactPaths,
                 )),
             ],
@@ -155,11 +156,11 @@ final class EmitPass implements CompilerPass
             'extension_registration_sources' => $state->extensions->registrationSources(),
             'packs' => $state->extensions->packRegistry()->inspectRows(),
             'definition_formats' => array_values(array_map(
-                static fn ($format): array => method_exists($format, 'toArray') ? $format->toArray() : [],
+                static fn($format): array => method_exists($format, 'toArray') ? $format->toArray() : [],
                 $state->extensions->definitionFormats(),
             )),
             'codemods' => array_values(array_map(
-                static fn ($codemod): array => [
+                static fn($codemod): array => [
                     'id' => method_exists($codemod, 'id') ? (string) $codemod->id() : '',
                     'description' => method_exists($codemod, 'description') ? (string) $codemod->description() : '',
                     'source_type' => method_exists($codemod, 'sourceType') ? (string) $codemod->sourceType() : '',
@@ -167,7 +168,7 @@ final class EmitPass implements CompilerPass
                 $state->extensions->codemods(),
             )),
             'projections' => array_values(array_map(
-                static fn (array $row): string => (string) ($row['file'] ?? ''),
+                static fn(array $row): string => (string) ($row['file'] ?? ''),
                 $projectionRows,
             )),
             'cache' => $cacheManifest + [
@@ -215,7 +216,7 @@ final class EmitPass implements CompilerPass
             'build' => is_array($state->cache['build'] ?? null) ? $state->cache['build'] : [],
         ];
         $state->analysis['written_files'] = array_values(array_unique(array_map(
-            fn (string $path): string => $this->relativePath($state, $path),
+            fn(string $path): string => $this->relativePath($state, $path),
             $writtenFiles,
         )));
     }

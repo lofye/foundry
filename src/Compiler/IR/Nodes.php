@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\IR;
@@ -45,8 +46,7 @@ abstract class AbstractNode implements GraphNode
         private readonly array $payload,
         private readonly ?array $sourceRegion = null,
         private readonly array $graphCompatibility = [1],
-    ) {
-    }
+    ) {}
 
     final public function id(): string
     {

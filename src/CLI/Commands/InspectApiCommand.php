@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI\Commands;
@@ -58,8 +59,8 @@ final class InspectApiCommand extends Command
             'payload' => [
                 'api_resource' => $node->toArray(),
                 'features' => $features,
-                'dependencies' => array_values(array_map(static fn (GraphEdge $edge): array => $edge->toArray(), $graph->dependencies($node->id()))),
-                'dependents' => array_values(array_map(static fn (GraphEdge $edge): array => $edge->toArray(), $graph->dependents($node->id()))),
+                'dependencies' => array_values(array_map(static fn(GraphEdge $edge): array => $edge->toArray(), $graph->dependencies($node->id()))),
+                'dependents' => array_values(array_map(static fn(GraphEdge $edge): array => $edge->toArray(), $graph->dependents($node->id()))),
             ],
         ];
     }

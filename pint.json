@@ -1,0 +1,20 @@
+{
+  "preset": "per",
+  "exclude": [
+    "app/generated",
+    "app/.foundry",
+    "vendor"
+  ],
+  "rules": {
+    "array_syntax": {
+      "syntax": "short"
+    },
+    "concat_space": {
+      "spacing": "one"
+    },
+    "ordered_imports": {
+      "sort_algorithm": "alpha"
+    },
+    "single_quote": true
+  }
+}

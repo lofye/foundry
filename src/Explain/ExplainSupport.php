@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -135,9 +136,9 @@ final class ExplainSupport
         }
 
         $aliases = array_values(array_filter(array_map(
-            static fn (mixed $value): string => trim((string) $value),
+            static fn(mixed $value): string => trim((string) $value),
             $aliases,
-        ), static fn (string $value): bool => $value !== ''));
+        ), static fn(string $value): bool => $value !== ''));
         sort($aliases);
 
         return array_values(array_unique($aliases));
@@ -249,7 +250,7 @@ final class ExplainSupport
 
         usort(
             $unique,
-            static fn (array $left, array $right): int => strcmp((string) ($left['kind'] ?? ''), (string) ($right['kind'] ?? ''))
+            static fn(array $left, array $right): int => strcmp((string) ($left['kind'] ?? ''), (string) ($right['kind'] ?? ''))
                 ?: strcmp((string) ($left['label'] ?? ''), (string) ($right['label'] ?? ''))
                 ?: strcmp((string) ($left['id'] ?? ''), (string) ($right['id'] ?? '')),
         );
@@ -264,9 +265,9 @@ final class ExplainSupport
     public static function uniqueStrings(array $values): array
     {
         $values = array_values(array_filter(array_map(
-            static fn (mixed $value): string => trim((string) $value),
+            static fn(mixed $value): string => trim((string) $value),
             $values,
-        ), static fn (string $value): bool => $value !== ''));
+        ), static fn(string $value): bool => $value !== ''));
         sort($values);
 
         return array_values(array_unique($values));

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pro;
@@ -7,9 +8,7 @@ use Foundry\Support\FoundryError;
 
 final readonly class FeatureGate
 {
-    public function __construct(private LicenseStore $licenses)
-    {
-    }
+    public function __construct(private LicenseStore $licenses) {}
 
     /**
      * @param array<int,string> $requiredFeatures

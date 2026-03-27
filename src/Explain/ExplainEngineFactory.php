@@ -1,15 +1,19 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
 
-use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\Analysis\ImpactAnalyzer;
+use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\BuildLayout;
 use Foundry\Explain\Analyzers\CommandSubjectAnalyzer;
 use Foundry\Explain\Analyzers\DependencyAnalyzer;
-use Foundry\Explain\Analyzers\EventSubjectAnalyzer;
+use Foundry\Explain\Analyzers\DependentAnalyzer;
+use Foundry\Explain\Analyzers\DiagnosticsAnalyzer;
 use Foundry\Explain\Analyzers\EventEmissionAnalyzer;
+use Foundry\Explain\Analyzers\EventSubjectAnalyzer;
+use Foundry\Explain\Analyzers\ExecutionFlowAnalyzer;
 use Foundry\Explain\Analyzers\ExtensionSubjectAnalyzer;
 use Foundry\Explain\Analyzers\FeatureSubjectAnalyzer;
 use Foundry\Explain\Analyzers\GenericGraphSubjectAnalyzer;
@@ -20,20 +24,17 @@ use Foundry\Explain\Analyzers\PipelineStageSubjectAnalyzer;
 use Foundry\Explain\Analyzers\RelatedCommandsAnalyzer;
 use Foundry\Explain\Analyzers\RelatedDocsAnalyzer;
 use Foundry\Explain\Analyzers\RouteSubjectAnalyzer;
-use Foundry\Explain\Analyzers\SchemaSubjectAnalyzer;
 use Foundry\Explain\Analyzers\SchemaInteractionAnalyzer;
-use Foundry\Explain\Analyzers\DiagnosticsAnalyzer;
-use Foundry\Explain\Analyzers\DependentAnalyzer;
-use Foundry\Explain\Analyzers\ExecutionFlowAnalyzer;
+use Foundry\Explain\Analyzers\SchemaSubjectAnalyzer;
 use Foundry\Explain\Analyzers\TriggerAnalyzer;
 use Foundry\Explain\Analyzers\WorkflowSubjectAnalyzer;
 use Foundry\Explain\Collectors\CommandContextCollector;
 use Foundry\Explain\Collectors\DiagnosticsContextCollector;
 use Foundry\Explain\Collectors\DocsContextCollector;
+use Foundry\Explain\Collectors\EventContextCollector;
 use Foundry\Explain\Collectors\ExtensionContextCollector;
 use Foundry\Explain\Collectors\GraphNeighborhoodCollector;
 use Foundry\Explain\Collectors\ImpactContextCollector;
-use Foundry\Explain\Collectors\EventContextCollector;
 use Foundry\Explain\Collectors\PipelineContextCollector;
 use Foundry\Explain\Collectors\SchemaContextCollector;
 use Foundry\Explain\Collectors\WorkflowContextCollector;

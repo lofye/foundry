@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Cache;
@@ -22,7 +23,7 @@ final class CacheKeyBuilder
 
                 return rawurlencode((string) $params[$key]);
             },
-            $template
+            $template,
         );
     }
 }

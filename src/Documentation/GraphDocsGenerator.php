@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Documentation;
@@ -16,9 +17,7 @@ final class GraphDocsGenerator
     public function __construct(
         private readonly Paths $paths,
         private readonly ApiSurfaceRegistry $apiSurfaceRegistry,
-    )
-    {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -210,7 +209,7 @@ final class GraphDocsGenerator
         }
 
         sort($public);
-        usort($protected, static fn (array $a, array $b): int => strcmp((string) ($a['feature'] ?? ''), (string) ($b['feature'] ?? '')));
+        usort($protected, static fn(array $a, array $b): int => strcmp((string) ($a['feature'] ?? ''), (string) ($b['feature'] ?? '')));
 
         $lines[] = '## Protected Features';
         foreach ($protected as $row) {

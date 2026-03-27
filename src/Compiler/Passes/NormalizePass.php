@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -199,7 +200,7 @@ final class NormalizePass implements CompilerPass
                     'job' => (string) ($row['job'] ?? ''),
                 ];
             }
-            usort($schedulerTasks, static fn (array $a, array $b): int => strcmp((string) $a['name'], (string) $b['name']));
+            usort($schedulerTasks, static fn(array $a, array $b): int => strcmp((string) $a['name'], (string) $b['name']));
 
             $webhooksYaml = is_array($discovered['webhooks'] ?? null) ? $discovered['webhooks'] : [];
             $webhooks = [
@@ -224,7 +225,7 @@ final class NormalizePass implements CompilerPass
                     'placeholders' => $this->sortedStrings((array) ($row['placeholders'] ?? [])),
                 ];
             }
-            usort($queries, static fn (array $a, array $b): int => strcmp((string) $a['name'], (string) $b['name']));
+            usort($queries, static fn(array $a, array $b): int => strcmp((string) $a['name'], (string) $b['name']));
 
             $inputSchemaPath = (string) ($discovered['input_schema_path'] ?? 'app/features/' . $feature . '/input.schema.json');
             $outputSchemaPath = (string) ($discovered['output_schema_path'] ?? 'app/features/' . $feature . '/output.schema.json');
@@ -298,7 +299,7 @@ final class NormalizePass implements CompilerPass
     private function sortedStrings(array $values): array
     {
         $values = array_values(array_map('strval', $values));
-        $values = array_values(array_filter($values, static fn (string $value): bool => $value !== ''));
+        $values = array_values(array_filter($values, static fn(string $value): bool => $value !== ''));
         $values = array_values(array_unique($values));
         sort($values);
 
@@ -332,7 +333,7 @@ final class NormalizePass implements CompilerPass
             ];
         }
 
-        usort($normalized, static fn (array $a, array $b): int => strcmp((string) $a['name'], (string) $b['name']));
+        usort($normalized, static fn(array $a, array $b): int => strcmp((string) $a['name'], (string) $b['name']));
 
         return $normalized;
     }

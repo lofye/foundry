@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain;
@@ -51,7 +52,7 @@ final class ExplanationPlan
         $this->graphRelationships = $graphRelationships instanceof GraphRelationshipsSection ? $graphRelationships : new GraphRelationshipsSection($graphRelationships);
         $this->diagnostics = $diagnostics instanceof DiagnosticsSection ? $diagnostics : new DiagnosticsSection($diagnostics);
         $this->sections = array_values(array_filter(array_map(
-            static fn (mixed $section): ?ExplainSection => $section instanceof ExplainSection
+            static fn(mixed $section): ?ExplainSection => $section instanceof ExplainSection
                 ? $section
                 : (is_array($section) ? ExplainSection::fromArray($section) : null),
             $sections,
@@ -93,7 +94,7 @@ final class ExplanationPlan
             'diagnostics' => $this->diagnostics->toArray(),
             'suggestedFixes' => $this->suggestedFixes,
             'sections' => array_map(
-                static fn (ExplainSection $section): array => $section->toArray(),
+                static fn(ExplainSection $section): array => $section->toArray(),
                 $this->sections,
             ),
             'sectionOrder' => $this->sectionOrder,

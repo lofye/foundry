@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Http;
@@ -45,7 +46,7 @@ final class RouteMatcher
             return [];
         }
 
-        $regex = preg_replace_callback('/\{([a-zA-Z0-9_]+)\}/', static fn (array $m): string => '(?P<' . $m[1] . '>[^/]+)', $pattern);
+        $regex = preg_replace_callback('/\{([a-zA-Z0-9_]+)\}/', static fn(array $m): string => '(?P<' . $m[1] . '>[^/]+)', $pattern);
         if ($regex === null) {
             return null;
         }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Storage;
@@ -12,9 +13,7 @@ final class S3StorageDriver implements StorageDriver
      */
     private array $memory = [];
 
-    public function __construct(private readonly string $bucket)
-    {
-    }
+    public function __construct(private readonly string $bucket) {}
 
     #[\Override]
     public function write(string $path, string $content): FileDescriptor

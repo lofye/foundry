@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Events;
@@ -10,9 +11,7 @@ final class InMemoryEventCollector implements EventSubscriber
      */
     private array $collected = [];
 
-    public function __construct(private readonly string $eventName)
-    {
-    }
+    public function __construct(private readonly string $eventName) {}
 
     #[\Override]
     public function eventName(): string

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Scheduler;
@@ -10,8 +11,7 @@ final class Scheduler
     public function __construct(
         private readonly SchedulerRegistry $registry,
         private readonly ?TraceRecorder $traceRecorder = null,
-    ) {
-    }
+    ) {}
 
     public function run(?\DateTimeImmutable $now = null): int
     {

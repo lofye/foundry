@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -8,8 +9,8 @@ use Foundry\Compiler\Codemod\Codemod;
 use Foundry\Compiler\CompilerPass;
 use Foundry\Compiler\Migration\DefinitionFormat;
 use Foundry\Compiler\Migration\MigrationRule;
-use Foundry\Doctor\DoctorCheck;
 use Foundry\Compiler\Projection\ProjectionEmitter;
+use Foundry\Doctor\DoctorCheck;
 use Foundry\Pipeline\PipelineStageDefinition;
 use Foundry\Pipeline\StageInterceptor;
 use Foundry\Support\Paths;
@@ -189,7 +190,7 @@ final class ExtensionRegistry
             }
         }
 
-        usort($emitters, static fn (ProjectionEmitter $a, ProjectionEmitter $b): int => strcmp($a->id(), $b->id()));
+        usort($emitters, static fn(ProjectionEmitter $a, ProjectionEmitter $b): int => strcmp($a->id(), $b->id()));
 
         return $emitters;
     }
@@ -228,7 +229,7 @@ final class ExtensionRegistry
             }
         }
 
-        usort($rules, static fn (MigrationRule $a, MigrationRule $b): int => strcmp($a->id(), $b->id()));
+        usort($rules, static fn(MigrationRule $a, MigrationRule $b): int => strcmp($a->id(), $b->id()));
 
         return $rules;
     }
@@ -245,7 +246,7 @@ final class ExtensionRegistry
             }
         }
 
-        usort($formats, static fn (DefinitionFormat $a, DefinitionFormat $b): int => strcmp($a->name, $b->name));
+        usort($formats, static fn(DefinitionFormat $a, DefinitionFormat $b): int => strcmp($a->name, $b->name));
 
         return $formats;
     }
@@ -262,7 +263,7 @@ final class ExtensionRegistry
             }
         }
 
-        usort($codemods, static fn (Codemod $a, Codemod $b): int => strcmp($a->id(), $b->id()));
+        usort($codemods, static fn(Codemod $a, Codemod $b): int => strcmp($a->id(), $b->id()));
 
         return $codemods;
     }
@@ -279,7 +280,7 @@ final class ExtensionRegistry
             }
         }
 
-        usort($analyzers, static fn (GraphAnalyzer $a, GraphAnalyzer $b): int => strcmp($a->id(), $b->id()));
+        usort($analyzers, static fn(GraphAnalyzer $a, GraphAnalyzer $b): int => strcmp($a->id(), $b->id()));
 
         return $analyzers;
     }
@@ -296,7 +297,7 @@ final class ExtensionRegistry
             }
         }
 
-        usort($checks, static fn (DoctorCheck $a, DoctorCheck $b): int => strcmp($a->id(), $b->id()));
+        usort($checks, static fn(DoctorCheck $a, DoctorCheck $b): int => strcmp($a->id(), $b->id()));
 
         return $checks;
     }
@@ -315,7 +316,7 @@ final class ExtensionRegistry
 
         usort(
             $stages,
-            static fn (PipelineStageDefinition $a, PipelineStageDefinition $b): int => ($a->priority <=> $b->priority)
+            static fn(PipelineStageDefinition $a, PipelineStageDefinition $b): int => ($a->priority <=> $b->priority)
                 ?: strcmp($a->name, $b->name),
         );
 
@@ -336,7 +337,7 @@ final class ExtensionRegistry
 
         usort(
             $interceptors,
-            static fn (StageInterceptor $a, StageInterceptor $b): int => strcmp($a->stage(), $b->stage())
+            static fn(StageInterceptor $a, StageInterceptor $b): int => strcmp($a->stage(), $b->stage())
                 ?: ($a->priority() <=> $b->priority())
                 ?: strcmp($a->id(), $b->id()),
         );
@@ -376,15 +377,15 @@ final class ExtensionRegistry
 
         usort(
             $rows,
-            static fn (array $a, array $b): int =>
-                ((int) ($a['priority'] ?? 0) <=> (int) ($b['priority'] ?? 0))
+            static fn(array $a, array $b): int
+                => ((int) ($a['priority'] ?? 0) <=> (int) ($b['priority'] ?? 0))
                 ?: ((int) ($a['load_order'] ?? PHP_INT_MAX) <=> (int) ($b['load_order'] ?? PHP_INT_MAX))
                 ?: strcmp((string) ($a['extension'] ?? ''), (string) ($b['extension'] ?? ''))
                 ?: strcmp(get_class($a['pass']), get_class($b['pass'])),
         );
 
         return array_values(array_map(
-            static fn (array $row): CompilerPass => $row['pass'],
+            static fn(array $row): CompilerPass => $row['pass'],
             $rows,
         ));
     }
@@ -486,7 +487,7 @@ final class ExtensionRegistry
         $rows = $this->enabledEntries();
 
         return array_values(array_map(
-            static fn (array $entry): string => (string) $entry['name'],
+            static fn(array $entry): string => (string) $entry['name'],
             $rows,
         ));
     }
@@ -852,7 +853,7 @@ final class ExtensionRegistry
         $cycleIndexes = $this->cycleIndexes($enabled);
         if ($cycleIndexes !== []) {
             $cycleNames = array_values(array_map(
-                fn (int $index): string => (string) ($this->entries[$index]['name'] ?? $this->entries[$index]['class'] ?? ''),
+                fn(int $index): string => (string) ($this->entries[$index]['name'] ?? $this->entries[$index]['class'] ?? ''),
                 $cycleIndexes,
             ));
             sort($cycleNames);
@@ -1150,12 +1151,12 @@ final class ExtensionRegistry
     {
         $entries = array_values(array_filter(
             $this->entries,
-            static fn (array $entry): bool => (bool) ($entry['enabled'] ?? false),
+            static fn(array $entry): bool => (bool) ($entry['enabled'] ?? false),
         ));
 
         usort(
             $entries,
-            static fn (array $a, array $b): int => ((int) ($a['load_order'] ?? PHP_INT_MAX) <=> (int) ($b['load_order'] ?? PHP_INT_MAX))
+            static fn(array $a, array $b): int => ((int) ($a['load_order'] ?? PHP_INT_MAX) <=> (int) ($b['load_order'] ?? PHP_INT_MAX))
                 ?: strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''))
                 ?: strcmp((string) ($a['version'] ?? ''), (string) ($b['version'] ?? ''))
                 ?: strcmp((string) ($a['class'] ?? ''), (string) ($b['class'] ?? '')),
@@ -1271,7 +1272,7 @@ final class ExtensionRegistry
         $diagnostics = array_values($unique);
         usort(
             $diagnostics,
-            static fn (array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
+            static fn(array $a, array $b): int => strcmp((string) ($a['code'] ?? ''), (string) ($b['code'] ?? ''))
                 ?: strcmp((string) ($a['extension'] ?? ''), (string) ($b['extension'] ?? ''))
                 ?: strcmp((string) ($a['pack'] ?? ''), (string) ($b['pack'] ?? ''))
                 ?: strcmp((string) ($a['message'] ?? ''), (string) ($b['message'] ?? '')),
@@ -1286,7 +1287,7 @@ final class ExtensionRegistry
      */
     private function sortedUniqueStrings(array $values): array
     {
-        $values = array_values(array_filter(array_map('strval', $values), static fn (string $value): bool => trim($value) !== ''));
+        $values = array_values(array_filter(array_map('strval', $values), static fn(string $value): bool => trim($value) !== ''));
         $values = array_values(array_unique($values));
         sort($values);
 

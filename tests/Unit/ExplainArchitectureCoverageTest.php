@@ -1,10 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
-use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\Analysis\ImpactAnalyzer;
+use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\BuildLayout;
 use Foundry\Compiler\GraphEdge;
 use Foundry\Compiler\IR\EventNode;
@@ -16,13 +17,13 @@ use Foundry\Compiler\IR\PipelineStageNode;
 use Foundry\Compiler\IR\RouteNode;
 use Foundry\Compiler\IR\SchemaNode;
 use Foundry\Compiler\IR\WorkflowNode;
+use Foundry\Explain\Contributors\ExplainContribution;
+use Foundry\Explain\Contributors\ExplainContributorInterface;
 use Foundry\Explain\ExplainArtifactCatalog;
 use Foundry\Explain\ExplainContext;
-use Foundry\Explain\ExplainSection;
-use Foundry\Explain\Contributors\ExplainContributorInterface;
-use Foundry\Explain\Contributors\ExplainContribution;
 use Foundry\Explain\ExplainEngineFactory;
 use Foundry\Explain\ExplainOptions;
+use Foundry\Explain\ExplainSection;
 use Foundry\Explain\ExplainSupport;
 use Foundry\Explain\ExplainTarget;
 use Foundry\Explain\ExplainTargetResolver;
@@ -112,7 +113,7 @@ final class ExplainArchitectureCoverageTest extends TestCase
             $this->assertStringContainsString('foundry explain feature:publish_post', $error->getMessage());
             $featureCandidates = array_values(array_filter(
                 (array) ($error->details['candidates'] ?? []),
-                static fn (mixed $row): bool => is_array($row) && (string) ($row['kind'] ?? '') === 'feature',
+                static fn(mixed $row): bool => is_array($row) && (string) ($row['kind'] ?? '') === 'feature',
             ));
             $this->assertCount(2, $featureCandidates);
         }
@@ -203,8 +204,7 @@ final class ExplainArchitectureCoverageTest extends TestCase
 
     public function test_engine_accepts_contributors_and_merges_their_sections(): void
     {
-        $contributor = new class implements ExplainContributorInterface
-        {
+        $contributor = new class implements ExplainContributorInterface {
             public function supports(\Foundry\Explain\ExplainSubject $subject): bool
             {
                 return $subject->kind === 'feature';
@@ -251,7 +251,7 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $this->assertContains('foundry inspect feature publish_post --json', $plan->relatedCommands);
         $fixtureDocs = array_values(array_filter(
             $plan->relatedDocs,
-            static fn (array $row): bool => (string) ($row['id'] ?? '') === 'fixture-doc',
+            static fn(array $row): bool => (string) ($row['id'] ?? '') === 'fixture-doc',
         ));
         $this->assertCount(1, $fixtureDocs);
     }
@@ -302,8 +302,8 @@ final class ExplainArchitectureCoverageTest extends TestCase
 
         $this->assertSame(array_keys($shallow->toArray()), array_keys($deep->toArray()));
         $this->assertSame(
-            array_values(array_map(static fn (ExplainSection $section): string => $section->id(), $shallow->sections)),
-            array_values(array_map(static fn (ExplainSection $section): string => $section->id(), $deep->sections)),
+            array_values(array_map(static fn(ExplainSection $section): string => $section->id(), $shallow->sections)),
+            array_values(array_map(static fn(ExplainSection $section): string => $section->id(), $deep->sections)),
         );
 
         $renderers = new ExplanationRendererFactory();

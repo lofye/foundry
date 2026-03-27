@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -48,7 +49,7 @@ final class ArchitectureDoctorTest extends TestCase
         $this->assertArrayHasKey('test_coverage', $report['analyzers']);
 
         $codes = array_values(array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             (array) ($report['diagnostics']['items'] ?? []),
         ));
         sort($codes);
@@ -239,4 +240,3 @@ YAML);
         file_put_contents($base . '/permissions.yaml', "version: 1\npermissions: []\nrules: {}\n");
     }
 }
-

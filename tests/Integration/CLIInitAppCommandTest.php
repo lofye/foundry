@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Integration;
@@ -96,7 +97,7 @@ final class CLIInitAppCommandTest extends TestCase
         $composer = json_decode((string) file_get_contents($target . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('lofye/foundry-framework', array_key_first(array_filter(
             $composer['require'],
-            static fn (string $constraint, string $package): bool => $package === 'lofye/foundry-framework',
+            static fn(string $constraint, string $package): bool => $package === 'lofye/foundry-framework',
             ARRAY_FILTER_USE_BOTH,
         )));
         $this->assertSame('@php foundry compile graph --json', $composer['scripts']['foundry:compile']);

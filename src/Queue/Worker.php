@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Queue;
@@ -16,8 +17,7 @@ final class Worker
         private readonly JobRegistry $jobs,
         private readonly array $handlers,
         private readonly ?TraceRecorder $traceRecorder = null,
-    ) {
-    }
+    ) {}
 
     public function process(string $queue, int $limit = 1): int
     {

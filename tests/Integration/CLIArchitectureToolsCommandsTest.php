@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Integration;
@@ -211,7 +212,7 @@ PHP);
         $this->assertArrayHasKey('fixture_custom_doctor', $doctor['payload']['checks']);
 
         $codes = array_values(array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             (array) ($doctor['payload']['doctor_diagnostics']['items'] ?? []),
         ));
         $this->assertContains('FDY9901_FIXTURE_DOCTOR_CHECK', $codes);
@@ -245,10 +246,10 @@ PHP);
         $base = $this->project->root . '/app/features/' . $feature;
         mkdir($base . '/tests', 0777, true);
 
-        $permissionsList = '[' . implode(', ', array_map(static fn (string $permission): string => '"' . $permission . '"', $permissions)) . ']';
-        $emitList = '[' . implode(', ', array_map(static fn (string $event): string => '"' . $event . '"', $emit)) . ']';
-        $subscribeList = '[' . implode(', ', array_map(static fn (string $event): string => '"' . $event . '"', $subscribe)) . ']';
-        $testsList = '[' . implode(', ', array_map(static fn (string $kind): string => '"' . $kind . '"', $requiredTests)) . ']';
+        $permissionsList = '[' . implode(', ', array_map(static fn(string $permission): string => '"' . $permission . '"', $permissions)) . ']';
+        $emitList = '[' . implode(', ', array_map(static fn(string $event): string => '"' . $event . '"', $emit)) . ']';
+        $subscribeList = '[' . implode(', ', array_map(static fn(string $event): string => '"' . $event . '"', $subscribe)) . ']';
+        $testsList = '[' . implode(', ', array_map(static fn(string $kind): string => '"' . $kind . '"', $requiredTests)) . ']';
 
         file_put_contents($base . '/feature.yaml', <<<YAML
 version: 2

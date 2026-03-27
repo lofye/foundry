@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Verification;
@@ -8,9 +9,7 @@ use Foundry\Support\Yaml;
 
 final class CacheVerifier
 {
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     public function verify(): VerificationResult
     {

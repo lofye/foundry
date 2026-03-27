@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -12,8 +13,7 @@ final class ApiResourceGenerator
     public function __construct(
         private readonly Paths $paths,
         private readonly ResourceGenerator $resourceGenerator,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Doctor\Checks;
@@ -28,6 +29,9 @@ final class DirectoryHealthCheck implements DoctorCheck
             ['path' => 'app/.foundry/build/projections', 'required' => true],
             ['path' => 'app/.foundry/build/manifests', 'required' => true],
             ['path' => 'app/.foundry/build/diagnostics', 'required' => true],
+            ['path' => 'app/.foundry/build/quality', 'required' => true],
+            ['path' => 'app/.foundry/build/observability', 'required' => true],
+            ['path' => 'app/.foundry/build/history', 'required' => true],
             ['path' => 'app/generated', 'required' => true],
             ['path' => 'database/migrations', 'required' => false],
             ['path' => 'storage/files', 'required' => false],

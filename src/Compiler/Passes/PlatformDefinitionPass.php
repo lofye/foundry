@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Passes;
@@ -909,7 +910,7 @@ final class PlatformDefinitionPass implements CompilerPass
     private function sortedStrings(array $values): array
     {
         $values = array_values(array_map('strval', $values));
-        $values = array_values(array_filter($values, static fn (string $value): bool => $value !== ''));
+        $values = array_values(array_filter($values, static fn(string $value): bool => $value !== ''));
         $values = array_values(array_unique($values));
         sort($values);
 

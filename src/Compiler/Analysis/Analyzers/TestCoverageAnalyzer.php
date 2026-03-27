@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis\Analyzers;
@@ -91,7 +92,7 @@ final class TestCoverageAnalyzer implements GraphAnalyzer
         $missingIntegration = array_values(array_unique($missingIntegration));
         usort(
             $missingKinds,
-            static fn (array $a, array $b): int => strcmp(
+            static fn(array $a, array $b): int => strcmp(
                 (string) ($a['feature'] ?? '') . ':' . (string) ($a['kind'] ?? ''),
                 (string) ($b['feature'] ?? '') . ':' . (string) ($b['kind'] ?? ''),
             ),
@@ -103,4 +104,3 @@ final class TestCoverageAnalyzer implements GraphAnalyzer
         ];
     }
 }
-

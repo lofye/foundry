@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -16,8 +17,14 @@ final class CompatibilityCheckerTest extends TestCase
     public function test_checker_reports_extension_pack_and_definition_conflicts(): void
     {
         $extensionA = new class extends AbstractCompilerExtension {
-            public function name(): string { return 'a-ext'; }
-            public function version(): string { return '1.0.0'; }
+            public function name(): string
+            {
+                return 'a-ext';
+            }
+            public function version(): string
+            {
+                return '1.0.0';
+            }
             public function descriptor(): ExtensionDescriptor
             {
                 return new ExtensionDescriptor(
@@ -50,8 +57,14 @@ final class CompatibilityCheckerTest extends TestCase
         };
 
         $extensionB = new class extends AbstractCompilerExtension {
-            public function name(): string { return 'b-ext'; }
-            public function version(): string { return '1.0.0'; }
+            public function name(): string
+            {
+                return 'b-ext';
+            }
+            public function version(): string
+            {
+                return '1.0.0';
+            }
             public function descriptor(): ExtensionDescriptor
             {
                 return new ExtensionDescriptor(
@@ -88,7 +101,7 @@ final class CompatibilityCheckerTest extends TestCase
         $report = $checker->check('1.2.0', 1);
 
         $this->assertFalse($report->ok);
-        $codes = array_values(array_map(static fn (array $row): string => (string) ($row['code'] ?? ''), $report->diagnostics));
+        $codes = array_values(array_map(static fn(array $row): string => (string) ($row['code'] ?? ''), $report->diagnostics));
         $this->assertContains('FDY7001_INCOMPATIBLE_EXTENSION_VERSION', $codes);
         $this->assertContains('FDY7002_INCOMPATIBLE_GRAPH_VERSION', $codes);
         $this->assertContains('FDY7006_CONFLICTING_NODE_PROVIDER', $codes);
@@ -118,8 +131,14 @@ final class CompatibilityCheckerTest extends TestCase
     public function test_checker_includes_registry_dependency_diagnostics(): void
     {
         $extension = new class extends AbstractCompilerExtension {
-            public function name(): string { return 'dependent'; }
-            public function version(): string { return '1.0.0'; }
+            public function name(): string
+            {
+                return 'dependent';
+            }
+            public function version(): string
+            {
+                return '1.0.0';
+            }
             public function descriptor(): ExtensionDescriptor
             {
                 return new ExtensionDescriptor(
@@ -137,7 +156,7 @@ final class CompatibilityCheckerTest extends TestCase
         $report = $checker->check('1.0.0', 1);
 
         $this->assertFalse($report->ok);
-        $codes = array_values(array_map(static fn (array $row): string => (string) ($row['code'] ?? ''), $report->diagnostics));
+        $codes = array_values(array_map(static fn(array $row): string => (string) ($row['code'] ?? ''), $report->diagnostics));
         $this->assertContains('FDY7014_EXTENSION_DEPENDENCY_MISSING', $codes);
         $this->assertSame([], $report->loadOrder);
     }

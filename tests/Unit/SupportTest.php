@@ -1,13 +1,14 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
 use Foundry\Support\Arr;
+use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
 use Foundry\Support\Str;
 use Foundry\Support\Uuid;
-use Foundry\Support\FoundryError;
 use Foundry\Support\Yaml;
 use PHPUnit\Framework\TestCase;
 

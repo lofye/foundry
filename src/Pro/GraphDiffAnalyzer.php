@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pro;
@@ -75,10 +76,10 @@ final class GraphDiffAnalyzer
                 'changed_edges' => count($changedEdgeIds),
             ],
             'nodes' => [
-                'added' => array_map(fn (string $nodeId): array => $this->summarizeNode($currentNodes[$nodeId]), $addedNodeIds),
-                'removed' => array_map(fn (string $nodeId): array => $this->summarizeNode($baselineNodes[$nodeId]), $removedNodeIds),
+                'added' => array_map(fn(string $nodeId): array => $this->summarizeNode($currentNodes[$nodeId]), $addedNodeIds),
+                'removed' => array_map(fn(string $nodeId): array => $this->summarizeNode($baselineNodes[$nodeId]), $removedNodeIds),
                 'changed' => array_map(
-                    fn (string $nodeId): array => [
+                    fn(string $nodeId): array => [
                         'before' => $this->summarizeNode($baselineNodes[$nodeId]),
                         'after' => $this->summarizeNode($currentNodes[$nodeId]),
                     ],
@@ -86,10 +87,10 @@ final class GraphDiffAnalyzer
                 ),
             ],
             'edges' => [
-                'added' => array_map(fn (string $edgeId): array => $currentEdges[$edgeId]->toArray(), $addedEdgeIds),
-                'removed' => array_map(fn (string $edgeId): array => $baselineEdges[$edgeId]->toArray(), $removedEdgeIds),
+                'added' => array_map(fn(string $edgeId): array => $currentEdges[$edgeId]->toArray(), $addedEdgeIds),
+                'removed' => array_map(fn(string $edgeId): array => $baselineEdges[$edgeId]->toArray(), $removedEdgeIds),
                 'changed' => array_map(
-                    fn (string $edgeId): array => [
+                    fn(string $edgeId): array => [
                         'before' => $baselineEdges[$edgeId]->toArray(),
                         'after' => $currentEdges[$edgeId]->toArray(),
                     ],

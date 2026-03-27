@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Core;
@@ -12,8 +13,7 @@ final class Environment
         private readonly string $name = 'production',
         private readonly bool $debug = false,
         private readonly array $vars = [],
-    ) {
-    }
+    ) {}
 
     public function name(): string
     {

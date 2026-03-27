@@ -1,13 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Migration;
 
 final readonly class ManifestVersionResolver
 {
-    public function __construct(private int $currentFeatureVersion = 2)
-    {
-    }
+    public function __construct(private int $currentFeatureVersion = 2) {}
 
     public function currentFeatureVersion(): int
     {

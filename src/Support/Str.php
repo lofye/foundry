@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Support;
@@ -25,7 +26,7 @@ final class Str
     {
         $value = self::toSnakeCase($value);
         $parts = explode('_', $value);
-        $parts = array_map(static fn (string $part): string => ucfirst($part), $parts);
+        $parts = array_map(static fn(string $part): string => ucfirst($part), $parts);
 
         return implode('', $parts);
     }

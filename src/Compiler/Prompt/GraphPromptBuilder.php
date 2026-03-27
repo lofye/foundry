@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Prompt;
@@ -13,9 +14,7 @@ final readonly class GraphPromptBuilder
     public function __construct(
         private ImpactAnalyzer $impactAnalyzer,
         private string $commandPrefix = 'foundry',
-    )
-    {
-    }
+    ) {}
 
     /**
      * @return array<string,mixed>
@@ -77,7 +76,7 @@ final readonly class GraphPromptBuilder
         }
         usort(
             $edges,
-            static fn (array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
         );
 
         $impact = [];
@@ -86,7 +85,7 @@ final readonly class GraphPromptBuilder
         }
         usort(
             $impact,
-            static fn (array $a, array $b): int => strcmp((string) ($a['node_id'] ?? ''), (string) ($b['node_id'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['node_id'] ?? ''), (string) ($b['node_id'] ?? '')),
         );
 
         $constraints = [
@@ -217,12 +216,12 @@ final readonly class GraphPromptBuilder
         }
         usort(
             $rows,
-            static fn (array $a, array $b): int => ((int) ($b['score'] ?? 0) <=> (int) ($a['score'] ?? 0))
+            static fn(array $a, array $b): int => ((int) ($b['score'] ?? 0) <=> (int) ($a['score'] ?? 0))
                 ?: strcmp((string) ($a['feature'] ?? ''), (string) ($b['feature'] ?? '')),
         );
 
         $features = array_values(array_map(
-            static fn (array $row): string => (string) ($row['feature'] ?? ''),
+            static fn(array $row): string => (string) ($row['feature'] ?? ''),
             $rows,
         ));
 
@@ -236,7 +235,7 @@ final readonly class GraphPromptBuilder
     private function tokenize(string $instruction): array
     {
         $tokens = preg_split('/[^a-z0-9_:\\/.-]+/i', strtolower($instruction)) ?: [];
-        $tokens = array_values(array_filter(array_map('strval', $tokens), static fn (string $token): bool => $token !== ''));
+        $tokens = array_values(array_filter(array_map('strval', $tokens), static fn(string $token): bool => $token !== ''));
         $tokens = array_values(array_unique($tokens));
         sort($tokens);
 
@@ -322,7 +321,7 @@ final readonly class GraphPromptBuilder
 
         usort(
             $plans,
-            static fn (array $a, array $b): int => strcmp((string) ($a['feature'] ?? ''), (string) ($b['feature'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['feature'] ?? ''), (string) ($b['feature'] ?? '')),
         );
 
         return $plans;

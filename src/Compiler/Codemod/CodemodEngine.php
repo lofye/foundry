@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Codemod;
@@ -65,7 +66,7 @@ final class CodemodEngine
             ];
         }
 
-        usort($rows, static fn (array $a, array $b): int => strcmp((string) $a['id'], (string) $b['id']));
+        usort($rows, static fn(array $a, array $b): int => strcmp((string) $a['id'], (string) $b['id']));
 
         return $rows;
     }

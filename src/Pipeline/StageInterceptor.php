@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pipeline;
@@ -15,4 +16,3 @@ interface StageInterceptor
 
     public function isDangerous(): bool;
 }
-

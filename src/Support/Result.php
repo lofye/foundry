@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Support;
@@ -9,8 +10,7 @@ final class Result
         public readonly bool $ok,
         public readonly mixed $value = null,
         public readonly ?string $error = null,
-    ) {
-    }
+    ) {}
 
     public static function ok(mixed $value = null): self
     {

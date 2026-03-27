@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Feature;
@@ -42,9 +43,7 @@ final class FeatureLoader implements FeatureRegistry
      */
     private ?array $interceptors = null;
 
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     #[\Override]
     public function all(): array
@@ -205,7 +204,7 @@ final class FeatureLoader implements FeatureRegistry
         if ($rows !== []) {
             uasort(
                 $rows,
-                static fn (array $a, array $b): int => strcmp((string) ($a['stage'] ?? ''), (string) ($b['stage'] ?? ''))
+                static fn(array $a, array $b): int => strcmp((string) ($a['stage'] ?? ''), (string) ($b['stage'] ?? ''))
                     ?: ((int) ($a['priority'] ?? 0) <=> (int) ($b['priority'] ?? 0))
                     ?: strcmp((string) ($a['id'] ?? ''), (string) ($b['id'] ?? '')),
             );

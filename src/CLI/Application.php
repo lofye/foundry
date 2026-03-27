@@ -1,43 +1,47 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\CLI;
 
 use Foundry\CLI\Commands\CacheClearCommand;
 use Foundry\CLI\Commands\CacheInspectCommand;
-use Foundry\CLI\Commands\GenerateFeatureCommand;
-use Foundry\CLI\Commands\GenerateIndexesCommand;
-use Foundry\CLI\Commands\GenerateScaffoldCommand;
-use Foundry\CLI\Commands\GeneratePlatformCommand;
-use Foundry\CLI\Commands\GenerateIntegrationCommand;
-use Foundry\CLI\Commands\GraphVisualizeCommand;
-use Foundry\CLI\Commands\ImpactCommand;
-use Foundry\CLI\Commands\InitAppCommand;
-use Foundry\CLI\Commands\InspectApiCommand;
-use Foundry\CLI\Commands\InspectGraphCommand;
-use Foundry\CLI\Commands\InspectPlatformCommand;
-use Foundry\CLI\Commands\InspectFeatureCommand;
-use Foundry\CLI\Commands\InspectNotificationCommand;
-use Foundry\CLI\Commands\InspectResourceCommand;
-use Foundry\CLI\Commands\InspectRouteCommand;
-use Foundry\CLI\Commands\MigrateDefinitionsCommand;
+use Foundry\CLI\Commands\CodemodRunCommand;
+use Foundry\CLI\Commands\CompileGraphCommand;
 use Foundry\CLI\Commands\DoctorCommand;
 use Foundry\CLI\Commands\ExportGraphCommand;
 use Foundry\CLI\Commands\ExportOpenApiCommand;
+use Foundry\CLI\Commands\GenerateFeatureCommand;
+use Foundry\CLI\Commands\GenerateIndexesCommand;
+use Foundry\CLI\Commands\GenerateIntegrationCommand;
+use Foundry\CLI\Commands\GeneratePlatformCommand;
+use Foundry\CLI\Commands\GenerateScaffoldCommand;
+use Foundry\CLI\Commands\GraphVisualizeCommand;
+use Foundry\CLI\Commands\HistoryCommand;
+use Foundry\CLI\Commands\ImpactCommand;
+use Foundry\CLI\Commands\InitAppCommand;
+use Foundry\CLI\Commands\InspectApiCommand;
+use Foundry\CLI\Commands\InspectFeatureCommand;
+use Foundry\CLI\Commands\InspectGraphCommand;
+use Foundry\CLI\Commands\InspectNotificationCommand;
+use Foundry\CLI\Commands\InspectPlatformCommand;
+use Foundry\CLI\Commands\InspectResourceCommand;
+use Foundry\CLI\Commands\InspectRouteCommand;
+use Foundry\CLI\Commands\MigrateDefinitionsCommand;
+use Foundry\CLI\Commands\ObserveCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
 use Foundry\CLI\Commands\PromptCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
+use Foundry\CLI\Commands\RegressionsCommand;
 use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
-use Foundry\CLI\Commands\CodemodRunCommand;
-use Foundry\CLI\Commands\CompileGraphCommand;
 use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
-use Foundry\CLI\Commands\VerifyGraphCommand;
-use Foundry\CLI\Commands\VerifyPipelineCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
+use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyIntegrationCommand;
+use Foundry\CLI\Commands\VerifyPipelineCommand;
 use Foundry\CLI\Commands\VerifyPlatformCommand;
 use Foundry\CLI\Commands\VerifyResourceCommand;
 use Foundry\Pro\CLI\DiffCommand;
@@ -74,6 +78,9 @@ final class Application
             new CacheClearCommand(),
             new InspectGraphCommand(),
             new DoctorCommand(),
+            new ObserveCommand(),
+            new HistoryCommand(),
+            new RegressionsCommand(),
             new ExplainCommand(),
             new DiffCommand(),
             new TraceCommand(),
@@ -144,7 +151,7 @@ final class Application
 
             $command = array_find(
                 $this->commands,
-                static fn (Command $candidate): bool => $candidate->matches($args),
+                static fn(Command $candidate): bool => $candidate->matches($args),
             );
 
             if ($command !== null) {

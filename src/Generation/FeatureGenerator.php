@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -16,8 +17,7 @@ final class FeatureGenerator
         private readonly SchemaGenerator $schemas = new SchemaGenerator(),
         private readonly QueryGenerator $queries = new QueryGenerator(),
         private readonly TestGenerator $tests = new TestGenerator(),
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int,string>
@@ -64,7 +64,7 @@ final class FeatureGenerator
 
         $written[] = $this->writeIfAllowed($base . '/cache.yaml', Yaml::dump([
             'version' => 1,
-            'entries' => array_map(static fn (string $key): array => [
+            'entries' => array_map(static fn(string $key): array => [
                 'key' => $key,
                 'kind' => 'computed',
                 'ttl_seconds' => 300,
@@ -74,7 +74,7 @@ final class FeatureGenerator
 
         $written[] = $this->writeIfAllowed($base . '/events.yaml', Yaml::dump([
             'version' => 1,
-            'emit' => array_map(static fn (string $name): array => [
+            'emit' => array_map(static fn(string $name): array => [
                 'name' => $name,
                 'schema' => [
                     'type' => 'object',
@@ -87,7 +87,7 @@ final class FeatureGenerator
 
         $written[] = $this->writeIfAllowed($base . '/jobs.yaml', Yaml::dump([
             'version' => 1,
-            'dispatch' => array_map(static fn (string $name): array => [
+            'dispatch' => array_map(static fn(string $name): array => [
                 'name' => $name,
                 'input_schema' => [
                     'type' => 'object',
@@ -207,7 +207,7 @@ PHP;
         return str_replace(
             ['{{NAMESPACE}}', '{{FEATURE}}'],
             [$namespace, $feature],
-            $template
+            $template,
         );
     }
 

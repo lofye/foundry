@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Extensions;
@@ -6,8 +7,8 @@ namespace Foundry\Compiler\Extensions;
 use Foundry\Compiler\Codemod\Codemod;
 use Foundry\Compiler\Codemod\PlatformDefinitionNormalizeCodemod;
 use Foundry\Compiler\CompilerPass;
-use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Migration\DefinitionFormat;
+use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Passes\PlatformDefinitionPass;
 use Foundry\Compiler\Projection\PlatformProjectionEmitters;
 use Foundry\Compiler\Projection\ProjectionEmitter;

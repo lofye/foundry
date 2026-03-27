@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -27,7 +28,7 @@ final class PermissionAnalyzer implements SectionAnalyzerInterface
             $required[] = (string) ($permission['name'] ?? '');
         }
 
-        $required = array_values(array_filter($required, static fn (string $value): bool => $value !== ''));
+        $required = array_values(array_filter($required, static fn(string $value): bool => $value !== ''));
         sort($required);
 
         $enforcedBy = [];

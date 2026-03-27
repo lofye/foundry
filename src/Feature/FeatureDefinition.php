@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Feature;
@@ -33,8 +34,7 @@ final readonly class FeatureDefinition
         public readonly array $llm,
         public readonly string $basePath,
         public readonly ?string $actionClass = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $data

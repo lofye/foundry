@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Http;
@@ -18,8 +19,7 @@ final class RequestContext
         private readonly array $query = [],
         private readonly array $body = [],
         private readonly array $routeParams = [],
-    ) {
-    }
+    ) {}
 
     public function method(): string
     {

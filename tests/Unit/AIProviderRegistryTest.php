@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -98,6 +99,4 @@ final class AIProviderRegistryTest extends TestCase
     }
 }
 
-final class InvalidAIProviderFactoryMarker
-{
-}
+final class InvalidAIProviderFactoryMarker {}

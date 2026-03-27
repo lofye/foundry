@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -8,9 +9,7 @@ use Foundry\Support\Paths;
 
 final class ContextManifestGenerator
 {
-    public function __construct(private readonly Paths $paths)
-    {
-    }
+    public function __construct(private readonly Paths $paths) {}
 
     /**
      * @param array<string,mixed> $manifest
@@ -35,7 +34,7 @@ final class ContextManifestGenerator
             $featureDir . '/tests/' . $feature . '_auth_test.php',
         ];
 
-        $relevant = array_values(array_filter($relevant, fn (string $path): bool => is_file($this->paths->join($path))));
+        $relevant = array_values(array_filter($relevant, fn(string $path): bool => is_file($this->paths->join($path))));
 
         $generated = [
             'app/.foundry/build/graph/app_graph.json',
@@ -66,7 +65,7 @@ final class ContextManifestGenerator
             (array) (($manifest['database']['queries'] ?? []) !== [] ? ['db'] : []),
             (array) (($manifest['jobs']['dispatch'] ?? []) !== [] ? ['queue'] : []),
             (array) (($manifest['events']['emit'] ?? []) !== [] ? ['events'] : []),
-            (array) (($manifest['cache']['invalidate'] ?? []) !== [] ? ['cache'] : [])
+            (array) (($manifest['cache']['invalidate'] ?? []) !== [] ? ['cache'] : []),
         )));
 
         $data = [
@@ -81,7 +80,7 @@ final class ContextManifestGenerator
                 'input' => $featureDir . '/input.schema.json',
                 'output' => $featureDir . '/output.schema.json',
             ],
-            'tests' => array_values(array_map(static fn (string $name): string => $feature . '_' . $name . '_test', (array) ($manifest['tests']['required'] ?? []))),
+            'tests' => array_values(array_map(static fn(string $name): string => $feature . '_' . $name . '_test', (array) ($manifest['tests']['required'] ?? []))),
             'forbidden_paths' => ['src/Core', 'src/Http'],
             'risk_level' => (string) (($manifest['llm']['risk_level'] ?? $manifest['llm']['risk'] ?? 'medium')),
         ];

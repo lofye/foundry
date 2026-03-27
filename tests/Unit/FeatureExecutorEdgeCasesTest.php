@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -119,7 +120,7 @@ PHP);
             new DefaultEventDispatcher(new EventRegistry(), $trace),
             new LocalStorageDriver($root . '/tmp-storage'),
             $traceContext,
-            new AIManager(['static' => new StaticAIProvider('static', ['content' => 'ok'])])
+            new AIManager(['static' => new StaticAIProvider('static', ['content' => 'ok'])]),
         );
 
         return new FeatureExecutor(
@@ -130,7 +131,7 @@ PHP);
             $services,
             $trace,
             new AuditRecorder(),
-            Paths::fromCwd($root)
+            Paths::fromCwd($root),
         );
     }
 

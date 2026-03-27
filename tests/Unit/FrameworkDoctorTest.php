@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -45,13 +46,13 @@ final class FrameworkDoctorTest extends TestCase
         $report = $this->doctor([
             new MetadataFreshnessCheck(),
             new RuntimeCompatibilityCheck(
-                phpVersionResolver: static fn (): string => '8.3.99',
-                extensionLoadedResolver: static fn (string $extension): bool => $extension !== 'pdo',
+                phpVersionResolver: static fn(): string => '8.3.99',
+                extensionLoadedResolver: static fn(string $extension): bool => $extension !== 'pdo',
             ),
         ], $compiler, $compileResult)->diagnose($this->doctorContext($compiler, $compileResult));
 
         $codes = array_values(array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             (array) ($report['diagnostics']['items'] ?? []),
         ));
         sort($codes);
@@ -78,7 +79,7 @@ final class FrameworkDoctorTest extends TestCase
         ], $compiler, $compileResult)->diagnose($this->doctorContext($compiler, $compileResult));
 
         $codes = array_values(array_map(
-            static fn (array $row): string => (string) ($row['code'] ?? ''),
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
             (array) ($report['diagnostics']['items'] ?? []),
         ));
         sort($codes);

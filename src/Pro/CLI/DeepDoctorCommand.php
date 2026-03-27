@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pro\CLI;
@@ -33,7 +34,7 @@ final class DeepDoctorCommand extends Command
 
         $baseArgs = array_values(array_filter(
             $args,
-            static fn (string $arg): bool => $arg !== '--deep',
+            static fn(string $arg): bool => $arg !== '--deep',
         ));
         $baseContext = new CommandContext($context->paths()->root(), true);
         $base = (new DoctorCommand())->run($baseArgs, $baseContext);
@@ -102,7 +103,7 @@ final class DeepDoctorCommand extends Command
 
         $hotspots = array_values(array_filter(
             (array) ($deep['hotspots'] ?? []),
-            static fn (mixed $row): bool => is_array($row),
+            static fn(mixed $row): bool => is_array($row),
         ));
         if ($hotspots !== []) {
             $lines[] = 'Top hotspots:';

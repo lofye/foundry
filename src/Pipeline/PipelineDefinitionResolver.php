@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pipeline;
@@ -130,10 +131,10 @@ final class PipelineDefinitionResolver
             );
 
             $ordered = $defaultStages;
-            $extras = array_values(array_filter(array_keys($definitions), static fn (string $name): bool => !in_array($name, $defaultStages, true)));
+            $extras = array_values(array_filter(array_keys($definitions), static fn(string $name): bool => !in_array($name, $defaultStages, true)));
             usort(
                 $extras,
-                fn (string $a, string $b): int => ($definitions[$a]->priority <=> $definitions[$b]->priority)
+                fn(string $a, string $b): int => ($definitions[$a]->priority <=> $definitions[$b]->priority)
                     ?: strcmp($a, $b),
             );
             $ordered = array_merge($ordered, $extras);
@@ -216,7 +217,7 @@ final class PipelineDefinitionResolver
         while ($queue !== []) {
             usort(
                 $queue,
-                fn (string $a, string $b): int => ($definitions[$a]->priority <=> $definitions[$b]->priority)
+                fn(string $a, string $b): int => ($definitions[$a]->priority <=> $definitions[$b]->priority)
                     ?: strcmp($a, $b),
             );
             $current = array_shift($queue);
@@ -241,4 +242,3 @@ final class PipelineDefinitionResolver
         return $order;
     }
 }
-

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis\Analyzers;
@@ -113,4 +114,3 @@ final class DeadCodeAnalyzer implements GraphAnalyzer
         ];
     }
 }
-

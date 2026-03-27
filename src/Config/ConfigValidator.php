@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Config;
@@ -154,8 +155,8 @@ final class ConfigValidator
 
         usort(
             $items,
-            static fn (ConfigValidationIssue $a, ConfigValidationIssue $b): int =>
-                strcmp($a->sourcePath ?? '', $b->sourcePath ?? '')
+            static fn(ConfigValidationIssue $a, ConfigValidationIssue $b): int
+                => strcmp($a->sourcePath ?? '', $b->sourcePath ?? '')
                 ?: strcmp($a->configPath ?? '', $b->configPath ?? '')
                 ?: strcmp($a->code, $b->code),
         );

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Generation;
@@ -15,8 +16,7 @@ final class TestGenerator
         private readonly FeatureTestGenerator $feature = new FeatureTestGenerator(),
         private readonly AuthTestGenerator $auth = new AuthTestGenerator(),
         private readonly JobTestGenerator $job = new JobTestGenerator(),
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<int,string> $required

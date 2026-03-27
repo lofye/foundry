@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Queue;
@@ -15,6 +16,5 @@ final readonly class JobDefinition
         public readonly RetryPolicy $retry,
         public readonly int $timeoutSeconds,
         public readonly ?string $idempotencyKey = null,
-    ) {
-    }
+    ) {}
 }

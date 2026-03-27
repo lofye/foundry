@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis\Analyzers;
@@ -90,7 +91,7 @@ final class SchemaIntegrityAnalyzer implements GraphAnalyzer
 
         usort(
             $mismatches,
-            static fn (array $a, array $b): int => strcmp(
+            static fn(array $a, array $b): int => strcmp(
                 (string) ($a['feature'] ?? '') . ':' . (string) ($a['field'] ?? ''),
                 (string) ($b['feature'] ?? '') . ':' . (string) ($b['field'] ?? ''),
             ),
@@ -102,4 +103,3 @@ final class SchemaIntegrityAnalyzer implements GraphAnalyzer
         ];
     }
 }
-

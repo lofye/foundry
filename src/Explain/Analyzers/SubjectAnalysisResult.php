@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Explain\Analyzers;
@@ -14,6 +15,5 @@ final readonly class SubjectAnalysisResult
         public array $responsibilities = [],
         public array $summaryInputs = [],
         public array $sections = [],
-    ) {
-    }
+    ) {}
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Pro\Generation;
@@ -29,8 +30,7 @@ final class AIGenerationService
         private readonly ContractsVerifier $contractsVerifier,
         private readonly WorkflowVerifier $workflowVerifier,
         private readonly AIProviderRegistry $providerRegistry = new AIProviderRegistry(),
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string,mixed> $options

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Integration;
@@ -114,7 +115,7 @@ PHP);
             new DefaultEventDispatcher(new EventRegistry(), $trace),
             new LocalStorageDriver($root . '/tmp-storage'),
             $traceContext,
-            new AIManager(['static' => new StaticAIProvider('static', ['content' => 'ok'])])
+            new AIManager(['static' => new StaticAIProvider('static', ['content' => 'ok'])]),
         );
 
         $executor = new FeatureExecutor(
@@ -125,7 +126,7 @@ PHP);
             $services,
             $trace,
             new AuditRecorder(),
-            Paths::fromCwd($root)
+            Paths::fromCwd($root),
         );
 
         return new HttpKernel($executor, new StructuredLogger());

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
@@ -47,7 +48,7 @@ PHP);
     {
         file_put_contents(
             $this->project->root . '/app/notifications/templates/digest.mail.txt',
-            'Name={{name}};Bool={{enabled}};Null={{optional}};Array={{meta}};Loop={{loop}};'
+            'Name={{name}};Bool={{enabled}};Null={{optional}};Array={{meta}};Loop={{loop}};',
         );
 
         $loop = [];

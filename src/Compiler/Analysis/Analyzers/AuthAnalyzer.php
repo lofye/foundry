@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Foundry\Compiler\Analysis\Analyzers;
@@ -117,11 +118,11 @@ final class AuthAnalyzer implements GraphAnalyzer
 
         usort(
             $unguardedRoutes,
-            static fn (array $a, array $b): int => strcmp(($a['route'] . ':' . $a['feature']), ($b['route'] . ':' . $b['feature'])),
+            static fn(array $a, array $b): int => strcmp(($a['route'] . ':' . $a['feature']), ($b['route'] . ':' . $b['feature'])),
         );
         usort(
             $permissionGaps,
-            static fn (array $a, array $b): int => strcmp((string) ($a['feature'] ?? ''), (string) ($b['feature'] ?? '')),
+            static fn(array $a, array $b): int => strcmp((string) ($a['feature'] ?? ''), (string) ($b['feature'] ?? '')),
         );
 
         return [
@@ -158,4 +159,3 @@ final class AuthAnalyzer implements GraphAnalyzer
         return $granted;
     }
 }
-
