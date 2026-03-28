@@ -9,7 +9,7 @@ Read these pages in order when you want the architecture model:
 - [Architecture Tools](architecture-tools.md)
 - [Contributor Vocabulary](contributor-vocabulary.md)
 
-The generated side of the docs uses the compiled graph to publish:
+The generated side of the docs uses the compiled graph to derive:
 
 - feature and route catalogs
 - schema indexes
@@ -17,4 +17,4 @@ The generated side of the docs uses the compiled graph to publish:
 - CLI surface reference
 - graph metadata snapshots and sample CLI payloads
 
-That lets the static site stay aligned with actual framework structure instead of drifting into hand-maintained reference text.
+That keeps generated reference material aligned with actual framework structure before the website repo renders and publishes the public docs experience.

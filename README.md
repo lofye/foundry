@@ -246,14 +246,24 @@ foundry verify cli-surface --json
 
 Policy details live in `docs/public-api-policy.md` and are also emitted into generated docs as `docs/generated/api-surface.md` and `docs/generated/cli-reference.md`.
 
-## Documentation Site
-Framework documentation is built as a static site from curated pages plus generated graph/schema/CLI reference content:
+## Documentation Boundary
+Canonical framework docs are authored in `docs/` in this repository.
+The website repo imports that authored content plus generated reference material and is the canonical renderer/publisher of public docs and version snapshots.
+
+Refresh framework-side generated reference source files with:
+
+```bash
+php bin/foundry generate docs --format=markdown --json
+php bin/foundry generate docs --format=html --json
+```
+
+Legacy local preview only:
 
 ```bash
 php scripts/build-docs.php
 ```
 
-The build compiles the root app graph, merges `docs/*.md` with generated reference pages, and writes the current site plus versioned snapshots to `public/docs`.
+That helper remains deprecated for framework-local preview output under `public/docs`. Do not use it as the primary publishing path.
 
 ## CLI Surface
 All inspection, verification, and planning commands support `--json`.

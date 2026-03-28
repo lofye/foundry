@@ -84,11 +84,15 @@ MD);
         $this->project->cleanup();
     }
 
-    public function test_builds_static_docs_site_with_current_and_versioned_outputs(): void
+    public function test_builds_legacy_local_preview_site_with_current_and_versioned_outputs(): void
     {
         $builder = new DocsSiteBuilder(Paths::fromCwd($this->project->root), new ApiSurfaceRegistry());
         $result = $builder->build($this->graph(), '0.4.1');
 
+        $this->assertSame('legacy_local_preview', $result['mode']);
+        $this->assertSame('deprecated', $result['deprecation']['status']);
+        $this->assertSame('framework/docs', $result['deprecation']['authoritative_source']);
+        $this->assertSame('website_repo', $result['deprecation']['authoritative_publisher']);
         $this->assertSame('v0.4.1', $result['current_version']);
         $this->assertFileExists($this->project->root . '/public/docs/index.html');
         $this->assertFileExists($this->project->root . '/public/docs/reference.html');
@@ -100,11 +104,14 @@ MD);
         $this->assertFileExists($this->project->root . '/public/docs/versions/v0.4.0/index.html');
 
         $manifest = Json::decodeAssoc((string) file_get_contents($this->project->root . '/public/docs/manifest.json'));
+        $this->assertSame('legacy_local_preview', $manifest['mode']);
+        $this->assertSame('deprecated', $manifest['deprecation']['status']);
         $this->assertSame('v0.4.1', $manifest['current_version']);
         $this->assertSame('v0.4.1', $manifest['versions'][0]['version']);
         $this->assertSame('v0.4.0', $manifest['versions'][1]['version']);
 
         $home = (string) file_get_contents($this->project->root . '/public/docs/index.html');
+        $this->assertStringContainsString('Legacy local preview only.', $home);
         $this->assertStringContainsString('href="quick-tour.html"', $home);
         $this->assertStringContainsString('href="how-it-works.html"', $home);
         $this->assertStringContainsString('href="reference.html"', $home);
@@ -124,7 +131,7 @@ MD);
         $this->assertStringContainsString('href="example-hello-world.html"', $examples);
     }
 
-    public function test_uses_snapshot_sources_for_archived_versions(): void
+    public function test_uses_legacy_snapshot_sources_for_archived_preview_versions(): void
     {
         $builder = new DocsSiteBuilder(Paths::fromCwd($this->project->root), new ApiSurfaceRegistry());
         $builder->build($this->graph(), '0.4.1');
@@ -132,10 +139,14 @@ MD);
         $snapshotIndex = (string) file_get_contents($this->project->root . '/public/docs/versions/v0.4.0/index.html');
         $snapshotReference = (string) file_get_contents($this->project->root . '/public/docs/versions/v0.4.0/reference.html');
         $versionsIndex = (string) file_get_contents($this->project->root . '/public/docs/versions/index.html');
+        $versionsManifest = Json::decodeAssoc((string) file_get_contents($this->project->root . '/public/docs/versions.json'));
 
+        $this->assertSame('legacy_local_preview', $versionsManifest['mode']);
+        $this->assertSame('docs/versions is deprecated as a publishing source. The website repo owns authoritative published version snapshots.', $versionsManifest['deprecation']['snapshot_notice']);
         $this->assertStringContainsString('Foundry Docs v0.4.0', $snapshotIndex);
         $this->assertStringContainsString('Snapshot quick tour content', (string) file_get_contents($this->project->root . '/public/docs/versions/v0.4.0/quick-tour.html'));
         $this->assertStringContainsString('Archived HTML page.', $snapshotReference);
+        $this->assertStringContainsString('Legacy local preview only.', $versionsIndex);
         $this->assertStringContainsString('Framework tag: v0.4.0', $versionsIndex);
         $this->assertStringContainsString('href="../index.html"', $versionsIndex);
     }

@@ -19,7 +19,13 @@ Curated companion pages:
 - [Extensions And Migrations](extensions-and-migrations.md)
 - [Upgrade Safety](upgrade-safety.md)
 
-Build the full static site with:
+Refresh generated reference source files with:
+
+```bash
+php bin/foundry generate docs --format=markdown --json
+```
+
+The website repo renders and publishes the public docs site. Legacy local preview only:
 
 ```bash
 php scripts/build-docs.php

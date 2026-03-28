@@ -1,6 +1,6 @@
 # Quick Tour
 
-The framework docs are organized around the same lifecycle the framework uses internally: author source-of-truth files, compile the graph, inspect reality, verify contracts, and publish static docs.
+The framework docs are organized around the same lifecycle the framework uses internally: author source-of-truth files, compile the graph, inspect reality, verify contracts, and refresh generated reference docs.
 
 ## Short path
 
@@ -17,13 +17,14 @@ php bin/foundry inspect graph --json
 php bin/foundry verify graph --json
 php bin/foundry verify pipeline --json
 php bin/foundry verify contracts --json
-php scripts/build-docs.php
+php bin/foundry generate docs --format=markdown --json
 ```
 
-## What the docs site publishes
+Canonical docs are authored here, but the website repo renders and publishes the public docs site and version snapshots. `php scripts/build-docs.php` remains deprecated and exists only for framework-local preview output.
+
+## What the generated docs cover
 
 - curated landing pages for orientation
 - generated graph snapshots
 - generated schema and feature catalogs
 - generated CLI and API surface reference
-- versioned static output for simple hosting

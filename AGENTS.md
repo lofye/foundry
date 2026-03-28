@@ -143,13 +143,16 @@ If a change would surprise a user or break tooling, it is a contract change.
 •	content/docs/authored/ for website-only docs
 •	content/docs/imported/ for docs synced from framework/docs/
 •	public/docs/ for generated output
+•	The website repo is the only canonical renderer/publisher of public docs and version snapshots.
 •	Do not create duplicate canonical framework docs in content/docs/authored/.
 •	Do not edit imported docs manually.
 •	Website HTML pages in public/*.html belong to the website repo, not the framework repo.
+•	Do not use `scripts/build-docs.php`, `DocsSiteBuilder`, or `docs/versions/` as the primary publishing path; they are deprecated framework-local preview helpers only.
 •	Before moving or deleting docs, audit which docs are actually used by the build pipeline.
 
 ### Docs mental model
 •	framework/docs/ = truth
+•	framework/docs/versions/ = deprecated legacy preview snapshot input, not published source of record
 •	website/content/docs/imported/ = synced copy
 •	website/content/docs/authored/ = website-only authored docs
 •	website/public/docs/ = generated output

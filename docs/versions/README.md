@@ -1,8 +1,10 @@
-# Version Snapshots
+# Version Snapshot Legacy Inputs
 
-Archived documentation snapshots live under `docs/versions/<framework-tag>/`.
+`docs/versions/` is deprecated as a framework-side publishing source.
 
-The docs builder scans each version directory and publishes it to `public/docs/versions/<framework-tag>/`.
+Canonical authored docs live in `docs/`.
+The website repo owns public rendering/publishing and the authoritative published version snapshots.
+If this directory is retained temporarily, treat it only as legacy input for the deprecated framework-local preview helper in `scripts/build-docs.php`.
 
 Recommended snapshot page names:
 
@@ -12,3 +14,4 @@ Recommended snapshot page names:
 - `reference.md`
 
 Generated snapshot material can also be stored under nested paths such as `generated/features.md` or `generated/cli-reference.md`.
+Do not treat anything here as the published source of record.

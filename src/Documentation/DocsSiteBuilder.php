@@ -9,8 +9,15 @@ use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\Json;
 use Foundry\Support\Paths;
 
+/**
+ * Deprecated legacy local preview builder. Public docs rendering/publishing lives in the website repo.
+ */
 final class DocsSiteBuilder
 {
+    private const BUILD_MODE = 'legacy_local_preview';
+    private const PREVIEW_NOTICE = 'Legacy local preview only. Author canonical docs in framework/docs; render and publish public docs from the website repo.';
+    private const SNAPSHOT_NOTICE = 'docs/versions is deprecated as a publishing source. The website repo owns authoritative published version snapshots.';
+
     private readonly MarkdownPageRenderer $renderer;
     private readonly GraphDocsGenerator $graphDocsGenerator;
 
@@ -33,6 +40,7 @@ final class DocsSiteBuilder
         $snapshotVersions = $this->loadSnapshotVersions();
         $versions = $this->versionRows($version, array_keys($snapshotVersions));
         $outputRoot = $this->paths->join('public/docs');
+        $previewMetadata = $this->legacyPreviewMetadata();
 
         $this->ensureDirectory($outputRoot);
 
@@ -79,6 +87,8 @@ final class DocsSiteBuilder
         );
 
         $manifest = [
+            'mode' => self::BUILD_MODE,
+            'deprecation' => $previewMetadata,
             'current_version' => $version,
             'versions' => $versions,
             'root' => $outputRoot,
@@ -87,9 +97,15 @@ final class DocsSiteBuilder
         ];
 
         file_put_contents($outputRoot . '/manifest.json', Json::encode($manifest, true) . "\n");
-        file_put_contents($outputRoot . '/versions.json', Json::encode(['versions' => $versions], true) . "\n");
+        file_put_contents($outputRoot . '/versions.json', Json::encode([
+            'mode' => self::BUILD_MODE,
+            'deprecation' => $previewMetadata,
+            'versions' => $versions,
+        ], true) . "\n");
 
         return [
+            'mode' => self::BUILD_MODE,
+            'deprecation' => $previewMetadata,
             'output_root' => $outputRoot,
             'current_version' => $version,
             'versions' => $versions,
@@ -270,6 +286,8 @@ final class DocsSiteBuilder
         }
 
         $manifest = [
+            'mode' => self::BUILD_MODE,
+            'deprecation' => $this->legacyPreviewMetadata(),
             'version' => $siteVersion,
             'current_version' => $currentVersion,
             'pages' => $pageRows,
@@ -278,6 +296,7 @@ final class DocsSiteBuilder
         file_put_contents($outputRoot . '/manifest.json', Json::encode($manifest, true) . "\n");
 
         return [
+            'mode' => self::BUILD_MODE,
             'version' => $siteVersion,
             'root' => $outputRoot,
             'files' => $written,
@@ -305,6 +324,7 @@ final class DocsSiteBuilder
         $versionLinks = $this->renderVersionLinks($versions, $currentVersion, $siteVersion, $context);
         $versionLabel = htmlspecialchars($siteVersion, ENT_QUOTES);
         $title = htmlspecialchars((string) $page['title'], ENT_QUOTES);
+        $previewNotice = $this->renderPreviewNotice();
 
         return <<<HTML
 <!doctype html>
@@ -324,6 +344,7 @@ final class DocsSiteBuilder
       </div>
       {$mainNav}
     </header>
+    {$previewNotice}
     <div class="version-strip">
       {$versionLinks}
     </div>
@@ -359,6 +380,7 @@ HTML;
 
         $cardsHtml = implode("\n", $cards);
         $currentLabel = htmlspecialchars($currentVersion, ENT_QUOTES);
+        $previewNotice = $this->renderPreviewNotice();
 
         return <<<HTML
 <!doctype html>
@@ -384,6 +406,7 @@ HTML;
         <a class="active" href="index.html">Versions</a>
       </nav>
     </header>
+    {$previewNotice}
     <main class="versions-grid">
       {$cardsHtml}
     </main>
@@ -818,6 +841,26 @@ HTML;
         }
     }
 
+    /**
+     * @return array<string,string>
+     */
+    private function legacyPreviewMetadata(): array
+    {
+        return [
+            'status' => 'deprecated',
+            'mode' => self::BUILD_MODE,
+            'message' => self::PREVIEW_NOTICE,
+            'authoritative_source' => 'framework/docs',
+            'authoritative_publisher' => 'website_repo',
+            'snapshot_notice' => self::SNAPSHOT_NOTICE,
+        ];
+    }
+
+    private function renderPreviewNotice(): string
+    {
+        return '<p class="preview-notice">' . htmlspecialchars(self::PREVIEW_NOTICE, ENT_QUOTES) . '</p>';
+    }
+
     private function writeAssets(string $root): void
     {
         $assets = $root . '/assets';
@@ -857,6 +900,17 @@ a:hover { text-decoration: underline; }
   max-width: 1280px;
   margin: 0 auto;
   padding: 32px 20px 48px;
+}
+
+.preview-notice {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(135, 92, 47, 0.26);
+  background: rgba(255, 247, 235, 0.92);
+  color: #5c3d1f;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  font-size: 0.98rem;
 }
 
 .site-header,
