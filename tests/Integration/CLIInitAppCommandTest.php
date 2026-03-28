@@ -42,12 +42,18 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertSame('standard', $result['payload']['starter_mode']);
         $this->assertContains('dashboard', $result['payload']['features']);
         $this->assertContains('GET /dashboard', $result['payload']['routes']);
+        $this->assertContains($target . '/AGENTS.md', $result['payload']['files_written']);
+        $this->assertContains($target . '/README.md', $result['payload']['files_written']);
+        $this->assertNotContains($target . '/APP-AGENTS.md', $result['payload']['files_written']);
+        $this->assertNotContains($target . '/APP-README.md', $result['payload']['files_written']);
         $this->assertContains('foundry compile graph --json', $result['payload']['next_steps']);
         $this->assertContains('foundry doctor --json', $result['payload']['next_steps']);
         $this->assertContains('php vendor/bin/phpunit -c phpunit.xml.dist', $result['payload']['next_steps']);
 
         $this->assertFileExists($target . '/AGENTS.md');
         $this->assertFileExists($target . '/README.md');
+        $this->assertFileDoesNotExist($target . '/APP-AGENTS.md');
+        $this->assertFileDoesNotExist($target . '/APP-README.md');
         $this->assertFileExists($target . '/composer.json');
         $this->assertFileExists($target . '/foundry');
         $this->assertFileExists($target . '/foundry.bat');
@@ -199,6 +205,27 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertFileExists($target . '/config/database.php');
         $this->assertFileExists($target . '/database/migrations/.gitignore');
         $this->assertFileExists($target . '/storage/logs/.gitignore');
+    }
+
+    public function test_new_command_replaces_existing_root_guides_when_force_scaffolding(): void
+    {
+        $app = new Application();
+        $target = $this->project->root . '/force-guides';
+        mkdir($target, 0777, true);
+        file_put_contents($target . '/AGENTS.md', "legacy agents\n");
+        file_put_contents($target . '/README.md', "legacy readme\n");
+
+        $result = $this->runCommand($app, ['foundry', 'new', $target, '--force', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertFileExists($target . '/AGENTS.md');
+        $this->assertFileExists($target . '/README.md');
+        $this->assertFileDoesNotExist($target . '/APP-AGENTS.md');
+        $this->assertFileDoesNotExist($target . '/APP-README.md');
+        $this->assertStringContainsString('prefer `foundry ...`', (string) file_get_contents($target . '/AGENTS.md'));
+        $this->assertStringContainsString('Start with `AGENTS.md`.', (string) file_get_contents($target . '/README.md'));
+        $this->assertStringNotContainsString('legacy agents', (string) file_get_contents($target . '/AGENTS.md'));
+        $this->assertStringNotContainsString('legacy readme', (string) file_get_contents($target . '/README.md'));
     }
 
     public function test_new_command_merges_existing_composer_bootstrap_and_clears_stale_lockfile(): void

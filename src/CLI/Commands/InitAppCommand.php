@@ -18,6 +18,9 @@ use Foundry\Support\Paths;
 
 final class InitAppCommand extends Command
 {
+    private const APP_AGENTS_TEMPLATE = 'APP-AGENTS.md';
+    private const APP_README_TEMPLATE = 'APP-README.md';
+
     #[\Override]
     public function supportedSignatures(): array
     {
@@ -199,6 +202,10 @@ final class InitAppCommand extends Command
             '{{AUTH_HINT}}' => $this->starterAuthHint($starterMode),
             '{{ROUTE_SUMMARY}}' => $this->routeSummaryMarkdown($featureSpecs),
         ];
+        $appGuideFiles = [
+            self::APP_AGENTS_TEMPLATE => $this->loadScaffoldTemplate($paths, self::APP_AGENTS_TEMPLATE, $placeholders),
+            self::APP_README_TEMPLATE => $this->loadScaffoldTemplate($paths, self::APP_README_TEMPLATE, $placeholders),
+        ];
 
         $composer = [
             'name' => $projectName,
@@ -230,7 +237,7 @@ final class InitAppCommand extends Command
         ];
         $composer = $this->mergedComposerConfig($paths, $composer);
 
-        $files = [
+        $files = array_merge([
             '.gitignore' => <<<'TXT'
 /vendor/
 /.phpunit.cache/
@@ -256,116 +263,7 @@ APP_DEBUG=1
 FOUNDRY_AUTH_HEADER=x-user-id
 ENV, $placeholders)
             ,
-            'AGENTS.md' => <<<'MD'
-# Foundry App Agent Guide
-
-Use this file when working inside a Foundry application repository.
-
-## Command Rule
-
-- In Foundry app repos, prefer `foundry ...`
-- If your shell does not resolve current-directory executables, use `./foundry ...`
-- Prefer `--json` for inspect, verify, doctor, prompt, export, and generation commands when an agent is consuming the output
-
-## Source Of Truth
-
-- Treat `app/features/*` as source-of-truth application behavior
-- Treat `app/definitions/*` as source-of-truth definitions when that folder exists
-- Treat `app/.foundry/build/*` as canonical compiled output
-- Treat `app/generated/*` as generated compatibility projections
-- Treat `docs/generated/*` and `docs/inspect-ui/*` as generated documentation output
-- Do not hand-edit `app/generated/*`; regenerate instead
-
-## Safe Edit Loop
-
-1. Inspect current feature and graph reality before editing.
-2. Edit the smallest source-of-truth files that satisfy the task.
-3. Compile graph and inspect diagnostics.
-4. Inspect impact, pipeline, and route surfaces when the change touches auth, routes, docs, or execution order.
-5. Verify graph and contract surfaces.
-6. Refresh generated docs if source-of-truth changed.
-7. Run PHPUnit.
-
-## Guard Rails
-
-- When a bug is encountered, create a test that fails because of that bug, then modify the non-test code so that the test passes while maintaining the intent of the original code.
-- Never take a shortcut (such as forcing a test falsely return true) to get a test to pass.
-- Keep test coverage above 90% for all new features and existing code.
-
-Recommended command loop:
-
-```bash
-foundry inspect graph --json
-foundry inspect pipeline --json
-foundry inspect feature <feature> --json
-foundry inspect context <feature> --json
-foundry compile graph --json
-foundry inspect impact --file=app/features/<feature>/feature.yaml --json
-foundry doctor --feature=<feature> --json
-foundry generate docs --format=markdown --json
-foundry generate inspect-ui --json
-foundry verify graph --json
-foundry verify pipeline --json
-foundry verify contracts --json
-php vendor/bin/phpunit -c phpunit.xml.dist
-```
-
-## App Rules
-
-- Keep changes feature-local unless the task is explicitly cross-cutting platform work
-- Update feature tests and calling code together when contracts or schemas change
-- Preserve explicit manifests, schemas, and context files; avoid hidden behavior
-- Use feature-local `prompts.md` and `context.manifest.json` when present to understand the feature before editing
-
-## Ask First
-
-Stop and ask before:
-- hand-editing generated files
-- changing app-wide conventions, package dependencies, or generated scaffold structure without approval
-- making a behavior choice when the requested behavior is ambiguous or conflicts with the existing feature contract
-MD
-            ,
-            'README.md' => $this->replace(<<<'MD'
-# {{DISPLAY_NAME}}
-
-This Foundry project was scaffolded in `{{STARTER_LABEL}}` mode.
-
-{{STARTER_SUMMARY}}
-
-## Working With LLMs
-
-Start with `AGENTS.md`. It defines the repo-local workflow and command rules for AI assistants working in this app.
-
-## First Run
-
-Foundry scaffolds a project-local `foundry` launcher. If your shell does not resolve current-directory executables, use `./foundry ...` instead.
-
-```bash
-composer install
-foundry compile graph --json
-foundry inspect graph --json
-foundry inspect pipeline --json
-foundry doctor --json
-foundry generate docs --format=markdown --json
-foundry generate inspect-ui --json
-foundry verify graph --json
-foundry verify pipeline --json
-foundry verify contracts --json
-php vendor/bin/phpunit -c phpunit.xml.dist
-php -S 127.0.0.1:8000 public/index.php
-```
-
-## Starter Routes
-
-{{ROUTE_SUMMARY}}
-
-## Inspectability
-
-- Generated graph docs: `docs/generated`
-- Generated inspect UI: `docs/inspect-ui`
-- Source definition example: `app/definitions/inspect-ui/dev.inspect-ui.yaml`
-- {{AUTH_HINT}}
-MD, $placeholders),
+        ], $appGuideFiles, [
             'composer.json' => Json::encode($composer, true) . "\n",
             'foundry' => <<<'PHP'
 #!/usr/bin/env php
@@ -578,7 +476,7 @@ require_auth: false
 sections: [features, routes, schemas, auth, jobs, events, caches, contexts]
 YAML
             ,
-        ];
+        ]);
 
         $written = [];
         foreach ($files as $relativePath => $content) {
@@ -595,6 +493,7 @@ YAML
             $written[] = $absolute;
         }
 
+        $written = $this->promoteAppGuideTemplates($paths, $written);
         sort($written);
 
         return $written;
@@ -1345,6 +1244,86 @@ PHP,
         }
 
         return $merged;
+    }
+
+    /**
+     * @param array<string,string> $replacements
+     */
+    private function loadScaffoldTemplate(Paths $paths, string $relativePath, array $replacements): string
+    {
+        $templatePath = $paths->frameworkJoin($relativePath);
+        if (!is_file($templatePath)) {
+            throw new FoundryError(
+                'CLI_INIT_APP_TEMPLATE_MISSING',
+                'not_found',
+                ['path' => $templatePath],
+                sprintf('Scaffold template file not found: %s', $relativePath),
+            );
+        }
+
+        $template = file_get_contents($templatePath);
+        if ($template === false) {
+            throw new FoundryError(
+                'CLI_INIT_APP_TEMPLATE_UNREADABLE',
+                'io',
+                ['path' => $templatePath],
+                sprintf('Unable to read scaffold template file: %s', $relativePath),
+            );
+        }
+
+        return $this->replace($template, $replacements);
+    }
+
+    /**
+     * @param array<int,string> $written
+     * @return array<int,string>
+     */
+    private function promoteAppGuideTemplates(Paths $paths, array $written): array
+    {
+        $promotions = [
+            self::APP_AGENTS_TEMPLATE => 'AGENTS.md',
+            self::APP_README_TEMPLATE => 'README.md',
+        ];
+
+        foreach ($promotions as $sourceRelativePath => $targetRelativePath) {
+            $sourcePath = $paths->join($sourceRelativePath);
+            $targetPath = $paths->join($targetRelativePath);
+
+            if (!is_file($sourcePath)) {
+                throw new FoundryError(
+                    'CLI_INIT_APP_PROMOTION_SOURCE_MISSING',
+                    'not_found',
+                    ['path' => $sourcePath],
+                    sprintf('Scaffold promotion source missing: %s', $sourceRelativePath),
+                );
+            }
+
+            if (file_exists($targetPath) && !@unlink($targetPath)) {
+                throw new FoundryError(
+                    'CLI_INIT_APP_PROMOTION_TARGET_UNLINK_FAILED',
+                    'io',
+                    ['path' => $targetPath],
+                    sprintf('Unable to replace scaffolded file: %s', $targetRelativePath),
+                );
+            }
+
+            if (!@rename($sourcePath, $targetPath)) {
+                throw new FoundryError(
+                    'CLI_INIT_APP_PROMOTION_RENAME_FAILED',
+                    'io',
+                    ['from' => $sourcePath, 'to' => $targetPath],
+                    sprintf('Unable to promote scaffold template %s to %s.', $sourceRelativePath, $targetRelativePath),
+                );
+            }
+
+            $written = array_values(array_filter(
+                $written,
+                static fn(string $path): bool => $path !== $sourcePath,
+            ));
+            $written[] = $targetPath;
+        }
+
+        return $written;
     }
 
     private function displayName(string $targetPath): string

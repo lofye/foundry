@@ -2,7 +2,7 @@
 
 Use this file when working in the Foundry framework repository itself.
 
-For generated Foundry application repos, use the scaffolded app-level `AGENTS.md`, not this file.
+When a developer creates an application using Foundry, the `APP-AGENTS.md` file's contents will overwrite `AGENTS.md`, and the `APP-README.md` file's contents will overwrite `README.md`
 
 ## Philosophy
 
@@ -30,7 +30,8 @@ The root `app/*` tree is a framework-owned demo and smoke app used for compile a
 
 - Treat `src/*` as the source of truth for framework behavior
 - Treat `tests/*` as the source of truth for expected framework behavior
-- Treat `src/CLI/Commands/InitAppCommand.php` as the source of truth for the default app scaffold
+- Treat `src/CLI/Commands/InitAppCommand.php`, `APP-AGENTS.md`, and `APP-README.md` as the source of truth for the default app scaffold and app onboarding copy
+- Treat `README.md` as the source of truth for framework-level onboarding and contributor guidance
 - Treat `stubs/*` as source templates only when a generator actually reads them
 - Do not hand-edit `app/generated/*`; regenerate from the source feature files
 - Do not patch emitted build artifacts to make tests pass; fix the generator, compiler, verifier, or source inputs instead
@@ -68,10 +69,18 @@ php bin/foundry doctor --feature=<feature> --json
 - Keep framework changes minimal and explicit
 - Preserve deterministic CLI and JSON output shapes unless the task explicitly changes them
 - If you change a command, verifier, export, scaffold, or docs generator, update the corresponding tests in the same change
-- If you change scaffolded app defaults, keep the scaffolded `README.md`, scaffolded `AGENTS.md`, and init-app tests aligned
+- If you change scaffolded app defaults, keep `APP-README.md`, `APP-AGENTS.md`, the promoted app `README.md` and `AGENTS.md` behavior, and init-app tests aligned
+- If you change framework onboarding, command loops, starter guidance, or user-visible workflow docs, review `README.md`, `APP-README.md`, and `APP-AGENTS.md` together and update every file whose guidance is now stale
 - If you change compiler or projection behavior, update both verification coverage and integration coverage
 - Do not add app-specific policy to framework internals unless it is meant to be scaffolded into every app
 - Renderers must never access graph, compiler, or runtime state directly; they consume only assembled plan data
+
+## Scaffold Doc Sync
+
+- `APP-AGENTS.md` and `APP-README.md` live beside the framework `AGENTS.md` and `README.md` so scaffolded app guidance stays easy to inspect and update
+- Generated apps must end with `AGENTS.md` and `README.md`; if scaffold promotion behavior changes, keep the promotion logic, template files, and init-app tests aligned
+- When framework commands, directory conventions, starter modes, inspect/verify flows, or testing guidance change, update the framework `README.md` plus any matching guidance in `APP-AGENTS.md` and `APP-README.md` in the same change
+- Do not update one of these onboarding files in isolation when the same guidance appears in the others
 
 ## Frozen Contracts
 
