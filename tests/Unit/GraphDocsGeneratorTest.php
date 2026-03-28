@@ -79,10 +79,13 @@ final class GraphDocsGeneratorTest extends TestCase
         $featuresHtml = file_get_contents($this->project->root . '/docs/generated/features.html') ?: '';
 
         $this->assertStringContainsString('# Graph Overview', $graphOverviewMd);
+        $this->assertStringContainsString('Architecture Explorer', $graphOverviewMd);
         $this->assertStringContainsString('inspect graph --json', $graphOverviewMd);
         $this->assertStringContainsString('# Feature Catalog', $featuresMd);
         $this->assertStringContainsString('## list_posts', $featuresMd);
+        $this->assertStringContainsString('architecture-explorer.html?node=feature%3Alist_posts', $featuresMd);
         $this->assertStringContainsString('GET /posts', $routesMd);
+        $this->assertStringContainsString('architecture-explorer.html?node=route%3AGET%3A%2Fposts', $routesMd);
         $this->assertStringContainsString('# API Surface Policy', $apiSurfaceMd);
         $this->assertStringContainsString('Foundry\\Feature\\', $apiSurfaceMd);
         $this->assertStringContainsString('# CLI Reference', $cliReferenceMd);

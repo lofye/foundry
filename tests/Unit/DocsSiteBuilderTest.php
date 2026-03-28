@@ -98,6 +98,7 @@ MD);
         $this->assertFileExists($this->project->root . '/public/docs/reference.html');
         $this->assertFileExists($this->project->root . '/public/docs/features.html');
         $this->assertFileExists($this->project->root . '/public/docs/graph-overview.html');
+        $this->assertFileExists($this->project->root . '/public/docs/architecture-explorer.html');
         $this->assertFileExists($this->project->root . '/public/docs/example-hello-world.html');
         $this->assertFileExists($this->project->root . '/public/docs/versions/index.html');
         $this->assertFileExists($this->project->root . '/public/docs/versions/v0.4.1/index.html');
@@ -109,6 +110,7 @@ MD);
         $this->assertSame('v0.4.1', $manifest['current_version']);
         $this->assertSame('v0.4.1', $manifest['versions'][0]['version']);
         $this->assertSame('v0.4.0', $manifest['versions'][1]['version']);
+        $this->assertContains('architecture-explorer.html', array_column((array) $manifest['pages'], 'path'));
 
         $home = (string) file_get_contents($this->project->root . '/public/docs/index.html');
         $this->assertStringContainsString('Legacy local preview only.', $home);
@@ -129,6 +131,13 @@ MD);
 
         $examples = (string) file_get_contents($this->project->root . '/public/docs/example-applications.html');
         $this->assertStringContainsString('href="example-hello-world.html"', $examples);
+
+        $explorer = (string) file_get_contents($this->project->root . '/public/docs/architecture-explorer.html');
+        $this->assertStringContainsString('Architecture Explorer', $explorer);
+        $this->assertStringContainsString('architecture-graph-data', $explorer);
+        $this->assertStringContainsString('Search node name, type, or label', $explorer);
+        $this->assertStringContainsString('feature:list_posts', $explorer);
+        $this->assertStringContainsString('Open related docs page', $explorer);
     }
 
     public function test_uses_legacy_snapshot_sources_for_archived_preview_versions(): void

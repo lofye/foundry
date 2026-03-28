@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Foundry\Documentation;
 
 use Foundry\Compiler\ApplicationGraph;
+use Foundry\Compiler\Diagnostics\DiagnosticBag;
+use Foundry\Compiler\Extensions\ExtensionRegistry;
 use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\Json;
 use Foundry\Support\Paths;
@@ -37,6 +39,7 @@ final class DocsSiteBuilder
         $version = $this->normalizeVersion($currentVersion ?? $graph->frameworkVersion());
         $generated = $this->graphDocsGenerator->documents($graph);
         $currentPages = $this->loadCurrentPages($generated);
+        $currentPages['architecture-explorer'] = $this->architectureExplorerPage($graph);
         $snapshotVersions = $this->loadSnapshotVersions();
         $versions = $this->versionRows($version, array_keys($snapshotVersions));
         $outputRoot = $this->paths->join('public/docs');
@@ -172,6 +175,1002 @@ final class DocsSiteBuilder
         }
 
         return $pages;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function architectureExplorerPage(ApplicationGraph $graph): array
+    {
+        $catalog = $this->catalogBySlug()['architecture-explorer'] ?? [];
+
+        return [
+            'slug' => 'architecture-explorer',
+            'title' => (string) ($catalog['title'] ?? 'Architecture Explorer'),
+            'section' => (string) ($catalog['section'] ?? 'Architecture'),
+            'main_navigation' => false,
+            'order' => (int) ($catalog['order'] ?? 0),
+            'type' => 'html',
+            'source_path' => 'generated/architecture-explorer.html',
+            'content' => $this->architectureExplorerContent($graph),
+        ];
+    }
+
+    private function architectureExplorerContent(ApplicationGraph $graph): string
+    {
+        $dataJson = htmlspecialchars(Json::encode($this->architectureExplorerData($graph), true), ENT_NOQUOTES);
+
+        $template = <<<'HTML'
+<section class="architecture-explorer" id="architecture-explorer">
+  <div class="architecture-explorer__header">
+    <h1>Architecture Explorer</h1>
+    <p>Read-only, deterministic graph view generated from the compiled Foundry graph JSON. Search highlights matching nodes, filters narrow the view, and selecting a node reveals dependencies, dependents, and related docs.</p>
+  </div>
+
+  <div class="architecture-explorer__toolbar">
+    <label class="architecture-explorer__field">
+      <span>Search</span>
+      <input id="architecture-explorer-search" type="search" placeholder="Search node name, type, or label">
+    </label>
+    <label class="architecture-explorer__field">
+      <span>Extension</span>
+      <select id="architecture-explorer-extension">
+        <option value="">All extensions</option>
+      </select>
+    </label>
+    <label class="architecture-explorer__field">
+      <span>Pipeline Stage</span>
+      <select id="architecture-explorer-pipeline">
+        <option value="">All stages</option>
+      </select>
+    </label>
+  </div>
+
+  <fieldset class="architecture-explorer__types">
+    <legend>Type Filters</legend>
+    <label><input type="checkbox" name="architecture-node-type" value="feature"> Feature</label>
+    <label><input type="checkbox" name="architecture-node-type" value="route"> Route</label>
+    <label><input type="checkbox" name="architecture-node-type" value="workflow"> Workflow</label>
+    <label><input type="checkbox" name="architecture-node-type" value="event"> Event</label>
+    <label><input type="checkbox" name="architecture-node-type" value="schema"> Schema</label>
+    <label><input type="checkbox" name="architecture-node-type" value="command"> Command</label>
+    <label><input type="checkbox" name="architecture-node-type" value="extension"> Extension</label>
+  </fieldset>
+
+  <p class="architecture-explorer__summary" id="architecture-explorer-summary">Loading graph...</p>
+
+  <div class="architecture-explorer__layout">
+    <div class="architecture-explorer__canvas">
+      <svg id="architecture-explorer-svg" viewBox="0 0 1600 960" role="img" aria-label="Interactive Foundry architecture graph"></svg>
+    </div>
+    <aside class="architecture-explorer__details" id="architecture-explorer-details">
+      <h2>Node Details</h2>
+      <p>Select a node to inspect its metadata, dependencies, dependents, and related docs.</p>
+    </aside>
+  </div>
+</section>
+
+<script id="architecture-graph-data" type="application/json">__ARCHITECTURE_GRAPH_DATA__</script>
+<script>
+(() => {
+  const dataElement = document.getElementById('architecture-graph-data');
+  const svg = document.getElementById('architecture-explorer-svg');
+  const details = document.getElementById('architecture-explorer-details');
+  const summary = document.getElementById('architecture-explorer-summary');
+  const searchInput = document.getElementById('architecture-explorer-search');
+  const extensionSelect = document.getElementById('architecture-explorer-extension');
+  const pipelineSelect = document.getElementById('architecture-explorer-pipeline');
+  const typeInputs = Array.from(document.querySelectorAll('input[name="architecture-node-type"]'));
+  const svgNamespace = 'http://www.w3.org/2000/svg';
+  const layoutOrder = ['feature', 'route', 'command', 'workflow', 'event', 'schema', 'job', 'cache', 'pipeline_stage', 'guard', 'interceptor', 'permission', 'extension', 'other'];
+  const pipelineEdgeTypes = new Set([
+    'pipeline_stage_next',
+    'feature_to_execution_plan',
+    'route_to_execution_plan',
+    'execution_plan_to_stage',
+    'execution_plan_to_guard',
+    'execution_plan_to_interceptor',
+    'feature_to_guard',
+    'guard_to_pipeline_stage',
+    'interceptor_to_pipeline_stage',
+    'execution_plan_to_feature_action'
+  ]);
+
+  if (!dataElement || !svg || !details || !summary || !searchInput || !extensionSelect || !pipelineSelect) {
+    return;
+  }
+
+  const explorerData = JSON.parse(dataElement.textContent || '{}');
+  const rawGraph = isObject(explorerData.graph) ? explorerData.graph : { nodes: [], edges: [] };
+  const nodes = Array.isArray(rawGraph.nodes) ? rawGraph.nodes.map(normalizeNode) : [];
+  const edges = Array.isArray(rawGraph.edges) ? rawGraph.edges.map(normalizeEdge) : [];
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const positions = buildPositions(nodes);
+  const bounds = layoutBounds(nodes, positions);
+  const stageCache = new Map();
+
+  populateSelect(extensionSelect, Array.isArray(explorerData.extensions) ? explorerData.extensions : [], 'All extensions');
+  populateSelect(pipelineSelect, Array.isArray(explorerData.pipeline_stages) ? explorerData.pipeline_stages : [], 'All stages');
+
+  const initialNodeId = initialNodeFromLocation();
+  const state = {
+    search: '',
+    extension: '',
+    pipeline: '',
+    selectedNodeId: nodeById.has(initialNodeId) ? initialNodeId : null,
+  };
+
+  searchInput.addEventListener('input', () => {
+    state.search = String(searchInput.value || '');
+    render();
+  });
+
+  extensionSelect.addEventListener('change', () => {
+    state.extension = String(extensionSelect.value || '');
+    render();
+  });
+
+  pipelineSelect.addEventListener('change', () => {
+    state.pipeline = String(pipelineSelect.value || '');
+    render();
+  });
+
+  typeInputs.forEach((input) => {
+    input.addEventListener('change', render);
+  });
+
+  details.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-node-id]');
+    if (!(button instanceof HTMLElement)) {
+      return;
+    }
+
+    const nodeId = button.getAttribute('data-node-id');
+    if (!nodeId || !nodeById.has(nodeId)) {
+      return;
+    }
+
+    state.selectedNodeId = nodeId;
+    syncLocation();
+    render();
+  });
+
+  render();
+
+  function render() {
+    const visibleNodes = nodes.filter(matchesFilters);
+    const visibleNodeIds = new Set(visibleNodes.map((node) => node.id));
+    const visibleEdges = edges.filter((edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to));
+
+    if (state.selectedNodeId !== null && !visibleNodeIds.has(state.selectedNodeId)) {
+      state.selectedNodeId = null;
+    }
+
+    const selectedNode = state.selectedNodeId !== null ? nodeById.get(state.selectedNodeId) || null : null;
+    const dependencyIds = new Set(selectedNode ? selectedNode.dependencies : []);
+    const dependentIds = new Set(selectedNode ? selectedNode.dependents : []);
+    const relatedIds = new Set();
+
+    if (selectedNode) {
+      relatedIds.add(selectedNode.id);
+      dependencyIds.forEach((nodeId) => relatedIds.add(nodeId));
+      dependentIds.forEach((nodeId) => relatedIds.add(nodeId));
+    }
+
+    const searchQuery = state.search.trim().toLowerCase();
+    const matchIds = new Set(
+      visibleNodes
+        .filter((node) => searchQuery !== '' && node.searchText.includes(searchQuery))
+        .map((node) => node.id)
+    );
+
+    renderSvg(visibleNodes, visibleEdges, selectedNode, dependencyIds, dependentIds, relatedIds, matchIds);
+    renderDetails(selectedNode, dependencyIds, dependentIds);
+    renderSummary(visibleNodes.length, visibleEdges.length, matchIds.size, selectedNode);
+    syncLocation();
+  }
+
+  function renderSvg(visibleNodes, visibleEdges, selectedNode, dependencyIds, dependentIds, relatedIds, matchIds) {
+    while (svg.firstChild) {
+      svg.removeChild(svg.firstChild);
+    }
+
+    svg.setAttribute('viewBox', '0 0 ' + bounds.width + ' ' + bounds.height);
+
+    const defs = document.createElementNS(svgNamespace, 'defs');
+    const marker = document.createElementNS(svgNamespace, 'marker');
+    marker.setAttribute('id', 'architecture-arrow');
+    marker.setAttribute('markerWidth', '10');
+    marker.setAttribute('markerHeight', '8');
+    marker.setAttribute('refX', '10');
+    marker.setAttribute('refY', '4');
+    marker.setAttribute('orient', 'auto');
+    const arrowPath = document.createElementNS(svgNamespace, 'path');
+    arrowPath.setAttribute('d', 'M0,0 L10,4 L0,8 Z');
+    arrowPath.setAttribute('fill', '#8b7965');
+    marker.appendChild(arrowPath);
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+
+    if (visibleNodes.length === 0) {
+      const empty = document.createElementNS(svgNamespace, 'text');
+      empty.setAttribute('x', String(bounds.width / 2));
+      empty.setAttribute('y', String(bounds.height / 2));
+      empty.setAttribute('text-anchor', 'middle');
+      empty.setAttribute('fill', '#5f6b66');
+      empty.setAttribute('font-size', '22');
+      empty.textContent = 'No nodes match the current filters.';
+      svg.appendChild(empty);
+      return;
+    }
+
+    visibleEdges.forEach((edge) => {
+      const from = positions[edge.from];
+      const to = positions[edge.to];
+      if (!from || !to) {
+        return;
+      }
+
+      const line = document.createElementNS(svgNamespace, 'line');
+      line.setAttribute('x1', String(from.x));
+      line.setAttribute('y1', String(from.y));
+      line.setAttribute('x2', String(to.x));
+      line.setAttribute('y2', String(to.y));
+      line.setAttribute('marker-end', 'url(#architecture-arrow)');
+
+      const relatedClass = edgeRelationshipClass(edge, selectedNode, dependencyIds, dependentIds);
+      line.setAttribute('class', 'architecture-explorer__edge ' + relatedClass);
+      svg.appendChild(line);
+    });
+
+    visibleNodes.forEach((node) => {
+      const position = positions[node.id];
+      if (!position) {
+        return;
+      }
+
+      const group = document.createElementNS(svgNamespace, 'g');
+      group.setAttribute('transform', 'translate(' + position.x + ' ' + position.y + ')');
+      group.setAttribute('class', nodeClass(node, selectedNode, relatedIds, matchIds));
+      group.setAttribute('tabindex', '0');
+      group.setAttribute('role', 'button');
+      group.setAttribute('aria-label', node.label + ' (' + node.type + ')');
+
+      group.addEventListener('click', () => {
+        state.selectedNodeId = node.id;
+        render();
+      });
+
+      group.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+          return;
+        }
+
+        event.preventDefault();
+        state.selectedNodeId = node.id;
+        render();
+      });
+
+      const box = document.createElementNS(svgNamespace, 'rect');
+      box.setAttribute('x', '-78');
+      box.setAttribute('y', '-30');
+      box.setAttribute('rx', '18');
+      box.setAttribute('width', '156');
+      box.setAttribute('height', '60');
+      box.setAttribute('class', 'architecture-explorer__node-box architecture-explorer__node-box--' + colorBucket(node));
+      group.appendChild(box);
+
+      const label = document.createElementNS(svgNamespace, 'text');
+      label.setAttribute('class', 'architecture-explorer__node-label');
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('y', '-4');
+      label.textContent = truncate(node.label, 20);
+      group.appendChild(label);
+
+      const type = document.createElementNS(svgNamespace, 'text');
+      type.setAttribute('class', 'architecture-explorer__node-type');
+      type.setAttribute('text-anchor', 'middle');
+      type.setAttribute('y', '16');
+      type.textContent = node.type;
+      group.appendChild(type);
+
+      const title = document.createElementNS(svgNamespace, 'title');
+      title.textContent = node.id + ' - ' + node.label + ' (' + node.type + ')';
+      group.appendChild(title);
+
+      svg.appendChild(group);
+    });
+  }
+
+  function renderDetails(selectedNode, dependencyIds, dependentIds) {
+    if (!selectedNode) {
+      details.innerHTML = '<h2>Node Details</h2><p>Select a node to inspect its metadata, dependencies, dependents, and related docs.</p>';
+      return;
+    }
+
+    const docsLink = selectedNode.docsHref
+      ? '<p><a class="architecture-explorer__docs-link" href="' + escapeHtml(selectedNode.docsHref) + '">Open related docs page</a></p>'
+      : '<p class="architecture-explorer__muted">No dedicated docs page is mapped for this node type. Inline metadata remains available below.</p>';
+
+    details.innerHTML = ''
+      + '<h2>' + escapeHtml(selectedNode.label) + '</h2>'
+      + '<p><strong>ID:</strong> <code>' + escapeHtml(selectedNode.id) + '</code></p>'
+      + '<p><strong>Type:</strong> ' + escapeHtml(selectedNode.type) + '</p>'
+      + '<p><strong>Extension:</strong> ' + escapeHtml(selectedNode.extension || 'none') + '</p>'
+      + '<p><strong>Source:</strong> <code>' + escapeHtml(selectedNode.sourcePath || 'n/a') + '</code></p>'
+      + docsLink
+      + relationSection('Dependencies', Array.from(dependencyIds))
+      + relationSection('Dependents', Array.from(dependentIds))
+      + '<h3>Metadata</h3>'
+      + '<pre class="architecture-explorer__pre">' + escapeHtml(JSON.stringify(selectedNode.payload, null, 2)) + '</pre>';
+  }
+
+  function renderSummary(nodeCount, edgeCount, matchCount, selectedNode) {
+    const visibleTypeCounts = {};
+    nodes.filter(matchesFilters).forEach((node) => {
+      visibleTypeCounts[node.bucket] = (visibleTypeCounts[node.bucket] || 0) + 1;
+    });
+
+    const typeSummary = Object.keys(visibleTypeCounts)
+      .sort()
+      .map((key) => key + '=' + visibleTypeCounts[key])
+      .join(', ');
+
+    summary.textContent = 'Showing ' + nodeCount + ' nodes and ' + edgeCount + ' edges.'
+      + (matchCount > 0 ? ' Search matches: ' + matchCount + '.' : '')
+      + (selectedNode ? ' Selected: ' + selectedNode.label + '.' : '')
+      + (typeSummary !== '' ? ' Visible buckets: ' + typeSummary + '.' : '');
+  }
+
+  function matchesFilters(node) {
+    const checkedTypes = new Set(typeInputs.filter((input) => input.checked).map((input) => input.value));
+    if (checkedTypes.size > 0 && !checkedTypes.has(node.bucket)) {
+      return false;
+    }
+
+    if (state.extension !== '' && node.extension !== state.extension) {
+      return false;
+    }
+
+    if (state.pipeline !== '') {
+      const stageNodeIds = stageRelatedNodeIds(state.pipeline);
+      if (!stageNodeIds.has(node.id)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function stageRelatedNodeIds(stageName) {
+    if (stageCache.has(stageName)) {
+      return stageCache.get(stageName);
+    }
+
+    const stageNode = nodes.find((node) => node.type === 'pipeline_stage' && String(node.payload.name || '') === stageName);
+    if (!stageNode) {
+      const empty = new Set();
+      stageCache.set(stageName, empty);
+      return empty;
+    }
+
+    const related = new Set([stageNode.id]);
+    const queue = [stageNode.id];
+
+    while (queue.length > 0) {
+      const nodeId = queue.shift();
+      edges.forEach((edge) => {
+        if (!pipelineEdgeTypes.has(edge.type)) {
+          return;
+        }
+
+        if (edge.from !== nodeId && edge.to !== nodeId) {
+          return;
+        }
+
+        const otherId = edge.from === nodeId ? edge.to : edge.from;
+        if (related.has(otherId)) {
+          return;
+        }
+
+        related.add(otherId);
+        queue.push(otherId);
+      });
+    }
+
+    stageCache.set(stageName, related);
+    return related;
+  }
+
+  function buildPositions(allNodes) {
+    const grouped = new Map();
+    allNodes.slice().sort(compareNodes).forEach((node) => {
+      const bucket = layoutBucket(node);
+      if (!grouped.has(bucket)) {
+        grouped.set(bucket, []);
+      }
+      grouped.get(bucket).push(node);
+    });
+
+    const positions = {};
+    layoutOrder.forEach((bucket, laneIndex) => {
+      const bucketNodes = grouped.get(bucket) || [];
+      bucketNodes.forEach((node, index) => {
+        positions[node.id] = {
+          x: 170 + laneIndex * 220,
+          y: 120 + index * 92
+        };
+      });
+    });
+
+    return positions;
+  }
+
+  function layoutBounds(allNodes, allPositions) {
+    const maxX = allNodes.reduce((carry, node) => Math.max(carry, (allPositions[node.id] || { x: 0 }).x), 0);
+    const maxY = allNodes.reduce((carry, node) => Math.max(carry, (allPositions[node.id] || { y: 0 }).y), 0);
+
+    return {
+      width: Math.max(1600, maxX + 180),
+      height: Math.max(960, maxY + 140)
+    };
+  }
+
+  function normalizeNode(node) {
+    const payload = isObject(node.payload) ? node.payload : {};
+    const dependencyMetadata = isObject(node.dependency_metadata) ? node.dependency_metadata : {};
+    const dependencies = Array.isArray(dependencyMetadata.dependencies) ? dependencyMetadata.dependencies.map(String) : [];
+    const dependents = Array.isArray(dependencyMetadata.dependents) ? dependencyMetadata.dependents.map(String) : [];
+    const extension = typeof payload.extension === 'string' && payload.extension.trim() !== '' ? payload.extension.trim() : '';
+    const normalized = {
+      id: String(node.id || ''),
+      type: String(node.type || 'node'),
+      payload: payload,
+      sourcePath: String(node.source_path || ''),
+      dependencies: dependencies,
+      dependents: dependents,
+      extension: extension,
+    };
+
+    normalized.label = labelFor(normalized);
+    normalized.bucket = filterBucketFor(normalized);
+    normalized.docsHref = docsHrefFor(normalized);
+    normalized.searchText = [normalized.id, normalized.type, normalized.label].join(' ').toLowerCase();
+
+    return normalized;
+  }
+
+  function normalizeEdge(edge) {
+    return {
+      id: String(edge.id || ''),
+      type: String(edge.type || 'edge'),
+      from: String(edge.from || ''),
+      to: String(edge.to || ''),
+      payload: isObject(edge.payload) ? edge.payload : {}
+    };
+  }
+
+  function filterBucketFor(node) {
+    switch (node.type) {
+      case 'feature':
+        return 'feature';
+      case 'route':
+        return 'route';
+      case 'execution_plan':
+        return 'command';
+      case 'workflow':
+      case 'orchestration':
+        return 'workflow';
+      case 'event':
+        return 'event';
+      case 'schema':
+        return 'schema';
+      default:
+        return node.extension !== '' ? 'extension' : 'other';
+    }
+  }
+
+  function layoutBucket(node) {
+    if (node.type === 'pipeline_stage' || node.type === 'guard' || node.type === 'interceptor') {
+      return node.type;
+    }
+    if (node.type === 'job') {
+      return 'job';
+    }
+    if (node.type === 'cache') {
+      return 'cache';
+    }
+    if (node.type === 'permission') {
+      return 'permission';
+    }
+
+    return filterBucketFor(node);
+  }
+
+  function colorBucket(node) {
+    const bucket = layoutBucket(node);
+    return layoutOrder.includes(bucket) ? bucket : 'other';
+  }
+
+  function labelFor(node) {
+    const payload = node.payload || {};
+
+    switch (node.type) {
+      case 'feature':
+        return String(payload.feature || node.id);
+      case 'route':
+        return String(payload.signature || node.id);
+      case 'schema':
+        return String(payload.path || node.id);
+      case 'event':
+      case 'job':
+      case 'permission':
+        return String(payload.name || node.id);
+      case 'cache':
+        return String(payload.key || node.id);
+      case 'workflow':
+        return String(payload.resource || node.id);
+      case 'orchestration':
+        return String(payload.name || node.id);
+      case 'pipeline_stage':
+        return String(payload.name || node.id);
+      case 'guard':
+        return String(payload.type || node.id);
+      case 'interceptor':
+        return String(payload.id || node.id);
+      case 'execution_plan':
+        return String(payload.route_signature || payload.feature || node.id);
+      default:
+        return node.id;
+    }
+  }
+
+  function docsHrefFor(node) {
+    switch (node.type) {
+      case 'feature':
+        return 'features.html#' + headingId(node.payload.feature || node.id);
+      case 'route':
+        return 'routes.html#' + headingId(node.payload.signature || node.id);
+      case 'event':
+        return 'events.html#' + headingId(node.payload.name || node.id);
+      case 'job':
+        return 'jobs.html#' + headingId(node.payload.name || node.id);
+      case 'cache':
+        return 'caches.html#' + headingId(node.payload.key || node.id);
+      case 'schema':
+        return 'schemas.html';
+      case 'permission':
+        return 'auth.html';
+      default:
+        return null;
+    }
+  }
+
+  function relationSection(title, nodeIds) {
+    const items = nodeIds
+      .map((nodeId) => nodeById.get(nodeId))
+      .filter(Boolean)
+      .sort(compareNodes)
+      .map((node) => '<li><button type="button" data-node-id="' + escapeHtml(node.id) + '">' + escapeHtml(node.label) + '</button></li>')
+      .join('');
+
+    if (items === '') {
+      return '<h3>' + escapeHtml(title) + '</h3><p class="architecture-explorer__muted">None</p>';
+    }
+
+    return '<h3>' + escapeHtml(title) + '</h3><ul class="architecture-explorer__relations">' + items + '</ul>';
+  }
+
+  function nodeClass(node, selectedNode, relatedIds, matchIds) {
+    const classes = ['architecture-explorer__node'];
+    if (selectedNode) {
+      if (node.id === selectedNode.id) {
+        classes.push('is-selected');
+      } else if (relatedIds.has(node.id)) {
+        classes.push('is-related');
+      } else {
+        classes.push('is-muted');
+      }
+    }
+
+    if (matchIds.has(node.id)) {
+      classes.push('is-match');
+    }
+
+    return classes.join(' ');
+  }
+
+  function edgeRelationshipClass(edge, selectedNode, dependencyIds, dependentIds) {
+    if (!selectedNode) {
+      return 'architecture-explorer__edge--default';
+    }
+
+    if (edge.from === selectedNode.id && dependencyIds.has(edge.to)) {
+      return 'architecture-explorer__edge--dependency';
+    }
+
+    if (edge.to === selectedNode.id && dependentIds.has(edge.from)) {
+      return 'architecture-explorer__edge--dependent';
+    }
+
+    return 'architecture-explorer__edge--muted';
+  }
+
+  function headingId(value) {
+    const slug = String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return slug !== '' ? slug : 'section';
+  }
+
+  function compareNodes(left, right) {
+    const leftBucket = layoutBucket(left);
+    const rightBucket = layoutBucket(right);
+    if (leftBucket !== rightBucket) {
+      return layoutOrder.indexOf(leftBucket) - layoutOrder.indexOf(rightBucket);
+    }
+
+    return left.label.localeCompare(right.label);
+  }
+
+  function populateSelect(select, values, emptyLabel) {
+    const uniqueValues = Array.from(new Set(values.map(String).filter((value) => value !== ''))).sort();
+    select.innerHTML = '<option value="">' + escapeHtml(emptyLabel) + '</option>'
+      + uniqueValues.map((value) => '<option value="' + escapeHtml(value) + '">' + escapeHtml(value) + '</option>').join('');
+  }
+
+  function initialNodeFromLocation() {
+    const url = new URL(window.location.href);
+    const searchValue = url.searchParams.get('node');
+    if (searchValue) {
+      return searchValue;
+    }
+
+    const hash = window.location.hash.replace(/^#/, '');
+    if (hash.startsWith('node=')) {
+      return decodeURIComponent(hash.substring(5));
+    }
+
+    return '';
+  }
+
+  function syncLocation() {
+    const url = new URL(window.location.href);
+    if (state.selectedNodeId) {
+      url.searchParams.set('node', state.selectedNodeId);
+      url.hash = 'node=' + encodeURIComponent(state.selectedNodeId);
+    } else {
+      url.searchParams.delete('node');
+      url.hash = '';
+    }
+
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  function truncate(value, limit) {
+    return value.length > limit ? value.substring(0, limit - 3) + '...' : value;
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function isObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+})();
+</script>
+
+<style>
+.architecture-explorer {
+  display: grid;
+  gap: 20px;
+}
+
+.architecture-explorer__header h1 {
+  margin: 0 0 12px;
+}
+
+.architecture-explorer__header p {
+  margin: 0;
+  color: #5f6b66;
+}
+
+.architecture-explorer__toolbar {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.architecture-explorer__field {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.architecture-explorer__field input,
+.architecture-explorer__field select {
+  width: 100%;
+  border: 1px solid rgba(31, 42, 38, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 252, 247, 0.96);
+  color: #1f2a26;
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.architecture-explorer__types {
+  border: 1px solid rgba(31, 42, 38, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 252, 247, 0.76);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding: 14px 16px 16px;
+}
+
+.architecture-explorer__types legend {
+  font-weight: 700;
+  padding: 0 8px;
+}
+
+.architecture-explorer__types label {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.architecture-explorer__summary {
+  margin: 0;
+  color: #5f6b66;
+  font-size: 0.96rem;
+}
+
+.architecture-explorer__layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 2.15fr) minmax(280px, 1fr);
+}
+
+.architecture-explorer__canvas,
+.architecture-explorer__details {
+  background: rgba(255, 252, 247, 0.9);
+  border: 1px solid rgba(31, 42, 38, 0.14);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.architecture-explorer__canvas {
+  overflow: auto;
+  padding: 10px;
+}
+
+.architecture-explorer__canvas svg {
+  display: block;
+  min-height: 680px;
+  width: 100%;
+}
+
+.architecture-explorer__details {
+  align-content: start;
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+}
+
+.architecture-explorer__details h2,
+.architecture-explorer__details h3,
+.architecture-explorer__details p {
+  margin: 0;
+}
+
+.architecture-explorer__docs-link {
+  font-weight: 700;
+}
+
+.architecture-explorer__muted {
+  color: #7a6757;
+}
+
+.architecture-explorer__relations {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.architecture-explorer__relations button {
+  width: 100%;
+  border: 1px solid rgba(31, 42, 38, 0.14);
+  border-radius: 12px;
+  background: #fffdf9;
+  color: #1f2a26;
+  cursor: pointer;
+  font: inherit;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.architecture-explorer__relations button:hover {
+  border-color: rgba(135, 92, 47, 0.45);
+}
+
+.architecture-explorer__pre {
+  background: #f7f1e7;
+  border: 1px solid rgba(31, 42, 38, 0.1);
+  border-radius: 14px;
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.architecture-explorer__edge {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 2.2;
+}
+
+.architecture-explorer__edge--default {
+  opacity: 0.58;
+  stroke: #8b7965;
+}
+
+.architecture-explorer__edge--dependency {
+  opacity: 0.95;
+  stroke: #2c7a67;
+}
+
+.architecture-explorer__edge--dependent {
+  opacity: 0.95;
+  stroke: #b85d2d;
+}
+
+.architecture-explorer__edge--muted {
+  opacity: 0.16;
+  stroke: #b8aea2;
+}
+
+.architecture-explorer__node {
+  cursor: pointer;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.architecture-explorer__node:focus-visible {
+  outline: none;
+}
+
+.architecture-explorer__node.is-muted {
+  opacity: 0.24;
+}
+
+.architecture-explorer__node.is-related {
+  opacity: 0.96;
+}
+
+.architecture-explorer__node.is-selected {
+  opacity: 1;
+}
+
+.architecture-explorer__node.is-match .architecture-explorer__node-box {
+  stroke: #d4a12a;
+  stroke-width: 3.2;
+}
+
+.architecture-explorer__node.is-selected .architecture-explorer__node-box {
+  stroke: #1f2a26;
+  stroke-width: 3.6;
+}
+
+.architecture-explorer__node-box {
+  fill: #fff7ea;
+  stroke: rgba(31, 42, 38, 0.18);
+  stroke-width: 1.8;
+}
+
+.architecture-explorer__node-box--feature { fill: #f7efe2; }
+.architecture-explorer__node-box--route { fill: #efe7f6; }
+.architecture-explorer__node-box--command { fill: #e9f0fb; }
+.architecture-explorer__node-box--workflow { fill: #e7f6ed; }
+.architecture-explorer__node-box--event { fill: #fff1db; }
+.architecture-explorer__node-box--schema { fill: #f5e8ea; }
+.architecture-explorer__node-box--job { fill: #e8f4f0; }
+.architecture-explorer__node-box--cache { fill: #f7f2dc; }
+.architecture-explorer__node-box--pipeline_stage { fill: #e6eef7; }
+.architecture-explorer__node-box--guard { fill: #f5e7d9; }
+.architecture-explorer__node-box--interceptor { fill: #eee6f7; }
+.architecture-explorer__node-box--permission { fill: #f5eadb; }
+.architecture-explorer__node-box--extension { fill: #edf4e6; }
+.architecture-explorer__node-box--other { fill: #f3eee8; }
+
+.architecture-explorer__node-label {
+  fill: #1f2a26;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.architecture-explorer__node-type {
+  fill: #6d6a63;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 960px) {
+  .architecture-explorer__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-explorer__canvas svg {
+    min-height: 540px;
+  }
+}
+</style>
+HTML;
+
+        return str_replace('__ARCHITECTURE_GRAPH_DATA__', $dataJson, $template);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function architectureExplorerData(ApplicationGraph $graph): array
+    {
+        return [
+            'schema_version' => 1,
+            'graph' => $graph->toArray(new DiagnosticBag()),
+            'extensions' => $this->architectureExplorerExtensions($graph),
+            'pipeline_stages' => $this->architectureExplorerPipelineStages($graph),
+            'type_filters' => ['feature', 'route', 'workflow', 'event', 'schema', 'command', 'extension'],
+        ];
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function architectureExplorerExtensions(ApplicationGraph $graph): array
+    {
+        $extensions = [];
+
+        foreach ($graph->nodes() as $node) {
+            $extension = trim((string) ($node->payload()['extension'] ?? ''));
+            if ($extension !== '') {
+                $extensions[$extension] = true;
+            }
+        }
+
+        foreach (ExtensionRegistry::forPaths($this->paths)->inspectRows() as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name !== '') {
+                $extensions[$name] = true;
+            }
+        }
+
+        ksort($extensions);
+
+        return array_keys($extensions);
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function architectureExplorerPipelineStages(ApplicationGraph $graph): array
+    {
+        $stages = [];
+        foreach ($graph->nodesByType('pipeline_stage') as $node) {
+            $stage = trim((string) ($node->payload()['name'] ?? ''));
+            if ($stage !== '') {
+                $stages[$stage] = true;
+            }
+        }
+
+        ksort($stages);
+
+        return array_keys($stages);
     }
 
     /**
@@ -615,6 +1614,7 @@ HTML;
             ['slug' => 'app-scaffolding', 'title' => 'App Scaffolding', 'section' => 'Getting Started', 'source' => 'docs/app-scaffolding.md'],
             ['slug' => 'example-applications', 'title' => 'Example Applications', 'section' => 'Getting Started', 'source' => 'docs/example-applications.md'],
             ['slug' => 'how-it-works', 'title' => 'How It Works', 'section' => 'Architecture', 'source' => 'docs/how-it-works.md', 'main_navigation' => true],
+            ['slug' => 'architecture-explorer', 'title' => 'Architecture Explorer', 'section' => 'Architecture', 'source' => 'generated_html:architecture-explorer'],
             ['slug' => 'semantic-compiler', 'title' => 'Semantic Compiler', 'section' => 'Architecture', 'source' => 'docs/semantic-compiler.md'],
             ['slug' => 'execution-pipeline', 'title' => 'Execution Pipeline', 'section' => 'Architecture', 'source' => 'docs/execution-pipeline.md'],
             ['slug' => 'architecture-tools', 'title' => 'Architecture Tools', 'section' => 'Architecture', 'source' => 'docs/architecture-tools.md'],

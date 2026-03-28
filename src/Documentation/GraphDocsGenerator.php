@@ -105,6 +105,7 @@ final class GraphDocsGenerator
             '- Features remain the authored source-of-truth units; routes, schemas, caches, jobs, and events are derived graph surfaces.',
             '- Generated docs are built from the same compiled graph used by inspect, export, verify, and runtime projection flows.',
             '- CLI reference pages are derived from the same API surface registry used by `help --json` and command classification.',
+            '- Interactive architecture explorer: [Open Architecture Explorer](architecture-explorer.html)',
             '',
             '## CLI Output Snapshots',
             '### inspect graph --json',
@@ -138,6 +139,7 @@ final class GraphDocsGenerator
             $database = is_array($payload['database'] ?? null) ? $payload['database'] : [];
 
             $lines[] = '## ' . $feature;
+            $lines[] = '- explorer: ' . $this->explorerLink($node->id());
             $lines[] = '- kind: ' . (string) ($payload['kind'] ?? 'http');
             $lines[] = '- route: ' . strtoupper((string) ($route['method'] ?? '')) . ' ' . (string) ($route['path'] ?? '');
             $lines[] = '- input schema: ' . (string) ($payload['input_schema_path'] ?? '');
@@ -164,6 +166,7 @@ final class GraphDocsGenerator
             $signature = (string) ($payload['signature'] ?? $node->id());
             $features = array_values(array_map('strval', (array) ($payload['features'] ?? [])));
             $lines[] = '## ' . $signature;
+            $lines[] = '- explorer: ' . $this->explorerLink($node->id());
             $lines[] = '- features: ' . implode(', ', $features);
 
             foreach ($features as $feature) {
@@ -237,6 +240,7 @@ final class GraphDocsGenerator
             $emitters = array_values(array_map('strval', (array) ($payload['emitters'] ?? [])));
             $subscribers = array_values(array_map('strval', (array) ($payload['subscribers'] ?? [])));
             $lines[] = '## ' . $name;
+            $lines[] = '- explorer: ' . $this->explorerLink($node->id());
             $lines[] = '- emitters: ' . implode(', ', $emitters);
             $lines[] = '- subscribers: ' . implode(', ', $subscribers);
             $lines[] = '';
@@ -256,6 +260,7 @@ final class GraphDocsGenerator
             }
             $features = array_values(array_map('strval', (array) ($payload['features'] ?? [])));
             $lines[] = '## ' . $name;
+            $lines[] = '- explorer: ' . $this->explorerLink($node->id());
             $lines[] = '- features: ' . implode(', ', $features);
             $lines[] = '';
         }
@@ -274,6 +279,7 @@ final class GraphDocsGenerator
             }
             $invalidatedBy = array_values(array_map('strval', (array) ($payload['invalidated_by'] ?? [])));
             $lines[] = '## ' . $key;
+            $lines[] = '- explorer: ' . $this->explorerLink($node->id());
             $lines[] = '- invalidated_by: ' . implode(', ', $invalidatedBy);
             $lines[] = '';
         }
@@ -293,11 +299,16 @@ final class GraphDocsGenerator
             $role = (string) ($payload['role'] ?? '');
             $feature = (string) ($payload['feature'] ?? '');
             $notification = (string) ($payload['notification'] ?? '');
-            $lines[] = '- ' . $path . ' (role=' . $role . ' feature=' . $feature . ' notification=' . $notification . ')';
+            $lines[] = '- ' . $path . ' (role=' . $role . ' feature=' . $feature . ' notification=' . $notification . ') ' . $this->explorerLink($node->id());
         }
         $lines[] = '';
 
         return implode("\n", $lines) . "\n";
+    }
+
+    private function explorerLink(string $nodeId): string
+    {
+        return '[Open in Architecture Explorer](architecture-explorer.html?node=' . rawurlencode($nodeId) . ')';
     }
 
     private function llmWorkflowDoc(): string
