@@ -12,13 +12,11 @@
   },
   "require-dev": {
     "phpunit/phpunit": "^11.5",
-    "aws/aws-sdk-php": "^3.357",
     "phpstan/phpstan": "^2.1",
     "laravel/pint": "^1.29",
     "rector/rector": "^2.3"
   },
   "suggest": {
-    "aws/aws-sdk-php": "Enable real MinIO/S3 object storage via MinioStorageDriver.",
     "ext-redis": "Enable production-grade Redis queue support via RedisQueueDriver.",
     "ext-pdo_pgsql": "Enable PostgreSQL database connectivity for integration tests and runtime deployments."
   },

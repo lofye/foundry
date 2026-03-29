@@ -6,14 +6,12 @@ namespace Foundry\Storage;
 
 use Foundry\Support\FoundryError;
 
-final class S3StorageDriver implements StorageDriver
+final class InMemoryStorageDriver implements StorageDriver
 {
     /**
      * @var array<string,string>
      */
     private array $memory = [];
-
-    public function __construct(private readonly string $bucket) {}
 
     #[\Override]
     public function write(string $path, string $content): FileDescriptor
@@ -27,7 +25,7 @@ final class S3StorageDriver implements StorageDriver
     public function read(string $path): string
     {
         if (!isset($this->memory[$path])) {
-            throw new FoundryError('S3_OBJECT_NOT_FOUND', 'not_found', ['bucket' => $this->bucket, 'path' => $path], 'Object not found.');
+            throw new FoundryError('IN_MEMORY_OBJECT_NOT_FOUND', 'not_found', ['path' => $path], 'Object not found.');
         }
 
         return $this->memory[$path];

@@ -92,41 +92,6 @@ foundry verify graph --json
 foundry verify contracts --json
 ```
 
-## Local MinIO (Fix + Verify)
-Your MinIO install issue is typically a port conflict on `127.0.0.1:9000`.
-
-Check what owns the ports:
-```bash
-lsof -nP -iTCP:9000 -sTCP:LISTEN
-lsof -nP -iTCP:9001 -sTCP:LISTEN
-```
-
-Option A: keep defaults and stop the conflicting process.
-
-Option B: run MinIO on alternate ports (recommended if 9000 is already used):
-```bash
-mkdir -p "$HOME/minio-data"
-export MINIO_ROOT_USER="foundry"
-export MINIO_ROOT_PASSWORD="foundry-dev-secret"
-minio server "$HOME/minio-data" --address ":9100" --console-address ":9101"
-```
-
-Configure `mc` and create a bucket:
-```bash
-mc alias set foundry http://127.0.0.1:9100 foundry foundry-dev-secret
-mc mb --ignore-existing foundry/foundry-dev
-mc ls foundry
-```
-
-Health check:
-```bash
-curl -sS http://127.0.0.1:9100/minio/health/live
-```
-
-Notes:
-- `/home/shared` is a Linux path; on macOS use an existing directory like `$HOME/minio-data`.
-- avoid default credentials (`minioadmin:minioadmin`) for persistent local setups.
-
 ## Core Workflow for LLMs
 Use this loop for every change:
 1. Inspect current reality.
@@ -486,11 +451,6 @@ vendor/bin/phpunit
 Optional local integration targets:
 - Redis queue integration tests run when `ext-redis` is loaded and Redis is reachable on `127.0.0.1:6379`.
 - PostgreSQL integration tests run when `pdo_pgsql` is loaded and Postgres is reachable.
-- MinIO storage integrations can use `Foundry\Storage\MinioStorageDriver` with an injected client, or with `aws/aws-sdk-php`.
-- MinIO integration test env overrides:
-  `FOUNDRY_TEST_MINIO_ENDPOINT`, `FOUNDRY_TEST_MINIO_ACCESS_KEY`,
-  `FOUNDRY_TEST_MINIO_SECRET_KEY`, `FOUNDRY_TEST_MINIO_BUCKET`,
-  `FOUNDRY_TEST_MINIO_REGION`.
 - PostgreSQL DSN/user/pass can be overridden with:
   `FOUNDRY_TEST_PG_DSN`, `FOUNDRY_TEST_PG_USER`, `FOUNDRY_TEST_PG_PASS`.
 - If `postgresql@17` is keg-only on Homebrew, use:

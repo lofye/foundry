@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
+use Foundry\Storage\InMemoryStorageDriver;
 use Foundry\Storage\LocalStorageDriver;
-use Foundry\Storage\S3StorageDriver;
 use PHPUnit\Framework\TestCase;
 
 final class StorageTest extends TestCase
@@ -29,12 +29,15 @@ final class StorageTest extends TestCase
         @rmdir($root);
     }
 
-    public function test_s3_driver_in_memory_behavior(): void
+    public function test_in_memory_storage_read_write_delete(): void
     {
-        $driver = new S3StorageDriver('bucket');
+        $driver = new InMemoryStorageDriver();
         $driver->write('x.txt', 'value');
 
         $this->assertTrue($driver->exists('x.txt'));
         $this->assertSame('value', $driver->read('x.txt'));
+
+        $driver->delete('x.txt');
+        $this->assertFalse($driver->exists('x.txt'));
     }
 }

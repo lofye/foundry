@@ -1153,12 +1153,6 @@ parameters:
 			path: src/Schema/JsonSchemaValidator.php
 
 		-
-			message: '#^PHPDoc tag @var with type object is not subtype of native type Aws\\S3\\S3Client\.$#'
-			identifier: varTag.nativeType
-			count: 1
-			path: src/Storage/MinioStorageDriver.php
-
-		-
 			message: '#^Match arm comparison between ''cache'' and ''cache'' is always true\.$#'
 			identifier: match.alwaysTrue
 			count: 1
@@ -1253,12 +1247,6 @@ parameters:
 			identifier: method.alreadyNarrowedType
 			count: 1
 			path: tests/Unit/GraphCompilerExtensionFailuresTest.php
-
-		-
-			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
-			identifier: method.alreadyNarrowedType
-			count: 1
-			path: tests/Unit/MinioStorageDriverTest.php
 
 		-
 			message: '#^Parameter \#2 \$variables of method Foundry\\Notifications\\NotificationTemplateRenderer\:\:render\(\) expects array\<string, mixed\>, array\<int\|string, array\<string, array\|string\>\|string\|true\|null\> given\.$#'
