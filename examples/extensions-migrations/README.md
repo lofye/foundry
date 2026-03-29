@@ -1,6 +1,6 @@
 # Extensions And Migrations Examples
 
-`examples/extensions-migrations` is the extension reference pack in the Foundry example set.
+`examples/extensions-migrations` is a `reference` example in the Foundry example set.
 
 Run these commands from the Foundry framework repository root with `php bin/foundry ...`.
 If you apply the same extension flow inside a generated app, switch to `foundry ...`.

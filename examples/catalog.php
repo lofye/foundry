@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 return [
-    'official' => [
+    'canonical' => [
         [
             'slug' => 'hello-world',
             'title' => 'Hello World',
             'path' => 'examples/hello-world',
-            'kind' => 'focused-app',
+            'kind' => 'canonical',
             'teaches' => [
                 'feature structure',
                 'schemas and context manifests',
@@ -20,7 +20,7 @@ return [
             'slug' => 'blog-api',
             'title' => 'Blog API',
             'path' => 'examples/blog-api',
-            'kind' => 'focused-app',
+            'kind' => 'canonical',
             'teaches' => [
                 'route-per-feature HTTP design',
                 'public versus protected endpoints',
@@ -32,7 +32,7 @@ return [
             'slug' => 'workflow-events',
             'title' => 'Workflow And Events',
             'path' => 'examples/workflow-events',
-            'kind' => 'focused-app',
+            'kind' => 'canonical',
             'teaches' => [
                 'event emit and subscribe edges',
                 'workflow definitions',
@@ -46,7 +46,7 @@ return [
             'slug' => 'extensions-migrations',
             'title' => 'Extensions And Migrations',
             'path' => 'examples/extensions-migrations',
-            'kind' => 'reference-pack',
+            'kind' => 'reference',
             'teaches' => [
                 'extension registration',
                 'pack metadata',
@@ -58,7 +58,7 @@ return [
             'slug' => 'reference-blog',
             'title' => 'Reference Blog',
             'path' => 'examples/reference-blog',
-            'kind' => 'reference-pack',
+            'kind' => 'reference',
             'teaches' => [
                 'full blog planning',
                 'admin login flow',
@@ -72,7 +72,7 @@ return [
             'slug' => 'compiler-core',
             'title' => 'Compiler Core',
             'path' => 'examples/compiler-core',
-            'kind' => 'framework-surface',
+            'kind' => 'framework',
             'teaches' => [
                 'compile outputs',
                 'impact analysis',
@@ -83,7 +83,7 @@ return [
             'slug' => 'architecture-tools',
             'title' => 'Architecture Tools',
             'path' => 'examples/architecture-tools',
-            'kind' => 'framework-surface',
+            'kind' => 'framework',
             'teaches' => [
                 'doctor',
                 'graph visualize',
@@ -94,7 +94,7 @@ return [
             'slug' => 'execution-pipeline',
             'title' => 'Execution Pipeline',
             'path' => 'examples/execution-pipeline',
-            'kind' => 'framework-surface',
+            'kind' => 'framework',
             'teaches' => [
                 'pipeline topology',
                 'execution-plan inspection',
@@ -104,7 +104,7 @@ return [
             'slug' => 'app-scaffolding',
             'title' => 'App Scaffolding',
             'path' => 'examples/app-scaffolding',
-            'kind' => 'framework-surface',
+            'kind' => 'framework',
             'teaches' => [
                 'starter generation',
                 'resource definitions',
@@ -115,7 +115,7 @@ return [
             'slug' => 'integration-tooling',
             'title' => 'Integration Tooling',
             'path' => 'examples/integration-tooling',
-            'kind' => 'framework-surface',
+            'kind' => 'framework',
             'teaches' => [
                 'notifications',
                 'API resources',
@@ -123,10 +123,5 @@ return [
                 'test generation notes',
             ],
         ],
-    ],
-    'thresholds' => [
-        'title' => 'Thresholds',
-        'position' => 'real-app-reference',
-        'summary' => 'Thresholds is the richer end-to-end reference application. Use the smaller examples to learn one idea at a time, then compare against Thresholds for a production-shaped app.',
     ],
 ];

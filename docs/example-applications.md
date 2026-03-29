@@ -24,18 +24,18 @@ foundry verify pipeline --json
 
 If your shell does not resolve current-directory executables, use `./foundry ...`.
 
-## Canonical App Examples
+## canonical
 
 - [Hello World](../examples/hello-world/README.md): the smallest readable example for feature structure, manifests, schemas, and the inspect/doctor/verify loop.
 - [Blog API](../examples/blog-api/README.md): the canonical HTTP slice with one collection read, one item read, and one protected write.
 - [Workflow And Events](../examples/workflow-events/README.md): a compact editorial flow that demonstrates workflow definitions, event edges, route params, and job dispatch.
 
-## Reference Packs
+## reference
 
 - [Extensions And Migrations](../examples/extensions-migrations/README.md): the canonical extension, migration, and codemod reference.
 - [Reference Blog](../examples/reference-blog/README.md): a richer build kit with commands, a paste-ready LLM prompt, and starter content for a blog with admin login and RSS.
 
-## Framework Surface Examples
+## framework
 
 - [Compiler Core](../examples/compiler-core/README.md): compile, impact, and migration behavior.
 - [Architecture Tools](../examples/architecture-tools/README.md): doctor, prompt, graph visualization, and architecture inspection surfaces.
@@ -45,7 +45,7 @@ If your shell does not resolve current-directory executables, use `./foundry ...
 
 ## Canonical Patterns
 
-Every canonical app example should make these patterns visible:
+Every `canonical` example should make these patterns visible:
 
 - feature folders remain the source of truth
 - manifests and schemas stay beside the action and tests they describe
@@ -59,7 +59,3 @@ Every canonical app example should make these patterns visible:
 2. Move to [Blog API](../examples/blog-api/README.md) or [Workflow And Events](../examples/workflow-events/README.md), depending on the app shape you need.
 3. Read [Extensions And Migrations](../examples/extensions-migrations/README.md) when you need custom compiler or pack behavior.
 4. Use [Reference Blog](../examples/reference-blog/README.md) when you want a fuller end-to-end build brief.
-
-## Thresholds Alignment
-
-Thresholds should be treated as the richer real-app reference. The smaller examples above exist to teach isolated ideas quickly; Thresholds is where those ideas should be compared against a production-shaped application.

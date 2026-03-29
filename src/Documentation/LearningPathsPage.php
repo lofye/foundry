@@ -569,7 +569,7 @@ HTML;
                             'title' => 'Use the example index as a map',
                             'linkTitle' => 'Example Applications',
                             'href' => 'example-applications.html',
-                            'context' => 'The example catalog points you to the official extension example and shows where extension work fits in the broader example set.',
+                            'context' => 'The example catalog points you to the reference extension example and shows where extension work fits in the broader example set.',
                         ],
                         [
                             'title' => 'Rehearse the extension CLI flow',

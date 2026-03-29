@@ -29,26 +29,22 @@ final class ExamplesStructureTest extends TestCase
                 $this->assertNotEmpty((array) ($example['teaches'] ?? []));
             }
         }
-
-        $thresholds = (array) ($catalog['thresholds'] ?? []);
-        $this->assertSame('Thresholds', $thresholds['title'] ?? null);
-        $this->assertSame('real-app-reference', $thresholds['position'] ?? null);
     }
 
-    public function test_official_catalog_is_the_canonical_app_trio(): void
+    public function test_canonical_catalog_is_the_canonical_app_trio(): void
     {
         /** @var array<string,mixed> $catalog */
         $catalog = require getcwd() . '/examples/catalog.php';
 
-        $officialSlugs = array_map(
+        $canonicalSlugs = array_map(
             static fn(array $example): string => (string) ($example['slug'] ?? ''),
-            (array) ($catalog['official'] ?? []),
+            (array) ($catalog['canonical'] ?? []),
         );
 
-        $this->assertSame(['hello-world', 'blog-api', 'workflow-events'], $officialSlugs);
+        $this->assertSame(['hello-world', 'blog-api', 'workflow-events'], $canonicalSlugs);
     }
 
-    public function test_examples_docs_index_and_thresholds_alignment_are_present(): void
+    public function test_examples_docs_and_index_match_current_taxonomy(): void
     {
         /** @var array<string,mixed> $catalog */
         $catalog = require getcwd() . '/examples/catalog.php';
@@ -68,8 +64,10 @@ final class ExamplesStructureTest extends TestCase
             }
         }
 
-        $this->assertStringContainsString('Thresholds', $docs);
-        $this->assertStringContainsString('Thresholds', $index);
+        $this->assertStringNotContainsString('Thresholds', $docs);
+        $this->assertStringNotContainsString('Thresholds', $index);
+        $this->assertStringNotContainsString('Dashboard', $docs);
+        $this->assertStringNotContainsString('AI Pipeline', $docs);
         $this->assertStringContainsString('docs/example-applications.md', (string) file_get_contents(getcwd() . '/README.md'));
     }
 
@@ -198,7 +196,7 @@ final class ExamplesStructureTest extends TestCase
      */
     private function catalogSections(): array
     {
-        return ['official', 'reference', 'framework'];
+        return ['canonical', 'reference', 'framework'];
     }
 
     private function copyDirectory(string $source, string $target): void
