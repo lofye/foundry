@@ -112,25 +112,78 @@ final class LicenseCommand extends Command
      */
     private function renderStatus(array $license): string
     {
-        $lines = [(string) ($license['message'] ?? 'Foundry license status unavailable.')];
-        $lines[] = 'Tier: ' . (string) ($license['tier'] ?? FeatureFlags::TIER_FREE);
-        $lines[] = 'Source: ' . (string) ($license['source'] ?? 'none');
-        $lines[] = 'License path: ' . (string) ($license['license_path'] ?? '');
+        $active = (($license['valid'] ?? false) === true);
+        $lines = [
+            'License: ' . ($active ? 'Active' : 'Not active'),
+            'Tier: ' . (string) ($license['tier'] ?? FeatureFlags::TIER_FREE),
+            '',
+        ];
 
-        $fingerprint = trim((string) ($license['fingerprint'] ?? ''));
-        if ($fingerprint !== '') {
-            $lines[] = 'Fingerprint: ' . $fingerprint;
+        if ($active) {
+            $lines[] = 'Enabled features:';
+            array_push($lines, ...$this->featureLines(
+                (array) (($license['public_features']['enabled'] ?? [])),
+                null,
+            ));
+            $lines[] = '';
+            $lines[] = 'Disabled features:';
+            array_push($lines, ...$this->featureLines(
+                (array) (($license['public_features']['disabled'] ?? [])),
+                3,
+            ));
+
+            $source = trim((string) ($license['source'] ?? ''));
+            if ($source !== '' && $source !== 'none') {
+                $lines[] = '';
+                $lines[] = 'Source: ' . $source;
+            }
+        } else {
+            $lines[] = 'Some advanced features are unavailable.';
+            $lines[] = '';
+            $lines[] = 'Disabled features:';
+            array_push($lines, ...$this->featureLines(
+                (array) (($license['public_features']['disabled'] ?? [])),
+                3,
+            ));
+
+            if (($license['status'] ?? 'missing') === 'invalid') {
+                $details = trim((string) ($license['message'] ?? ''));
+                if ($details !== '') {
+                    $lines[] = '';
+                    $lines[] = 'Details: ' . $details;
+                }
+            }
+
+            $lines[] = '';
+            $lines[] = 'Activate with:';
+            $lines[] = '  foundry license activate --key=YOUR_KEY';
         }
-
-        $features = array_values(array_map('strval', (array) ($license['feature_flags'] ?? $license['features'] ?? [])));
-        if ($features !== []) {
-            $lines[] = 'Feature flags: ' . implode(', ', $features);
-        }
-
-        $tracking = is_array($license['usage_tracking'] ?? null) ? $license['usage_tracking'] : [];
-        $lines[] = 'Usage tracking: ' . (((bool) ($tracking['enabled'] ?? false)) ? 'enabled' : 'disabled');
-        $lines[] = 'Commands: ' . implode(', ', self::LICENSE_COMMANDS);
 
         return implode(PHP_EOL, $lines);
+    }
+
+    /**
+     * @param array<int,mixed> $features
+     * @return list<string>
+     */
+    private function featureLines(array $features, ?int $limit): array
+    {
+        $names = array_values(array_filter(array_map('strval', $features), static fn(string $name): bool => trim($name) !== ''));
+
+        if ($names === []) {
+            return ['- none'];
+        }
+
+        $visible = $limit === null ? $names : array_slice($names, 0, $limit);
+        $lines = array_values(array_map(
+            static fn(string $name): string => '- ' . $name,
+            $visible,
+        ));
+
+        if ($limit !== null && count($names) > $limit) {
+            $lines[] = '- and ' . (count($names) - $limit) . ' more';
+        }
+
+        return $lines;
     }
 }

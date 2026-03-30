@@ -17,6 +17,42 @@ final class FeatureFlags
     public const HOSTED_SYNC = 'feature.hosted.sync';
 
     /**
+     * @var array<string,array{name:string,summary:string,visible:bool}>
+     */
+    private const PUBLIC_CATALOG = [
+        self::PRO_DEEP_DIAGNOSTICS => [
+            'name' => 'doctor.deep',
+            'summary' => 'Deep diagnostics',
+            'visible' => true,
+        ],
+        self::PRO_EXPLAIN_PLUS => [
+            'name' => 'explain.advanced',
+            'summary' => 'Advanced explain output',
+            'visible' => true,
+        ],
+        self::PRO_GRAPH_DIFF => [
+            'name' => 'diff.graph',
+            'summary' => 'Graph diff analysis',
+            'visible' => true,
+        ],
+        self::PRO_TRACE => [
+            'name' => 'trace.analysis',
+            'summary' => 'Trace analysis',
+            'visible' => true,
+        ],
+        self::PRO_GENERATE => [
+            'name' => 'generate.full',
+            'summary' => 'Prompt-based generation',
+            'visible' => true,
+        ],
+        self::HOSTED_SYNC => [
+            'name' => 'sync.hosted',
+            'summary' => 'Hosted sync',
+            'visible' => false,
+        ],
+    ];
+
+    /**
      * @return list<string>
      */
     public static function pro(): array
@@ -36,6 +72,52 @@ final class FeatureFlags
     public static function licensed(): array
     {
         return self::pro();
+    }
+
+    /**
+     * @return array<string,array{name:string,summary:string,visible:bool}>
+     */
+    public static function catalog(bool $visibleOnly = false): array
+    {
+        $catalog = self::PUBLIC_CATALOG;
+
+        if ($visibleOnly) {
+            $catalog = array_filter(
+                $catalog,
+                static fn(array $metadata): bool => ($metadata['visible'] ?? false) === true,
+            );
+        }
+
+        uasort(
+            $catalog,
+            static fn(array $left, array $right): int => strcmp(
+                (string) ($left['name'] ?? ''),
+                (string) ($right['name'] ?? ''),
+            ),
+        );
+
+        return $catalog;
+    }
+
+    public static function publicName(string $feature): string
+    {
+        return (string) (self::PUBLIC_CATALOG[$feature]['name'] ?? $feature);
+    }
+
+    /**
+     * @param array<int,string> $features
+     * @return list<string>
+     */
+    public static function publicNames(array $features): array
+    {
+        $names = array_values(array_unique(array_map(
+            static fn(string $feature): string => self::publicName($feature),
+            $features,
+        )));
+
+        sort($names);
+
+        return $names;
     }
 
     /**

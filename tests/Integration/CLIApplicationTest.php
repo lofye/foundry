@@ -202,6 +202,12 @@ YAML);
         $this->assertSame('Monetization', $licenseHelp['payload']['command']['category']);
         $this->assertSame('license', $licenseHelp['payload']['command']['command_type']);
 
+        $featuresHelp = $this->runCommand($app, ['foundry', 'help', 'features', '--json']);
+        $this->assertSame(0, $featuresHelp['status']);
+        $this->assertSame('features', $featuresHelp['payload']['command']['signature']);
+        $this->assertSame('Monetization', $featuresHelp['payload']['command']['category']);
+        $this->assertSame('features', $featuresHelp['payload']['command']['command_type']);
+
         $generatePromptHelp = $this->runCommand($app, ['foundry', 'help', 'generate', 'Add', '--json']);
         $this->assertSame(0, $generatePromptHelp['status']);
         $this->assertSame('generate <prompt>', $generatePromptHelp['payload']['command']['signature']);
@@ -234,6 +240,11 @@ YAML);
         $this->assertSame(0, $verifyCliSurface['payload']['ambiguous']);
         $this->assertSame(0, $verifyCliSurface['payload']['orphan_handlers']);
         $this->assertSame(1, $verifyCliSurface['payload']['coverage']);
+
+        $helpText = $this->runCommandRaw($app, ['foundry', 'help']);
+        $this->assertSame(0, $helpText['status']);
+        $this->assertStringContainsString('Some advanced features require a license.', $helpText['output']);
+        $this->assertStringContainsString('Run: foundry license status', $helpText['output']);
     }
 
     public function test_non_json_cache_commands_emit_human_readable_output(): void

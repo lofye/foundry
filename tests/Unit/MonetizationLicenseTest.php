@@ -6,6 +6,7 @@ namespace Foundry\Tests\Unit;
 
 use Foundry\Monetization\FeatureFlags;
 use Foundry\Monetization\FeatureGate;
+use Foundry\Monetization\Exceptions\FeatureNotLicensed;
 use Foundry\Monetization\LicenseStore;
 use Foundry\Monetization\LicenseValidator;
 use Foundry\Monetization\MonetizationService;
@@ -99,10 +100,14 @@ final class MonetizationLicenseTest extends TestCase
     {
         $gate = new FeatureGate(new LicenseStore());
 
-        $this->expectException(FoundryError::class);
-        $this->expectExceptionMessage('Use `foundry license activate --key=<license-key>`');
-
-        $gate->require('explain', [FeatureFlags::PRO_EXPLAIN_PLUS]);
+        try {
+            $gate->require('explain', [FeatureFlags::PRO_EXPLAIN_PLUS]);
+            self::fail('Expected feature gate to require a license.');
+        } catch (FeatureNotLicensed $error) {
+            $this->assertSame('This feature requires a license.', $error->getMessage());
+            $this->assertSame('explain.advanced', $error->feature);
+            $this->assertSame('explain', $error->command);
+        }
     }
 
     public function test_feature_gate_accepts_enabled_license(): void
@@ -124,6 +129,7 @@ final class MonetizationLicenseTest extends TestCase
 
         $this->assertSame(FeatureFlags::TIER_PRO, $service->getTier());
         $this->assertTrue($service->isEnabled(FeatureFlags::PRO_TRACE));
+        $this->assertContains('trace.analysis', $service->status()['public_features']['enabled']);
     }
 
     public function test_monetization_service_prefers_environment_license_key(): void

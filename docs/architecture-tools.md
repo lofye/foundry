@@ -23,7 +23,7 @@ The compiler core established a canonical semantic compiler and graph. The exten
 Licensed architecture tools are an optional layer on top of the same local graph and build artifacts used by core Foundry.
 
 - Core Foundry remains fully usable without a license.
-- Licensed features are additive and do not change compile, runtime, or verification semantics for unlicensed installs.
+- Some advanced features require a license, but remain additive and do not change compile, runtime, or verification semantics for unlicensed installs.
 - Licensing is local-first and stored in `~/.foundry/license.json` by default.
 - No background network calls are performed.
 - Licensed commands remain visible in CLI help and fail with a clear non-zero response when no valid license is present.
@@ -31,9 +31,10 @@ Licensed architecture tools are an optional layer on top of the same local graph
 Current licensed command surface:
 
 ```bash
-foundry license activate --key=<license-key>
+foundry license activate --key=YOUR_KEY
 foundry license status --json
 foundry license deactivate --json
+foundry features --json
 foundry doctor --deep --json
 foundry explain <target> --json
 foundry diff --json
@@ -774,12 +775,15 @@ Use a more specific target, or prefix with type:
 ```json
 {
   "error": {
-    "code": "LICENSE_REQUIRED",
+    "code": "FEATURE_NOT_LICENSED",
     "category": "authorization",
-    "message": "No active license. Some features require a license. Use `foundry license activate --key=<license-key>`.",
+    "message": "This feature requires a license.",
     "details": {
+      "feature": "explain.advanced",
       "command": "explain",
-      "required_features": ["feature.pro.explain_plus"]
+      "license_state": "missing",
+      "tier": "free",
+      "source": "none"
     }
   }
 }

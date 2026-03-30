@@ -58,6 +58,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $licensedExplain = $registry->classifyCliCommand(['explain', 'publish_post']);
         $licensedGenerate = $registry->classifyCliCommand(['generate', 'Add', 'bookmarks']);
         $licenseStatus = $registry->classifyCliCommand(['license', 'status']);
+        $features = $registry->classifyCliCommand(['features']);
         $observeTrace = $registry->classifyCliCommand(['observe:trace', 'publish_post']);
         $observeProfile = $registry->classifyCliCommand(['observe:profile']);
         $observeCompare = $registry->classifyCliCommand(['observe:compare', 'run-a', 'run-b']);
@@ -76,6 +77,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($licensedExplain);
         $this->assertNotNull($licensedGenerate);
         $this->assertNotNull($licenseStatus);
+        $this->assertNotNull($features);
         $this->assertNotNull($observeTrace);
         $this->assertNotNull($observeProfile);
         $this->assertNotNull($observeCompare);
@@ -114,6 +116,9 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('generate', $licensedGenerate['command_type']);
         $this->assertSame('Monetization', $licenseStatus['category']);
         $this->assertSame('license', $licenseStatus['command_type']);
+        $this->assertSame('Monetization', $features['category']);
+        $this->assertSame('features', $features['command_type']);
+        $this->assertFalse($features['supports_pipeline_stage_filter']);
         $this->assertSame('experimental', $observeTrace['stability']);
         $this->assertSame('Observability', $observeTrace['category']);
         $this->assertSame('observe', $observeTrace['command_type']);

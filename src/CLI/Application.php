@@ -13,6 +13,7 @@ use Foundry\CLI\Commands\DiffCommand;
 use Foundry\CLI\Commands\ExportGraphCommand;
 use Foundry\CLI\Commands\ExportOpenApiCommand;
 use Foundry\CLI\Commands\ExplainCommand;
+use Foundry\CLI\Commands\FeaturesCommand;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateCommand as PromptGenerateCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
@@ -60,11 +61,13 @@ final class Application
      */
     private array $commands;
     private ApiSurfaceRegistry $apiSurfaceRegistry;
+    private ExceptionRenderer $exceptionRenderer;
 
     public function __construct(?array $commands = null)
     {
         $this->commands = $commands ?? self::registeredCommands();
         $this->apiSurfaceRegistry = new ApiSurfaceRegistry();
+        $this->exceptionRenderer = new ExceptionRenderer();
     }
 
     /**
@@ -101,6 +104,7 @@ final class Application
             new InspectRouteCommand(),
             new InitAppCommand(),
             new LicenseCommand(),
+            new FeaturesCommand(),
             new PromptGenerateCommand(),
             new GenerateScaffoldCommand(),
             new GenerateIntegrationCommand(),
@@ -161,19 +165,8 @@ final class Application
             }
 
             throw new FoundryError('CLI_COMMAND_NOT_FOUND', 'not_found', ['args' => $args], 'Command not found.');
-        } catch (FoundryError $error) {
-            return $this->emitResult(['status' => 1, 'payload' => $error->toArray(), 'message' => $error->getMessage()], $json);
         } catch (\Throwable $error) {
-            $payload = [
-                'error' => [
-                    'code' => 'CLI_UNHANDLED_EXCEPTION',
-                    'category' => 'runtime',
-                    'message' => $error->getMessage(),
-                    'details' => ['exception' => $error::class],
-                ],
-            ];
-
-            return $this->emitResult(['status' => 1, 'payload' => $payload, 'message' => $error->getMessage()], $json);
+            return $this->emitResult($this->exceptionRenderer->render($error, $json), $json);
         }
     }
 
@@ -263,7 +256,8 @@ final class Application
             $lines[] = '';
         }
 
-        $lines[] = 'Some features require a license. Use `foundry license activate --key=<license-key>`.';
+        $lines[] = 'Some advanced features require a license.';
+        $lines[] = 'Run: foundry license status';
         $lines[] = 'Use `foundry help <command>` for usage, stability, and semver details.';
         $lines[] = 'Use `foundry help inspect`, `foundry help verify`, or `foundry help generate` to browse a command family.';
 
@@ -287,7 +281,9 @@ final class Application
         ];
 
         if ($availability === 'licensed') {
-            $lines[] = 'License: Some features require a license. Use `foundry license activate --key=<license-key>`.';
+            $lines[] = 'License: Some advanced features require a license.';
+            $lines[] = 'Run: foundry license status';
+            $lines[] = 'Activate: foundry license activate --key=YOUR_KEY';
         }
 
         return implode(PHP_EOL, $lines);
@@ -415,7 +411,8 @@ final class Application
             $lines[] = '';
         }
 
-        $lines[] = 'Some features require a license. Use `foundry license activate --key=<license-key>`.';
+        $lines[] = 'Some advanced features require a license.';
+        $lines[] = 'Run: foundry license status';
         $lines[] = 'Use `foundry help <full command>` for exact usage, stability, and semver details.';
 
         return implode(PHP_EOL, $lines);

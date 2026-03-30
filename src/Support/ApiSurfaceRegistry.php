@@ -168,7 +168,7 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions' => $first,
+            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features' => $first,
             'license' => match ($second) {
                 'status' => 'license status',
                 'activate' => 'license activate',
@@ -358,8 +358,9 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('graph visualize', 'graph visualize [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Render graph slices through the stable graph inspection surface.'),
             $this->cliCommandEntry('prompt', 'prompt <instruction...> [--feature-context] [--dry-run]', 'experimental', 'Build structured AI-edit prompts from current graph state.'),
             $this->cliCommandEntry('license status', 'license status', 'experimental', 'Show the effective Foundry license status from the environment or local store.'),
-            $this->cliCommandEntry('license activate', 'license activate [--key=<license-key>]', 'experimental', 'Validate and store a local Foundry license key. Optional remote validation runs only when explicitly configured.'),
+            $this->cliCommandEntry('license activate', 'license activate [--key=YOUR_KEY]', 'experimental', 'Validate and store a local Foundry license key. Optional remote validation runs only when explicitly configured.'),
             $this->cliCommandEntry('license deactivate', 'license deactivate', 'experimental', 'Remove the locally stored Foundry license file. Environment-provided keys remain active until the environment is cleared.'),
+            $this->cliCommandEntry('features', 'features', 'experimental', 'List licensed feature availability using product-facing feature names.'),
             $this->cliCommandEntry('explain', 'explain <target> [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow]', 'experimental', 'Explain a framework or application subject from the compiled graph, projections, diagnostics, and docs metadata.', 'licensed'),
             $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.', 'licensed'),
             $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.', 'licensed'),
@@ -663,7 +664,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['cache inspect', 'cache clear'], true) => 'Build',
             in_array($signature, ['observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions'], true) => 'Observability',
             in_array($signature, ['serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail'], true) => 'Runtime',
-            in_array($signature, ['license status', 'license activate', 'license deactivate'], true) => 'Monetization',
+            in_array($signature, ['license status', 'license activate', 'license deactivate', 'features'], true) => 'Monetization',
             in_array($signature, ['new', 'init app', 'preview notification'], true)
                 || str_starts_with($signature, 'generate ')
                 => 'App Scaffolding',
@@ -681,6 +682,7 @@ final class ApiSurfaceRegistry
             str_starts_with($signature, 'observe:') => 'observe',
             str_starts_with($signature, 'queue:') => 'queue',
             str_starts_with($signature, 'schedule:') => 'schedule',
+            $signature === 'features' => 'features',
             str_starts_with($signature, 'trace:') => 'trace',
             str_starts_with($signature, 'cache ') => 'cache',
             str_starts_with($signature, 'graph ') => 'graph',

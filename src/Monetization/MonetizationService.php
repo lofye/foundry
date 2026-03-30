@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Foundry\Monetization;
 
+use Foundry\Monetization\Exceptions\FeatureNotLicensed;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
 
@@ -79,6 +80,14 @@ final class MonetizationService
     }
 
     /**
+     * @return list<array{feature:string,enabled:bool,license_required:bool,summary:string}>
+     */
+    public function visibleFeatureStatuses(): array
+    {
+        return $this->featureStatuses($this->status());
+    }
+
+    /**
      * @param array<int,string> $requiredFeatures
      * @return array<string,mixed>
      */
@@ -87,42 +96,31 @@ final class MonetizationService
         $status = $this->status();
 
         if (($status['valid'] ?? false) !== true) {
-            $code = ($status['status'] ?? 'missing') === 'invalid'
-                ? 'LICENSE_INVALID'
-                : 'LICENSE_REQUIRED';
-
-            throw new FoundryError(
-                $code,
-                'authorization',
+            throw new FeatureNotLicensed(
+                FeatureFlags::publicName((string) ($requiredFeatures[0] ?? 'licensed.feature')),
+                $command,
                 [
-                    'command' => $command,
-                    'required_features' => $requiredFeatures,
-                    'license_path' => $status['license_path'] ?? $this->licenses()->path(),
-                    'source' => $status['source'] ?? 'none',
+                    'license_state' => (string) ($status['status'] ?? 'missing'),
+                    'tier' => $this->resolveTier($status),
+                    'source' => (string) ($status['source'] ?? 'none'),
                 ],
-                ($status['message'] ?? 'No active license.')
-                    . ' Some features require a license. Use `foundry license activate --key=<license-key>`.',
             );
         }
 
         $missingFeatures = array_values(array_filter(
             $requiredFeatures,
-            fn(string $feature): bool => !$this->isEnabled($feature),
+            fn(string $feature): bool => !$this->featureEnabledForStatus($feature, $status),
         ));
 
         if ($missingFeatures !== []) {
-            throw new FoundryError(
-                'MONETIZED_FEATURE_NOT_ENABLED',
-                'authorization',
+            throw new FeatureNotLicensed(
+                FeatureFlags::publicName($missingFeatures[0]),
+                $command,
                 [
-                    'command' => $command,
-                    'required_features' => $requiredFeatures,
-                    'missing_features' => $missingFeatures,
+                    'license_state' => 'active',
                     'tier' => $this->resolveTier($status),
-                    'license_path' => $status['license_path'] ?? $this->licenses()->path(),
-                    'source' => $status['source'] ?? 'none',
+                    'source' => (string) ($status['source'] ?? 'none'),
                 ],
-                'The current license tier does not enable the requested feature set.',
             );
         }
 
@@ -305,10 +303,28 @@ final class MonetizationService
         $featureFlags = (($status['valid'] ?? false) === true)
             ? $this->enabledFeaturesForTier($tier)
             : [];
+        $featureStatuses = $this->featureStatuses($status);
 
         $status['tier'] = $tier;
         $status['feature_flags'] = $featureFlags;
         $status['features'] = $featureFlags;
+        $status['feature_statuses'] = $featureStatuses;
+        $status['public_features'] = [
+            'enabled' => array_values(array_map(
+                static fn(array $row): string => (string) ($row['feature'] ?? ''),
+                array_values(array_filter(
+                    $featureStatuses,
+                    static fn(array $row): bool => ($row['enabled'] ?? false) === true,
+                )),
+            )),
+            'disabled' => array_values(array_map(
+                static fn(array $row): string => (string) ($row['feature'] ?? ''),
+                array_values(array_filter(
+                    $featureStatuses,
+                    static fn(array $row): bool => ($row['enabled'] ?? false) !== true,
+                )),
+            )),
+        ];
         $status['source'] = (string) ($status['source'] ?? (
             ($status['status'] ?? 'missing') === 'missing'
                 ? 'none'
@@ -317,7 +333,7 @@ final class MonetizationService
         $status['usage_tracking'] = $this->usageTracker()->status();
         $status['upgrade'] = [
             'status_command' => 'foundry license status',
-            'activate_command' => 'foundry license activate --key=<license-key>',
+            'activate_command' => 'foundry license activate --key=YOUR_KEY',
             'deactivate_command' => 'foundry license deactivate',
         ];
 
@@ -345,6 +361,26 @@ final class MonetizationService
         $requiredTiers = FeatureFlags::requiredTiers();
 
         return in_array($this->resolveTier($status), $requiredTiers[$feature] ?? [], true);
+    }
+
+    /**
+     * @param array<string,mixed> $status
+     * @return list<array{feature:string,enabled:bool,license_required:bool,summary:string}>
+     */
+    private function featureStatuses(array $status): array
+    {
+        $rows = [];
+
+        foreach (FeatureFlags::catalog(true) as $feature => $metadata) {
+            $rows[] = [
+                'feature' => (string) ($metadata['name'] ?? $feature),
+                'enabled' => $this->featureEnabledForStatus($feature, $status),
+                'license_required' => true,
+                'summary' => (string) ($metadata['summary'] ?? ''),
+            ];
+        }
+
+        return $rows;
     }
 
     /**

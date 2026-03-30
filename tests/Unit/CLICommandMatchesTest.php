@@ -28,6 +28,7 @@ use Foundry\CLI\Commands\InspectPlatformCommand;
 use Foundry\CLI\Commands\InspectResourceCommand;
 use Foundry\CLI\Commands\InspectRouteCommand;
 use Foundry\CLI\Commands\LicenseCommand;
+use Foundry\CLI\Commands\FeaturesCommand;
 use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\ObserveCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
@@ -126,6 +127,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new HistoryCommand())->matches(['history']));
         $this->assertTrue((new RegressionsCommand())->matches(['regressions']));
         $this->assertTrue((new LicenseCommand())->matches(['license', 'activate', 'key']));
+        $this->assertTrue((new FeaturesCommand())->matches(['features']));
         $this->assertTrue((new PromptGenerateCommand())->matches(['generate', 'add', 'bookmark', 'support']));
         $this->assertTrue((new UpgradeCheckCommand())->matches(['upgrade-check']));
         $this->assertTrue((new GraphVisualizeCommand())->matches(['graph', 'visualize']));
