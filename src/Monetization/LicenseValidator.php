@@ -13,11 +13,7 @@ final class LicenseValidator
      * @var array<int,string>
      */
     public const FEATURES = [
-        FeatureFlags::PRO_DEEP_DIAGNOSTICS,
-        FeatureFlags::PRO_EXPLAIN_PLUS,
-        FeatureFlags::PRO_GRAPH_DIFF,
-        FeatureFlags::PRO_TRACE,
-        FeatureFlags::PRO_GENERATE,
+        FeatureFlags::HOSTED_SYNC,
     ];
 
     /**

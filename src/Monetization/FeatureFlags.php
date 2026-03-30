@@ -17,38 +17,50 @@ final class FeatureFlags
     public const HOSTED_SYNC = 'feature.hosted.sync';
 
     /**
-     * @var array<string,array{name:string,summary:string,visible:bool}>
+     * @var array<string,array{name:string,summary:string,type:string,monetization:string,visible:bool}>
      */
-    private const PUBLIC_CATALOG = [
+    private const DEFINITIONS = [
         self::PRO_DEEP_DIAGNOSTICS => [
             'name' => 'doctor.deep',
             'summary' => 'Deep diagnostics',
+            'type' => 'capability',
+            'monetization' => 'none',
             'visible' => true,
         ],
         self::PRO_EXPLAIN_PLUS => [
             'name' => 'explain.advanced',
             'summary' => 'Advanced explain output',
+            'type' => 'capability',
+            'monetization' => 'none',
             'visible' => true,
         ],
         self::PRO_GRAPH_DIFF => [
             'name' => 'diff.graph',
             'summary' => 'Graph diff analysis',
+            'type' => 'capability',
+            'monetization' => 'none',
             'visible' => true,
         ],
         self::PRO_TRACE => [
             'name' => 'trace.analysis',
             'summary' => 'Trace analysis',
+            'type' => 'capability',
+            'monetization' => 'none',
             'visible' => true,
         ],
         self::PRO_GENERATE => [
             'name' => 'generate.full',
             'summary' => 'Prompt-based generation',
+            'type' => 'capability',
+            'monetization' => 'none',
             'visible' => true,
         ],
         self::HOSTED_SYNC => [
-            'name' => 'sync.hosted',
-            'summary' => 'Hosted sync',
-            'visible' => false,
+            'name' => 'marketplace.access',
+            'summary' => 'Marketplace participation',
+            'type' => 'service',
+            'monetization' => 'licensed',
+            'visible' => true,
         ],
     ];
 
@@ -71,15 +83,15 @@ final class FeatureFlags
      */
     public static function licensed(): array
     {
-        return self::pro();
+        return self::serviceManaged();
     }
 
     /**
-     * @return array<string,array{name:string,summary:string,visible:bool}>
+     * @return array<string,array{name:string,summary:string,type:string,monetization:string,visible:bool}>
      */
     public static function catalog(bool $visibleOnly = false): array
     {
-        $catalog = self::PUBLIC_CATALOG;
+        $catalog = self::DEFINITIONS;
 
         if ($visibleOnly) {
             $catalog = array_filter(
@@ -101,7 +113,7 @@ final class FeatureFlags
 
     public static function publicName(string $feature): string
     {
-        return (string) (self::PUBLIC_CATALOG[$feature]['name'] ?? $feature);
+        return (string) (self::DEFINITIONS[$feature]['name'] ?? $feature);
     }
 
     /**
@@ -121,18 +133,49 @@ final class FeatureFlags
     }
 
     /**
-     * @return array<string,list<string>>
+     * @return list<string>
      */
-    public static function requiredTiers(): array
+    public static function capabilities(): array
     {
-        return [
-            self::PRO_DEEP_DIAGNOSTICS => [self::TIER_PRO],
-            self::PRO_EXPLAIN_PLUS => [self::TIER_PRO],
-            self::PRO_GRAPH_DIFF => [self::TIER_PRO],
-            self::PRO_TRACE => [self::TIER_PRO],
-            self::PRO_GENERATE => [self::TIER_PRO],
-            self::HOSTED_SYNC => [self::TIER_PRO],
+        return array_keys(array_filter(
+            self::DEFINITIONS,
+            static fn(array $definition): bool => (string) ($definition['type'] ?? 'capability') === 'capability',
+        ));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function serviceManaged(): array
+    {
+        return array_keys(array_filter(
+            self::DEFINITIONS,
+            static fn(array $definition): bool => (string) ($definition['monetization'] ?? 'none') === 'licensed',
+        ));
+    }
+
+    /**
+     * @return array{name:string,summary:string,type:string,monetization:string,visible:bool}
+     */
+    public static function definition(string $feature): array
+    {
+        return self::DEFINITIONS[$feature] ?? [
+            'name' => $feature,
+            'summary' => '',
+            'type' => 'capability',
+            'monetization' => 'none',
+            'visible' => false,
         ];
+    }
+
+    public static function type(string $feature): string
+    {
+        return (string) (self::definition($feature)['type'] ?? 'capability');
+    }
+
+    public static function monetization(string $feature): string
+    {
+        return (string) (self::definition($feature)['monetization'] ?? 'none');
     }
 
     /**
@@ -142,8 +185,10 @@ final class FeatureFlags
     {
         $enabled = [];
 
-        foreach (self::requiredTiers() as $feature => $tiers) {
-            if (in_array($tier, $tiers, true)) {
+        foreach (self::DEFINITIONS as $feature => $definition) {
+            $monetization = (string) ($definition['monetization'] ?? 'none');
+
+            if ($monetization === 'licensed' && $tier !== self::TIER_FREE) {
                 $enabled[] = $feature;
             }
         }

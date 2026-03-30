@@ -212,7 +212,7 @@ final class CommandPlaygroundPage
       + '<h2>' + escapeHtml(command.signature) + '</h2>'
       + '<p class="command-playground__meta">'
       + '<span>' + escapeHtml(command.stability || 'internal') + '</span>'
-      + '<span>' + escapeHtml(command.availability === 'licensed' ? 'License required' : 'Core') + '</span>'
+      + '<span>' + escapeHtml(command.availability || 'core') + '</span>'
       + '</p>'
       + '<p>' + escapeHtml(command.description || '') + '</p>'
       + '<h3>Usage Signature</h3>'

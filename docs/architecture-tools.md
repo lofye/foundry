@@ -18,17 +18,17 @@ The compiler core established a canonical semantic compiler and graph. The exten
 - Diagnostics use the existing `DiagnosticBag` shape and severity model.
 - CLI outputs remain deterministic and support `--json`.
 
-## Licensed Architecture Tools
+## Architecture Tools
 
-Licensed architecture tools are an optional layer on top of the same local graph and build artifacts used by core Foundry.
+These architecture tools are an optional layer on top of the same local graph and build artifacts used by core Foundry.
 
 - Core Foundry remains fully usable without a license.
-- Some advanced features require a license, but remain additive and do not change compile, runtime, or verification semantics for unlicensed installs.
+- Explain, diff, trace, deep diagnostics, and generation remain available without a license.
 - Licensing is local-first and stored in `~/.foundry/license.json` by default.
+- Licenses are retained for future identity and service participation such as marketplace access.
 - No background network calls are performed.
-- Licensed commands remain visible in CLI help and fail with a clear non-zero response when no valid license is present.
 
-Current licensed command surface:
+Current command surface:
 
 ```bash
 foundry license activate --key=YOUR_KEY
@@ -94,7 +94,7 @@ Current built-in doctor checks:
 - route/pipeline consistency
 
 `--strict` fails on warnings and errors; default mode fails on errors only.
-`--deep` adds licensed hotspot and graph topology diagnostics on top of the standard doctor payload.
+`--deep` adds hotspot and graph topology diagnostics on top of the standard doctor payload.
 
 ## Graph Visualization And Export
 
@@ -774,18 +774,24 @@ Use a more specific target, or prefix with type:
 
 ```json
 {
-  "error": {
-    "code": "FEATURE_NOT_LICENSED",
-    "category": "authorization",
-    "message": "This feature requires a license.",
-    "details": {
-      "feature": "explain.advanced",
-      "command": "explain",
-      "license_state": "missing",
-      "tier": "free",
-      "source": "none"
+  "license": {
+    "active": false,
+    "tier": "free"
+  },
+  "features": [
+    {
+      "feature": "doctor.deep",
+      "type": "capability",
+      "monetization": "none",
+      "status": "available"
+    },
+    {
+      "feature": "marketplace.access",
+      "type": "service",
+      "monetization": "licensed",
+      "status": "unavailable"
     }
-  }
+  ]
 }
 ```
 

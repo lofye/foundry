@@ -33,7 +33,7 @@ final class ExplainCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $this->requireLicensedFeatures('explain', [FeatureFlags::PRO_EXPLAIN_PLUS]);
+        $this->monetizationContext('explain', [FeatureFlags::PRO_EXPLAIN_PLUS]);
         [$target, $targetKind, $options] = $this->parseExplainArgs($args);
 
         if ($target === '') {

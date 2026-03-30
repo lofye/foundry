@@ -29,7 +29,9 @@ final class FeaturesCommand extends Command
         $rows = array_values(array_map(
             static fn(array $row): array => [
                 'feature' => (string) ($row['feature'] ?? ''),
-                'status' => (($row['enabled'] ?? false) === true) ? 'enabled' : 'disabled (license required)',
+                'type' => (string) ($row['type'] ?? 'capability'),
+                'monetization' => (string) ($row['monetization'] ?? 'none'),
+                'status' => (string) ($row['status'] ?? 'available'),
             ],
             (array) ($status['feature_statuses'] ?? []),
         ));
@@ -50,23 +52,36 @@ final class FeaturesCommand extends Command
     }
 
     /**
-     * @param array<int,array{feature:string,status:string}> $rows
+     * @param array<int,array{feature:string,type:string,monetization:string,status:string}> $rows
      */
     private function renderTable(array $rows): string
     {
         $featureWidth = strlen('Feature');
+        $typeWidth = strlen('Type');
+        $monetizationWidth = strlen('Monetization');
 
         foreach ($rows as $row) {
             $featureWidth = max($featureWidth, strlen($row['feature']));
+            $typeWidth = max($typeWidth, strlen($row['type']));
+            $monetizationWidth = max($monetizationWidth, strlen($row['monetization']));
         }
 
         $lines = [
-            str_pad('Feature', $featureWidth) . '  Status',
-            str_repeat('-', $featureWidth) . '  ' . str_repeat('-', strlen('Status')),
+            str_pad('Feature', $featureWidth)
+                . '  ' . str_pad('Type', $typeWidth)
+                . '  ' . str_pad('Monetization', $monetizationWidth)
+                . '  Status',
+            str_repeat('-', $featureWidth)
+                . '  ' . str_repeat('-', $typeWidth)
+                . '  ' . str_repeat('-', $monetizationWidth)
+                . '  ' . str_repeat('-', strlen('Status')),
         ];
 
         foreach ($rows as $row) {
-            $lines[] = str_pad($row['feature'], $featureWidth) . '  ' . $row['status'];
+            $lines[] = str_pad($row['feature'], $featureWidth)
+                . '  ' . str_pad($row['type'], $typeWidth)
+                . '  ' . str_pad($row['monetization'], $monetizationWidth)
+                . '  ' . $row['status'];
         }
 
         return implode(PHP_EOL, $lines);

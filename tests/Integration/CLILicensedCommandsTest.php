@@ -108,7 +108,7 @@ YAML);
         $this->project->cleanup();
     }
 
-    public function test_licensed_commands_are_gated_without_license(): void
+    public function test_core_capability_commands_run_without_license(): void
     {
         $app = new Application();
 
@@ -117,34 +117,26 @@ YAML);
         $this->assertFalse($status['payload']['license']['valid']);
 
         $explain = $this->runCommand($app, ['foundry', 'explain', 'publish_post', '--json']);
-        $this->assertSame(1, $explain['status']);
-        $this->assertSame('FEATURE_NOT_LICENSED', $explain['payload']['error']['code']);
-        $this->assertSame('explain.advanced', $explain['payload']['error']['details']['feature']);
-        $this->assertArrayNotHasKey('required_features', $explain['payload']['error']['details']);
+        $this->assertSame(0, $explain['status']);
+        $this->assertSame('feature:publish_post', $explain['payload']['subject']['id']);
 
         $deep = $this->runCommand($app, ['foundry', 'doctor', '--deep', '--json']);
-        $this->assertSame(1, $deep['status']);
-        $this->assertSame('FEATURE_NOT_LICENSED', $deep['payload']['error']['code']);
-        $this->assertSame('doctor.deep', $deep['payload']['error']['details']['feature']);
+        $this->assertSame(0, $deep['status']);
+        $this->assertTrue($deep['payload']['deep']);
+        $this->assertArrayHasKey('deep_diagnostics', $deep['payload']['monetization']);
 
         $generate = $this->runCommand($app, ['foundry', 'generate', 'Add', 'bookmark', 'support', '--json']);
         $this->assertSame(1, $generate['status']);
-        $this->assertSame('FEATURE_NOT_LICENSED', $generate['payload']['error']['code']);
-        $this->assertSame('generate.full', $generate['payload']['error']['details']['feature']);
+        $this->assertSame('GENERATE_PROVIDER_NOT_CONFIGURED', $generate['payload']['error']['code']);
 
-        $gated = $this->runCommandRaw($app, ['foundry', 'explain', 'publish_post']);
-        $this->assertSame(1, $gated['status']);
-        $this->assertStringContainsString('This feature requires a license.', $gated['output']);
-        $this->assertStringContainsString('foundry license activate --key=YOUR_KEY', $gated['output']);
-        $this->assertStringContainsString('https://foundryframework.org/pricing', $gated['output']);
-        $this->assertStringNotContainsString('feature.pro.', $gated['output']);
+        $explainText = $this->runCommandRaw($app, ['foundry', 'explain', 'publish_post']);
+        $this->assertSame(0, $explainText['status']);
+        $this->assertStringContainsString('Subject', $explainText['output']);
 
         $help = $this->runCommandRaw($app, ['foundry', 'help']);
         $this->assertSame(0, $help['status']);
-        $this->assertStringContainsString(' [Licensed]', $help['output']);
-        $this->assertStringContainsString('generate <prompt> [Licensed]', $help['output']);
-        $this->assertStringContainsString('Some advanced features require a license.', $help['output']);
-        $this->assertStringContainsString('Run: foundry license status', $help['output']);
+        $this->assertStringNotContainsString(' [Licensed]', $help['output']);
+        $this->assertStringNotContainsString('requires a license', $help['output']);
         $this->assertStringNotContainsString('[Pro]', $help['output']);
     }
 

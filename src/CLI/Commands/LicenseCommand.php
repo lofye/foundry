@@ -17,7 +17,7 @@ final class LicenseCommand extends Command
      */
     private const LICENSE_COMMANDS = [
         'license status',
-        'license activate [--key=<license-key>]',
+        'license activate [--key=YOUR_KEY]',
         'license deactivate',
     ];
 
@@ -113,75 +113,65 @@ final class LicenseCommand extends Command
     private function renderStatus(array $license): string
     {
         $active = (($license['valid'] ?? false) === true);
+        $capabilities = array_values(array_filter(array_map('strval', (array) ($license['capabilities'] ?? []))));
+        $services = is_array($license['service_access'] ?? null) ? $license['service_access'] : [];
+        $usageTracking = is_array($license['usage_tracking'] ?? null) ? $license['usage_tracking'] : ['enabled' => false];
         $lines = [
             'License: ' . ($active ? 'Active' : 'Not active'),
             'Tier: ' . (string) ($license['tier'] ?? FeatureFlags::TIER_FREE),
             '',
+            'Core capabilities remain available without a license.',
         ];
 
-        if ($active) {
-            $lines[] = 'Enabled features:';
-            array_push($lines, ...$this->featureLines(
-                (array) (($license['public_features']['enabled'] ?? [])),
-                null,
-            ));
-            $lines[] = '';
-            $lines[] = 'Disabled features:';
-            array_push($lines, ...$this->featureLines(
-                (array) (($license['public_features']['disabled'] ?? [])),
-                3,
-            ));
+        if ($capabilities !== []) {
+            $lines[] = 'Capabilities: ' . implode(', ', $capabilities);
+        }
 
-            $source = trim((string) ($license['source'] ?? ''));
-            if ($source !== '' && $source !== 'none') {
-                $lines[] = '';
-                $lines[] = 'Source: ' . $source;
-            }
-        } else {
-            $lines[] = 'Some advanced features are unavailable.';
-            $lines[] = '';
-            $lines[] = 'Disabled features:';
-            array_push($lines, ...$this->featureLines(
-                (array) (($license['public_features']['disabled'] ?? [])),
-                3,
-            ));
+        $lines[] = '';
+        $lines[] = 'Service access:';
+        array_push($lines, ...$this->serviceLines($services));
 
-            if (($license['status'] ?? 'missing') === 'invalid') {
-                $details = trim((string) ($license['message'] ?? ''));
-                if ($details !== '') {
-                    $lines[] = '';
-                    $lines[] = 'Details: ' . $details;
-                }
-            }
-
+        $source = trim((string) ($license['source'] ?? ''));
+        if ($active && $source !== '' && $source !== 'none') {
             $lines[] = '';
+            $lines[] = 'Source: ' . $source;
+        }
+
+        if (!$active) {
+            $lines[] = '';
+            $lines[] = 'A license may be used for future identity and service access.';
             $lines[] = 'Activate with:';
             $lines[] = '  foundry license activate --key=YOUR_KEY';
         }
+
+        $lines[] = '';
+        $lines[] = 'Usage tracking: ' . (((bool) ($usageTracking['enabled'] ?? false))
+            ? 'enabled (opt-in local analytics)'
+            : 'disabled (opt-in local analytics)');
 
         return implode(PHP_EOL, $lines);
     }
 
     /**
-     * @param array<int,mixed> $features
+     * @param array<string,mixed> $services
      * @return list<string>
      */
-    private function featureLines(array $features, ?int $limit): array
+    private function serviceLines(array $services): array
     {
-        $names = array_values(array_filter(array_map('strval', $features), static fn(string $name): bool => trim($name) !== ''));
+        $available = array_values(array_filter(array_map('strval', (array) ($services['available'] ?? []))));
+        $unavailable = array_values(array_filter(array_map('strval', (array) ($services['unavailable'] ?? []))));
+        $lines = [];
 
-        if ($names === []) {
-            return ['- none'];
+        foreach ($available as $service) {
+            $lines[] = '- ' . $service . ': available';
         }
 
-        $visible = $limit === null ? $names : array_slice($names, 0, $limit);
-        $lines = array_values(array_map(
-            static fn(string $name): string => '- ' . $name,
-            $visible,
-        ));
+        foreach ($unavailable as $service) {
+            $lines[] = '- ' . $service . ': unavailable';
+        }
 
-        if ($limit !== null && count($names) > $limit) {
-            $lines[] = '- and ' . (count($names) - $limit) . ' more';
+        if ($lines === []) {
+            return ['- none'];
         }
 
         return $lines;

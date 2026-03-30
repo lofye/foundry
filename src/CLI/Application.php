@@ -248,16 +248,11 @@ final class Application
                     continue;
                 }
 
-                $availability = (string) ($entry['availability'] ?? 'core');
-                $suffix = $availability === 'licensed' ? ' [Licensed]' : '';
-
-                $lines[] = '- ' . (string) ($entry['signature'] ?? '') . $suffix . ': ' . (string) ($entry['summary'] ?? '');
+                $lines[] = '- ' . (string) ($entry['signature'] ?? '') . ': ' . (string) ($entry['summary'] ?? '');
             }
             $lines[] = '';
         }
 
-        $lines[] = 'Some advanced features require a license.';
-        $lines[] = 'Run: foundry license status';
         $lines[] = 'Use `foundry help <command>` for usage, stability, and semver details.';
         $lines[] = 'Use `foundry help inspect`, `foundry help verify`, or `foundry help generate` to browse a command family.';
 
@@ -274,17 +269,11 @@ final class Application
             'Command: ' . (string) ($command['signature'] ?? ''),
             'Usage: ' . (string) ($command['usage'] ?? ''),
             'Stability: ' . (string) ($command['stability'] ?? 'internal'),
-            'Availability: ' . ($availability === 'licensed' ? 'Licensed' : 'Core'),
+            'Availability: ' . ucfirst($availability),
             'Classification: ' . (string) ($command['classification'] ?? 'internal_api'),
             'Summary: ' . (string) ($command['summary'] ?? ''),
             'Semver: ' . (string) ($command['semver_policy'] ?? ''),
         ];
-
-        if ($availability === 'licensed') {
-            $lines[] = 'License: Some advanced features require a license.';
-            $lines[] = 'Run: foundry license status';
-            $lines[] = 'Activate: foundry license activate --key=YOUR_KEY';
-        }
 
         return implode(PHP_EOL, $lines);
     }
@@ -370,7 +359,7 @@ final class Application
             'graph' => 'Inspect or render graph slices through the graph command family.',
             'init' => 'Browse the legacy scaffolding alias family.',
             'inspect' => 'Inspect compiled graph, feature, integration, and reference surfaces.',
-            'license' => 'Inspect or manage local license state for monetized features.',
+            'license' => 'Inspect or manage local license identity and service access state.',
             'observe' => 'Capture or compare graph-aware trace and profile summaries.',
             'queue' => 'Browse local development queue commands.',
             'schedule' => 'Browse local development scheduler commands.',
@@ -404,15 +393,11 @@ final class Application
                     continue;
                 }
 
-                $availability = (string) ($entry['availability'] ?? 'core');
-                $suffix = $availability === 'licensed' ? ' [Licensed]' : '';
-                $lines[] = '- ' . (string) ($entry['signature'] ?? '') . $suffix . ': ' . (string) ($entry['summary'] ?? '');
+                $lines[] = '- ' . (string) ($entry['signature'] ?? '') . ': ' . (string) ($entry['summary'] ?? '');
             }
             $lines[] = '';
         }
 
-        $lines[] = 'Some advanced features require a license.';
-        $lines[] = 'Run: foundry license status';
         $lines[] = 'Use `foundry help <full command>` for exact usage, stability, and semver details.';
 
         return implode(PHP_EOL, $lines);

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Foundry\Monetization;
 
-use Foundry\Monetization\Exceptions\FeatureNotLicensed;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
 
@@ -80,7 +79,7 @@ final class MonetizationService
     }
 
     /**
-     * @return list<array{feature:string,enabled:bool,license_required:bool,summary:string}>
+     * @return list<array{feature:string,type:string,monetization:string,enabled:bool,status:string,summary:string}>
      */
     public function visibleFeatureStatuses(): array
     {
@@ -91,38 +90,9 @@ final class MonetizationService
      * @param array<int,string> $requiredFeatures
      * @return array<string,mixed>
      */
-    public function require(string $command, array $requiredFeatures = []): array
+    public function trackUsage(string $command, array $requiredFeatures = []): array
     {
         $status = $this->status();
-
-        if (($status['valid'] ?? false) !== true) {
-            throw new FeatureNotLicensed(
-                FeatureFlags::publicName((string) ($requiredFeatures[0] ?? 'licensed.feature')),
-                $command,
-                [
-                    'license_state' => (string) ($status['status'] ?? 'missing'),
-                    'tier' => $this->resolveTier($status),
-                    'source' => (string) ($status['source'] ?? 'none'),
-                ],
-            );
-        }
-
-        $missingFeatures = array_values(array_filter(
-            $requiredFeatures,
-            fn(string $feature): bool => !$this->featureEnabledForStatus($feature, $status),
-        ));
-
-        if ($missingFeatures !== []) {
-            throw new FeatureNotLicensed(
-                FeatureFlags::publicName($missingFeatures[0]),
-                $command,
-                [
-                    'license_state' => 'active',
-                    'tier' => $this->resolveTier($status),
-                    'source' => (string) ($status['source'] ?? 'none'),
-                ],
-            );
-        }
 
         $this->usageTracker()->record([
             'command' => $command,
@@ -131,9 +101,19 @@ final class MonetizationService
             'source' => (string) ($status['source'] ?? 'file'),
             'fingerprint' => (string) ($status['fingerprint'] ?? ''),
             'feature_flags' => array_values($requiredFeatures),
+            'feature_names' => FeatureFlags::publicNames($requiredFeatures),
         ]);
 
         return $status;
+    }
+
+    /**
+     * @param array<int,string> $requiredFeatures
+     * @return array<string,mixed>
+     */
+    public function require(string $command, array $requiredFeatures = []): array
+    {
+        return $this->trackUsage($command, $requiredFeatures);
     }
 
     /**
@@ -309,19 +289,28 @@ final class MonetizationService
         $status['feature_flags'] = $featureFlags;
         $status['features'] = $featureFlags;
         $status['feature_statuses'] = $featureStatuses;
-        $status['public_features'] = [
-            'enabled' => array_values(array_map(
+        $status['capabilities'] = array_values(array_map(
+            static fn(array $row): string => (string) ($row['feature'] ?? ''),
+            array_values(array_filter(
+                $featureStatuses,
+                static fn(array $row): bool => (string) ($row['type'] ?? '') === 'capability',
+            )),
+        ));
+        $status['service_access'] = [
+            'available' => array_values(array_map(
                 static fn(array $row): string => (string) ($row['feature'] ?? ''),
                 array_values(array_filter(
                     $featureStatuses,
-                    static fn(array $row): bool => ($row['enabled'] ?? false) === true,
+                    static fn(array $row): bool => (string) ($row['type'] ?? '') === 'service'
+                        && ($row['enabled'] ?? false) === true,
                 )),
             )),
-            'disabled' => array_values(array_map(
+            'unavailable' => array_values(array_map(
                 static fn(array $row): string => (string) ($row['feature'] ?? ''),
                 array_values(array_filter(
                     $featureStatuses,
-                    static fn(array $row): bool => ($row['enabled'] ?? false) !== true,
+                    static fn(array $row): bool => (string) ($row['type'] ?? '') === 'service'
+                        && ($row['enabled'] ?? false) !== true,
                 )),
             )),
         ];
@@ -331,7 +320,7 @@ final class MonetizationService
                 : 'file'
         ));
         $status['usage_tracking'] = $this->usageTracker()->status();
-        $status['upgrade'] = [
+        $status['license_commands'] = [
             'status_command' => 'foundry license status',
             'activate_command' => 'foundry license activate --key=YOUR_KEY',
             'deactivate_command' => 'foundry license deactivate',
@@ -354,28 +343,29 @@ final class MonetizationService
 
     private function featureEnabledForStatus(string $feature, array $status): bool
     {
-        if (($status['valid'] ?? false) !== true) {
-            return false;
+        if (FeatureFlags::monetization($feature) !== 'licensed') {
+            return true;
         }
 
-        $requiredTiers = FeatureFlags::requiredTiers();
-
-        return in_array($this->resolveTier($status), $requiredTiers[$feature] ?? [], true);
+        return ($status['valid'] ?? false) === true;
     }
 
     /**
      * @param array<string,mixed> $status
-     * @return list<array{feature:string,enabled:bool,license_required:bool,summary:string}>
+     * @return list<array{feature:string,type:string,monetization:string,enabled:bool,status:string,summary:string}>
      */
     private function featureStatuses(array $status): array
     {
         $rows = [];
 
         foreach (FeatureFlags::catalog(true) as $feature => $metadata) {
+            $enabled = $this->featureEnabledForStatus($feature, $status);
             $rows[] = [
                 'feature' => (string) ($metadata['name'] ?? $feature),
-                'enabled' => $this->featureEnabledForStatus($feature, $status),
-                'license_required' => true,
+                'type' => (string) ($metadata['type'] ?? 'capability'),
+                'monetization' => (string) ($metadata['monetization'] ?? 'none'),
+                'enabled' => $enabled,
+                'status' => $enabled ? 'available' : 'unavailable',
                 'summary' => (string) ($metadata['summary'] ?? ''),
             ];
         }

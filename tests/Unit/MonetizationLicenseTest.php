@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Foundry\Tests\Unit;
 
 use Foundry\Monetization\FeatureFlags;
-use Foundry\Monetization\FeatureGate;
-use Foundry\Monetization\Exceptions\FeatureNotLicensed;
 use Foundry\Monetization\LicenseStore;
 use Foundry\Monetization\LicenseValidator;
 use Foundry\Monetization\MonetizationService;
@@ -96,29 +94,26 @@ final class MonetizationLicenseTest extends TestCase
         $this->assertSame('invalid', $invalid['status']);
     }
 
-    public function test_feature_gate_blocks_when_license_is_missing(): void
+    public function test_capabilities_remain_enabled_without_license(): void
     {
-        $gate = new FeatureGate(new LicenseStore());
+        $service = new MonetizationService(new LicenseStore());
 
-        try {
-            $gate->require('explain', [FeatureFlags::PRO_EXPLAIN_PLUS]);
-            self::fail('Expected feature gate to require a license.');
-        } catch (FeatureNotLicensed $error) {
-            $this->assertSame('This feature requires a license.', $error->getMessage());
-            $this->assertSame('explain.advanced', $error->feature);
-            $this->assertSame('explain', $error->command);
-        }
+        $this->assertSame(FeatureFlags::TIER_FREE, $service->getTier());
+        $this->assertTrue($service->isEnabled(FeatureFlags::PRO_EXPLAIN_PLUS));
+        $this->assertContains('explain.advanced', $service->status()['capabilities']);
+        $this->assertContains('marketplace.access', $service->status()['service_access']['unavailable']);
     }
 
-    public function test_feature_gate_accepts_enabled_license(): void
+    public function test_license_enables_service_access_without_gating_capabilities(): void
     {
         $store = new LicenseStore();
         $store->enable($this->validKey());
 
-        $license = (new FeatureGate($store))->require('trace', [FeatureFlags::PRO_TRACE]);
+        $status = (new MonetizationService($store))->status();
 
-        $this->assertTrue($license['valid']);
-        $this->assertContains(FeatureFlags::PRO_TRACE, $license['features']);
+        $this->assertTrue($status['valid']);
+        $this->assertContains('marketplace.access', $status['service_access']['available']);
+        $this->assertTrue((new MonetizationService($store))->isEnabled(FeatureFlags::PRO_TRACE));
     }
 
     public function test_monetization_service_reports_current_tier_and_enabled_features(): void
@@ -129,7 +124,7 @@ final class MonetizationLicenseTest extends TestCase
 
         $this->assertSame(FeatureFlags::TIER_PRO, $service->getTier());
         $this->assertTrue($service->isEnabled(FeatureFlags::PRO_TRACE));
-        $this->assertContains('trace.analysis', $service->status()['public_features']['enabled']);
+        $this->assertContains('trace.analysis', $service->status()['capabilities']);
     }
 
     public function test_monetization_service_prefers_environment_license_key(): void
@@ -140,7 +135,7 @@ final class MonetizationLicenseTest extends TestCase
 
         $this->assertTrue($status['valid']);
         $this->assertSame('environment', $status['source']);
-        $this->assertContains(FeatureFlags::PRO_GENERATE, $status['feature_flags']);
+        $this->assertContains(FeatureFlags::HOSTED_SYNC, $status['feature_flags']);
     }
 
     public function test_monetization_service_can_deactivate_local_license_while_environment_source_remains(): void

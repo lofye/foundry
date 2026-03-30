@@ -63,7 +63,7 @@ final class DoctorCommand extends Command
                 'Feature not found.',
             );
         }
-        $deepLicense = $deep ? $this->requireLicensedFeatures('doctor --deep', [FeatureFlags::PRO_DEEP_DIAGNOSTICS]) : null;
+        $deepLicense = $deep ? $this->monetizationContext('doctor --deep', [FeatureFlags::PRO_DEEP_DIAGNOSTICS]) : null;
 
         $paths = $context->paths();
         $commandPrefix = $this->commandPrefix($paths);

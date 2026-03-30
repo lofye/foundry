@@ -29,7 +29,7 @@ final class TraceCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $license = $this->requireLicensedFeatures('trace', [FeatureFlags::PRO_TRACE]);
+        $license = $this->monetizationContext('trace', [FeatureFlags::PRO_TRACE]);
         $target = trim(implode(' ', array_slice($args, 1)));
 
         $payload = (new TraceAnalyzer())->analyze(

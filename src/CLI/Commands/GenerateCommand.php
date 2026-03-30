@@ -66,7 +66,7 @@ final class GenerateCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $license = $this->requireLicensedFeatures('generate <prompt>', [FeatureFlags::PRO_GENERATE]);
+        $license = $this->monetizationContext('generate <prompt>', [FeatureFlags::PRO_GENERATE]);
         [$prompt, $options] = $this->parse($args);
 
         if ($prompt === '') {

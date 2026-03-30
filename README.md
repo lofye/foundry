@@ -4,7 +4,7 @@ Foundry is a production-minded, explicit, deterministic, LLM-first PHP framework
 Visit [FoundryFramework.org](https://foundryframework.org) for extensive documentation.
 
 Core Foundry remains MIT-licensed and fully usable without restriction.
-Some advanced features require a license for deeper diagnostics, architecture understanding, trace analysis, graph diffing, and AI-assisted workflows.
+Explain, generate, diagnostics, trace analysis, and graph diffing remain available without a license.
 The monetization system is opt-in, local-first, and isolated from core compile, inspect, verify, scaffold, and runtime flows.
 
 It is optimized for:
@@ -42,11 +42,12 @@ License: MIT.
 ## Licensing
 
 Foundry is fully usable without a license.
-Some advanced features require a license, and licensing remains local-first:
+Licenses are retained for future identity and service access, and licensing remains local-first:
 
 - core compile, inspect, verify, scaffold, runtime, and prompt flows remain available without a license
-- advanced licensed features add `doctor --deep`, `explain`, `diff`, `trace`, and `generate "<prompt>"`
+- `doctor --deep`, `explain`, `diff`, `trace`, and `generate "<prompt>"` remain available without a license
 - licensing is stored locally at `~/.foundry/license.json` by default and may also be supplied through `FOUNDRY_LICENSE_KEY`
+- license state is intended for future identity and service participation such as marketplace access
 - `generate` works in deterministic mode without any provider and otherwise uses whatever local/remote provider you configure in `config/ai.php`
 - `explain` derives architecture explanations from the compiled graph, projections, diagnostics, and docs metadata, not from an LLM
 - usage tracking stays off unless you explicitly opt in with `FOUNDRY_USAGE_TRACKING=1`
@@ -62,7 +63,7 @@ foundry license deactivate --json
 foundry features --json
 ```
 
-Without a valid license, licensed commands stay visible in help, return a clear message, and exit non-zero without affecting core framework behavior.
+Core commands do not depend on license state.
 
 ## Runtime and Language
 - PHP `^8.4`
@@ -280,10 +281,10 @@ foundry doctor --cli --json
 foundry doctor --deep --json
 ```
 
-Core vs Licensed:
+Core capabilities and license services:
 
-- Free/core: `compile`, `inspect`, `verify`, `doctor`, `prompt`, scaffold generators, runtime commands
-- Licensed: `doctor --deep`, `explain <target>`, `diff`, `trace [<target>]`, `generate "<prompt>"`, `license status`, `license activate`, `license deactivate`, `features`
+- Core: `compile`, `inspect`, `verify`, `doctor`, `doctor --deep`, `prompt`, `explain <target>`, `diff`, `trace [<target>]`, `generate "<prompt>"`, scaffold generators, runtime commands
+- License services: `license status`, `license activate`, `license deactivate`, `features`
 
 Licensed command surface:
 

@@ -49,12 +49,14 @@ final class CLILicenseCommandsTest extends TestCase
         $this->assertSame(0, $status['status']);
         $this->assertFalse($status['payload']['license']['valid']);
         $this->assertSame('none', $status['payload']['license']['source']);
-        $this->assertContains('explain.advanced', $status['payload']['license']['public_features']['disabled']);
+        $this->assertContains('explain.advanced', $status['payload']['license']['capabilities']);
+        $this->assertContains('marketplace.access', $status['payload']['license']['service_access']['unavailable']);
 
         $statusText = $this->runCommandRaw($app, ['foundry', 'license', 'status']);
         $this->assertSame(0, $statusText['status']);
         $this->assertStringContainsString('License: Not active', $statusText['output']);
-        $this->assertStringContainsString('Some advanced features are unavailable.', $statusText['output']);
+        $this->assertStringContainsString('Core capabilities remain available without a license.', $statusText['output']);
+        $this->assertStringContainsString('marketplace.access: unavailable', $statusText['output']);
         $this->assertStringContainsString('foundry license activate --key=YOUR_KEY', $statusText['output']);
 
         $help = $this->runCommand($app, ['foundry', 'help', 'license', '--json']);
@@ -71,15 +73,15 @@ final class CLILicenseCommandsTest extends TestCase
         $this->assertSame(0, $activate['status']);
         $this->assertTrue($activate['payload']['license']['valid']);
         $this->assertSame('file', $activate['payload']['license']['source']);
-        $this->assertSame('foundry license status', $activate['payload']['license']['upgrade']['status_command']);
-        $this->assertSame('foundry license activate --key=YOUR_KEY', $activate['payload']['license']['upgrade']['activate_command']);
+        $this->assertSame('foundry license status', $activate['payload']['license']['license_commands']['status_command']);
+        $this->assertSame('foundry license activate --key=YOUR_KEY', $activate['payload']['license']['license_commands']['activate_command']);
         $this->assertContains('license deactivate', $activate['payload']['commands']);
 
         $activeStatus = $this->runCommandRaw($app, ['foundry', 'license', 'status']);
         $this->assertSame(0, $activeStatus['status']);
         $this->assertStringContainsString('License: Active', $activeStatus['output']);
-        $this->assertStringContainsString('Enabled features:', $activeStatus['output']);
-        $this->assertStringContainsString('- explain.advanced', $activeStatus['output']);
+        $this->assertStringContainsString('Core capabilities remain available without a license.', $activeStatus['output']);
+        $this->assertStringContainsString('marketplace.access: available', $activeStatus['output']);
 
         $features = $this->runCommand($app, ['foundry', 'features', '--json']);
         $this->assertSame(0, $features['status']);
@@ -89,7 +91,9 @@ final class CLILicenseCommandsTest extends TestCase
             static fn(array $row): bool => (string) ($row['feature'] ?? '') === 'generate.full',
         );
         $this->assertIsArray($featureRow);
-        $this->assertSame('enabled', $featureRow['status']);
+        $this->assertSame('capability', $featureRow['type']);
+        $this->assertSame('none', $featureRow['monetization']);
+        $this->assertSame('available', $featureRow['status']);
 
         $legacy = $this->runCommand($app, ['foundry', 'pro', 'status', '--json']);
         $this->assertSame(1, $legacy['status']);

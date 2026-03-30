@@ -190,7 +190,7 @@ YAML);
         $explainHelp = $this->runCommand($app, ['foundry', 'help', 'explain', '--json']);
         $this->assertSame(0, $explainHelp['status']);
         $this->assertSame('explain', $explainHelp['payload']['command']['signature']);
-        $this->assertSame('licensed', $explainHelp['payload']['command']['availability']);
+        $this->assertSame('core', $explainHelp['payload']['command']['availability']);
         $this->assertStringContainsString('--neighbors', $explainHelp['payload']['command']['usage']);
         $this->assertSame('Architecture', $explainHelp['payload']['command']['category']);
         $this->assertSame('explain', $explainHelp['payload']['command']['command_type']);
@@ -211,7 +211,7 @@ YAML);
         $generatePromptHelp = $this->runCommand($app, ['foundry', 'help', 'generate', 'Add', '--json']);
         $this->assertSame(0, $generatePromptHelp['status']);
         $this->assertSame('generate <prompt>', $generatePromptHelp['payload']['command']['signature']);
-        $this->assertSame('licensed', $generatePromptHelp['payload']['command']['availability']);
+        $this->assertSame('core', $generatePromptHelp['payload']['command']['availability']);
         $this->assertStringContainsString('--deterministic', $generatePromptHelp['payload']['command']['usage']);
         $this->assertStringContainsString('--provider=<name>', $generatePromptHelp['payload']['command']['usage']);
 
@@ -243,8 +243,7 @@ YAML);
 
         $helpText = $this->runCommandRaw($app, ['foundry', 'help']);
         $this->assertSame(0, $helpText['status']);
-        $this->assertStringContainsString('Some advanced features require a license.', $helpText['output']);
-        $this->assertStringContainsString('Run: foundry license status', $helpText['output']);
+        $this->assertStringNotContainsString('requires a license', $helpText['output']);
     }
 
     public function test_non_json_cache_commands_emit_human_readable_output(): void

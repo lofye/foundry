@@ -30,7 +30,7 @@ final class DeepDoctorCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $license = $this->requireLicensedFeatures('doctor --deep', [FeatureFlags::PRO_DEEP_DIAGNOSTICS]);
+        $license = $this->monetizationContext('doctor --deep', [FeatureFlags::PRO_DEEP_DIAGNOSTICS]);
 
         $baseArgs = array_values(array_filter(
             $args,

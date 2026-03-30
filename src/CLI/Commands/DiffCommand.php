@@ -30,7 +30,7 @@ final class DiffCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $license = $this->requireLicensedFeatures('diff', [FeatureFlags::PRO_GRAPH_DIFF]);
+        $license = $this->monetizationContext('diff', [FeatureFlags::PRO_GRAPH_DIFF]);
 
         $compiler = $context->graphCompiler();
         $baseline = $compiler->loadGraph();
