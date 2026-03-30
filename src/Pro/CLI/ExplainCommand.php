@@ -9,6 +9,7 @@ use Foundry\CLI\CommandContext;
 use Foundry\Compiler\CompileOptions;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainTarget;
+use Foundry\Monetization\FeatureFlags;
 use Foundry\Pro\ArchitectureExplainer;
 use Foundry\Pro\CLI\Concerns\InteractsWithPro;
 use Foundry\Support\FoundryError;
@@ -32,7 +33,7 @@ final class ExplainCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $this->requirePro('explain', ['architecture_explanation']);
+        $this->requirePro('explain', [FeatureFlags::PRO_EXPLAIN_PLUS]);
         [$target, $targetKind, $options] = $this->parseExplainArgs($args);
 
         if ($target === '') {

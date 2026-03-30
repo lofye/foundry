@@ -163,6 +163,10 @@ final class ApiSurfaceRegistry
             return null;
         }
 
+        if ($second === '' && str_contains($first, ':')) {
+            return $first;
+        }
+
         return match ($first) {
             'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions' => $first,
             'compile', 'graph', 'export', 'preview', 'init', 'migrate', 'codemod', 'cache' => match ($first) {
@@ -353,9 +357,12 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('graph inspect', 'graph inspect [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Inspect graph summaries and filtered architecture slices through the stable graph surface.'),
             $this->cliCommandEntry('graph visualize', 'graph visualize [--view=<view>|--events|--routes|--caches|--pipeline|--workflows|--extensions] [--feature=<feature>] [--extension=<extension>] [--pipeline-stage=<stage>] [--command=<target>] [--event=<name>] [--workflow=<name>] [--format=mermaid|dot|svg|json]', 'stable', 'Render graph slices through the stable graph inspection surface.'),
             $this->cliCommandEntry('prompt', 'prompt <instruction...> [--feature-context] [--dry-run]', 'experimental', 'Build structured AI-edit prompts from current graph state.'),
+            $this->cliCommandEntry('license:status', 'license:status', 'experimental', 'Show the effective Foundry monetization license status from the environment or local store.'),
+            $this->cliCommandEntry('license:activate', 'license:activate <license-key>', 'experimental', 'Validate and store a local Foundry license key. Optional remote validation runs only when explicitly configured.'),
+            $this->cliCommandEntry('license:deactivate', 'license:deactivate', 'experimental', 'Remove the locally stored Foundry license file. Environment-provided keys remain active until the environment is cleared.'),
             $this->cliCommandEntry('pro', 'pro [status]', 'experimental', 'Inspect local Foundry Pro licensing status and available Pro commands.', 'pro'),
-            $this->cliCommandEntry('pro enable', 'pro enable <license-key>', 'experimental', 'Validate and store a local Foundry Pro license key without any required network call.', 'pro'),
-            $this->cliCommandEntry('pro status', 'pro status', 'experimental', 'Show the local Foundry Pro license status.', 'pro'),
+            $this->cliCommandEntry('pro enable', 'pro enable <license-key>', 'experimental', 'Legacy alias for `license:activate <license-key>`.', 'pro'),
+            $this->cliCommandEntry('pro status', 'pro status', 'experimental', 'Legacy alias for `license:status` plus the Pro command catalog.', 'pro'),
             $this->cliCommandEntry('explain', 'explain <target> [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow]', 'experimental', 'Explain a framework or application subject from the compiled graph, projections, diagnostics, and docs metadata.', 'pro'),
             $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.', 'pro'),
             $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.', 'pro'),
@@ -659,7 +666,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['cache inspect', 'cache clear'], true) => 'Build',
             in_array($signature, ['observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions'], true) => 'Observability',
             in_array($signature, ['serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail'], true) => 'Runtime',
-            in_array($signature, ['pro', 'pro enable', 'pro status', 'generate <prompt>'], true) => 'Pro',
+            in_array($signature, ['license:status', 'license:activate', 'license:deactivate', 'pro', 'pro enable', 'pro status', 'generate <prompt>'], true) => 'Pro',
             in_array($signature, ['new', 'init app', 'preview notification'], true)
                 || str_starts_with($signature, 'generate ')
                 => 'App Scaffolding',
@@ -680,6 +687,7 @@ final class ApiSurfaceRegistry
             str_starts_with($signature, 'trace:') => 'trace',
             str_starts_with($signature, 'cache ') => 'cache',
             str_starts_with($signature, 'graph ') => 'graph',
+            str_starts_with($signature, 'license:') => 'license',
             str_starts_with($signature, 'pro') => 'pro',
             default => trim((string) strtok($signature, ' ')),
         };

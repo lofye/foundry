@@ -8,6 +8,7 @@ use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
 use Foundry\CLI\Commands\DoctorCommand;
 use Foundry\Compiler\CompileOptions;
+use Foundry\Monetization\FeatureFlags;
 use Foundry\Pro\CLI\Concerns\InteractsWithPro;
 use Foundry\Pro\DeepDiagnosticsBuilder;
 
@@ -30,7 +31,7 @@ final class DeepDoctorCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $license = $this->requirePro('doctor --deep', ['deep_diagnostics']);
+        $license = $this->requirePro('doctor --deep', [FeatureFlags::PRO_DEEP_DIAGNOSTICS]);
 
         $baseArgs = array_values(array_filter(
             $args,

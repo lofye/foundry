@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Foundry\Pro\CLI\Concerns;
 
+use Foundry\Monetization\MonetizationService;
 use Foundry\Pro\FeatureGate;
 use Foundry\Pro\LicenseStore;
 
@@ -23,11 +24,16 @@ trait InteractsWithPro
      */
     protected function proStatus(): array
     {
-        return $this->licenseStore()->status();
+        return $this->monetizationService()->status();
     }
 
     protected function licenseStore(): LicenseStore
     {
         return new LicenseStore();
+    }
+
+    protected function monetizationService(): MonetizationService
+    {
+        return new MonetizationService($this->licenseStore());
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Foundry\Pro;
 
+use Foundry\Monetization\FeatureFlags;
 use Foundry\Support\FoundryError;
 
 final class LicenseValidator
@@ -12,11 +13,11 @@ final class LicenseValidator
      * @var array<int,string>
      */
     public const FEATURES = [
-        'deep_diagnostics',
-        'architecture_explanation',
-        'graph_diffing',
-        'trace_analysis',
-        'ai_assisted_generation',
+        FeatureFlags::PRO_DEEP_DIAGNOSTICS,
+        FeatureFlags::PRO_EXPLAIN_PLUS,
+        FeatureFlags::PRO_GRAPH_DIFF,
+        FeatureFlags::PRO_TRACE,
+        FeatureFlags::PRO_GENERATE,
     ];
 
     /**

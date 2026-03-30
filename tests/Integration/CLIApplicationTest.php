@@ -118,6 +118,39 @@ YAML);
         $this->assertSame('Architecture', $compileGraph['category']);
         $this->assertSame('compile', $compileGraph['command_type']);
 
+        $inspectGroupHelp = $this->runCommand($app, ['foundry', 'help', 'inspect', '--json']);
+        $this->assertSame(0, $inspectGroupHelp['status']);
+        $this->assertSame('inspect', $inspectGroupHelp['payload']['group']['name']);
+        $this->assertGreaterThan(0, (int) $inspectGroupHelp['payload']['group']['counts']['stable']);
+        $inspectGraph = array_find(
+            $inspectGroupHelp['payload']['group']['commands']['stable'],
+            static fn(array $row): bool => (string) ($row['signature'] ?? '') === 'inspect graph',
+        );
+        $this->assertIsArray($inspectGraph);
+        $this->assertSame('Architecture', $inspectGraph['category']);
+
+        $verifyGroupHelp = $this->runCommand($app, ['foundry', 'help', 'verify', '--json']);
+        $this->assertSame(0, $verifyGroupHelp['status']);
+        $this->assertSame('verify', $verifyGroupHelp['payload']['group']['name']);
+        $this->assertGreaterThan(0, (int) $verifyGroupHelp['payload']['group']['counts']['stable']);
+        $verifyGraph = array_find(
+            $verifyGroupHelp['payload']['group']['commands']['stable'],
+            static fn(array $row): bool => (string) ($row['signature'] ?? '') === 'verify graph',
+        );
+        $this->assertIsArray($verifyGraph);
+        $this->assertSame('Verification', $verifyGraph['category']);
+
+        $generateGroupHelp = $this->runCommand($app, ['foundry', 'help', 'generate', '--json']);
+        $this->assertSame(0, $generateGroupHelp['status']);
+        $this->assertSame('generate', $generateGroupHelp['payload']['group']['name']);
+        $this->assertGreaterThan(0, (int) $generateGroupHelp['payload']['group']['counts']['stable']);
+        $generateDocs = array_find(
+            $generateGroupHelp['payload']['group']['commands']['stable'],
+            static fn(array $row): bool => (string) ($row['signature'] ?? '') === 'generate docs',
+        );
+        $this->assertIsArray($generateDocs);
+        $this->assertSame('Docs', $generateDocs['category']);
+
         $commandHelp = $this->runCommand($app, ['foundry', 'help', 'graph', 'visualize', '--json']);
         $this->assertSame(0, $commandHelp['status']);
         $this->assertSame('graph visualize', $commandHelp['payload']['command']['signature']);

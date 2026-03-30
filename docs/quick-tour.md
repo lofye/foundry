@@ -1,19 +1,25 @@
 # Quick Tour
 
-The framework docs are organized around the same lifecycle the framework uses internally: author source-of-truth files, compile the graph, inspect reality, verify contracts, and refresh generated reference docs.
+The shortest reliable Foundry path is: understand the source-of-truth model, discover the main inspect and verify commands, then run the core compile loop.
+
+In this repository use `php bin/foundry ...`. In generated apps use `foundry ...`.
 
 If you prefer a fixed onboarding sequence, start with [Guided Learning Paths](guided-learning-paths.html).
 
 ## Short path
 
 1. Start with [Intro](intro.md).
-2. Read [How It Works](how-it-works.md).
-3. Inspect the generated [Graph Overview](graph-overview.md), [Interactive CLI Index](cli-index.html), [Architecture Explorer](architecture-explorer.html), [Command Playground](command-playground.html), and [CLI Reference](cli-reference.md).
-4. Use [App Scaffolding](app-scaffolding.md) and [Example Applications](example-applications.md) when you want concrete app shapes.
+2. Read [How It Works](how-it-works.md) and [Architecture Overview](architecture/architecture-overview.md).
+3. Run `php bin/foundry help inspect`, `php bin/foundry help verify`, and `php bin/foundry help generate`.
+4. Run the core compile and verification loop below.
+5. Open [Example Applications](example-applications.md) and start with the `Hello World` example.
+6. Use the generated [Graph Overview](graph-overview.md), [Interactive CLI Index](cli-index.html), [Architecture Explorer](architecture-explorer.html), [Command Playground](command-playground.html), and [CLI Reference](cli-reference.md) once you want reference depth.
 
 ## Core commands
 
 ```bash
+php bin/foundry help inspect
+php bin/foundry help verify
 php bin/foundry compile graph --json
 php bin/foundry inspect graph --json
 php bin/foundry verify graph --json

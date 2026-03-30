@@ -6,6 +6,7 @@ namespace Foundry\Pro\CLI;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
+use Foundry\Monetization\FeatureFlags;
 use Foundry\Compiler\CompileOptions;
 use Foundry\Pro\CLI\Concerns\InteractsWithPro;
 use Foundry\Pro\GraphDiffAnalyzer;
@@ -29,7 +30,7 @@ final class DiffCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $license = $this->requirePro('diff', ['graph_diffing']);
+        $license = $this->requirePro('diff', [FeatureFlags::PRO_GRAPH_DIFF]);
 
         $compiler = $context->graphCompiler();
         $baseline = $compiler->loadGraph();

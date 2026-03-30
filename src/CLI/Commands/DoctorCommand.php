@@ -21,6 +21,7 @@ use Foundry\Doctor\Checks\RuntimeCompatibilityCheck;
 use Foundry\Doctor\DoctorContext as FrameworkDoctorContext;
 use Foundry\Doctor\DoctorSummary;
 use Foundry\Doctor\FrameworkDoctor;
+use Foundry\Monetization\FeatureFlags;
 use Foundry\Pipeline\PipelineIntegrityInspector;
 use Foundry\Pro\CLI\Concerns\InteractsWithPro;
 use Foundry\Pro\DeepDiagnosticsBuilder;
@@ -62,7 +63,7 @@ final class DoctorCommand extends Command
                 'Feature not found.',
             );
         }
-        $deepLicense = $deep ? $this->requirePro('doctor --deep', ['deep_diagnostics']) : null;
+        $deepLicense = $deep ? $this->requirePro('doctor --deep', [FeatureFlags::PRO_DEEP_DIAGNOSTICS]) : null;
 
         $paths = $context->paths();
         $commandPrefix = $this->commandPrefix($paths);

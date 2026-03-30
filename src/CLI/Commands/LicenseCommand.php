@@ -2,30 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Foundry\Pro\CLI;
+namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
-use Foundry\Pro\CLI\Concerns\InteractsWithPro;
+use Foundry\Monetization\MonetizationService;
 use Foundry\Support\FoundryError;
 
-final class ProCommand extends Command
+final class LicenseCommand extends Command
 {
-    use InteractsWithPro;
-
     /**
-     * @var array<int,string>
-     */
-    private const COMMANDS = [
-        'doctor --deep',
-        'explain <target>',
-        'diff',
-        'trace [<target>]',
-        'generate <prompt...>',
-    ];
-
-    /**
-     * @var array<int,string>
+     * @var list<string>
      */
     private const LICENSE_COMMANDS = [
         'license:status',
@@ -34,7 +21,7 @@ final class ProCommand extends Command
     ];
 
     /**
-     * @var array<int,string>
+     * @var list<string>
      */
     private const LEGACY_ALIASES = [
         'pro status',
@@ -44,28 +31,30 @@ final class ProCommand extends Command
     #[\Override]
     public function supportedSignatures(): array
     {
-        return ['pro', 'pro enable', 'pro status'];
+        return ['license:status', 'license:activate', 'license:deactivate'];
     }
 
     #[\Override]
     public function matches(array $args): bool
     {
-        return ($args[0] ?? null) === 'pro';
+        return in_array($args[0] ?? null, ['license:status', 'license:activate', 'license:deactivate'], true);
     }
 
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $subcommand = (string) ($args[1] ?? 'status');
+        $subcommand = (string) ($args[0] ?? 'license:status');
+        $service = new MonetizationService();
 
         return match ($subcommand) {
-            'enable' => $this->enable($args, $context),
-            'status' => $this->status($context),
+            'license:status' => $this->result($context, $service->status()),
+            'license:activate' => $this->activate($args, $context, $service),
+            'license:deactivate' => $this->result($context, $service->deactivate()),
             default => throw new FoundryError(
-                'CLI_PRO_SUBCOMMAND_NOT_FOUND',
+                'CLI_LICENSE_SUBCOMMAND_NOT_FOUND',
                 'not_found',
                 ['subcommand' => $subcommand],
-                'Pro subcommand not found.',
+                'License subcommand not found.',
             ),
         };
     }
@@ -74,9 +63,9 @@ final class ProCommand extends Command
      * @param array<int,string> $args
      * @return array{status:int,payload:array<string,mixed>|null,message:string|null}
      */
-    private function enable(array $args, CommandContext $context): array
+    private function activate(array $args, CommandContext $context, MonetizationService $service): array
     {
-        $licenseKey = trim((string) ($args[2] ?? ''));
+        $licenseKey = trim((string) ($args[1] ?? ''));
         if ($licenseKey === '') {
             throw new FoundryError(
                 'PRO_LICENSE_KEY_REQUIRED',
@@ -86,30 +75,25 @@ final class ProCommand extends Command
             );
         }
 
-        $license = $this->monetizationService()->activate($licenseKey);
-
-        return [
-            'status' => 0,
-            'message' => $context->expectsJson() ? null : $this->renderStatus($license),
-            'payload' => $context->expectsJson()
-                ? ['license' => $license, 'commands' => self::COMMANDS, 'license_commands' => self::LICENSE_COMMANDS, 'legacy_aliases' => self::LEGACY_ALIASES]
-                : null,
-        ];
+        return $this->result($context, $service->activate($licenseKey));
     }
 
     /**
+     * @param array<string,mixed> $license
      * @return array{status:int,payload:array<string,mixed>|null,message:string|null}
      */
-    private function status(CommandContext $context): array
+    private function result(CommandContext $context, array $license): array
     {
-        $license = $this->proStatus();
+        $payload = [
+            'license' => $license,
+            'commands' => self::LICENSE_COMMANDS,
+            'legacy_aliases' => self::LEGACY_ALIASES,
+        ];
 
         return [
             'status' => 0,
             'message' => $context->expectsJson() ? null : $this->renderStatus($license),
-            'payload' => $context->expectsJson()
-                ? ['license' => $license, 'commands' => self::COMMANDS, 'license_commands' => self::LICENSE_COMMANDS, 'legacy_aliases' => self::LEGACY_ALIASES]
-                : null,
+            'payload' => $context->expectsJson() ? $payload : null,
         ];
     }
 
@@ -118,7 +102,7 @@ final class ProCommand extends Command
      */
     private function renderStatus(array $license): string
     {
-        $lines = [(string) ($license['message'] ?? 'Foundry Pro status unavailable.')];
+        $lines = [(string) ($license['message'] ?? 'Foundry license status unavailable.')];
         $lines[] = 'Source: ' . (string) ($license['source'] ?? 'none');
         $lines[] = 'License path: ' . (string) ($license['license_path'] ?? '');
 
@@ -134,8 +118,7 @@ final class ProCommand extends Command
 
         $tracking = is_array($license['usage_tracking'] ?? null) ? $license['usage_tracking'] : [];
         $lines[] = 'Usage tracking: ' . (((bool) ($tracking['enabled'] ?? false)) ? 'enabled' : 'disabled');
-        $lines[] = 'Commands: ' . implode(', ', self::COMMANDS);
-        $lines[] = 'License commands: ' . implode(', ', self::LICENSE_COMMANDS);
+        $lines[] = 'Commands: ' . implode(', ', self::LICENSE_COMMANDS);
         $lines[] = 'Legacy aliases: ' . implode(', ', self::LEGACY_ALIASES);
 
         return implode(PHP_EOL, $lines);

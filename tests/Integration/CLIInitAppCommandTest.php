@@ -46,6 +46,8 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertContains($target . '/README.md', $result['payload']['files_written']);
         $this->assertNotContains($target . '/APP-AGENTS.md', $result['payload']['files_written']);
         $this->assertNotContains($target . '/APP-README.md', $result['payload']['files_written']);
+        $this->assertContains('foundry help inspect', $result['payload']['next_steps']);
+        $this->assertContains('foundry help verify', $result['payload']['next_steps']);
         $this->assertContains('foundry compile graph --json', $result['payload']['next_steps']);
         $this->assertContains('foundry doctor --json', $result['payload']['next_steps']);
         $this->assertContains('php vendor/bin/phpunit -c phpunit.xml.dist', $result['payload']['next_steps']);
@@ -87,6 +89,8 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertIsString($readme);
         $this->assertStringContainsString('This Foundry project was scaffolded in `Standard` mode.', $readme);
         $this->assertStringContainsString('x-user-id', $readme);
+        $this->assertStringContainsString('foundry help inspect', $readme);
+        $this->assertStringContainsString('foundry help verify', $readme);
         $this->assertStringContainsString('foundry compile graph --json', $readme);
         $this->assertStringContainsString('Foundry scaffolds a project-local `foundry` launcher.', $readme);
 

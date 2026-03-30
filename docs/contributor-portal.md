@@ -7,9 +7,10 @@ In this repository use `php bin/foundry ...`. In generated Foundry apps use `fou
 ## Start Here
 
 - Read `docs/philosophy/foundry-philosophy.md` in the framework repo before changing architecture or contract surfaces.
-- Use [How It Works](how-it-works.md) for the graph-native docs and architecture model.
+- Use [How It Works](how-it-works.md) for the graph-native docs map and [Architecture Overview](architecture/architecture-overview.md) for the current top-level architecture description.
 - Use [Extension Author Guide](extension-author-guide.md), [Extensions And Migrations](extensions-and-migrations.md), and [Public API Policy](public-api-policy.md) before changing extension-facing behavior.
 - Use [Contributor PR Checklist](contributor-pr-checklist.md) before merge.
+- Canonical authored docs live in `docs/*`; generated reference output is derived from framework metadata; the website repo renders and publishes the public docs experience.
 
 ## Architecture Overview
 
@@ -53,6 +54,15 @@ php bin/foundry help --json
 php bin/foundry inspect cli-surface --json
 php bin/foundry verify cli-surface --json
 ```
+
+### Code Map
+
+- CLI entrypoint: `src/CLI/Application.php`
+- CLI metadata and stability classification: `src/Support/ApiSurfaceRegistry.php`
+- Compiler and graph assembly: `src/Compiler/*`
+- Runtime execution and pipeline logic: `src/Feature/*` and `src/Pipeline/*`
+- Docs and interactive docs generation: `src/Documentation/*`
+- Scaffold defaults and first-run experience: `src/CLI/Commands/InitAppCommand.php`, `APP-README.md`, and `APP-AGENTS.md`
 
 ## Extension Guide
 

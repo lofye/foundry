@@ -988,6 +988,8 @@ PHP,
 
         return array_merge($steps, [
             'composer install',
+            'foundry help inspect',
+            'foundry help verify',
             'foundry compile graph --json',
             'foundry inspect graph --json',
             'foundry inspect pipeline --json',

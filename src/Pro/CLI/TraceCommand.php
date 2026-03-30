@@ -6,6 +6,7 @@ namespace Foundry\Pro\CLI;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
+use Foundry\Monetization\FeatureFlags;
 use Foundry\Pro\CLI\Concerns\InteractsWithPro;
 use Foundry\Pro\TraceAnalyzer;
 
@@ -28,7 +29,7 @@ final class TraceCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $license = $this->requirePro('trace', ['trace_analysis']);
+        $license = $this->requirePro('trace', [FeatureFlags::PRO_TRACE]);
         $target = trim(implode(' ', array_slice($args, 1)));
 
         $payload = (new TraceAnalyzer())->analyze(

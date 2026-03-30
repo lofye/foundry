@@ -1,284 +1,95 @@
-The Foundry Execution Model
+# Foundry Execution Model
 
-How Foundry Turns Intent Into Systems
+Foundry turns authored source files into deterministic compiled state, then executes requests and tooling workflows against that compiled state.
 
-⸻
+## Current Pipeline
 
-1. Purpose
+The current model is:
 
-The Foundry Execution Model defines the deterministic process by which:
-•	specifications become systems
-•	systems are validated
-•	and execution is guaranteed to be structurally sound
+Author -> Compile -> Inspect/Doctor -> Verify -> Execute
 
-This model replaces ad hoc code generation with a compiler-driven pipeline.
+Inside compile, the framework runs explicit compiler stages:
 
-⸻
+1. discovery
+2. normalize
+3. link
+4. validate
+5. enrich
+6. analyze
+7. emit
 
-2. The Core Pipeline
+Those stages produce the canonical graph, projections, manifests, diagnostics, and related build metadata under `app/.foundry/build/*`.
 
-All Foundry applications are built and executed through the following pipeline:
+## Source Inputs
 
-Spec → Normalize → Graph → Validate → Compile → Execute → Diagnose
+The execution model starts from explicit authored inputs:
 
-Each stage is mandatory.
-No stage may be skipped.
+- feature files under `app/features/*`
+- capability-specific definitions under `app/definitions/*` when used
+- framework and app configuration under `config/*`
 
-⸻
+Generated artifacts are never the authored source of truth.
 
-3. Stage Definitions
+## Compiled State
 
-⸻
+Foundry compiles authored inputs into:
 
-3.1 Spec
+- the canonical application graph
+- runtime projections and indexes
+- diagnostics and integrity metadata
+- exports and generated docs inputs when requested
 
-The specification is the only source of intent.
+`app/generated/*` remains a compatibility mirror of emitted runtime projections. It is generated output, not authored source.
 
-It defines:
-•	entities
-•	actions
-•	inputs and outputs
-•	relationships
-•	constraints
+## Runtime Execution
 
-Requirements:
-•	must be explicit
-•	must be versionable
-•	must be complete enough to construct a graph
+Runtime execution is projection-driven rather than discovery-driven.
 
-⸻
+For a typical HTTP feature the runtime flow is:
 
-3.2 Normalize
+1. match a route from generated indexes
+2. resolve the compiled feature and execution plan
+3. run guards, validation, and pipeline behavior
+4. execute the feature action
+5. validate output and emit the response
 
-Specs are transformed into a canonical internal format.
+When a compatibility fallback exists, it stays deterministic and compile-shaped rather than introducing hidden runtime behavior.
 
-This stage:
-•	resolves ambiguity
-•	fills structural gaps
-•	standardizes representation
+## Inspection And Verification
 
-Rules:
-•	no implicit assumptions may survive normalization
-•	all inferred values must become explicit in the normalized form
+The same compiled state powers:
 
-⸻
+- `inspect` surfaces
+- `doctor`
+- graph and pipeline verification
+- contract and compatibility verification
+- generated docs and interactive docs surfaces
 
-3.3 Graph
+That shared compiled state is what keeps docs, CLI, and verification aligned with actual framework behavior.
 
-The system is represented as a canonical application graph.
+## Determinism Rules
 
-The graph includes:
-•	nodes (entities, actions, components)
-•	edges (relationships, dependencies, flows)
+- Same source inputs must produce the same graph and generated artifacts.
+- Ordering must remain stable and machine-readable.
+- No timestamps, randomness, or hidden environment state may leak into stable outputs.
+- Generated artifacts must be regenerated, not hand-edited.
 
-Properties:
-•	globally consistent
-•	fully connected (no orphan nodes)
-•	acyclic where required
+## Safe Iteration Model
 
-The graph is the true system.
+The intended edit loop is:
 
-⸻
+1. inspect current compiled reality
+2. change the smallest authored source files
+3. recompile
+4. inspect or doctor the affected surfaces
+5. verify graph, pipeline, and contracts
+6. run tests
 
-3.4 Validate
-
-The graph is validated before any code is generated.
-
-Validation includes:
-•	structural integrity
-•	input/output compatibility
-•	dependency resolution
-•	constraint enforcement
-
-Failure conditions:
-•	missing connections
-•	invalid flows
-•	ambiguous ownership
-•	conflicting definitions
-
-If validation fails:
-
-execution must stop
-
-⸻
-
-3.5 Compile
-
-The validated graph is compiled into executable artifacts.
-
-This includes:
-•	application code
-•	routing
-•	data structures
-•	interfaces
-
-Rules:
-•	compilation must be deterministic
-•	identical graphs must produce identical outputs
-•	no runtime decisions may alter compiled structure
-
-⸻
-
-3.6 Execute
-
-The compiled system is executed within defined boundaries.
-
-Execution includes:
-•	request handling
-•	action invocation
-•	data flow through the system
-
-Constraints:
-•	all execution paths must originate from the graph
-•	no execution path may bypass defined structures
-
-⸻
-
-3.7 Diagnose
-
-The system is analyzed post-compilation and during execution.
-
-Diagnostics include:
-•	structural warnings
-•	unused components
-•	inefficiencies
-•	violations of best practices
-
-Tools:
-•	foundry doctor
-•	graph inspection
-•	execution tracing (future requirement)
-
-⸻
-
-4. Determinism Guarantees
-
-The execution model enforces:
-•	identical input → identical output
-•	no hidden state
-•	no reliance on prompt memory
-
-This ensures:
-•	reproducibility
-•	debuggability
-•	trust in system behavior
-
-⸻
-
-5. Iteration Model
-
-All changes must follow:
-
-Modify Spec → Re-run Pipeline → Validate → Compile
-
-Forbidden:
-•	direct mutation of compiled code
-•	patching runtime behavior outside the graph
-•	bypassing validation
-
-⸻
-
-6. Error Handling Philosophy
-
-Errors must occur:
-•	as early as possible
-•	as close to the source as possible
-
-Priority order:
-1.	Spec errors
-2.	Graph errors
-3.	Compilation errors
-4.	Runtime errors (last resort)
-
-⸻
-
-7. Role of the Graph
-
-The graph is:
-•	the system’s source of truth
-•	the coordination layer for all components
-•	the enforcement mechanism for structure
-
-Nothing exists outside the graph.
-
-⸻
-
-8. Extension Points
-
-The execution model supports controlled extensibility through:
-•	interceptors
-•	guards
-•	extensions
-•	packs
-
-All extensions must:
-•	integrate into the graph
-•	respect validation rules
-•	avoid introducing hidden state
-
-⸻
-
-9. Multi-Agent Compatibility (Emerging)
-
-The execution model is designed to support multiple agents operating on the same system.
-
-Future capabilities include:
-•	graph partitioning
-•	agent ownership of subgraphs
-•	conflict detection and resolution
-•	deterministic merges
-
-⸻
-
-10. Observability (Required Evolution)
-
-The execution model must evolve to include:
-•	execution tracing
-•	performance metrics
-•	graph evolution over time
-
-This is not optional.
-It is required for production-grade systems.
-
-⸻
-
-11. Anti-Patterns
+## Anti-Patterns
 
 The following violate the execution model:
-•	generating code without updating the spec
-•	modifying compiled artifacts directly
-•	introducing hidden runtime logic
-•	bypassing validation
 
-⸻
-
-12. Mental Model
-
-Foundry should be understood as:
-
-A compiler for applications, not a framework for writing code.
-
-⸻
-
-13. Summary
-
-The Foundry Execution Model ensures that:
-•	intent is explicit
-•	structure is enforced
-•	systems are reproducible
-•	and complexity is controlled
-
-⸻
-
-Why This Matters (Strategically)
-
-With these three documents in place:
-1.	Philosophy → defines truth
-2.	Execution Model → defines mechanics
-3.	Whitepaper → defines positioning
-
-You now have:
-
-A complete, coherent theory of software development in the LLM era.
-
-That’s extremely rare—and very defensible.
+- editing generated output instead of authored source
+- bypassing compile/verify loops after changing source-of-truth files
+- adding hidden runtime discovery or middleware behavior outside the explicit pipeline model
+- treating docs or examples as authoritative when they disagree with code and tests

@@ -6,6 +6,8 @@ If you are contributing to the framework itself, start with [Contributor Portal]
 
 Read these pages in order when you want the architecture model:
 
+- [Architecture Overview](architecture/architecture-overview.md)
+- [Execution Model](architecture/execution-model.md)
 - [Semantic Compiler](semantic-compiler.md)
 - [Execution Pipeline](execution-pipeline.md)
 - [Architecture Tools](architecture-tools.md)

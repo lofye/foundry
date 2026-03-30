@@ -5,6 +5,7 @@ Visit [FoundryFramework.org](https://foundryframework.org) for extensive documen
 
 Core Foundry remains MIT-licensed and fully usable without restriction.
 Foundry Pro is an optional, additive layer for deeper diagnostics, architecture understanding, trace analysis, graph diffing, and AI-assisted workflows.
+The monetization layer is opt-in, local-first, and isolated from core compile, inspect, verify, scaffold, and runtime flows.
 
 It is optimized for:
 - explicit contracts
@@ -18,6 +19,21 @@ Foundry now includes a semantic compiler core:
 - runtime indexes are projections of that graph
 - verification and impact analysis operate over compiled graph state
 
+## Start Here
+
+New to Foundry?
+
+- Scaffold an app with `foundry new my-foundry-app --starter=standard --json`
+- Use `foundry help inspect` and `foundry help verify` to discover the safest first commands
+- Read `docs/quick-tour.md` and `docs/example-applications.md`
+- Start with `examples/hello-world`
+
+Contributing to the framework itself?
+
+- Start with `docs/contributor-portal.md`
+- Read `docs/architecture/architecture-overview.md`
+- Use `php bin/foundry help inspect` and `php bin/foundry inspect cli-surface --json`
+
 Initial Prompt: Derek Martin
 Architect: ChatGPT-5.3
 Engineer: GPT-5.3-Codex (Extra High)
@@ -30,11 +46,21 @@ Foundry Pro is optional and local-first:
 - core compile, inspect, verify, scaffold, runtime, and prompt flows remain available without Pro
 - Pro adds `doctor --deep`, `explain`, `diff`, `trace`, and `generate "<prompt>"`
 - Pro does not require SaaS connectivity, telemetry, or runtime calls to external services
-- Pro licensing is stored locally at `~/.foundry/license.json` by default
+- Pro licensing is stored locally at `~/.foundry/license.json` by default and may also be supplied through `FOUNDRY_LICENSE_KEY`
 - `generate` works in deterministic mode without any provider and otherwise uses whatever local/remote provider you configure in `config/ai.php`
 - `explain` derives architecture explanations from the compiled graph, projections, diagnostics, and docs metadata, not from an LLM
+- usage tracking stays off unless you explicitly opt in with `FOUNDRY_USAGE_TRACKING=1`
+- optional remote validation runs only during `license:activate` when `FOUNDRY_LICENSE_VALIDATION_URL` is configured
 
-Enable Pro locally:
+Manage licensing locally:
+
+```bash
+foundry license:activate <license-key>
+foundry license:status --json
+foundry license:deactivate --json
+```
+
+Legacy aliases remain available for upgrade-friendly workflows:
 
 ```bash
 foundry pro enable <license-key>
@@ -49,22 +75,15 @@ Without a valid license, Pro commands stay visible in help, return a clear messa
 
 In installed Foundry apps, use the project-local `foundry` launcher from the app root. If your shell does not resolve current-directory executables, use `./foundry ...`. In this framework repository, continue to use `php bin/foundry ...`.
 
-## Install and Run (Packagist)
+## Install And First Run (Packagist)
 ```bash
-# Create a new project folder
-mkdir my-foundry-app
-cd my-foundry-app
-
-# Install Foundry
 composer require lofye/foundry-framework
-
-# Initialize a new Foundry app in this folder
-foundry new --starter=standard --name=acme/my-foundry-app
-
-# Install project dependencies
+foundry new my-foundry-app --starter=standard --json
+cd my-foundry-app
 composer install
 
-# Compile, inspect, and verify contracts
+foundry help inspect
+foundry help verify
 foundry compile graph --json
 foundry inspect graph --json
 foundry inspect pipeline --json
@@ -75,12 +94,13 @@ foundry verify contracts --json
 php -S 127.0.0.1:8000 public/index.php
 ```
 
-From a Foundry-enabled parent directory, you can also scaffold into a child folder directly:
+If you are already inside an empty project directory, scaffold into the current folder instead:
 
 ```bash
+mkdir my-foundry-app
+cd my-foundry-app
 composer require lofye/foundry-framework
-foundry new website --starter=standard --json
-cd website
+foundry new . --starter=standard --name=acme/my-foundry-app --json
 composer install
 ```
 
@@ -93,6 +113,8 @@ foundry verify contracts --json
 ```
 
 ## Core Workflow for LLMs
+If you are just learning Foundry, stop after the first-run loop above and start with `examples/hello-world`. Use this fuller edit loop once you are actively changing features.
+
 Use this loop for every change:
 1. Inspect current reality.
 2. Edit the minimum feature-local files.
@@ -215,6 +237,7 @@ Policy details live in `docs/public-api-policy.md` and are also emitted into gen
 Canonical framework docs are authored in `docs/` in this repository.
 The website repo imports that authored content plus generated reference material and is the canonical renderer/publisher of public docs and version snapshots.
 Framework contributors should start with `docs/contributor-portal.md` for architecture, extension, workflow, and checklist guidance.
+The canonical high-level architecture overview now lives in `docs/architecture/architecture-overview.md`; the root `ARCHITECTURE.md` file is only a pointer.
 
 Refresh framework-side generated reference source files with:
 
@@ -237,6 +260,9 @@ The authoritative CLI catalog is derived from `ApiSurfaceRegistry` and exposed t
 
 ```bash
 foundry help --json
+foundry help inspect
+foundry help verify
+foundry help generate
 foundry inspect cli-surface --json
 foundry verify cli-surface --json
 ```
@@ -262,12 +288,14 @@ foundry doctor --deep --json
 Core vs Pro:
 
 - Free/core: `compile`, `inspect`, `verify`, `doctor`, `prompt`, scaffold generators, runtime commands
-- Pro: `doctor --deep`, `explain <target>`, `diff`, `trace [<target>]`, `generate "<prompt>"`, `pro enable`, `pro status`
+- Pro: `doctor --deep`, `explain <target>`, `diff`, `trace [<target>]`, `generate "<prompt>"`, `license:status`, `license:activate`, `license:deactivate`
 
 Pro command surface:
 
 ```bash
-foundry pro enable <license-key>
+foundry license:activate <license-key>
+foundry license:status --json
+foundry license:deactivate --json
 foundry pro status --json
 foundry explain publish_post --json
 foundry explain publish_post --deep
@@ -332,6 +360,9 @@ foundry upgrade-check --target=1.0.0 --json
 Representative inspect commands:
 ```bash
 foundry help --json
+foundry help inspect
+foundry help verify
+foundry help generate
 foundry help inspect graph --json
 foundry help inspect cli-surface --json
 foundry inspect graph --json
@@ -485,7 +516,8 @@ framework:
 The `canonical` examples keep authored source only and do not commit `app/generated/*`; compile them after copying into an app.
 
 ## Additional Docs
-- `ARCHITECTURE.md`
+- `docs/architecture/architecture-overview.md`
+- `ARCHITECTURE.md` (repo pointer)
 - `FEATURE_DEFINITION.md`
 - `BENCHMARK_NOTES.md`
 - `docs/semantic-compiler.md`

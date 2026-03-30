@@ -27,6 +27,7 @@ use Foundry\CLI\Commands\InspectNotificationCommand;
 use Foundry\CLI\Commands\InspectPlatformCommand;
 use Foundry\CLI\Commands\InspectResourceCommand;
 use Foundry\CLI\Commands\InspectRouteCommand;
+use Foundry\CLI\Commands\LicenseCommand;
 use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\ObserveCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
@@ -100,6 +101,7 @@ final class Application
             new InspectPlatformCommand(),
             new InspectRouteCommand(),
             new InitAppCommand(),
+            new LicenseCommand(),
             new ProCommand(),
             new ProGenerateCommand(),
             new GenerateScaffoldCommand(),
@@ -216,17 +218,28 @@ final class Application
         }
 
         $command = $this->apiSurfaceRegistry->classifyCliCommand($args);
-        if ($command === null) {
-            throw new FoundryError('CLI_HELP_COMMAND_NOT_FOUND', 'not_found', ['args' => $args], 'Help target not found.');
+        if ($command !== null) {
+            $payload = ['command' => $command];
+
+            return [
+                'status' => 0,
+                'message' => $json ? null : $this->renderCommandHelp($command),
+                'payload' => $json ? $payload : null,
+            ];
         }
 
-        $payload = ['command' => $command];
+        $group = count($args) === 1 ? $this->helpGroupPayload($args[0]) : null;
+        if ($group !== null) {
+            $payload = ['group' => $group];
 
-        return [
-            'status' => 0,
-            'message' => $json ? null : $this->renderCommandHelp($command),
-            'payload' => $json ? $payload : null,
-        ];
+            return [
+                'status' => 0,
+                'message' => $json ? null : $this->renderHelpGroup($group),
+                'payload' => $json ? $payload : null,
+            ];
+        }
+
+        throw new FoundryError('CLI_HELP_COMMAND_NOT_FOUND', 'not_found', ['args' => $args], 'Help target not found.');
     }
 
     /**
@@ -253,6 +266,7 @@ final class Application
         }
 
         $lines[] = 'Use `foundry help <command>` for usage, stability, and semver details.';
+        $lines[] = 'Use `foundry help inspect`, `foundry help verify`, or `foundry help generate` to browse a command family.';
 
         return implode(PHP_EOL, $lines);
     }
@@ -271,6 +285,133 @@ final class Application
             'Summary: ' . (string) ($command['summary'] ?? ''),
             'Semver: ' . (string) ($command['semver_policy'] ?? ''),
         ];
+
+        return implode(PHP_EOL, $lines);
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private function helpGroupPayload(string $group): ?array
+    {
+        $name = strtolower(trim($group));
+        if ($name === '') {
+            return null;
+        }
+
+        $commands = [
+            'stable' => [],
+            'experimental' => [],
+            'internal' => [],
+        ];
+
+        $helpIndex = $this->apiSurfaceRegistry->cliHelpIndex();
+        foreach ((array) ($helpIndex['commands'] ?? []) as $stability => $entries) {
+            if (!array_key_exists($stability, $commands) || !is_array($entries)) {
+                continue;
+            }
+
+            foreach ($entries as $entry) {
+                if (!is_array($entry) || !$this->commandBelongsToGroup($name, $entry)) {
+                    continue;
+                }
+
+                $commands[$stability][] = $entry;
+            }
+        }
+
+        foreach ($commands as &$entries) {
+            usort(
+                $entries,
+                static fn(array $a, array $b): int => strcmp((string) ($a['signature'] ?? ''), (string) ($b['signature'] ?? '')),
+            );
+        }
+        unset($entries);
+
+        $counts = [
+            'stable' => count($commands['stable']),
+            'experimental' => count($commands['experimental']),
+            'internal' => count($commands['internal']),
+        ];
+        $counts['total'] = $counts['stable'] + $counts['experimental'] + $counts['internal'];
+
+        if ($counts['total'] === 0) {
+            return null;
+        }
+
+        return [
+            'name' => $name,
+            'summary' => $this->helpGroupSummary($name),
+            'usage' => 'help ' . $name . ' [<command>]',
+            'counts' => $counts,
+            'commands' => $commands,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $entry
+     */
+    private function commandBelongsToGroup(string $group, array $entry): bool
+    {
+        $signature = strtolower((string) ($entry['signature'] ?? ''));
+
+        return $signature === $group
+            || str_starts_with($signature, $group . ' ')
+            || str_starts_with($signature, $group . ':');
+    }
+
+    private function helpGroupSummary(string $group): string
+    {
+        return match ($group) {
+            'cache' => 'Inspect or clear deterministic compile cache state.',
+            'compile' => 'Compile authored source-of-truth files into canonical graph artifacts.',
+            'export' => 'Export graph and API artifacts for docs and tooling.',
+            'generate' => 'Generate docs, scaffolds, helper artifacts, and framework-managed outputs.',
+            'graph' => 'Inspect or render graph slices through the graph command family.',
+            'init' => 'Browse the legacy scaffolding alias family.',
+            'inspect' => 'Inspect compiled graph, feature, integration, and reference surfaces.',
+            'license' => 'Inspect or manage local monetization licensing state.',
+            'observe' => 'Capture or compare graph-aware trace and profile summaries.',
+            'queue' => 'Browse local development queue commands.',
+            'schedule' => 'Browse local development scheduler commands.',
+            'verify' => 'Verify graph, pipeline, contract, integration, and extension surfaces.',
+            default => ucfirst($group) . ' command family.',
+        };
+    }
+
+    /**
+     * @param array<string,mixed> $group
+     */
+    private function renderHelpGroup(array $group): string
+    {
+        $lines = [
+            'Command Family: ' . (string) ($group['name'] ?? ''),
+            'Usage: ' . (string) ($group['usage'] ?? ''),
+            'Summary: ' . (string) ($group['summary'] ?? ''),
+            '',
+        ];
+
+        $commands = is_array($group['commands'] ?? null) ? $group['commands'] : [];
+        foreach (['stable' => 'Stable', 'experimental' => 'Experimental', 'internal' => 'Internal'] as $key => $label) {
+            $entries = is_array($commands[$key] ?? null) ? $commands[$key] : [];
+            if ($entries === []) {
+                continue;
+            }
+
+            $lines[] = $label . ' Commands:';
+            foreach ($entries as $entry) {
+                if (!is_array($entry)) {
+                    continue;
+                }
+
+                $availability = (string) ($entry['availability'] ?? 'core');
+                $suffix = $availability === 'pro' ? ' [Pro]' : '';
+                $lines[] = '- ' . (string) ($entry['signature'] ?? '') . $suffix . ': ' . (string) ($entry['summary'] ?? '');
+            }
+            $lines[] = '';
+        }
+
+        $lines[] = 'Use `foundry help <full command>` for exact usage, stability, and semver details.';
 
         return implode(PHP_EOL, $lines);
     }

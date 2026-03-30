@@ -15,9 +15,14 @@ final class LicenseStore
     /**
      * @return array<string,mixed>
      */
-    public function enable(string $licenseKey): array
+    public function enable(string $licenseKey, array $metadata = []): array
     {
         $record = $this->validator()->validate($licenseKey);
+        $featureFlags = array_values(array_map('strval', (array) ($metadata['feature_flags'] ?? $metadata['features'] ?? $record['features'] ?? [])));
+
+        $record = array_merge($record, $metadata);
+        $record['feature_flags'] = $featureFlags;
+        $record['features'] = $featureFlags;
         $record['enabled_at'] = gmdate(DATE_ATOM);
 
         $path = $this->path();
@@ -29,6 +34,16 @@ final class LicenseStore
         file_put_contents($path, Json::encode($record, true) . PHP_EOL);
 
         return $this->status();
+    }
+
+    public function disable(): bool
+    {
+        $path = $this->path();
+        if (!is_file($path)) {
+            return false;
+        }
+
+        return @unlink($path);
     }
 
     /**
@@ -43,14 +58,18 @@ final class LicenseStore
                 'enabled' => false,
                 'valid' => false,
                 'status' => 'missing',
+                'source' => 'none',
                 'license_path' => $path,
                 'product' => 'foundry-pro',
                 'plan' => null,
                 'key_hint' => null,
                 'fingerprint' => null,
+                'feature_flags' => [],
                 'features' => [],
                 'enabled_at' => null,
                 'validated_at' => null,
+                'remote_validation' => null,
+                'activated_via' => null,
                 'message' => 'Foundry Pro is not enabled.',
             ];
         }
@@ -78,18 +97,24 @@ final class LicenseStore
             return $this->invalidStatus($path, 'The stored Foundry Pro license is invalid: ' . $error->getMessage());
         }
 
+        $featureFlags = array_values(array_map('strval', (array) ($payload['feature_flags'] ?? $payload['features'] ?? $validated['features'] ?? [])));
+
         return [
             'enabled' => true,
             'valid' => true,
             'status' => 'enabled',
+            'source' => 'file',
             'license_path' => $path,
-            'product' => (string) ($validated['product'] ?? 'foundry-pro'),
-            'plan' => (string) ($validated['plan'] ?? 'pro'),
+            'product' => (string) ($payload['product'] ?? ($validated['product'] ?? 'foundry-pro')),
+            'plan' => (string) ($payload['plan'] ?? ($validated['plan'] ?? 'pro')),
             'key_hint' => (string) ($validated['key_hint'] ?? ''),
             'fingerprint' => (string) ($validated['fingerprint'] ?? ''),
-            'features' => array_values(array_map('strval', (array) ($validated['features'] ?? []))),
+            'feature_flags' => $featureFlags,
+            'features' => $featureFlags,
             'enabled_at' => (string) ($payload['enabled_at'] ?? ($validated['validated_at'] ?? '')),
             'validated_at' => (string) ($validated['validated_at'] ?? ''),
+            'remote_validation' => is_array($payload['remote_validation'] ?? null) ? $payload['remote_validation'] : null,
+            'activated_via' => (string) ($payload['activated_via'] ?? 'file'),
             'message' => 'Foundry Pro is enabled.',
         ];
     }
@@ -128,14 +153,18 @@ final class LicenseStore
             'enabled' => false,
             'valid' => false,
             'status' => 'invalid',
+            'source' => 'file',
             'license_path' => $path,
             'product' => 'foundry-pro',
             'plan' => null,
             'key_hint' => null,
             'fingerprint' => null,
+            'feature_flags' => [],
             'features' => [],
             'enabled_at' => null,
             'validated_at' => null,
+            'remote_validation' => null,
+            'activated_via' => null,
             'message' => $message,
         ];
     }

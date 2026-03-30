@@ -2,6 +2,8 @@
 
 Foundry should prove its architecture through examples, not just through feature lists. This page links the current example set and explains what each group is meant to teach.
 
+If you are brand new to Foundry, scaffold an app, run `help inspect` and `help verify`, then start with [Hello World](../examples/hello-world/README.md).
+
 When working inside this framework repository, use:
 
 ```bash

@@ -6,6 +6,7 @@ namespace Foundry\Pro\CLI;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
+use Foundry\Monetization\FeatureFlags;
 use Foundry\Pro\CLI\Concerns\InteractsWithPro;
 use Foundry\Pro\Generation\AIGenerationService;
 use Foundry\Support\FoundryError;
@@ -65,7 +66,7 @@ final class GenerateCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $license = $this->requirePro('generate <prompt>', ['ai_assisted_generation']);
+        $license = $this->requirePro('generate <prompt>', [FeatureFlags::PRO_GENERATE]);
         [$prompt, $options] = $this->parse($args);
 
         if ($prompt === '') {

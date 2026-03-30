@@ -1,0 +1,43 @@
+{
+  "date": "2026-03-29",
+  "architecture_reconciliation": {
+    "status": "complete",
+    "notes": [
+      "Canonical architecture guidance now lives in docs/architecture/architecture-overview.md.",
+      "Root ARCHITECTURE.md remains only as a repository pointer.",
+      "Storage, docs publishing, CLI classification, and verification claims were reconciled with current framework behavior."
+    ]
+  },
+  "docs_confidence": {
+    "status": "high",
+    "notes": [
+      "README start-here guidance was updated for new users and contributors.",
+      "Packagist scaffold commands now match the real new <target> flow.",
+      "Docs continue to distinguish canonical framework docs from website rendering/publishing."
+    ]
+  },
+  "cli_discovery_confidence": {
+    "status": "high",
+    "notes": [
+      "Top-level help remains the canonical CLI index.",
+      "Grouped help now works for inspect, verify, and generate command families.",
+      "Exact per-command help continues to work for fully qualified commands."
+    ]
+  },
+  "first_run_confidence": {
+    "status": "high",
+    "notes": [
+      "The first-run path now reads scaffold -> help -> compile -> inspect -> verify -> serve.",
+      "Scaffolded next-step output and scaffolded README guidance were aligned with that path.",
+      "Example guidance points new users to examples/hello-world first."
+    ]
+  },
+  "contributor_confidence": {
+    "status": "high",
+    "notes": [
+      "Contributor docs now point directly to architecture, CLI metadata, compiler, docs generation, and scaffold entry files.",
+      "Canonical docs and generated/published docs boundaries remain explicit."
+    ]
+  },
+  "remaining_blockers": []
+}
