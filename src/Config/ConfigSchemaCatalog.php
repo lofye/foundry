@@ -308,7 +308,7 @@ final class ConfigSchemaCatalog
                 'required' => ['schema_version', 'name', 'version', 'framework_version_constraint', 'graph_version_constraint', 'dependencies', 'provides'],
                 'properties' => [
                     'schema_version' => ['type' => 'integer', 'enum' => [1]],
-                    'name' => ['type' => 'string', 'pattern' => '^[a-z0-9]+(?:[._-][a-z0-9]+)*$'],
+                    'name' => ['type' => 'string', 'pattern' => '^(?:[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)?)$'],
                     'version' => ['type' => 'string', 'minLength' => 1],
                     'description' => ['type' => 'string'],
                     'framework_version_constraint' => ['type' => 'string', 'minLength' => 1],
@@ -325,7 +325,7 @@ final class ConfigSchemaCatalog
                 'required' => ['schema_version', 'name', 'version', 'extension', 'framework_version_constraint', 'graph_version_constraint'],
                 'properties' => [
                     'schema_version' => ['type' => 'integer', 'enum' => [1]],
-                    'name' => ['type' => 'string', 'pattern' => '^[a-z0-9]+(?:[._-][a-z0-9]+)*$'],
+                    'name' => ['type' => 'string', 'pattern' => '^(?:[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)?)$'],
                     'version' => ['type' => 'string', 'minLength' => 1],
                     'extension' => ['type' => 'string', 'pattern' => '^[a-z0-9]+(?:[._-][a-z0-9]+)*$'],
                     'description' => ['type' => 'string'],

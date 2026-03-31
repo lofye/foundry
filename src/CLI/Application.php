@@ -34,6 +34,7 @@ use Foundry\CLI\Commands\InspectRouteCommand;
 use Foundry\CLI\Commands\LicenseCommand;
 use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\ObserveCommand;
+use Foundry\CLI\Commands\PackCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
 use Foundry\CLI\Commands\PromptCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
@@ -105,6 +106,7 @@ final class Application
             new InitAppCommand(),
             new LicenseCommand(),
             new FeaturesCommand(),
+            new PackCommand(),
             new PromptGenerateCommand(),
             new GenerateScaffoldCommand(),
             new GenerateIntegrationCommand(),
@@ -361,6 +363,7 @@ final class Application
             'inspect' => 'Inspect compiled graph, feature, integration, and reference surfaces.',
             'license' => 'Inspect or manage local license identity and service access state.',
             'observe' => 'Capture or compare graph-aware trace and profile summaries.',
+            'pack' => 'Search hosted packs or install, inspect, and deactivate deterministic Foundry packs.',
             'queue' => 'Browse local development queue commands.',
             'schedule' => 'Browse local development scheduler commands.',
             'verify' => 'Verify graph, pipeline, contract, integration, and extension surfaces.',

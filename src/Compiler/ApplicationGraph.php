@@ -96,6 +96,10 @@ final class ApplicationGraph
 
     public function addNode(GraphNode $node): void
     {
+        if (isset($this->nodes[$node->id()])) {
+            throw new \RuntimeException(sprintf('Duplicate graph node id %s cannot be inserted.', $node->id()));
+        }
+
         $this->nodes[$node->id()] = $node;
     }
 

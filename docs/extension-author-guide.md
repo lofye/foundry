@@ -6,14 +6,14 @@ For the broader framework contributor workflow, architecture model, and PR check
 
 ## Stable Extension Contract
 
-Implement `Foundry\Compiler\Extensions\CompilerExtension` or extend `AbstractCompilerExtension`.
+Implement `Foundry\Compiler\Extensions\CompilerExtension` or extend `AbstractCompilerExtension` for direct extension registrations. Implement `Foundry\Packs\PackServiceProvider` for locally installed packs.
 
 Stable hooks:
 
 - descriptor metadata through `descriptor()`
 - graph integration through stage-specific compiler passes
 - projection emitters
-- pack declarations
+- local pack registration through `Foundry\Packs\PackContext`
 - migration rules and definition formats
 - codemods
 - graph analyzers for `doctor`
@@ -22,7 +22,7 @@ Stable hooks:
 
 Explain context collectors are currently framework-owned inputs wired through `src/Explain/ExplainEngineFactory.php`. Add a collector there only when extending core explain inputs; extension-facing customization remains section contributions through `ExplainContributorInterface`.
 
-CLI-facing contributions should be declared through metadata, not inferred from runtime side effects.
+CLI-facing pack contributions should be declared through `PackContext`, not inferred from runtime side effects.
 
 ## Explain Contributions
 
@@ -38,7 +38,69 @@ Contributor rules:
 
 This keeps `foundry explain` extensible without coupling renderer output to any single extension. Canonical section ordering remains owned by the assembler; contributor sections render after the canonical sections according to `sectionOrder`.
 
-## Required Metadata
+## Local Pack Manifest
+
+Every local pack must ship a `foundry.json` manifest at the pack root:
+
+```json
+{
+  "name": "vendor/pack-name",
+  "version": "1.0.0",
+  "description": "string",
+  "entry": "Vendor\\Pack\\PackServiceProvider",
+  "capabilities": []
+}
+```
+
+Required manifest rules:
+
+- `name` must match `vendor/pack-name`
+- `version` must be semantic versioning
+- `description` must be non-empty
+- `entry` must be a valid class name implementing `Foundry\Packs\PackServiceProvider`
+- `capabilities` must be an array of strings
+
+Installed pack files are copied into `.foundry/packs/{vendor}/{pack}/{version}/`, and active versions are recorded in `.foundry/packs/installed.json`.
+
+If a pack needs framework constraints, graph constraints, passes, projection emitters, or other extension behavior, expose those through the compiler extension registered by the pack provider, not through extra manifest keys.
+
+Pack providers register explicitly through `Foundry\Packs\PackContext`. Current pack-context contribution declarations include:
+
+- commands
+- schemas
+- workflows
+- events
+- guards
+- generators
+- docs metadata
+
+A pack provider may either:
+
+- call `$context->registerExtension(...)` with a `CompilerExtension`
+- or implement `CompilerExtension` itself, in which case Foundry wraps it automatically as an installed pack extension
+
+## Hosted Registry Publishing Contract
+
+Hosted discovery is intentionally minimal and read-only. Foundry expects a public `registry.json` endpoint whose rows look like:
+
+```json
+{
+  "name": "vendor/pack",
+  "version": "1.0.0",
+  "description": "Short description",
+  "download_url": "https://example.com/packs/vendor-pack-1.0.0.zip"
+}
+```
+
+Publishing rules:
+
+- `download_url` must use HTTPS
+- each row represents one version
+- duplicate `name` + `version` pairs are invalid
+- archive downloads must be `.zip` files with `foundry.json` at the archive root
+- hosted install still runs the same local manifest validation and pack activation flow after extraction
+
+## Extension Descriptor Metadata
 
 Each extension descriptor must provide:
 
@@ -54,29 +116,6 @@ Optional descriptor fields include:
 - `required_extensions`
 - `optional_extensions`
 - `conflicts_with_extensions`
-
-Each pack must provide:
-
-- `name`
-- `version`
-- `extension`
-- `framework_version_constraint`
-- `graph_version_constraint`
-
-Optional pack fields include:
-
-- `description`
-- provided and required capabilities
-- `dependencies`
-- `optional_dependencies`
-- `conflicts_with`
-- `generators`
-- `inspect_surfaces`
-- `definition_formats`
-- `migration_rules`
-- `verifiers`
-- `docs_emitters`
-- `examples`
 
 Inspect the canonical schemas with:
 
@@ -100,11 +139,12 @@ Foundry resolves each extension through these stages:
 
 - built-in extensions load first
 - explicit registrations from `foundry.extensions.php` and `config/foundry/extensions.php` load next
-- duplicate extension ids keep the first discovered registration
-- duplicate pack ids keep the first discovered owner
-- required extension and pack dependencies must resolve
-- conflicts disable the later conflicting registration deterministically
-- final runtime order is a dependency-respecting topological order, with ties broken by extension name then version
+- active local packs are then loaded from `.foundry/packs/installed.json`
+- local pack discovery never uses filesystem order; active packs are sorted by pack name and active version
+- graph boot uses only active pack versions
+- declared command and schema contributions must remain unique across active packs
+- duplicate graph node identifiers fail during graph integration instead of being overridden silently
+- final runtime order remains deterministic under the extension registry
 
 ## Diagnostics
 
@@ -125,11 +165,24 @@ Common diagnostics include:
 - `FDY7020_EXTENSION_GRAPH_INTEGRATION_FAILED`
 - `FDY7021_DUPLICATE_PACK_ID`
 - `FDY7022_PACK_CONFLICT`
+- `PACK_MANIFEST_INVALID`
+- `PACK_REGISTRY_CORRUPT`
+- `PACK_REGISTRY_INVALID`
+- `PACK_SOURCE_MISSING`
+- `PACK_ENTRY_CLASS_NOT_FOUND`
+- `PACK_ENTRY_INVALID`
+- `PACK_ENTRY_INSTANTIATION_FAILED`
+- `PACK_COMMAND_CONFLICT`
+- `PACK_SCHEMA_CONFLICT`
+- `PACK_ACTIVATION_FAILED`
 
 Check extension health with:
 
 ```bash
+foundry pack list --json
+foundry pack info vendor/pack --json
 foundry inspect extension <name> --json
+foundry inspect packs --json
 foundry inspect compatibility --json
 foundry verify extensions --json
 foundry doctor --json

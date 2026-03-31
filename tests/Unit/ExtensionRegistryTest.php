@@ -342,6 +342,42 @@ PHP);
         }
     }
 
+    public function test_registry_loads_active_local_packs_in_pack_name_order(): void
+    {
+        $project = new TempProject();
+        try {
+            $this->copyDirectory(dirname(__DIR__) . '/Fixtures/Packs/foundry-blog', $project->root . '/.foundry/packs/foundry/blog/1.0.0');
+            $this->copyDirectory(dirname(__DIR__) . '/Fixtures/Packs/acme-zeta', $project->root . '/.foundry/packs/acme/zeta/1.0.0');
+            @mkdir($project->root . '/.foundry/packs', 0777, true);
+            file_put_contents($project->root . '/.foundry/packs/installed.json', json_encode([
+                'foundry/blog' => [
+                    'active_version' => '1.0.0',
+                    'installed_versions' => ['1.0.0'],
+                ],
+                'acme/zeta' => [
+                    'active_version' => '1.0.0',
+                    'installed_versions' => ['1.0.0'],
+                ],
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+
+            $registry = ExtensionRegistry::forPaths(Paths::fromCwd($project->root));
+
+            $this->assertTrue($registry->packRegistry()->has('acme/zeta'));
+            $this->assertTrue($registry->packRegistry()->has('foundry/blog'));
+            $this->assertContains('.foundry/packs/installed.json', $registry->registrationSources());
+
+            $rows = $registry->inspectRows();
+            $acme = array_find($rows, static fn(array $row): bool => (string) ($row['name'] ?? '') === 'pack.acme.zeta');
+            $foundry = array_find($rows, static fn(array $row): bool => (string) ($row['name'] ?? '') === 'pack.foundry.blog');
+
+            $this->assertIsArray($acme);
+            $this->assertIsArray($foundry);
+            $this->assertLessThan((int) $foundry['load_order'], (int) $acme['load_order']);
+        } finally {
+            $project->cleanup();
+        }
+    }
+
     public function test_registry_disables_extensions_with_missing_dependencies_and_pack_conflicts(): void
     {
         $first = new class extends AbstractCompilerExtension {
@@ -444,5 +480,33 @@ PHP);
         $this->assertFalse($conflictingRow['enabled']);
         $conflictCodes = array_values(array_map(static fn(array $row): string => (string) ($row['code'] ?? ''), $conflictingRow['diagnostics']));
         $this->assertContains('FDY7022_PACK_CONFLICT', $conflictCodes);
+    }
+
+    private function copyDirectory(string $source, string $target): void
+    {
+        @mkdir($target, 0777, true);
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST,
+        );
+
+        foreach ($iterator as $fileInfo) {
+            if (!$fileInfo instanceof \SplFileInfo) {
+                continue;
+            }
+
+            $pathname = $fileInfo->getPathname();
+            $relative = substr($pathname, strlen(rtrim($source, '/') . '/'));
+            $destination = $target . '/' . $relative;
+
+            if ($fileInfo->isDir()) {
+                @mkdir($destination, 0777, true);
+                continue;
+            }
+
+            @mkdir(dirname($destination), 0777, true);
+            copy($pathname, $destination);
+        }
     }
 }

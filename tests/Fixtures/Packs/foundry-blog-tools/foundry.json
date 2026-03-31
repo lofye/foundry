@@ -1,0 +1,7 @@
+{
+  "name": "foundry/blog-tools",
+  "version": "1.0.0",
+  "description": "Fixture pack that conflicts on declared command registration.",
+  "entry": "Vendor\\BlogTools\\FoundryBlogToolsPackServiceProvider",
+  "capabilities": []
+}

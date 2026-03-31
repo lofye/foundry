@@ -13,9 +13,13 @@ Use this file when working inside a Foundry application repository.
 - Treat `app/features/*` as source-of-truth application behavior
 - Treat `app/definitions/*` as source-of-truth definitions when that folder exists
 - Treat `app/.foundry/build/*` as canonical compiled output
+- Treat `.foundry/packs/installed.json` as explicit local pack activation state when packs are in use
+- Treat `.foundry/cache/registry.json` as cached hosted-registry metadata when remote pack discovery is used
+- Treat `.foundry/packs/*/*/*/foundry.json` as installed pack metadata, not editable app source
 - Treat `app/generated/*` as generated compatibility projections
 - Treat `docs/generated/*` and `docs/inspect-ui/*` as generated documentation output
 - Do not hand-edit `app/generated/*`; regenerate instead
+- Do not hand-edit installed pack files under `.foundry/packs/*`; reinstall or replace them from source instead
 
 ## Safe Edit Loop
 
@@ -38,8 +42,10 @@ Recommended command loop:
 ```bash
 foundry inspect graph --json
 foundry inspect pipeline --json
+foundry pack search <query> --json
 foundry inspect feature <feature> --json
 foundry inspect context <feature> --json
+foundry inspect packs --json
 foundry compile graph --json
 foundry inspect impact --file=app/features/<feature>/feature.yaml --json
 foundry doctor --feature=<feature> --json

@@ -59,6 +59,8 @@ final class ApiSurfaceRegistryTest extends TestCase
         $generatePrompt = $registry->classifyCliCommand(['generate', 'Add', 'bookmarks']);
         $licenseStatus = $registry->classifyCliCommand(['license', 'status']);
         $features = $registry->classifyCliCommand(['features']);
+        $packSearch = $registry->classifyCliCommand(['pack', 'search', 'blog']);
+        $packList = $registry->classifyCliCommand(['pack', 'list']);
         $observeTrace = $registry->classifyCliCommand(['observe:trace', 'publish_post']);
         $observeProfile = $registry->classifyCliCommand(['observe:profile']);
         $observeCompare = $registry->classifyCliCommand(['observe:compare', 'run-a', 'run-b']);
@@ -78,6 +80,8 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($generatePrompt);
         $this->assertNotNull($licenseStatus);
         $this->assertNotNull($features);
+        $this->assertNotNull($packSearch);
+        $this->assertNotNull($packList);
         $this->assertNotNull($observeTrace);
         $this->assertNotNull($observeProfile);
         $this->assertNotNull($observeCompare);
@@ -119,6 +123,12 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('Monetization', $features['category']);
         $this->assertSame('features', $features['command_type']);
         $this->assertFalse($features['supports_pipeline_stage_filter']);
+        $this->assertSame('experimental', $packSearch['stability']);
+        $this->assertSame('Extensions', $packSearch['category']);
+        $this->assertSame('pack', $packSearch['command_type']);
+        $this->assertSame('experimental', $packList['stability']);
+        $this->assertSame('Extensions', $packList['category']);
+        $this->assertSame('pack', $packList['command_type']);
         $this->assertSame('experimental', $observeTrace['stability']);
         $this->assertSame('Observability', $observeTrace['category']);
         $this->assertSame('observe', $observeTrace['command_type']);
@@ -155,20 +165,26 @@ final class ApiSurfaceRegistryTest extends TestCase
 
         $manifest = $registry->classifyConfigurationArtifact('app/features/list_posts/feature.yaml');
         $platformConfig = $registry->classifyConfigurationArtifact('config/cache.php');
+        $packRegistry = $registry->classifyConfigurationArtifact('.foundry/packs/installed.json');
         $generated = $registry->classifyGeneratedMetadata('app/generated/routes.php');
+        $registryCache = $registry->classifyGeneratedMetadata('.foundry/cache/registry.json');
         $cacheMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/manifests/compile_cache.json');
         $qualityMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/quality/summary.json');
         $historyMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/history/build-abc.json');
 
         $this->assertNotNull($manifest);
         $this->assertNotNull($platformConfig);
+        $this->assertNotNull($packRegistry);
         $this->assertNotNull($generated);
+        $this->assertNotNull($registryCache);
         $this->assertNotNull($cacheMetadata);
         $this->assertNotNull($qualityMetadata);
         $this->assertNotNull($historyMetadata);
         $this->assertSame('public_api', $manifest['classification']);
         $this->assertSame('experimental_api', $platformConfig['classification']);
+        $this->assertSame('extension_api', $packRegistry['classification']);
         $this->assertSame('internal_api', $generated['classification']);
+        $this->assertSame('internal_api', $registryCache['classification']);
         $this->assertSame('internal_api', $cacheMetadata['classification']);
         $this->assertSame('internal_api', $qualityMetadata['classification']);
         $this->assertSame('internal_api', $historyMetadata['classification']);

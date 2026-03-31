@@ -80,7 +80,7 @@ final class EnrichPass implements CompilerPass
         $state->analysis['auth_matrix'] = $authMatrix;
         $state->analysis['route_summaries'] = $routeSummaries;
 
-        $state->graph->setMetadata([
+        $state->graph->setMetadata(array_merge($state->graph->metadata(), [
             'feature_summaries' => $featureSummaries,
             'auth_matrix' => $authMatrix,
             'route_summaries' => $routeSummaries,
@@ -93,7 +93,7 @@ final class EnrichPass implements CompilerPass
                 'changed_files' => $state->plan->changedFiles,
                 'recommended_scope' => $state->plan->mode,
             ],
-        ]);
+        ]));
     }
 
     /**

@@ -11,6 +11,7 @@ use Foundry\Compiler\Migration\DefinitionFormat;
 use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Projection\ProjectionEmitter;
 use Foundry\Doctor\DoctorCheck;
+use Foundry\Packs\LocalPackLoader;
 use Foundry\Pipeline\PipelineStageDefinition;
 use Foundry\Pipeline\StageInterceptor;
 use Foundry\Support\Paths;
@@ -129,6 +130,32 @@ final class ExtensionRegistry
             }
 
             $registry->addLoadedExtension($extension, $className, $sourcePath !== '' ? $sourcePath : 'foundry.extensions.php');
+        }
+
+        $packLoader = new LocalPackLoader($paths);
+        $packPayload = $packLoader->load();
+
+        $registry->registrationSources = array_values(array_unique(array_merge(
+            $registry->registrationSources,
+            array_values(array_map('strval', (array) ($packPayload['source_paths'] ?? []))),
+        )));
+        sort($registry->registrationSources);
+
+        foreach ((array) ($packPayload['diagnostics'] ?? []) as $diagnostic) {
+            if (is_array($diagnostic)) {
+                $registry->registrationDiagnostics[] = $diagnostic;
+            }
+        }
+
+        foreach ((array) ($packPayload['entries'] ?? []) as $row) {
+            $extension = $row['extension'] ?? null;
+            if (!$extension instanceof CompilerExtension) {
+                continue;
+            }
+
+            $className = trim((string) ($row['class'] ?? $extension::class));
+            $sourcePath = trim((string) ($row['source_path'] ?? '.foundry/packs/installed.json'));
+            $registry->addLoadedExtension($extension, $className, $sourcePath);
         }
 
         $registry->finalize();

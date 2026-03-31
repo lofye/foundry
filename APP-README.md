@@ -39,3 +39,14 @@ php -S 127.0.0.1:8000 public/index.php
 - Generated inspect UI: `docs/inspect-ui`
 - Source definition example: `app/definitions/inspect-ui/dev.inspect-ui.yaml`
 - {{AUTH_HINT}}
+
+## Packs
+
+Foundry can also load deterministic packs for extension work, either from disk or from the optional hosted registry.
+
+- discover remote packs with `foundry pack search <query> --json`
+- install from the hosted registry with `foundry pack install vendor/pack --json`
+- install and inspect local packs with `foundry pack list --json` and `foundry inspect packs --json`
+- active pack versions are tracked in `.foundry/packs/installed.json`
+- hosted registry lookups are cached at `.foundry/cache/registry.json`
+- installed pack files live under `.foundry/packs/*/*/*` and should be replaced from source rather than hand-edited

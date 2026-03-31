@@ -203,6 +203,11 @@ final class CommandCatalog
             $signature === 'license activate' => 'license activate --key=YOUR_KEY --json',
             $signature === 'license deactivate' => 'license deactivate --json',
             $signature === 'features' => 'features --json',
+            $signature === 'pack install' => 'pack install foundry/blog --json',
+            $signature === 'pack search' => 'pack search blog --json',
+            $signature === 'pack remove' => 'pack remove acme/blog --json',
+            $signature === 'pack list' => 'pack list --json',
+            $signature === 'pack info' => 'pack info acme/blog --json',
             $signature === 'explain' => 'explain ' . $examples['feature'] . ' --json',
             $signature === 'diff' => 'diff --json',
             $signature === 'trace' => 'trace ' . $examples['feature'] . ' --json',
@@ -392,6 +397,13 @@ final class CommandCatalog
         }
 
         if (
+            in_array($signature, ['pack install', 'pack search', 'pack remove', 'pack list', 'pack info', 'inspect packs', 'inspect pack', 'inspect extensions', 'inspect extension', 'verify extensions', 'verify compatibility'], true)
+        ) {
+            $links[] = ['title' => 'Extension Author Guide', 'href' => 'extension-author-guide.html'];
+            $links[] = ['title' => 'Extensions And Migrations', 'href' => 'extensions-and-migrations.html'];
+        }
+
+        if (
             in_array($signature, ['new', 'init app', 'generate starter', 'generate resource', 'generate admin-resource', 'generate uploads', 'generate notification', 'generate api-resource', 'generate billing', 'generate workflow', 'generate orchestration', 'generate search-index', 'generate stream', 'generate locale', 'generate roles', 'generate policy'], true)
         ) {
             $links[] = ['title' => 'App Scaffolding', 'href' => 'app-scaffolding.html'];
@@ -478,6 +490,11 @@ final class CommandCatalog
             'help' => ['inspect cli-surface', 'verify cli-surface', 'explain'],
             'generate docs' => ['graph inspect', 'inspect graph', 'help'],
             'explain' => ['doctor', 'graph inspect', 'inspect graph', 'trace'],
+            'pack install' => ['pack search', 'pack list', 'pack info', 'inspect packs'],
+            'pack search' => ['pack install', 'pack list', 'inspect packs', 'help'],
+            'pack remove' => ['pack list', 'pack info', 'inspect packs', 'compile graph'],
+            'pack list' => ['pack search', 'pack info', 'inspect packs', 'verify extensions'],
+            'pack info' => ['pack install', 'pack list', 'inspect packs', 'verify compatibility'],
             default => $this->familyRelatedSignatures($signature, $allCommands),
         };
 

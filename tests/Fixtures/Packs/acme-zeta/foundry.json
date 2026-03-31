@@ -1,0 +1,9 @@
+{
+  "name": "acme/zeta",
+  "version": "1.0.0",
+  "description": "Fixture zeta pack for deterministic ordering tests.",
+  "entry": "Acme\\Zeta\\AcmeZetaPackServiceProvider",
+  "capabilities": [
+    "zeta.docs"
+  ]
+}

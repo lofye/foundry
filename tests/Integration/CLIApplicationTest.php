@@ -208,6 +208,23 @@ YAML);
         $this->assertSame('Monetization', $featuresHelp['payload']['command']['category']);
         $this->assertSame('features', $featuresHelp['payload']['command']['command_type']);
 
+        $packHelp = $this->runCommand($app, ['foundry', 'help', 'pack', 'list', '--json']);
+        $this->assertSame(0, $packHelp['status']);
+        $this->assertSame('pack list', $packHelp['payload']['command']['signature']);
+        $this->assertSame('Extensions', $packHelp['payload']['command']['category']);
+        $this->assertSame('pack', $packHelp['payload']['command']['command_type']);
+
+        $packSearchHelp = $this->runCommand($app, ['foundry', 'help', 'pack', 'search', '--json']);
+        $this->assertSame(0, $packSearchHelp['status']);
+        $this->assertSame('pack search', $packSearchHelp['payload']['command']['signature']);
+        $this->assertSame('Extensions', $packSearchHelp['payload']['command']['category']);
+        $this->assertSame('pack', $packSearchHelp['payload']['command']['command_type']);
+
+        $packGroupHelp = $this->runCommand($app, ['foundry', 'help', 'pack', '--json']);
+        $this->assertSame(0, $packGroupHelp['status']);
+        $this->assertSame('pack', $packGroupHelp['payload']['group']['name']);
+        $this->assertGreaterThan(0, (int) $packGroupHelp['payload']['group']['counts']['experimental']);
+
         $generatePromptHelp = $this->runCommand($app, ['foundry', 'help', 'generate', 'Add', '--json']);
         $this->assertSame(0, $generatePromptHelp['status']);
         $this->assertSame('generate <prompt>', $generatePromptHelp['payload']['command']['signature']);

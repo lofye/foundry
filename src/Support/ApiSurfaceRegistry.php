@@ -175,6 +175,14 @@ final class ApiSurfaceRegistry
                 'deactivate' => 'license deactivate',
                 default => null,
             },
+            'pack' => match ($second) {
+                'install' => 'pack install',
+                'search' => 'pack search',
+                'remove' => 'pack remove',
+                'list' => 'pack list',
+                'info' => 'pack info',
+                default => null,
+            },
             'compile', 'graph', 'export', 'preview', 'init', 'migrate', 'codemod', 'cache' => match ($first) {
                 'compile' => $second === 'graph' ? 'compile graph' : null,
                 'graph' => match ($second) {
@@ -361,6 +369,11 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('license activate', 'license activate [--key=YOUR_KEY]', 'experimental', 'Validate and store a local Foundry license key. Optional remote validation runs only when explicitly configured.'),
             $this->cliCommandEntry('license deactivate', 'license deactivate', 'experimental', 'Remove the locally stored Foundry license file. Environment-provided keys remain active until the environment is cleared.'),
             $this->cliCommandEntry('features', 'features', 'experimental', 'List capability and service descriptors published by the monetization layer.'),
+            $this->cliCommandEntry('pack install', 'pack install <path-or-name>', 'experimental', 'Install a Foundry pack from disk or the hosted public registry and activate it deterministically.'),
+            $this->cliCommandEntry('pack search', 'pack search <query>', 'experimental', 'Search the hosted public pack registry by name and description.'),
+            $this->cliCommandEntry('pack remove', 'pack remove <vendor/pack>', 'experimental', 'Deactivate an installed Foundry pack without deleting its files.'),
+            $this->cliCommandEntry('pack list', 'pack list', 'experimental', 'List locally installed Foundry packs and active versions.'),
+            $this->cliCommandEntry('pack info', 'pack info <vendor/pack>', 'experimental', 'Inspect local manifest, install path, capabilities, and activation state for one pack.'),
             $this->cliCommandEntry('explain', 'explain <target> [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow]', 'experimental', 'Explain a framework or application subject from the compiled graph, projections, diagnostics, and docs metadata.'),
             $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.'),
             $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.'),
@@ -520,6 +533,8 @@ final class ApiSurfaceRegistry
         return [
             $this->surfaceEntry('configuration_format', 'foundry.extensions.php', 'extension_api', 'stable', 'Root-level extension registration file for framework and app packs.'),
             $this->surfaceEntry('configuration_format', 'config/foundry/extensions.php', 'extension_api', 'stable', 'App-local extension registration file layered after the project root registration file.'),
+            $this->surfaceEntry('configuration_format', '.foundry/packs/installed.json', 'extension_api', 'stable', 'Deterministic local pack activation registry used to load active packs offline.'),
+            $this->surfaceEntry('configuration_format', '.foundry/packs/*/*/*/foundry.json', 'extension_api', 'stable', 'Installed pack manifest contract used for deterministic offline pack loading.'),
             $this->surfaceEntry('configuration_format', 'config/*.php', 'experimental_api', 'experimental', 'Application config files remain experimental until schema validation is finalized.'),
             $this->surfaceEntry('configuration_format', 'definitions/*.api-resource.yaml', 'experimental_api', 'experimental', 'Definition files used by API resource generators remain experimental.'),
             $this->surfaceEntry('configuration_format', 'definitions/*.workflow.yaml', 'experimental_api', 'experimental', 'Definition files used by workflow generators remain experimental.'),
@@ -574,6 +589,8 @@ final class ApiSurfaceRegistry
             $this->surfaceEntry('extension_hook', 'Foundry\\Explain\\Contributors\\ExplainContribution', 'extension_api', 'stable', 'Structured contribution payload merged into explain plans before rendering.'),
             $this->surfaceEntry('extension_hook', 'Foundry\\Pipeline\\PipelineStageDefinition', 'extension_api', 'stable', 'Pipeline stage definition contract for extension-registered stages.'),
             $this->surfaceEntry('extension_hook', 'Foundry\\Pipeline\\StageInterceptor', 'extension_api', 'stable', 'Pipeline interceptor contract for extension-registered interceptors.'),
+            $this->surfaceEntry('extension_hook', 'Foundry\\Packs\\PackServiceProvider', 'extension_api', 'stable', 'Pack entrypoint contract used by deterministic local pack loading.'),
+            $this->surfaceEntry('extension_hook', 'Foundry\\Packs\\PackContext', 'extension_api', 'stable', 'Pack registration context for explicit extension and contribution declarations.'),
         ];
     }
 
@@ -604,6 +621,7 @@ final class ApiSurfaceRegistry
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/quality/*.json', 'internal_api', 'internal', 'Persisted quality-tool and doctor-quality artifacts.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/observability/*.json', 'internal_api', 'internal', 'Persisted trace, profile, and comparison artifacts.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/history/*.json', 'internal_api', 'internal', 'Persisted build, quality, and observability history records.'),
+            $this->surfaceEntry('generated_metadata', '.foundry/cache/registry.json', 'internal_api', 'internal', 'Cached hosted pack registry metadata.'),
         ];
     }
 
@@ -665,6 +683,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions'], true) => 'Observability',
             in_array($signature, ['serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail'], true) => 'Runtime',
             in_array($signature, ['license status', 'license activate', 'license deactivate', 'features'], true) => 'Monetization',
+            in_array($signature, ['pack install', 'pack search', 'pack remove', 'pack list', 'pack info'], true) => 'Extensions',
             in_array($signature, ['new', 'init app', 'preview notification'], true)
                 || str_starts_with($signature, 'generate ')
                 => 'App Scaffolding',
@@ -683,6 +702,7 @@ final class ApiSurfaceRegistry
             str_starts_with($signature, 'queue:') => 'queue',
             str_starts_with($signature, 'schedule:') => 'schedule',
             $signature === 'features' => 'features',
+            str_starts_with($signature, 'pack ') => 'pack',
             str_starts_with($signature, 'trace:') => 'trace',
             str_starts_with($signature, 'cache ') => 'cache',
             str_starts_with($signature, 'graph ') => 'graph',

@@ -137,10 +137,10 @@ final class ExtensionMetadataValidator
     {
         $diagnostics = [];
 
-        if (!$this->isValidIdentifier($pack->name)) {
+        if (!$this->isValidPackIdentifier($pack->name)) {
             $diagnostics[] = $this->diagnostic(
                 code: 'FDY7017_PACK_METADATA_INVALID',
-                message: sprintf('Pack %s has invalid metadata: name must be a stable lowercase identifier.', $pack->name !== '' ? $pack->name : '<unknown>'),
+                message: sprintf('Pack %s has invalid metadata: name must be a stable pack identifier.', $pack->name !== '' ? $pack->name : '<unknown>'),
                 extension: $descriptor->name,
                 pack: $pack->name,
                 field: 'name',
@@ -192,7 +192,7 @@ final class ExtensionMetadataValidator
             'optional_dependencies' => $pack->optionalDependencies,
             'conflicts_with' => $pack->conflictsWith,
         ] as $field => $values) {
-            $diagnostics = array_merge($diagnostics, $this->validateIdentifierList(
+            $diagnostics = array_merge($diagnostics, $this->validatePackIdentifierList(
                 extension: $descriptor->name,
                 field: $field,
                 values: $values,
@@ -260,9 +260,45 @@ final class ExtensionMetadataValidator
         return $diagnostics;
     }
 
+    /**
+     * @param array<int,string> $values
+     * @return array<int,array<string,mixed>>
+     */
+    private function validatePackIdentifierList(string $extension, string $field, array $values, string $code, ?string $pack = null): array
+    {
+        $diagnostics = [];
+
+        foreach ($values as $value) {
+            $candidate = trim((string) $value);
+            if ($candidate === '') {
+                continue;
+            }
+
+            if ($this->isValidPackIdentifier($candidate)) {
+                continue;
+            }
+
+            $diagnostics[] = $this->diagnostic(
+                code: $code,
+                message: sprintf('Pack %s has invalid metadata: %s contains unsupported identifier %s.', $pack ?? $extension, $field, $candidate),
+                extension: $extension,
+                pack: $pack,
+                field: $field,
+            );
+        }
+
+        return $diagnostics;
+    }
+
     private function isValidIdentifier(string $value): bool
     {
         return $value !== '' && preg_match('/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/', $value) === 1;
+    }
+
+    private function isValidPackIdentifier(string $value): bool
+    {
+        return $this->isValidIdentifier($value)
+            || preg_match('/^[a-z0-9]+(?:[._-][a-z0-9]+)*\/[a-z0-9]+(?:[._-][a-z0-9]+)*$/', $value) === 1;
     }
 
     private function isValidVersion(string $value): bool

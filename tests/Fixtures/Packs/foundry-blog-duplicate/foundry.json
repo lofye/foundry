@@ -1,0 +1,7 @@
+{
+  "name": "foundry/blog-duplicate",
+  "version": "1.0.0",
+  "description": "Fixture pack that tries to add a duplicate graph node id.",
+  "entry": "Vendor\\BlogDuplicate\\FoundryBlogDuplicatePackServiceProvider",
+  "capabilities": []
+}

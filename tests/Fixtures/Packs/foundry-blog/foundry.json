@@ -1,0 +1,9 @@
+{
+  "name": "foundry/blog",
+  "version": "1.0.0",
+  "description": "Fixture blog pack for local pack-system tests.",
+  "entry": "Vendor\\Blog\\FoundryBlogPackServiceProvider",
+  "capabilities": [
+    "blog.notes"
+  ]
+}

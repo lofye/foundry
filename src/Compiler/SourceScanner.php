@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Foundry\Compiler;
 
+use Foundry\Packs\InstalledPackRegistry;
 use Foundry\Support\Paths;
 
 final readonly class SourceScanner
@@ -79,6 +80,47 @@ final readonly class SourceScanner
             if ($relative !== '') {
                 $files[] = $relative;
             }
+        }
+
+        $packRegistry = new InstalledPackRegistry($this->paths);
+        $packRegistryPath = $packRegistry->registryPath();
+        if (is_file($packRegistryPath)) {
+            $relative = $this->relativePath($packRegistryPath);
+            if ($relative !== '') {
+                $files[] = $relative;
+            }
+        }
+
+        try {
+            foreach ($packRegistry->read() as $name => $entry) {
+                $activeVersion = is_string($entry['active_version'] ?? null) ? $entry['active_version'] : null;
+                if ($activeVersion === null || $activeVersion === '') {
+                    continue;
+                }
+
+                $installPath = $packRegistry->installPath($name, $activeVersion);
+                if (!is_dir($installPath)) {
+                    continue;
+                }
+
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($installPath, \FilesystemIterator::SKIP_DOTS),
+                );
+
+                foreach ($iterator as $fileInfo) {
+                    if (!$fileInfo instanceof \SplFileInfo || !$fileInfo->isFile()) {
+                        continue;
+                    }
+
+                    $relative = $this->relativePath($fileInfo->getPathname());
+                    if ($relative !== '') {
+                        $files[] = $relative;
+                    }
+                }
+            }
+        } catch (\Throwable) {
+            // Keep compile cache discovery resilient; the loader surfaces structured
+            // registry diagnostics later during extension loading.
         }
 
         $foundationDefinitionFiles = glob($this->paths->join('app/definitions/*/*.yaml')) ?: [];

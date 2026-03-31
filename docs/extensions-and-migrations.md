@@ -49,31 +49,82 @@ Compiler pass ordering is deterministic by:
 3. resolved extension load order
 4. pass class name
 
-## Packs and Capabilities
+## Local Packs
 
-Packs are structured extension-owned definitions, not ad hoc folders.
+Packs are explicit, deterministic extension units, not ad hoc folders or hidden runtime plugins.
 
-Each pack declares:
+Each local pack source must include `foundry.json`:
 
-- name and version
-- owning extension
-- provided and required capabilities
-- required, optional, and conflicting pack dependencies
-- framework and graph constraints
-- generators/inspect surfaces/definition formats/migration rules/verifiers/docs metadata
+```json
+{
+  "name": "vendor/pack-name",
+  "version": "1.0.0",
+  "description": "string",
+  "entry": "Vendor\\Pack\\PackServiceProvider",
+  "capabilities": []
+}
+```
 
-Inspect commands:
+Rules:
+
+- install sources are copied into `.foundry/packs/{vendor}/{pack}/{version}/`
+- installed files stay immutable once copied
+- active versions are tracked in `.foundry/packs/installed.json`
+- graph boot reads only active pack versions
+- pack entry classes must implement `Foundry\Packs\PackServiceProvider`
+- pack providers register graph-visible behavior explicitly through `Foundry\Packs\PackContext`
+
+If a pack needs compiler passes, projection emitters, doctor checks, or compatibility constraints, it should register a `CompilerExtension` through the pack provider.
+
+CLI commands:
 
 ```bash
+foundry pack search <query> --json
+foundry pack install vendor/pack --json
+foundry pack install <path-or-name> --json
+foundry pack remove <vendor/pack> --json
+foundry pack list --json
+foundry pack info <vendor/pack> --json
 foundry inspect packs --json
-foundry inspect pack <name> --json
 ```
 
-Metadata schemas are exposed through:
+Activation remains deterministic:
 
-```bash
-foundry inspect extensions --json
+- local pack order is sorted by pack name then active version
+- declared command and schema contributions must be unique across active packs
+- duplicate graph node identifiers fail explicitly during graph integration
+- no remote dependency is required for install, remove, list, info, or graph loading
+
+## Hosted Registry Contract
+
+Foundry can also discover packs through an optional public registry endpoint:
+
+```text
+GET /registry.json
 ```
+
+Registry response shape:
+
+```json
+[
+  {
+    "name": "vendor/pack",
+    "version": "1.0.0",
+    "description": "Short description",
+    "download_url": "https://example.com/packs/vendor-pack-1.0.0.zip"
+  }
+]
+```
+
+Rules:
+
+- the registry is read-only metadata, not an execution or access-control layer
+- entries are normalized deterministically by name then version
+- duplicate `name` + `version` rows fail validation
+- `download_url` must use HTTPS
+- `foundry pack install vendor/pack` resolves the highest semantic version deterministically
+
+Downloaded archives must be `.zip` files with `foundry.json` at the archive root. Extraction must reject directory traversal and still delegates into the same local install pipeline after validation.
 
 ## Compatibility Model
 
@@ -84,6 +135,8 @@ Compatibility is explicit and enforced across:
 - extension descriptors
 - pack constraints
 - definition format declarations
+
+For local packs, framework and graph constraints come from the compiler extension registered by the pack provider. The `foundry.json` manifest itself stays intentionally minimal. Hosted registry entries only add discovery metadata and download locations.
 
 Diagnostics include:
 
