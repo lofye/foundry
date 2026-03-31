@@ -8,6 +8,7 @@ use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\IR\GraphNode;
 use Foundry\Explain\ExplainArtifactCatalog;
 use Foundry\Explain\ExplainContext;
+use Foundry\Explain\ExplainOrigin;
 use Foundry\Explain\ExplainOptions;
 use Foundry\Explain\ExplainSubject;
 use Foundry\Explain\ExplainSupport;
@@ -57,8 +58,7 @@ final readonly class WorkflowContextCollector implements ExplainContextCollector
             }
         }
 
-        ksort($rows);
-        $context->setWorkflows(['items' => array_values($rows)]);
+        $context->setWorkflows(['items' => ExplainOrigin::sortAttributedRows(array_values($rows))]);
     }
 
     /**
@@ -166,6 +166,8 @@ final readonly class WorkflowContextCollector implements ExplainContextCollector
             'kind' => 'workflow',
             'label' => $resource !== '' ? $resource : ($node !== null ? ExplainSupport::nodeLabel($node) : $id),
             'resource' => $resource,
+            'source_path' => $node?->sourcePath(),
+            'extension' => $node !== null ? (trim((string) ($node->payload()['extension'] ?? '')) ?: null) : null,
             'states' => array_values(array_map('strval', (array) ($row['states'] ?? []))),
             'transitions' => $transitions,
             'emits' => ExplainSupport::uniqueRows($emits),

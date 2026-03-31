@@ -374,7 +374,7 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('pack remove', 'pack remove <vendor/pack>', 'experimental', 'Deactivate an installed Foundry pack without deleting its files.'),
             $this->cliCommandEntry('pack list', 'pack list', 'experimental', 'List locally installed Foundry packs and active versions.'),
             $this->cliCommandEntry('pack info', 'pack info <vendor/pack>', 'experimental', 'Inspect local manifest, install path, capabilities, and activation state for one pack.'),
-            $this->cliCommandEntry('explain', 'explain <target> [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow]', 'experimental', 'Explain a framework or application subject from the compiled graph, projections, diagnostics, and docs metadata.'),
+            $this->cliCommandEntry('explain', 'explain <target> [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow]', 'experimental', 'Explain a framework, application, or installed pack subject from the compiled graph, projections, diagnostics, docs metadata, and extension registry.'),
             $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.'),
             $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.'),
             $this->cliCommandEntry('generate <prompt>', 'generate <prompt...> [--feature-context] [--dry-run] [--deterministic] [--provider=<name>] [--model=<name>] [--force]', 'experimental', 'Plan or generate graph-aware feature scaffolding from the current graph using deterministic or configured AI provider mode.'),

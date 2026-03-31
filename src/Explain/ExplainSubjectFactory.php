@@ -30,12 +30,16 @@ final class ExplainSubjectFactory
             $metadata['signature'] = ExplainSupport::normalizeRouteSignature((string) ($metadata['signature'] ?? ''));
         }
 
+        $origin = ExplainOrigin::subject($metadata, ExplainSupport::nodeLabel($node));
+
         return new ExplainSubject(
             kind: $kind,
             id: $node->id(),
             label: ExplainSupport::nodeLabel($node),
             graphNodeIds: [$node->id()],
             aliases: ExplainSupport::nodeAliases($node),
+            origin: $origin['origin'],
+            extension: $origin['extension'],
             metadata: $metadata,
         );
     }
@@ -50,12 +54,42 @@ final class ExplainSubjectFactory
             return null;
         }
 
+        $aliases = [$name];
+        $packName = ExplainOrigin::packNameFromRow($row);
+        if ($packName !== null) {
+            $aliases[] = $packName;
+        }
+
         return new ExplainSubject(
             kind: 'extension',
             id: 'extension:' . $name,
             label: $name,
             graphNodeIds: [],
-            aliases: [$name],
+            aliases: ExplainSupport::uniqueStrings($aliases),
+            origin: 'extension',
+            extension: $packName ?? $name,
+            metadata: $row,
+        );
+    }
+
+    /**
+     * @param array<string,mixed> $row
+     */
+    public function fromPackRow(array $row): ?ExplainSubject
+    {
+        $name = ExplainOrigin::packNameFromRow($row);
+        if ($name === null) {
+            return null;
+        }
+
+        return new ExplainSubject(
+            kind: 'pack',
+            id: 'pack:' . $name,
+            label: $name,
+            graphNodeIds: [],
+            aliases: ExplainSupport::uniqueStrings([$name]),
+            origin: 'extension',
+            extension: $name,
             metadata: $row,
         );
     }
@@ -70,6 +104,8 @@ final class ExplainSubjectFactory
             return null;
         }
 
+        $origin = ExplainOrigin::subject($row, $signature);
+
         $aliases = [$signature];
         if (!str_contains($signature, ' ')) {
             $aliases[] = $signature;
@@ -81,6 +117,8 @@ final class ExplainSubjectFactory
             label: $signature,
             graphNodeIds: [],
             aliases: ExplainSupport::uniqueStrings($aliases),
+            origin: $origin['origin'],
+            extension: $origin['extension'],
             metadata: $row,
         );
     }

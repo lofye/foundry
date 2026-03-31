@@ -18,6 +18,7 @@ final readonly class ExplainTarget
         'job',
         'schema',
         'extension',
+        'pack',
         'pipeline_stage',
     ];
 

@@ -114,10 +114,11 @@ final class ExplainPolishTest extends TestCase
         $json = json_decode((new JsonExplanationRenderer())->render($plan), true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame(
-            ['subject', 'summary', 'responsibilities', 'executionFlow', 'relationships', 'emits', 'triggers', 'permissions', 'schemaInteraction', 'relatedCommands', 'relatedDocs', 'diagnostics', 'suggestedFixes', 'sections', 'sectionOrder', 'metadata'],
+            ['subject', 'graph', 'execution', 'guards', 'events', 'schemas', 'relationships', 'diagnostics', 'docs', 'impact', 'commands', 'metadata', 'extensions', 'summary', 'responsibilities', 'executionFlow', 'emits', 'triggers', 'permissions', 'schemaInteraction', 'relatedCommands', 'relatedDocs', 'suggestedFixes', 'sections', 'sectionOrder'],
             array_keys($payload),
         );
         $this->assertSame($payload, $json);
+        $this->assertSame('core', $json['subject']['origin']);
         $this->assertSame('account', $json['relationships']['dependsOn']['items'][0]['label']);
         $this->assertSame('POST /posts', $json['relationships']['usedBy']['items'][0]['label']);
         $this->assertSame('post.created', $json['relationships']['graph']['outbound'][0]['label']);

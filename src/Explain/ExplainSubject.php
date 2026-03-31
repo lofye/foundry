@@ -18,6 +18,8 @@ final readonly class ExplainSubject
         public array $graphNodeIds,
         public array $aliases,
         public array $metadata = [],
+        public string $origin = 'core',
+        public ?string $extension = null,
     ) {}
 
     /**
@@ -29,6 +31,8 @@ final readonly class ExplainSubject
             'id' => $this->id,
             'kind' => $this->kind,
             'label' => $this->label,
+            'origin' => $this->origin,
+            'extension' => $this->extension,
             'graph_node_ids' => $this->graphNodeIds,
             'aliases' => $this->aliases,
             'metadata' => $this->metadata,

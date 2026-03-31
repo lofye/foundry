@@ -104,7 +104,8 @@ final class PackManager
         }
 
         $this->copyDirectory($resolved, $target);
-        $this->registry->activate($manifest);
+        $packSource = is_array($metadata['source'] ?? null) ? $metadata['source'] : null;
+        $this->registry->activate($manifest, $packSource);
 
         $result = [
             'pack' => $manifest->name,
@@ -231,6 +232,7 @@ final class PackManager
             'install_path' => $this->relativePath($this->registry->installPath($name, $selectedVersion)),
             'manifest' => $manifest->toArray(),
             'capabilities' => $manifest->capabilities,
+            'source' => is_array($entry['sources'][$selectedVersion] ?? null) ? $entry['sources'][$selectedVersion] : null,
         ];
     }
 

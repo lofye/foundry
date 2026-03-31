@@ -82,13 +82,17 @@ final class ExplainEngineTest extends TestCase
         $payload = $plan->toArray();
 
         $this->assertSame(
-            ['subject', 'summary', 'responsibilities', 'executionFlow', 'relationships', 'emits', 'triggers', 'permissions', 'schemaInteraction', 'relatedCommands', 'relatedDocs', 'diagnostics', 'suggestedFixes', 'sections', 'sectionOrder', 'metadata'],
+            ['subject', 'graph', 'execution', 'guards', 'events', 'schemas', 'relationships', 'diagnostics', 'docs', 'impact', 'commands', 'metadata', 'extensions', 'summary', 'responsibilities', 'executionFlow', 'emits', 'triggers', 'permissions', 'schemaInteraction', 'relatedCommands', 'relatedDocs', 'suggestedFixes', 'sections', 'sectionOrder'],
             array_keys($payload),
         );
         $this->assertSame('feature', $payload['subject']['kind']);
         $this->assertSame('feature:publish_post', $payload['subject']['id']);
+        $this->assertSame('core', $payload['subject']['origin']);
         $this->assertTrue($payload['summary']['deterministic']);
         $this->assertArrayHasKey('graph_node_ids', $payload['subject']);
+        $this->assertArrayHasKey('graph', $payload);
+        $this->assertArrayHasKey('execution', $payload);
+        $this->assertArrayHasKey('extensions', $payload);
         $this->assertArrayHasKey('schema_version', $payload['metadata']);
         $this->assertArrayHasKey('target', $payload['metadata']);
         $this->assertArrayHasKey('options', $payload['metadata']);
@@ -104,6 +108,7 @@ final class ExplainEngineTest extends TestCase
         $this->assertNotEmpty($payload['schemaInteraction']['items']);
         $this->assertNotEmpty($payload['relationships']['graph']['outbound']);
         $this->assertSame(1, $payload['diagnostics']['summary']['total']);
+        $this->assertSame('feature:publish_post', $payload['graph']['subject_node']['id']);
         $this->assertContains('foundry inspect feature publish_post --json', $payload['relatedCommands']);
         $this->assertSame('publish_post', $payload['metadata']['impact']['affected_features'][0]);
     }

@@ -111,6 +111,21 @@ final class ExplanationPlanAssembler
             sections: $sections,
             sectionOrder: $sectionOrder,
             metadata: $metadata,
+            model: ExplainModel::fromExplainData(
+                context: $context,
+                subject: $subject->toArray(),
+                executionFlow: (new ExecutionFlowSection($this->normalizeExecutionFlow($sectionData['execution_flow'] ?? [])))->toArray(),
+                relationships: [
+                    'dependsOn' => (new RelationshipSection($this->normalizeRowsSection($sectionData['dependencies'] ?? [])))->toArray(),
+                    'usedBy' => (new RelationshipSection($this->normalizeRowsSection($sectionData['dependents'] ?? [])))->toArray(),
+                    'graph' => (new GraphRelationshipsSection($this->normalizeGraphRelationships($sectionData['graph_relationships'] ?? [])))->toArray(),
+                ],
+                diagnostics: (new DiagnosticsSection($this->normalizeDiagnostics($sectionData['diagnostics'] ?? [])))->toArray(),
+                schemaInteraction: $this->normalizeSchemaInteraction($sectionData['schema_interaction'] ?? []),
+                relatedCommands: $relatedCommands,
+                relatedDocs: $relatedDocs,
+                metadata: $metadata,
+            ),
         );
     }
 

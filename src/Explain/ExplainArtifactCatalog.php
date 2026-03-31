@@ -240,7 +240,7 @@ final class ExplainArtifactCatalog
                 'title' => 'Architecture Tools',
                 'path' => 'docs/architecture-tools.md',
                 'source' => 'docs',
-                'subjects' => ['feature', 'route', 'command', 'pipeline_stage', 'workflow', 'event', 'job', 'schema', 'extension'],
+                'subjects' => ['feature', 'route', 'command', 'pipeline_stage', 'workflow', 'event', 'job', 'schema', 'extension', 'pack'],
                 'commands' => ['explain', 'doctor', 'graph inspect', 'graph visualize', 'export graph', 'prompt', 'diff', 'trace', 'generate <prompt>'],
             ],
             [
@@ -248,7 +248,7 @@ final class ExplainArtifactCatalog
                 'title' => 'How It Works',
                 'path' => 'docs/how-it-works.md',
                 'source' => 'docs',
-                'subjects' => ['feature', 'route', 'workflow', 'event', 'job', 'schema', 'extension'],
+                'subjects' => ['feature', 'route', 'workflow', 'event', 'job', 'schema', 'extension', 'pack'],
             ],
             [
                 'id' => 'execution-pipeline',
@@ -262,28 +262,28 @@ final class ExplainArtifactCatalog
                 'title' => 'Reference',
                 'path' => 'docs/reference.md',
                 'source' => 'docs',
-                'subjects' => ['feature', 'route', 'command', 'pipeline_stage', 'workflow', 'event', 'job', 'schema', 'extension'],
+                'subjects' => ['feature', 'route', 'command', 'pipeline_stage', 'workflow', 'event', 'job', 'schema', 'extension', 'pack'],
             ],
             [
                 'id' => 'extension-author-guide',
                 'title' => 'Extension Author Guide',
                 'path' => 'docs/extension-author-guide.md',
                 'source' => 'docs',
-                'subjects' => ['extension', 'command'],
+                'subjects' => ['extension', 'pack', 'command'],
             ],
             [
                 'id' => 'extensions-and-migrations',
                 'title' => 'Extensions And Migrations',
                 'path' => 'docs/extensions-and-migrations.md',
                 'source' => 'docs',
-                'subjects' => ['extension'],
+                'subjects' => ['extension', 'pack'],
             ],
             [
                 'id' => 'public-api-policy',
                 'title' => 'Public API Policy',
                 'path' => 'docs/public-api-policy.md',
                 'source' => 'docs',
-                'subjects' => ['command', 'extension'],
+                'subjects' => ['command', 'extension', 'pack'],
             ],
         ];
     }
@@ -299,7 +299,7 @@ final class ExplainArtifactCatalog
                 'title' => 'Graph Overview',
                 'path' => 'docs/generated/graph-overview.md',
                 'source' => 'generated',
-                'subjects' => ['feature', 'route', 'pipeline_stage', 'workflow', 'event', 'job', 'schema', 'extension'],
+                'subjects' => ['feature', 'route', 'pipeline_stage', 'workflow', 'event', 'job', 'schema', 'extension', 'pack'],
             ],
             [
                 'id' => 'features',
@@ -349,7 +349,7 @@ final class ExplainArtifactCatalog
                 'title' => 'API Surface Policy',
                 'path' => 'docs/generated/api-surface.md',
                 'source' => 'generated',
-                'subjects' => ['command', 'extension'],
+                'subjects' => ['command', 'extension', 'pack'],
             ],
         ];
     }

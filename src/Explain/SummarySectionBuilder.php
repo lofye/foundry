@@ -26,6 +26,7 @@ final class SummarySectionBuilder
             'pipeline_stage' => $this->pipelineStageSummary($subject, $summaryInputs),
             'schema' => $this->schemaSummary($subject, $summaryInputs),
             'extension' => $this->extensionSummary($subject, $summaryInputs),
+            'pack' => $this->packSummary($subject, $summaryInputs),
             'job' => $this->jobSummary($subject, $summaryInputs),
             default => sprintf('%s is a %s in the compiled application graph.', $subject->label, $subject->kind),
         };
@@ -194,6 +195,43 @@ final class SummarySectionBuilder
         }
         if ($packs !== []) {
             $parts[] = 'It ships ' . implode(', ', array_slice($packs, 0, 3)) . '.';
+        }
+
+        return implode(' ', $parts);
+    }
+
+    /**
+     * @param array<string,mixed> $summaryInputs
+     */
+    private function packSummary(ExplainSubject $subject, array $summaryInputs): string
+    {
+        $name = trim((string) ($summaryInputs['name'] ?? $subject->label));
+        $description = trim((string) ($summaryInputs['description'] ?? ''));
+        $version = trim((string) ($summaryInputs['version'] ?? ''));
+        $capabilities = ExplainSupport::uniqueStrings(array_values(array_map('strval', (array) ($summaryInputs['capabilities'] ?? []))));
+        $contributions = is_array($summaryInputs['contributions'] ?? null) ? $summaryInputs['contributions'] : [];
+
+        $parts = [$description !== ''
+            ? sprintf('%s is an installed pack. %s', $name, $description)
+            : sprintf('%s is an installed pack.', $name)];
+        if ($version !== '') {
+            $parts[] = 'The active version is ' . $version . '.';
+        }
+        if ($capabilities !== []) {
+            $parts[] = 'It provides ' . implode(', ', array_slice($capabilities, 0, 3)) . '.';
+        }
+
+        $contributionKinds = [];
+        foreach ($contributions as $kind => $values) {
+            if (!is_string($kind) || !is_array($values) || $values === []) {
+                continue;
+            }
+
+            $contributionKinds[] = str_replace('_', ' ', $kind);
+        }
+        sort($contributionKinds);
+        if ($contributionKinds !== []) {
+            $parts[] = 'It contributes ' . implode(', ', array_slice($contributionKinds, 0, 4)) . '.';
         }
 
         return implode(' ', $parts);

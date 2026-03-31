@@ -69,6 +69,11 @@ final class RelatedCommandsAnalyzer implements SectionAnalyzerInterface
                 $commands[] = $prefix . ' inspect extension ' . $subject->label . ' --json';
                 $commands[] = $prefix . ' inspect compatibility --json';
                 break;
+            case 'pack':
+                $commands[] = $prefix . ' pack info ' . $subject->label . ' --json';
+                $commands[] = $prefix . ' inspect pack ' . $subject->label . ' --json';
+                $commands[] = $prefix . ' inspect extensions --json';
+                break;
             default:
                 $commands[] = $prefix . ' inspect graph --json';
                 break;

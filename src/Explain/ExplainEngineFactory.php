@@ -19,6 +19,7 @@ use Foundry\Explain\Analyzers\FeatureSubjectAnalyzer;
 use Foundry\Explain\Analyzers\GenericGraphSubjectAnalyzer;
 use Foundry\Explain\Analyzers\GraphRelationshipsAnalyzer;
 use Foundry\Explain\Analyzers\JobSubjectAnalyzer;
+use Foundry\Explain\Analyzers\PackSubjectAnalyzer;
 use Foundry\Explain\Analyzers\PermissionAnalyzer;
 use Foundry\Explain\Analyzers\PipelineStageSubjectAnalyzer;
 use Foundry\Explain\Analyzers\RelatedCommandsAnalyzer;
@@ -82,6 +83,7 @@ final class ExplainEngineFactory
                     new JobSubjectAnalyzer(),
                     new SchemaSubjectAnalyzer(),
                     new ExtensionSubjectAnalyzer(),
+                    new PackSubjectAnalyzer(),
                     new PipelineStageSubjectAnalyzer(),
                 ],
                 [
@@ -107,7 +109,7 @@ final class ExplainEngineFactory
                 new SchemaContextCollector($artifacts),
                 new DiagnosticsContextCollector($graph, $artifacts),
                 new CommandContextCollector($artifacts),
-                new ExtensionContextCollector($artifacts),
+                new ExtensionContextCollector($artifacts, $graph),
                 new DocsContextCollector($artifacts),
                 new ImpactContextCollector($impactAnalyzer, $graph),
             ],

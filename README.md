@@ -332,16 +332,17 @@ foundry explain publish_post --json
 foundry explain publish_post --deep
 foundry explain route:POST /posts --markdown
 foundry explain route:POST /posts --neighbors
+foundry explain pack:foundry/blog --json
 foundry diff --json
 foundry trace publish_post --json
 foundry generate "add bookmark support" --deterministic --dry-run --json
 foundry generate "add bookmark support" --provider=static --model=fixture-model --dry-run --json
 ```
 
-`explain` supports typed selectors such as `feature:publish_post`, `route:POST /posts`, `command:doctor`, `event:post.created`, `workflow:editorial`, and `extension:core`.
+`explain` supports typed selectors such as `feature:publish_post`, `route:POST /posts`, `command:doctor`, `event:post.created`, `workflow:editorial`, `extension:core`, and `pack:foundry/blog`.
 Default text output starts with `Subject` and `Summary`, then renders canonical sections such as `Responsibilities`, `Execution Flow`, `Depends On`, `Emits`, `Triggers`, `Permissions`, `Schema Interaction`, `Graph Relationships`, `Related Commands`, `Related Docs`, `Diagnostics`, and `Suggested Fixes` when present. Extra sections such as `Impact` render afterward through the assembler-owned `sectionOrder`.
 `--deep` expands the same structure with detailed flow stages and expanded graph relationships instead of switching to a different format.
-`--json` returns a deliberate machine-readable contract with `executionFlow`, `relationships`, `relatedCommands`, `relatedDocs`, `diagnostics`, `suggestedFixes`, `sections`, and `sectionOrder` keys rather than renderer-specific text fragments.
+`--json` returns a deliberate machine-readable contract with canonical `graph`, `execution`, `guards`, `events`, `schemas`, `docs`, `impact`, `commands`, and `extensions` domains, while preserving the legacy `executionFlow`, `relationships`, `relatedCommands`, `relatedDocs`, `diagnostics`, `suggestedFixes`, `sections`, and `sectionOrder` keys for compatibility.
 Extensions can enrich explain output deterministically by implementing `Foundry\Explain\Contributors\ExplainContributorInterface` and returning `Foundry\Explain\Contributors\ExplainContribution` entries that the registry merges before rendering. Contributor sections are normalized through `Foundry\Explain\ExplainSection`.
 
 Provider-backed generation is still optional. If no provider is configured, `generate` exits non-zero with a clear message and suggests `--deterministic`.

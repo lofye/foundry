@@ -116,8 +116,10 @@ final class LocalPackLoader
                 continue;
             }
 
+            $source = is_array(($row['sources'][$version] ?? null)) ? $row['sources'][$version] : ['type' => 'local'];
+
             try {
-                [$extension, $context] = $this->activatePack($manifest, $installPath);
+                [$extension, $context] = $this->activatePack($manifest, $installPath, $source);
             } catch (FoundryError $error) {
                 $diagnostics[] = $this->diagnostic(
                     code: $error->errorCode,
@@ -168,6 +170,7 @@ final class LocalPackLoader
                 'name' => $manifest->name,
                 'version' => $manifest->version,
                 'install_path' => $this->relativePath($installPath),
+                'source' => $source,
                 'manifest' => $manifest->toArray(),
                 'declared_contributions' => $context->contributions(),
             ];
@@ -190,9 +193,10 @@ final class LocalPackLoader
     }
 
     /**
+     * @param array<string,mixed> $source
      * @return array{0:CompilerExtension,1:PackContext}
      */
-    private function activatePack(PackManifest $manifest, string $installPath): array
+    private function activatePack(PackManifest $manifest, string $installPath, array $source): array
     {
         if (!class_exists($manifest->entry)) {
             $this->loadPhpFiles($installPath);
@@ -242,7 +246,7 @@ final class LocalPackLoader
             $extension = $provider;
         }
 
-        return [new InstalledPackExtension($manifest, $context, $extension), $context];
+        return [new InstalledPackExtension($manifest, $context, $extension, $source), $context];
     }
 
     private function loadPhpFiles(string $installPath): void

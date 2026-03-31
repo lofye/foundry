@@ -183,6 +183,7 @@ foundry explain route:POST /posts --neighbors
 foundry explain command:doctor --json
 foundry explain event:post.created --json
 foundry explain workflow:editorial --json
+foundry explain pack:foundry/blog --json
 foundry explain auth --type=pipeline_stage --json
 ```
 
@@ -197,12 +198,14 @@ Supported subject kinds include:
 - `job`
 - `schema`
 - `extension`
+- `pack`
 
 `explain` output is deterministic and derived from:
 
 - the canonical application graph
 - compiled projections
 - diagnostics metadata
+- installed extension and pack metadata
 - command metadata
 - extension metadata
 - docs metadata when available

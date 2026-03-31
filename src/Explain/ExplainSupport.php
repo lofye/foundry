@@ -166,15 +166,17 @@ final class ExplainSupport
     public static function summarizeGraphNode(GraphNode $node, ?string $edgeType = null): array
     {
         $kind = self::canonicalRelationshipKindForNodeType($node->type());
-
-        return [
+        $row = [
             'id' => $node->id(),
             'kind' => $kind ?? 'internal',
             'label' => self::nodeLabel($node),
             'feature' => self::featureFromNode($node),
             'source_path' => $node->sourcePath(),
             'edge_type' => $edgeType,
+            'extension' => trim((string) ($node->payload()['extension'] ?? '')) ?: null,
         ];
+
+        return ExplainOrigin::applyToRow($row);
     }
 
     /**
@@ -248,14 +250,7 @@ final class ExplainSupport
             $unique[$id] = $row;
         }
 
-        usort(
-            $unique,
-            static fn(array $left, array $right): int => strcmp((string) ($left['kind'] ?? ''), (string) ($right['kind'] ?? ''))
-                ?: strcmp((string) ($left['label'] ?? ''), (string) ($right['label'] ?? ''))
-                ?: strcmp((string) ($left['id'] ?? ''), (string) ($right['id'] ?? '')),
-        );
-
-        return array_values($unique);
+        return ExplainOrigin::sortAttributedRows(array_values($unique));
     }
 
     /**

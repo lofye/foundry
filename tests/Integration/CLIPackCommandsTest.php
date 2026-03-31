@@ -69,6 +69,17 @@ final class CLIPackCommandsTest extends TestCase
         );
         $this->assertIsArray($packExtension);
 
+        $explain = $this->runCommand($app, ['foundry', 'explain', 'pack:foundry/blog', '--json']);
+        $this->assertSame(0, $explain['status']);
+        $this->assertSame('pack', $explain['payload']['subject']['kind']);
+        $this->assertSame('foundry/blog', $explain['payload']['subject']['extension']);
+        $packEntry = array_find(
+            $explain['payload']['extensions'],
+            static fn(array $row): bool => (string) ($row['name'] ?? '') === 'foundry/blog',
+        );
+        $this->assertIsArray($packEntry);
+        $this->assertSame('local', $packEntry['source']);
+
         $remove = $this->runCommand($app, ['foundry', 'pack', 'remove', 'foundry/blog', '--json']);
         $this->assertSame(0, $remove['status']);
         $this->assertFileExists($this->project->root . '/.foundry/packs/foundry/blog/1.0.0/foundry.json');
@@ -192,6 +203,9 @@ final class CLIPackCommandsTest extends TestCase
         $this->assertSame('registry', $result['payload']['pack']['source']['type']);
         $this->assertSame($downloadUrl, $result['payload']['pack']['source']['download_url']);
         $this->assertFileExists($this->project->root . '/.foundry/packs/foundry/blog/1.0.0/foundry.json');
+
+        $info = $this->runCommand($app, ['foundry', 'pack', 'info', 'foundry/blog', '--json']);
+        $this->assertSame('registry', $info['payload']['pack']['source']['type']);
     }
 
     public function test_pack_install_prefers_existing_local_directory_over_hosted_pack_name(): void

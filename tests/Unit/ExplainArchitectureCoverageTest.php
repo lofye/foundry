@@ -71,8 +71,10 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $pipelineStage = $engine->explain(ExplainTarget::parse('pipeline_stage:auth'), new ExplainOptions());
         $command = $engine->explain(ExplainTarget::parse('command:doctor'), new ExplainOptions());
         $extension = $engine->explain(ExplainTarget::parse('extension:test.explain'), new ExplainOptions());
+        $pack = $engine->explain(ExplainTarget::parse('pack:vendor/blog-pack'), new ExplainOptions());
 
         $this->assertSame('feature', $feature->subject['kind']);
+        $this->assertSame('core', $feature->subject['origin']);
         $this->assertStringContainsString('Publish post.', (string) $feature->summary['text']);
         $this->assertStringContainsString('It serves POST /posts.', (string) $feature->summary['text']);
         $this->assertSame('request', (string) ($route->executionFlow['entries'][0]['label'] ?? ''));
@@ -85,6 +87,11 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $this->assertSame('auth', (string) ($pipelineStage->subject['label'] ?? ''));
         $this->assertSame('doctor', (string) ($command->subject['label'] ?? ''));
         $this->assertSame('test.explain', (string) ($extension->subject['label'] ?? ''));
+        $this->assertSame('extension', (string) $extension->subject['origin']);
+        $this->assertSame('pack', (string) $pack->subject['kind']);
+        $this->assertSame('vendor/blog-pack', (string) $pack->subject['extension']);
+        $this->assertContains('Declare commands: blog.publish', $pack->responsibilities['items']);
+        $this->assertContains('vendor/blog-pack', array_column($feature->model->extensions, 'name'));
         $this->assertContains('Provide capability: explain.fixture', $extension->responsibilities['items']);
         $this->assertNotEmpty($feature->relatedDocs);
         $this->assertNotEmpty($command->relatedDocs);
@@ -102,6 +109,7 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $this->assertSame('route:POST:/posts', $resolver->resolve(ExplainTarget::parse('POST /posts'))->id);
         $this->assertSame('command:doctor', $resolver->resolve(ExplainTarget::parse('command:doctor'))->id);
         $this->assertSame('extension:test.explain', $resolver->resolve(ExplainTarget::parse('extension:test.explain'))->id);
+        $this->assertSame('pack:vendor/blog-pack', $resolver->resolve(ExplainTarget::parse('pack:vendor/blog-pack'))->id);
         $this->assertSame('workflow:editorial', $resolver->resolve(ExplainTarget::parse('editorial'))->id);
 
         try {
@@ -143,7 +151,7 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $this->assertSame(2, $catalog->diagnosticsReport()['summary']['total']);
         $this->assertNotEmpty($catalog->docsPages());
         $this->assertNotEmpty($catalog->cliCommands());
-        $this->assertCount(1, $catalog->extensions());
+        $this->assertCount(2, $catalog->extensions());
 
         $graph = $this->graphFixture();
         $node = $graph->node('route:POST:/posts');
@@ -369,6 +377,10 @@ final class ExplainArchitectureCoverageTest extends TestCase
                 ],
             ],
         ]));
+        $graph->addNode(new WorkflowNode('workflow:blog.editorial', '.foundry/packs/vendor/blog-pack/1.2.0/src/blog.workflow.php', [
+            'resource' => 'blog.editorial',
+            'feature' => 'blog',
+        ]));
         $graph->addNode(new JobNode('job:notify_followers', 'app/features/publish_post/jobs.yaml', [
             'name' => 'notify_followers',
             'features' => ['publish_post'],
@@ -391,6 +403,7 @@ final class ExplainArchitectureCoverageTest extends TestCase
         $graph->addEdge(GraphEdge::make('execution_plan_to_guard', 'execution_plan:feature:publish_post', 'guard:auth:publish_post'));
         $graph->addEdge(GraphEdge::make('guard_to_pipeline_stage', 'guard:auth:publish_post', 'pipeline_stage:auth'));
         $graph->addEdge(GraphEdge::make('workflow_to_event_emit', 'workflow:editorial', 'event:post.created'));
+        $graph->addEdge(GraphEdge::make('workflow_to_event_emit', 'workflow:blog.editorial', 'event:post.created'));
         $graph->addEdge(GraphEdge::make('feature_to_job_dispatch', 'feature:publish_post', 'job:notify_followers'));
         $graph->addEdge(GraphEdge::make('feature_to_input_schema', 'feature:publish_post', 'schema:app/features/publish_post/input.schema.json'));
 
@@ -409,13 +422,38 @@ final class ExplainArchitectureCoverageTest extends TestCase
      */
     private function extensionRows(): array
     {
-        return [[
-            'name' => 'test.explain',
-            'version' => '1.0.0',
-            'description' => 'Fixture explain extension.',
-            'provides' => ['capabilities' => ['explain.fixture']],
-            'packs' => ['test.explain.pack'],
-        ]];
+        return [
+            [
+                'name' => 'test.explain',
+                'version' => '1.0.0',
+                'description' => 'Fixture explain extension.',
+                'provides' => ['capabilities' => ['explain.fixture']],
+                'packs' => ['test.explain.pack'],
+                'enabled' => true,
+                'diagnostics' => [],
+            ],
+            [
+                'name' => 'pack.vendor.blog-pack',
+                'version' => '1.2.0',
+                'description' => 'Fixture blog pack.',
+                'source_path' => '.foundry/packs/vendor/blog-pack/1.2.0/foundry.json',
+                'enabled' => true,
+                'diagnostics' => [],
+                'pack_manifest' => [
+                    'name' => 'vendor/blog-pack',
+                    'version' => '1.2.0',
+                    'description' => 'Fixture blog pack.',
+                    'entry' => 'Vendor\\BlogPack\\PackServiceProvider',
+                    'capabilities' => ['blog.notes'],
+                ],
+                'declared_contributions' => [
+                    'commands' => ['blog.publish'],
+                    'schemas' => ['blog.post'],
+                    'workflows' => ['blog.editorial'],
+                ],
+                'pack_source' => ['type' => 'registry'],
+            ],
+        ];
     }
 
     private function writeArtifacts(string $root): void

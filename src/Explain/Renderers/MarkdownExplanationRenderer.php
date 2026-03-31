@@ -16,6 +16,16 @@ final class MarkdownExplanationRenderer implements ExplanationRendererInterface
             '',
             '**Type:** ' . trim((string) ($payload['subject']['kind'] ?? '')),
         ];
+        $origin = trim((string) ($payload['subject']['origin'] ?? 'core'));
+        if ($origin !== '') {
+            $lines[] = '';
+            $lines[] = '**Origin:** ' . $origin;
+        }
+        $extension = trim((string) ($payload['subject']['extension'] ?? ''));
+        if ($extension !== '') {
+            $lines[] = '';
+            $lines[] = '**Extension:** ' . $extension;
+        }
 
         foreach ($this->sectionOrder($payload) as $sectionId) {
             $this->appendSection($lines, $payload, $sectionId);

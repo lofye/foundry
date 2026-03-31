@@ -108,6 +108,11 @@ final class TextExplanationRenderer implements ExplanationRendererInterface
         $lines[] = 'Subject';
         $lines[] = '  ' . trim((string) ($payload['subject']['label'] ?? $payload['subject']['id'] ?? ''));
         $lines[] = '  kind: ' . trim((string) ($payload['subject']['kind'] ?? ''));
+        $lines[] = '  origin: ' . trim((string) ($payload['subject']['origin'] ?? 'core'));
+        $extension = trim((string) ($payload['subject']['extension'] ?? ''));
+        if ($extension !== '') {
+            $lines[] = '  extension: ' . $extension;
+        }
     }
 
     /**

@@ -122,6 +122,10 @@ final class ExplainTargetResolver
             return $this->resolveExtension($selector);
         }
 
+        if ($kind === 'pack') {
+            return $this->resolvePack($selector);
+        }
+
         foreach ($this->possibleGraphNodeIds($kind, $selector) as $nodeId) {
             $node = $this->graph->node($nodeId);
             if ($node instanceof GraphNode) {
@@ -248,6 +252,20 @@ final class ExplainTargetResolver
         return null;
     }
 
+    private function resolvePack(string $selector): ?ExplainSubject
+    {
+        $normalized = strtolower(trim($selector));
+        foreach ($this->packCandidates() as $candidate) {
+            foreach ($candidate->aliases as $alias) {
+                if (strtolower(trim($alias)) === $normalized) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @return array<int,string>
      */
@@ -299,6 +317,10 @@ final class ExplainTargetResolver
             $rows[$candidate->id] = $candidate;
         }
 
+        foreach ($this->packCandidates() as $candidate) {
+            $rows[$candidate->id] = $candidate;
+        }
+
         foreach ($this->commandCandidates() as $candidate) {
             $rows[$candidate->id] = $candidate;
         }
@@ -332,6 +354,22 @@ final class ExplainTargetResolver
     /**
      * @return array<int,ExplainSubject>
      */
+    private function packCandidates(): array
+    {
+        $rows = [];
+        foreach ($this->artifacts->extensions() as $row) {
+            $subject = is_array($row) ? $this->subjectFactory->fromPackRow($row) : null;
+            if ($subject !== null) {
+                $rows[] = $subject;
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<int,ExplainSubject>
+     */
     private function commandCandidates(): array
     {
         $rows = [];
@@ -354,6 +392,8 @@ final class ExplainTargetResolver
             'id' => $subject->id,
             'kind' => $subject->kind,
             'label' => $subject->label,
+            'origin' => $subject->origin,
+            'extension' => $subject->extension,
             'aliases' => array_slice($subject->aliases, 0, 5),
         ];
     }
@@ -397,6 +437,7 @@ final class ExplainTargetResolver
             'pipeline_stage' => trim((string) ($candidate->metadata['name'] ?? $candidate->label)),
             'command' => trim((string) ($candidate->metadata['signature'] ?? $candidate->label)),
             'extension' => trim((string) ($candidate->metadata['name'] ?? $candidate->label)),
+            'pack' => trim((string) (($candidate->metadata['pack_manifest']['name'] ?? $candidate->label))),
             default => trim($candidate->label),
         };
 
