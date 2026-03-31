@@ -25,6 +25,30 @@ final class ExampleLoader
     /**
      * @return array<string,mixed>
      */
+    public function recommended(): array
+    {
+        foreach ($this->definitions() as $definition) {
+            if ((bool) ($definition['recommended'] ?? false)) {
+                return $this->publicDefinition($definition);
+            }
+        }
+
+        $available = $this->available();
+        if ($available !== []) {
+            return $available[0];
+        }
+
+        throw new FoundryError(
+            'EXAMPLE_NOT_FOUND',
+            'not_found',
+            ['example' => 'recommended'],
+            'No onboarding examples are available.',
+        );
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
     public function load(string $name, string $workingDirectory, bool $preferTemp = false): array
     {
         $definition = $this->definition($name);
@@ -66,7 +90,7 @@ final class ExampleLoader
         return [
             'example' => $this->publicDefinition($definition),
             'target_path' => $targetPath,
-            'mode' => $preferTemp ? 'temp_directory' : 'working_directory',
+            'workspace_mode' => $preferTemp ? 'temp_directory' : 'working_directory',
             'files_copied' => $copied,
         ];
     }
@@ -81,17 +105,26 @@ final class ExampleLoader
 
         return [
             [
-                'name' => 'blog',
-                'aliases' => ['blog', 'blog-api', 'reference-blog'],
-                'label' => 'Blog (reference)',
-                'description' => 'A reference-ready blog application with list, view, and publish flows.',
-                'kind' => 'reference',
-                'source_examples' => ['examples/blog-api'],
+                'name' => 'blog-api',
+                'aliases' => ['blog-api', 'blog'],
+                'label' => 'Canonical Blog API example',
+                'menu_label' => 'Load canonical Blog API example',
+                'description' => 'Directly copy the canonical blog-api example into the current directory or a temporary workspace, then run explain.',
+                'taxonomy' => 'canonical',
+                'mode' => 'direct_copy',
+                'source_examples' => ['blog-api'],
+                'source_paths' => ['examples/blog-api'],
+                'destination_behavior' => 'current_directory_or_temp_directory',
+                'overwrite_behavior' => 'refuse_non_empty_without_temp',
+                'explain_default_target' => 'feature:list_posts',
+                'recommended' => true,
                 'next_generate_intent' => 'Add comments to blog posts',
                 'next_generate_mode' => 'modify',
                 'next_generate_target' => 'list_posts',
                 'copy_sets' => [
                     [
+                        'source_example' => 'blog-api',
+                        'source_path' => 'examples/blog-api',
                         'source' => $frameworkRoot . '/examples/blog-api',
                         'destination' => '',
                     ],
@@ -100,35 +133,54 @@ final class ExampleLoader
             [
                 'name' => 'extensions-migrations',
                 'aliases' => ['extensions-migrations', 'extensions', 'migrations'],
-                'label' => 'Extensions & migrations (framework)',
-                'description' => 'A runnable example that layers extension and migration assets onto a small application.',
-                'kind' => 'framework',
-                'source_examples' => ['examples/hello-world/app', 'examples/extensions-migrations'],
+                'label' => 'Composed extensions and migrations reference setup',
+                'menu_label' => 'Load composed reference setup for extensions and migrations',
+                'description' => 'Compose the canonical hello-world app with the extensions-migrations reference assets, then run explain on the resulting workspace.',
+                'taxonomy' => 'reference',
+                'mode' => 'composed',
+                'source_examples' => ['hello-world', 'extensions-migrations'],
+                'source_paths' => ['examples/hello-world/app', 'examples/extensions-migrations'],
+                'destination_behavior' => 'current_directory_or_temp_directory',
+                'overwrite_behavior' => 'refuse_non_empty_without_temp',
+                'explain_default_target' => 'feature:say_hello',
+                'recommended' => false,
                 'next_generate_intent' => 'Add a feature',
                 'next_generate_mode' => 'new',
                 'next_generate_target' => null,
                 'copy_sets' => [
                     [
+                        'source_example' => 'hello-world',
+                        'source_path' => 'examples/hello-world/app',
                         'source' => $frameworkRoot . '/examples/hello-world/app',
                         'destination' => 'app',
                     ],
                     [
+                        'source_example' => 'extensions-migrations',
+                        'source_path' => 'examples/extensions-migrations/README.md',
                         'source' => $frameworkRoot . '/examples/extensions-migrations/README.md',
                         'destination' => 'README.md',
                     ],
                     [
+                        'source_example' => 'extensions-migrations',
+                        'source_path' => 'examples/extensions-migrations/foundry.extensions.php',
                         'source' => $frameworkRoot . '/examples/extensions-migrations/foundry.extensions.php',
                         'destination' => 'foundry.extensions.php',
                     ],
                     [
+                        'source_example' => 'extensions-migrations',
+                        'source_path' => 'examples/extensions-migrations/demo_extension',
                         'source' => $frameworkRoot . '/examples/extensions-migrations/demo_extension',
                         'destination' => 'demo_extension',
                     ],
                     [
+                        'source_example' => 'extensions-migrations',
+                        'source_path' => 'examples/extensions-migrations/migration',
                         'source' => $frameworkRoot . '/examples/extensions-migrations/migration',
                         'destination' => 'migration',
                     ],
                     [
+                        'source_example' => 'extensions-migrations',
+                        'source_path' => 'examples/extensions-migrations/codemod',
                         'source' => $frameworkRoot . '/examples/extensions-migrations/codemod',
                         'destination' => 'codemod',
                     ],
@@ -168,12 +220,33 @@ final class ExampleLoader
      */
     private function publicDefinition(array $definition): array
     {
+        $copyPlan = array_values(array_map(
+            static fn(array $copySet): array => [
+                'source_example' => (string) ($copySet['source_example'] ?? ''),
+                'source_path' => (string) ($copySet['source_path'] ?? ''),
+                'destination' => (string) ($copySet['destination'] ?? ''),
+            ],
+            array_values(array_filter(
+                (array) ($definition['copy_sets'] ?? []),
+                static fn(mixed $copySet): bool => is_array($copySet),
+            )),
+        ));
+
         return [
             'name' => (string) ($definition['name'] ?? ''),
+            'aliases' => array_values(array_map('strval', (array) ($definition['aliases'] ?? []))),
             'label' => (string) ($definition['label'] ?? ''),
+            'menu_label' => (string) ($definition['menu_label'] ?? (string) ($definition['label'] ?? '')),
             'description' => (string) ($definition['description'] ?? ''),
-            'kind' => (string) ($definition['kind'] ?? 'reference'),
+            'taxonomy' => (string) ($definition['taxonomy'] ?? 'reference'),
+            'mode' => (string) ($definition['mode'] ?? 'direct_copy'),
             'source_examples' => array_values(array_map('strval', (array) ($definition['source_examples'] ?? []))),
+            'source_paths' => array_values(array_map('strval', (array) ($definition['source_paths'] ?? []))),
+            'copy_plan' => $copyPlan,
+            'destination_behavior' => (string) ($definition['destination_behavior'] ?? 'current_directory_or_temp_directory'),
+            'overwrite_behavior' => (string) ($definition['overwrite_behavior'] ?? 'refuse_non_empty_without_temp'),
+            'explain_default_target' => (string) ($definition['explain_default_target'] ?? ''),
+            'recommended' => (bool) ($definition['recommended'] ?? false),
             'next_generate_intent' => (string) ($definition['next_generate_intent'] ?? ''),
             'next_generate_mode' => (string) ($definition['next_generate_mode'] ?? ''),
             'next_generate_target' => $definition['next_generate_target'] !== null

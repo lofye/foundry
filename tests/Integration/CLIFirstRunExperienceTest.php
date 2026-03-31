@@ -31,7 +31,11 @@ final class CLIFirstRunExperienceTest extends TestCase
 
         $this->assertSame(0, $result['status']);
         $this->assertSame('example', $result['payload']['mode']);
-        $this->assertSame('blog', $result['payload']['example']['name']);
+        $this->assertSame('blog-api', $result['payload']['example']['name']);
+        $this->assertSame('canonical', $result['payload']['example']['taxonomy']);
+        $this->assertSame('direct_copy', $result['payload']['example']['mode']);
+        $this->assertSame(['blog-api'], $result['payload']['example']['source_examples']);
+        $this->assertSame('feature:list_posts', $result['payload']['example']['explain_default_target']);
         $this->assertSame('working_directory', $result['payload']['workspace_mode']);
         $this->assertSame($root, $result['payload']['target_path']);
         $this->assertContains('list_posts', $result['payload']['graph']['summary']['features']);
@@ -48,7 +52,7 @@ final class CLIFirstRunExperienceTest extends TestCase
         file_put_contents($root . '/notes.txt', "keep me\n");
         chdir($root);
 
-        $result = $this->runCommand(new Application(), ['foundry', 'init', '--example=blog', '--temp', '--json']);
+        $result = $this->runCommand(new Application(), ['foundry', 'init', '--example=blog-api', '--temp', '--json']);
 
         $this->assertSame(0, $result['status']);
         $this->assertSame('example', $result['payload']['mode']);
@@ -72,16 +76,40 @@ final class CLIFirstRunExperienceTest extends TestCase
             static fn(array $row): string => (string) ($row['name'] ?? ''),
             $list['payload']['examples'],
         );
-        $this->assertSame(['blog', 'extensions-migrations'], $exampleNames);
+        $this->assertSame(['blog-api', 'extensions-migrations'], $exampleNames);
+        $this->assertSame('canonical', $list['payload']['examples'][0]['taxonomy']);
+        $this->assertSame('direct_copy', $list['payload']['examples'][0]['mode']);
+        $this->assertSame(['blog-api'], $list['payload']['examples'][0]['source_examples']);
+        $this->assertSame('reference', $list['payload']['examples'][1]['taxonomy']);
+        $this->assertSame('composed', $list['payload']['examples'][1]['mode']);
+        $this->assertSame(['hello-world', 'extensions-migrations'], $list['payload']['examples'][1]['source_examples']);
 
         file_put_contents($root . '/scratch.txt', "busy\n");
         $load = $this->runCommand(new Application(), ['foundry', 'examples:load', 'extensions-migrations', '--temp', '--json']);
         $this->assertSame(0, $load['status']);
         $this->assertSame('extensions-migrations', $load['payload']['example']['name']);
+        $this->assertSame('reference', $load['payload']['example']['taxonomy']);
+        $this->assertSame('composed', $load['payload']['example']['mode']);
         $this->assertFileExists($load['payload']['target_path'] . '/foundry.extensions.php');
         $this->assertFileExists($load['payload']['target_path'] . '/app/features/say_hello/feature.yaml');
 
         $this->deleteDirectory((string) $load['payload']['target_path']);
+        $this->deleteDirectory($root);
+    }
+
+    public function test_examples_list_text_output_describes_taxonomy_mode_and_sources_truthfully(): void
+    {
+        $root = $this->makeTempDirectory('foundry-first-run-list-text-');
+        chdir($root);
+
+        $result = $this->runCommandRaw(new Application(), ['foundry', 'examples:list']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('blog-api [canonical / direct_copy]', $result['output']);
+        $this->assertStringContainsString('Sources: blog-api', $result['output']);
+        $this->assertStringContainsString('extensions-migrations [reference / composed]', $result['output']);
+        $this->assertStringContainsString('Sources: hello-world, extensions-migrations', $result['output']);
+
         $this->deleteDirectory($root);
     }
 
@@ -123,6 +151,19 @@ final class CLIFirstRunExperienceTest extends TestCase
         $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
         return ['status' => $status, 'payload' => $payload];
+    }
+
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,output:string}
+     */
+    private function runCommandRaw(Application $app, array $argv): array
+    {
+        ob_start();
+        $status = $app->run($argv);
+        $output = trim((string) ob_get_clean());
+
+        return ['status' => $status, 'output' => $output];
     }
 
     private function makeTempDirectory(string $prefix): string

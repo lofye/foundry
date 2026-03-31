@@ -266,6 +266,7 @@ final class Application
 
         $lines[] = 'Use `foundry help <command>` for usage, stability, and semver details.';
         $lines[] = 'Use `foundry help inspect`, `foundry help verify`, or `foundry help generate` to browse a command family.';
+        $lines[] = 'Run `foundry` or `foundry init` for the deterministic first-run walkthrough.';
 
         return implode(PHP_EOL, $lines);
     }
@@ -365,11 +366,11 @@ final class Application
         return match ($group) {
             'cache' => 'Inspect or clear deterministic compile cache state.',
             'compile' => 'Compile authored source-of-truth files into canonical graph artifacts.',
-            'examples' => 'List or load curated examples for the first-run experience.',
+            'examples' => 'List or load curated onboarding examples with explicit taxonomy and copy mode.',
             'export' => 'Export graph and API artifacts for docs and tooling.',
             'generate' => 'Generate docs, scaffolds, helper artifacts, and framework-managed outputs.',
             'graph' => 'Inspect or render graph slices through the graph command family.',
-            'init' => 'Start the guided first-run flow or use the app scaffolding alias family.',
+            'init' => 'Run the deterministic first-run flow or load a curated onboarding example without prompts.',
             'inspect' => 'Inspect compiled graph, feature, integration, and reference surfaces.',
             'license' => 'Inspect or manage local license identity and service access state.',
             'observe' => 'Capture or compare graph-aware trace and profile summaries.',

@@ -8,6 +8,11 @@ Foundry examples are split into three groups:
 
 The `canonical` examples are intentionally small and keep only authored source files. They are not standalone Composer projects, and they do not commit `app/generated/*`.
 
+The first-run walkthrough currently exposes two onboarding choices:
+
+- `blog-api`: a direct copy of the canonical Blog API example
+- `extensions-migrations`: a composed reference setup that combines the canonical Hello World app with the Extensions And Migrations assets
+
 ## canonical
 
 - [Hello World](hello-world/README.md): the smallest readable Foundry app, showing one feature folder, schemas, context manifests, and the inspect/doctor/verify loop.

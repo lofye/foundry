@@ -36,7 +36,7 @@ foundry license status --json
 foundry license deactivate --json
 foundry features --json
 foundry doctor --deep --json
-foundry explain <target> --json
+foundry explain [<target>] --json
 foundry diff --json
 foundry trace [<target>] --json
 foundry generate "<intent>" --mode=new --dry-run --json
@@ -166,7 +166,7 @@ Context extraction prioritizes feature matches by instruction tokens, route path
 
 ## Explain, Diff, Trace, And Generate
 
-- `explain <target>` resolves a typed selector, route signature, command name, exact node id, or deterministic alias into a canonical subject and explains it from compiled graph and projection metadata.
+- `explain [<target>]` resolves a typed selector, route signature, command name, exact node id, or deterministic alias into a canonical subject and explains it from compiled graph and projection metadata.
 - `diff` compares the last compiled baseline graph against the current source state without changing core runtime requirements.
 - `trace [<target>]` analyzes the local trace log and summarizes matching categories.
 - `generate "<intent>"` resolves explicit intent into an explain-derived context packet, then selects deterministic core or pack generators.
@@ -174,6 +174,8 @@ Context extraction prioritizes feature matches by instruction tokens, route path
 - `generate "<intent>" --mode=repair --target=<target>` restores missing generated artifacts and reruns verification before keeping the change.
 - `generate "<intent>" --packs=<vendor/pack> --allow-pack-install` can install a missing pack and immediately route planning through its generator surface.
 - generation recompiles and reruns verification after writes so failures remain inspectable and rollback can restore the prior state.
+
+When no explain target is provided, Foundry explains the first feature or route deterministically. The first-run walkthrough relies on that contract intentionally.
 
 `explain` surface:
 

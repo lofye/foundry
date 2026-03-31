@@ -61,7 +61,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $features = $registry->classifyCliCommand(['features']);
         $init = $registry->classifyCliCommand(['init']);
         $examplesList = $registry->classifyCliCommand(['examples:list']);
-        $examplesLoad = $registry->classifyCliCommand(['examples:load', 'blog']);
+        $examplesLoad = $registry->classifyCliCommand(['examples:load', 'blog-api']);
         $packSearch = $registry->classifyCliCommand(['pack', 'search', 'blog']);
         $packList = $registry->classifyCliCommand(['pack', 'list']);
         $observeTrace = $registry->classifyCliCommand(['observe:trace', 'publish_post']);
@@ -128,12 +128,15 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $init['stability']);
         $this->assertSame('App Scaffolding', $init['category']);
         $this->assertSame('init', $init['command_type']);
+        $this->assertStringContainsString('--example=<blog-api|extensions-migrations>', $init['usage']);
         $this->assertSame('stable', $examplesList['stability']);
         $this->assertSame('App Scaffolding', $examplesList['category']);
         $this->assertSame('examples', $examplesList['command_type']);
+        $this->assertStringContainsString('taxonomy', $examplesList['summary']);
         $this->assertSame('stable', $examplesLoad['stability']);
         $this->assertSame('App Scaffolding', $examplesLoad['category']);
         $this->assertSame('examples', $examplesLoad['command_type']);
+        $this->assertStringContainsString('<blog-api|extensions-migrations>', $examplesLoad['usage']);
         $this->assertSame('Monetization', $licenseStatus['category']);
         $this->assertSame('license', $licenseStatus['command_type']);
         $this->assertSame('Monetization', $features['category']);

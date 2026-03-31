@@ -68,7 +68,7 @@ final class ExamplesCommand extends Command
                 'CLI_EXAMPLE_NAME_REQUIRED',
                 'validation',
                 [],
-                'Example name required. Usage: examples:load <name> [--temp]',
+                'Example name required. Usage: examples:load <blog-api|extensions-migrations> [--temp]',
             );
         }
 
@@ -88,7 +88,18 @@ final class ExamplesCommand extends Command
                 continue;
             }
 
-            $lines[] = '- ' . (string) ($example['name'] ?? '') . ': ' . (string) ($example['label'] ?? '') . ' - ' . (string) ($example['description'] ?? '');
+            $lines[] = '- '
+                . (string) ($example['name'] ?? '')
+                . ' ['
+                . (string) ($example['taxonomy'] ?? 'reference')
+                . ' / '
+                . (string) ($example['mode'] ?? 'direct_copy')
+                . ']: '
+                . (string) ($example['label'] ?? '');
+            $lines[] = '  '
+                . (string) ($example['description'] ?? '')
+                . ' Sources: '
+                . implode(', ', array_values(array_map('strval', (array) ($example['source_examples'] ?? []))));
         }
 
         return implode(PHP_EOL, $lines);

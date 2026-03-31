@@ -21,6 +21,7 @@ final class FirstRunService
      */
     public function run(CommandContext $context, array $args = []): array
     {
+        $loader = $this->exampleLoader ?? new ExampleLoader($context->paths());
         $example = $this->option($args, '--example');
         if ($example !== null && $example !== '') {
             return $this->loadExampleFlow($context, $example, in_array('--temp', $args, true), 'init');
@@ -30,12 +31,17 @@ final class FirstRunService
             return $this->existingProjectFlow($context, 'default');
         }
 
-        $selection = $this->interactiveSelection();
+        $selection = $this->interactiveSelection($loader);
 
         return match ($selection) {
             '2' => $this->inspectCurrentDirectoryFlow($context),
             '3' => $this->exitFlow($context),
-            default => $this->loadExampleFlow($context, $this->interactiveExampleSelection(), !$this->isWorkingDirectoryEmpty($context->paths()->root()), 'default'),
+            default => $this->loadExampleFlow(
+                $context,
+                $this->interactiveExampleSelection($loader),
+                !$this->isWorkingDirectoryEmpty($context->paths()->root()),
+                'default',
+            ),
         };
     }
 
@@ -61,7 +67,7 @@ final class FirstRunService
             'project_detected' => false,
             'example' => $loaded['example'] ?? null,
             'target_path' => $targetPath,
-            'workspace_mode' => (string) ($loaded['mode'] ?? 'working_directory'),
+            'workspace_mode' => (string) ($loaded['workspace_mode'] ?? 'working_directory'),
             'files_copied' => array_values(array_map('strval', (array) ($loaded['files_copied'] ?? []))),
             'graph' => $graph['payload'],
             'explain' => $explain['payload'],
@@ -121,9 +127,9 @@ final class FirstRunService
             'entrypoint' => 'default',
             'project_detected' => false,
             'next_steps' => [
-                'Load the recommended example: ' . CliCommandPrefix::foundry($context->paths()) . ' init --example=blog',
+                'Load the recommended canonical example: ' . CliCommandPrefix::foundry($context->paths()) . ' init --example=blog-api',
                 'Scaffold a new app: ' . CliCommandPrefix::foundry($context->paths()) . ' new demo-app --starter=standard',
-                'Browse available examples: ' . CliCommandPrefix::foundry($context->paths()) . ' examples:list --json',
+                'Browse onboarding examples: ' . CliCommandPrefix::foundry($context->paths()) . ' examples:list --json',
             ],
         ];
 
@@ -190,7 +196,7 @@ final class FirstRunService
         return true;
     }
 
-    private function interactiveSelection(): string
+    private function interactiveSelection(ExampleLoader $loader): string
     {
         if (!$this->isInteractive()) {
             return '1';
@@ -204,7 +210,9 @@ final class FirstRunService
         $this->writeLine('');
         $this->writeLine('Choose an option:');
         $this->writeLine('');
-        $this->writeLine('1) Explore an example (recommended)');
+        $recommended = $loader->recommended();
+        $this->writeLine('1) Load an onboarding example and inspect architecture (recommended)');
+        $this->writeLine('   recommended: ' . (string) ($recommended['menu_label'] ?? $recommended['label'] ?? ''));
         $this->writeLine('2) Inspect current project');
         $this->writeLine('3) Exit');
         $this->writeLine('');
@@ -214,19 +222,42 @@ final class FirstRunService
         return in_array($selection, ['1', '2', '3'], true) ? $selection : '1';
     }
 
-    private function interactiveExampleSelection(): string
+    private function interactiveExampleSelection(ExampleLoader $loader): string
     {
+        $examples = $loader->available();
+        $recommended = $loader->recommended();
+
         if (!$this->isInteractive()) {
-            return 'blog';
+            return (string) ($recommended['name'] ?? 'blog-api');
         }
 
         $this->writeLine('Select an example:');
         $this->writeLine('');
-        $this->writeLine('1) Blog (reference)');
-        $this->writeLine('2) Extensions & migrations (framework)');
+
+        foreach ($examples as $index => $example) {
+            if (!is_array($example)) {
+                continue;
+            }
+
+            $this->writeLine(($index + 1) . ') ' . (string) ($example['menu_label'] ?? $example['label'] ?? 'Example'));
+            $this->writeLine(
+                '   taxonomy: ' . (string) ($example['taxonomy'] ?? 'reference')
+                . '; load: ' . (string) ($example['mode'] ?? 'direct_copy')
+                . '; sources: ' . implode(', ', array_values(array_map('strval', (array) ($example['source_examples'] ?? [])))),
+            );
+        }
+
         $this->writeLine('');
 
-        return $this->readLine('> ') === '2' ? 'extensions-migrations' : 'blog';
+        $selection = trim($this->readLine('> '));
+        if (ctype_digit($selection)) {
+            $offset = (int) $selection - 1;
+            if (isset($examples[$offset]) && is_array($examples[$offset])) {
+                return (string) ($examples[$offset]['name'] ?? $recommended['name'] ?? 'blog-api');
+            }
+        }
+
+        return (string) ($recommended['name'] ?? 'blog-api');
     }
 
     /**
@@ -283,6 +314,9 @@ final class FirstRunService
             "Let's get you to your first result.",
             '',
             'Loaded example: ' . (string) ($example['label'] ?? 'Example'),
+            'Taxonomy: ' . (string) ($example['taxonomy'] ?? 'reference'),
+            'Load mode: ' . (string) ($example['mode'] ?? 'direct_copy'),
+            'Sources: ' . implode(', ', array_values(array_map('strval', (array) ($example['source_examples'] ?? [])))),
             'Location: ' . (string) ($payload['target_path'] ?? ''),
             '',
             $graphOutput,
@@ -337,6 +371,7 @@ final class FirstRunService
             'Foundry Framework',
             '',
             'No Foundry project is active in this directory yet.',
+            'Use `foundry init --example=blog-api` to load the recommended canonical example.',
             '',
             'Next steps:',
             '',

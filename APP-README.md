@@ -12,6 +12,8 @@ Start with `AGENTS.md`. It defines the repo-local workflow and command rules for
 
 Foundry scaffolds a project-local `foundry` launcher. If your shell does not resolve current-directory executables, use `./foundry ...` instead.
 
+In a scaffolded app, `foundry` inspects the current project instead of loading an onboarding example. `foundry explain` with no target explains the first feature or route deterministically.
+
 ```bash
 composer install
 foundry

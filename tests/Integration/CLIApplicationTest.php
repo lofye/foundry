@@ -183,6 +183,7 @@ YAML);
         $this->assertSame('stable', $initHelp['payload']['command']['stability']);
         $this->assertSame('App Scaffolding', $initHelp['payload']['command']['category']);
         $this->assertSame('init', $initHelp['payload']['command']['command_type']);
+        $this->assertStringContainsString('--example=<blog-api|extensions-migrations>', $initHelp['payload']['command']['usage']);
 
         $upgradeHelp = $this->runCommand($app, ['foundry', 'help', 'upgrade-check', '--json']);
         $this->assertSame(0, $upgradeHelp['status']);
@@ -199,6 +200,7 @@ YAML);
         $this->assertSame('explain', $explainHelp['payload']['command']['signature']);
         $this->assertSame('core', $explainHelp['payload']['command']['availability']);
         $this->assertStringContainsString('--neighbors', $explainHelp['payload']['command']['usage']);
+        $this->assertStringContainsString('first feature or route deterministically', $explainHelp['payload']['command']['summary']);
         $this->assertSame('Architecture', $explainHelp['payload']['command']['category']);
         $this->assertSame('explain', $explainHelp['payload']['command']['command_type']);
         $this->assertTrue($explainHelp['payload']['command']['supports_pipeline_stage_filter']);
@@ -237,12 +239,14 @@ YAML);
         $this->assertSame('examples:list', $examplesListHelp['payload']['command']['signature']);
         $this->assertSame('stable', $examplesListHelp['payload']['command']['stability']);
         $this->assertSame('App Scaffolding', $examplesListHelp['payload']['command']['category']);
+        $this->assertStringContainsString('taxonomy', $examplesListHelp['payload']['command']['summary']);
 
         $examplesLoadHelp = $this->runCommand($app, ['foundry', 'help', 'examples:load', '--json']);
         $this->assertSame(0, $examplesLoadHelp['status']);
         $this->assertSame('examples:load', $examplesLoadHelp['payload']['command']['signature']);
         $this->assertSame('stable', $examplesLoadHelp['payload']['command']['stability']);
         $this->assertSame('App Scaffolding', $examplesLoadHelp['payload']['command']['category']);
+        $this->assertStringContainsString('<blog-api|extensions-migrations>', $examplesLoadHelp['payload']['command']['usage']);
 
         $examplesGroupHelp = $this->runCommand($app, ['foundry', 'help', 'examples', '--json']);
         $this->assertSame(0, $examplesGroupHelp['status']);
@@ -286,6 +290,7 @@ YAML);
         $helpText = $this->runCommandRaw($app, ['foundry', 'help']);
         $this->assertSame(0, $helpText['status']);
         $this->assertStringNotContainsString('requires a license', $helpText['output']);
+        $this->assertStringContainsString('Run `foundry` or `foundry init` for the deterministic first-run walkthrough.', $helpText['output']);
     }
 
     public function test_non_json_cache_commands_emit_human_readable_output(): void

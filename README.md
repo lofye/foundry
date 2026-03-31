@@ -27,13 +27,24 @@ Run:
 foundry
 ```
 
+Foundry behaves deterministically:
+
+- in an empty directory, it offers curated onboarding examples
+- in an existing Foundry project, it inspects the current project
+- `foundry explain` with no target explains the first feature or route deterministically
+
 Follow the prompts.
 
 If you want a non-interactive first run, load the recommended example directly:
 
 ```bash
-foundry init --example=blog
+foundry init --example=blog-api
 ```
+
+Current onboarding examples:
+
+- `blog-api`: a direct copy of the canonical Blog API example
+- `extensions-migrations`: a composed reference setup that combines the canonical hello-world app with extensions-and-migrations assets
 
 New to Foundry?
 
@@ -119,7 +130,7 @@ composer require lofye/foundry-framework
 foundry
 
 # or, for automation:
-foundry init --example=blog
+foundry init --example=blog-api
 foundry new my-foundry-app --starter=standard --json
 cd my-foundry-app
 composer install
@@ -338,7 +349,7 @@ foundry doctor --deep --json
 
 Core capabilities and license services:
 
-- Core: `compile`, `inspect`, `verify`, `doctor`, `doctor --deep`, `prompt`, `explain <target>`, `diff`, `trace [<target>]`, `generate "<intent>"`, scaffold generators, runtime commands
+- Core: `compile`, `inspect`, `verify`, `doctor`, `doctor --deep`, `prompt`, `explain [<target>]`, `diff`, `trace [<target>]`, `generate "<intent>"`, scaffold generators, runtime commands
 - License services: `license status`, `license activate`, `license deactivate`, `features`
 
 Licensed command surface:

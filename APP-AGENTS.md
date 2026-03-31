@@ -39,6 +39,8 @@ Use this file when working inside a Foundry application repository.
 
 Recommended command loop:
 
+In a scaffolded app repo, bare `foundry` runs the first-run orientation for the current project. `foundry explain --json` without a target explains the first feature or route deterministically.
+
 ```bash
 foundry
 foundry explain --json

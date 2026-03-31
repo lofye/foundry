@@ -26,6 +26,11 @@ foundry verify pipeline --json
 
 If your shell does not resolve current-directory executables, use `./foundry ...`.
 
+The first-run walkthrough currently maps to this example taxonomy in a deterministic way:
+
+- `blog-api` loads the canonical Blog API example directly.
+- `extensions-migrations` loads a composed reference setup that combines the canonical Hello World app with the Extensions And Migrations assets.
+
 ## canonical
 
 - [Hello World](../examples/hello-world/README.md): the smallest readable example for feature structure, manifests, schemas, and the inspect/doctor/verify loop.
