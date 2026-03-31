@@ -40,6 +40,7 @@ Use this file when working inside a Foundry application repository.
 Recommended command loop:
 
 In a scaffolded app repo, bare `foundry` runs the first-run orientation for the current project. `foundry explain --json` without a target explains the first feature or route deterministically.
+Explain, explain diff, and generate JSON payloads include deterministic confidence scores, bands, and evidence factors; prefer them when an agent is deciding whether to proceed or ask for clarification.
 
 ```bash
 foundry

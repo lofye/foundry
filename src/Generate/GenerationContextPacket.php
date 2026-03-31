@@ -51,6 +51,7 @@ final readonly class GenerationContextPacket
             'suggested_packs' => $this->suggestedPacks,
             'explain_model' => [
                 'subject' => $this->model->subject,
+                'confidence' => $this->model->confidence,
                 'extensions' => $this->model->extensions,
             ],
         ];

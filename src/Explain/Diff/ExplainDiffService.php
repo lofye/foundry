@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Foundry\Explain\Diff;
 
+use Foundry\Confidence\ConfidenceEngine;
 use Foundry\Explain\Snapshot\ExplainSnapshotService;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
@@ -14,6 +15,7 @@ final class ExplainDiffService
     public function __construct(
         private readonly Paths $paths,
         private readonly ExplainSnapshotService $snapshots,
+        private readonly ConfidenceEngine $confidenceEngine = new ConfidenceEngine(),
     ) {}
 
     /**
@@ -55,7 +57,7 @@ final class ExplainDiffService
         $removed = $this->sortDiffRows($removed);
         $modified = $this->sortDiffRows($modified);
 
-        return [
+        $diff = [
             'schema_version' => 1,
             'metadata' => [
                 'pre_snapshot' => [
@@ -80,6 +82,10 @@ final class ExplainDiffService
             'removed' => $removed,
             'modified' => $modified,
         ];
+
+        $diff['confidence'] = $this->confidenceEngine->diff($before, $after, $diff);
+
+        return $diff;
     }
 
     /**
@@ -162,6 +168,19 @@ final class ExplainDiffService
     public function render(array $diff): string
     {
         $lines = ['Changes since last generation:', ''];
+        $confidence = is_array($diff['confidence'] ?? null) ? $diff['confidence'] : [];
+        if ($confidence !== []) {
+            $lines[] = sprintf(
+                'Confidence: %s (%.2f)',
+                str_replace('_', ' ', (string) ($confidence['band'] ?? 'unknown')),
+                (float) ($confidence['score'] ?? 0.0),
+            );
+            $warnings = array_values(array_filter(array_map('strval', (array) ($confidence['warnings'] ?? []))));
+            if ($warnings !== [] && in_array((string) ($confidence['band'] ?? ''), ['medium', 'low', 'very_low'], true)) {
+                $lines[] = 'Note: ' . $warnings[0];
+            }
+            $lines[] = '';
+        }
 
         foreach (['added' => 'Added', 'modified' => 'Modified', 'removed' => 'Removed'] as $key => $title) {
             $lines[] = $title . ':';

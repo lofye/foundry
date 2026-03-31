@@ -107,6 +107,7 @@ final class ExplanationPlan
                 ],
                 metadata: $this->metadata,
                 extensions: is_array($model['extensions'] ?? null) ? $model['extensions'] : [],
+                confidence: is_array($model['confidence'] ?? null) ? $model['confidence'] : [],
             );
     }
 
@@ -144,5 +145,35 @@ final class ExplanationPlan
             ),
             'sectionOrder' => $this->sectionOrder,
         ];
+    }
+
+    /**
+     * @param array<string,mixed> $confidence
+     */
+    public function withConfidence(array $confidence): self
+    {
+        $model = $this->model->withConfidence($confidence);
+
+        return new self(
+            subject: $this->subject,
+            summary: $this->summary,
+            responsibilities: $this->responsibilities,
+            executionFlow: $this->executionFlow,
+            dependencies: $this->dependencies,
+            dependents: $this->dependents,
+            emits: $this->emits,
+            triggers: $this->triggers,
+            permissions: $this->permissions,
+            schemaInteraction: $this->schemaInteraction,
+            graphRelationships: $this->graphRelationships,
+            diagnostics: $this->diagnostics,
+            relatedCommands: $this->relatedCommands,
+            relatedDocs: $this->relatedDocs,
+            suggestedFixes: $this->suggestedFixes,
+            sections: $this->sections,
+            sectionOrder: $this->sectionOrder,
+            metadata: $this->metadata,
+            model: $model,
+        );
     }
 }

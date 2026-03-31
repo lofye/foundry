@@ -51,6 +51,7 @@ New to Foundry?
 - Run `foundry` for the guided first-run walkthrough
 - Use `foundry help inspect` and `foundry help verify` to discover the safest next commands
 - After each successful `foundry generate`, use `foundry explain --diff` to inspect architectural changes before the next iteration
+- Use `--json` on `explain`, `explain --diff`, and `generate` when you want confidence scores, bands, and explicit evidence factors for LLM or automation use
 - Read `docs/quick-tour.md` and `docs/example-applications.md`
 - Start with `examples/hello-world`
 
@@ -378,7 +379,7 @@ foundry generate "add comment support" --mode=new --explain --json
 `explain` supports typed selectors such as `feature:publish_post`, `route:POST /posts`, `command:doctor`, `event:post.created`, `workflow:editorial`, `extension:core`, and `pack:foundry/blog`.
 Default text output starts with `Subject` and `Summary`, then renders canonical sections such as `Responsibilities`, `Execution Flow`, `Depends On`, `Emits`, `Triggers`, `Permissions`, `Schema Interaction`, `Graph Relationships`, `Related Commands`, `Related Docs`, `Diagnostics`, and `Suggested Fixes` when present. Extra sections such as `Impact` render afterward through the assembler-owned `sectionOrder`.
 `--deep` expands the same structure with detailed flow stages and expanded graph relationships instead of switching to a different format.
-`--json` returns a deliberate machine-readable contract with canonical `graph`, `execution`, `guards`, `events`, `schemas`, `docs`, `impact`, `commands`, and `extensions` domains, while preserving the legacy `executionFlow`, `relationships`, `relatedCommands`, `relatedDocs`, `diagnostics`, `suggestedFixes`, `sections`, and `sectionOrder` keys for compatibility.
+`--json` returns a deliberate machine-readable contract with canonical `graph`, `execution`, `guards`, `events`, `schemas`, `docs`, `impact`, `commands`, `extensions`, and `confidence` domains, while preserving the legacy `executionFlow`, `relationships`, `relatedCommands`, `relatedDocs`, `diagnostics`, `suggestedFixes`, `sections`, and `sectionOrder` keys for compatibility.
 Extensions can enrich explain output deterministically by implementing `Foundry\Explain\Contributors\ExplainContributorInterface` and returning `Foundry\Explain\Contributors\ExplainContribution` entries that the registry merges before rendering. Contributor sections are normalized through `Foundry\Explain\ExplainSection`.
 
 `generate` is now explain-driven and pack-aware:
@@ -387,7 +388,7 @@ Extensions can enrich explain output deterministically by implementing `Foundry\
 - `--mode=modify` applies controlled updates against an explain-resolved target and preserves extension boundaries.
 - `--mode=repair` restores missing generated artifacts and reruns verification before keeping the change.
 - `--packs=vendor/pack` hints pack-specific generators, and `--allow-pack-install` lets Foundry install missing packs before planning.
-- successful generate runs capture explain-derived pre/post snapshots, persist `.foundry/diffs/last.json`, and print the next iteration commands
+- successful generate runs capture explain-derived pre/post snapshots, persist `.foundry/diffs/last.json`, print the next iteration commands, and emit deterministic plan/outcome confidence
 - `--explain` appends the updated explain output after a successful change instead of making you run a second command manually
 
 Iteration loop:
@@ -398,7 +399,7 @@ foundry explain --diff
 foundry generate "refine the new feature" --mode=modify --target=<feature>
 ```
 
-`foundry explain --diff` reports architectural changes derived from explain snapshots. It is not a file diff.
+`foundry explain --diff` reports architectural changes derived from explain snapshots and carries its own confidence signal. It is not a file diff.
 
 Graph inspection and export:
 ```bash

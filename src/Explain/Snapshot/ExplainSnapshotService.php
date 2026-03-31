@@ -7,7 +7,9 @@ namespace Foundry\Explain\Snapshot;
 use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\Extensions\ExtensionRegistry;
 use Foundry\Compiler\IR\GraphNode;
+use Foundry\Confidence\ConfidenceEngine;
 use Foundry\Explain\ExplainOptions;
+use Foundry\Explain\ExplainModel;
 use Foundry\Explain\ExplainOrigin;
 use Foundry\Explain\ExplainSupport;
 use Foundry\Generate\GeneratorRegistry;
@@ -23,6 +25,7 @@ final class ExplainSnapshotService
     public function __construct(
         private readonly Paths $paths,
         private readonly ApiSurfaceRegistry $apiSurfaceRegistry = new ApiSurfaceRegistry(),
+        private readonly ConfidenceEngine $confidenceEngine = new ConfidenceEngine(),
     ) {}
 
     /**
@@ -45,6 +48,7 @@ final class ExplainSnapshotService
         $snapshot = [
             'schema_version' => 1,
             'label' => $normalizedLabel,
+            'confidence' => is_array($explain['confidence'] ?? null) ? $explain['confidence'] : [],
             'metadata' => [
                 'explain_schema_version' => (int) ($explain['metadata']['schema_version'] ?? 0),
                 'framework_version' => $graph->frameworkVersion(),
@@ -198,40 +202,40 @@ final class ExplainSnapshotService
      */
     private function emptyExplainPayload(ApplicationGraph $graph, array $extensionEntries): array
     {
-        return [
-            'subject' => ExplainOrigin::applyToRow([
+        $model = new ExplainModel(
+            subject: ExplainOrigin::applyToRow([
                 'id' => 'system:root',
                 'kind' => 'system',
                 'label' => 'system',
             ]),
-            'graph' => [
+            graph: [
                 'node_ids' => [],
                 'subject_node' => null,
                 'neighbors' => ['inbound' => [], 'outbound' => [], 'lateral' => []],
             ],
-            'execution' => [
+            execution: [
                 'entries' => [],
                 'stages' => [],
                 'action' => null,
                 'workflows' => [],
                 'jobs' => [],
             ],
-            'guards' => ['items' => []],
-            'events' => ['emits' => [], 'subscriptions' => [], 'emitters' => [], 'subscribers' => []],
-            'schemas' => ['subject' => null, 'items' => [], 'reads' => [], 'writes' => [], 'fields' => []],
-            'relationships' => [
+            guards: ['items' => []],
+            events: ['emits' => [], 'subscriptions' => [], 'emitters' => [], 'subscribers' => []],
+            schemas: ['subject' => null, 'items' => [], 'reads' => [], 'writes' => [], 'fields' => []],
+            relationships: [
                 'dependsOn' => ['items' => []],
                 'usedBy' => ['items' => []],
                 'graph' => ['inbound' => [], 'outbound' => [], 'lateral' => []],
             ],
-            'diagnostics' => [
+            diagnostics: [
                 'summary' => ['error' => 0, 'warning' => 0, 'info' => 0, 'total' => 0],
                 'items' => [],
             ],
-            'docs' => ['related' => []],
-            'impact' => [],
-            'commands' => ['subject' => null, 'related' => []],
-            'metadata' => [
+            docs: ['related' => []],
+            impact: [],
+            commands: ['subject' => null, 'related' => []],
+            metadata: [
                 'schema_version' => 2,
                 'target' => ['raw' => 'system:root', 'kind' => null, 'selector' => 'system:root'],
                 'options' => (new ExplainOptions())->toArray(),
@@ -243,8 +247,10 @@ final class ExplainSnapshotService
                 'command_prefix' => ExplainSupport::commandPrefix($this->paths),
                 'impact' => null,
             ],
-            'extensions' => $extensionEntries,
-        ];
+            extensions: $extensionEntries,
+        );
+
+        return $model->withConfidence($this->confidenceEngine->explain($model))->toArray();
     }
 
     /**

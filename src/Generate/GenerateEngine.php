@@ -9,6 +9,7 @@ use Foundry\Compiler\ApplicationGraph;
 use Foundry\Compiler\CompileOptions;
 use Foundry\Compiler\Extensions\ExtensionRegistry;
 use Foundry\Compiler\GraphCompiler;
+use Foundry\Confidence\ConfidenceEngine;
 use Foundry\Explain\Diff\ExplainDiffService;
 use Foundry\Explain\ExplainModel;
 use Foundry\Explain\ExplainOptions;
@@ -34,6 +35,7 @@ final class GenerateEngine
     private readonly ApiSurfaceRegistry $apiSurfaceRegistry;
     private readonly ExplainSnapshotService $snapshotService;
     private readonly ExplainDiffService $diffService;
+    private readonly ConfidenceEngine $confidenceEngine;
 
     public function __construct(
         private readonly Paths $paths,
@@ -48,6 +50,7 @@ final class GenerateEngine
         $this->apiSurfaceRegistry = $apiSurfaceRegistry ?? new ApiSurfaceRegistry();
         $this->snapshotService = $snapshotService ?? new ExplainSnapshotService($paths, $this->apiSurfaceRegistry);
         $this->diffService = $diffService ?? new ExplainDiffService($paths, $this->snapshotService);
+        $this->confidenceEngine = new ConfidenceEngine();
     }
 
     /**
@@ -149,13 +152,22 @@ final class GenerateEngine
 
             $plan = (new GenerationPlanner($generatorRegistry))->plan($context);
             (new PlanValidator())->validate($plan, $intent);
+            $plan = $plan->withConfidence($this->confidenceEngine->plan($context, $plan));
 
             if ($intent->dryRun) {
+                $outcomeConfidence = $this->confidenceEngine->outcome(
+                    $intent,
+                    $plan,
+                    [],
+                    ['skipped' => true, 'ok' => true],
+                );
+
                 return $this->buildPayload(
                     intent: $intent,
                     plan: $plan,
                     actionsTaken: [],
                     verificationResults: ['skipped' => true, 'ok' => true],
+                    outcomeConfidence: $outcomeConfidence,
                     errors: [],
                     context: $context,
                     packsInstalled: $packsInstalled,
@@ -206,11 +218,21 @@ final class GenerateEngine
                 $postExplainRendered = $response?->rendered;
             }
 
+            $outcomeConfidence = $this->confidenceEngine->outcome(
+                $intent,
+                $plan,
+                $actionsTaken,
+                $verificationResults,
+                $architectureDiff,
+                $packsInstalled,
+            );
+
             return $this->buildPayload(
                 intent: $intent,
                 plan: $plan,
                 actionsTaken: $actionsTaken,
                 verificationResults: $verificationResults,
+                outcomeConfidence: $outcomeConfidence,
                 errors: [],
                 context: $context,
                 packsInstalled: $packsInstalled,
@@ -238,6 +260,7 @@ final class GenerateEngine
         GenerationPlan $plan,
         array $actionsTaken,
         array $verificationResults,
+        array $outcomeConfidence,
         array $errors,
         GenerationContextPacket $context,
         array $packsInstalled,
@@ -253,6 +276,8 @@ final class GenerateEngine
             'intent' => $intent->raw,
             'mode' => $intent->mode,
             'plan' => $plan->toArray(),
+            'plan_confidence' => $plan->confidence,
+            'outcome_confidence' => $outcomeConfidence,
             'actions_taken' => $actionsTaken,
             'verification_results' => $verificationResults,
             'errors' => $errors,
@@ -638,7 +663,7 @@ final class GenerateEngine
             ];
         }
 
-        return new ExplainModel(
+        $model = new ExplainModel(
             subject: ExplainOrigin::applyToRow([
                 'id' => 'system:root',
                 'kind' => 'system',
@@ -674,6 +699,8 @@ final class GenerateEngine
             metadata: ['target' => ['raw' => 'system:root', 'kind' => null, 'selector' => 'system:root']],
             extensions: $extensionRows,
         );
+
+        return $model->withConfidence($this->confidenceEngine->explain($model));
     }
 
     /**

@@ -20,6 +20,7 @@ final readonly class ExplainModel
      * @param array<string,mixed> $commands
      * @param array<string,mixed> $metadata
      * @param array<int,array<string,mixed>> $extensions
+     * @param array<string,mixed> $confidence
      */
     public function __construct(
         public array $subject,
@@ -35,6 +36,7 @@ final readonly class ExplainModel
         public array $commands,
         public array $metadata,
         public array $extensions,
+        public array $confidence = [],
     ) {}
 
     /**
@@ -132,6 +134,29 @@ final readonly class ExplainModel
     }
 
     /**
+     * @param array<string,mixed> $confidence
+     */
+    public function withConfidence(array $confidence): self
+    {
+        return new self(
+            subject: $this->subject,
+            graph: $this->graph,
+            execution: $this->execution,
+            guards: $this->guards,
+            events: $this->events,
+            schemas: $this->schemas,
+            relationships: $this->relationships,
+            diagnostics: $this->diagnostics,
+            docs: $this->docs,
+            impact: $this->impact,
+            commands: $this->commands,
+            metadata: $this->metadata,
+            extensions: $this->extensions,
+            confidence: $confidence,
+        );
+    }
+
+    /**
      * @return array<string,mixed>
      */
     public function toArray(): array
@@ -148,6 +173,7 @@ final readonly class ExplainModel
             'docs' => $this->docs,
             'impact' => $this->impact,
             'commands' => $this->commands,
+            'confidence' => $this->confidence,
             'metadata' => $this->metadata,
             'extensions' => $this->extensions,
         ];

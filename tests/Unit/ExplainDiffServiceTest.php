@@ -89,6 +89,7 @@ final class ExplainDiffServiceTest extends TestCase
         $diff = $service->compare($before, $after);
 
         $this->assertSame(['added' => 1, 'removed' => 1, 'modified' => 1], $diff['summary']);
+        $this->assertArrayHasKey('confidence', $diff);
         $this->assertSame('route', $diff['added'][0]['type']);
         $this->assertSame('POST /comments', $diff['added'][0]['id']);
         $this->assertSame('GET /blog', $diff['removed'][0]['id']);
@@ -142,6 +143,7 @@ final class ExplainDiffServiceTest extends TestCase
             'added' => [],
             'removed' => [],
             'modified' => [],
+            'confidence' => ['score' => 0.5, 'band' => 'medium', 'factors' => [], 'warnings' => [], 'metadata' => ['schema_version' => 1]],
         ], true));
 
         $this->expectException(FoundryError::class);

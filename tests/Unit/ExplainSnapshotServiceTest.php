@@ -43,6 +43,8 @@ final class ExplainSnapshotServiceTest extends TestCase
 
         $this->assertSame(1, $snapshot['schema_version']);
         $this->assertSame('system:root', $snapshot['explain']['subject']['id']);
+        $this->assertArrayHasKey('confidence', $snapshot);
+        $this->assertArrayHasKey('confidence', $snapshot['explain']);
         $this->assertSame([], $snapshot['categories']['routes']);
         $this->assertFileExists($service->snapshotPath('pre-generate'));
     }
@@ -64,6 +66,7 @@ final class ExplainSnapshotServiceTest extends TestCase
         $this->assertSame($graph->sourceHash(), $snapshot['metadata']['source_hash']);
         $this->assertSame(1, $snapshot['application']['summary']['features']);
         $this->assertGreaterThan(0, $snapshot['application']['summary']['nodes']);
+        $this->assertSame($snapshot['explain']['confidence'], $snapshot['confidence']);
     }
 
     private function seedFeature(): void

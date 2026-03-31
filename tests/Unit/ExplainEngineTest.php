@@ -82,7 +82,7 @@ final class ExplainEngineTest extends TestCase
         $payload = $plan->toArray();
 
         $this->assertSame(
-            ['subject', 'graph', 'execution', 'guards', 'events', 'schemas', 'relationships', 'diagnostics', 'docs', 'impact', 'commands', 'metadata', 'extensions', 'summary', 'responsibilities', 'executionFlow', 'emits', 'triggers', 'permissions', 'schemaInteraction', 'relatedCommands', 'relatedDocs', 'suggestedFixes', 'sections', 'sectionOrder'],
+            ['subject', 'graph', 'execution', 'guards', 'events', 'schemas', 'relationships', 'diagnostics', 'docs', 'impact', 'commands', 'confidence', 'metadata', 'extensions', 'summary', 'responsibilities', 'executionFlow', 'emits', 'triggers', 'permissions', 'schemaInteraction', 'relatedCommands', 'relatedDocs', 'suggestedFixes', 'sections', 'sectionOrder'],
             array_keys($payload),
         );
         $this->assertSame('feature', $payload['subject']['kind']);
@@ -93,6 +93,7 @@ final class ExplainEngineTest extends TestCase
         $this->assertArrayHasKey('graph', $payload);
         $this->assertArrayHasKey('execution', $payload);
         $this->assertArrayHasKey('extensions', $payload);
+        $this->assertArrayHasKey('confidence', $payload);
         $this->assertArrayHasKey('schema_version', $payload['metadata']);
         $this->assertArrayHasKey('target', $payload['metadata']);
         $this->assertArrayHasKey('options', $payload['metadata']);

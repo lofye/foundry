@@ -78,6 +78,9 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame(0, $generate['status']);
         $this->assertSame('pack', $generate['payload']['plan']['origin']);
         $this->assertSame('generate blog-post', $generate['payload']['plan']['generator_id']);
+        $this->assertArrayHasKey('confidence', $generate['payload']['plan']);
+        $this->assertArrayHasKey('plan_confidence', $generate['payload']);
+        $this->assertArrayHasKey('outcome_confidence', $generate['payload']);
         $this->assertSame(['foundry/blog'], $generate['payload']['packs_used']);
         $this->assertSame('pack:foundry/blog', $generate['payload']['metadata']['target']['resolved']);
         $this->assertFileExists($this->project->root . '/app/features/blog_post_notes/feature.yaml');
@@ -117,6 +120,8 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame('pack', $generate['payload']['plan']['origin']);
         $this->assertSame('foundry/blog', $generate['payload']['packs_installed'][0]['pack']);
         $this->assertSame('registry', $generate['payload']['packs_installed'][0]['source']['type']);
+        $this->assertArrayHasKey('plan_confidence', $generate['payload']);
+        $this->assertArrayHasKey('outcome_confidence', $generate['payload']);
         $this->assertFileExists($this->project->root . '/.foundry/packs/foundry/blog/1.0.0/foundry.json');
         $this->assertFileExists($this->project->root . '/app/features/blog_post_notes/feature.yaml');
     }
@@ -142,12 +147,16 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame('.foundry/snapshots/pre-generate.json', $generate['payload']['snapshots']['pre']);
         $this->assertSame('.foundry/snapshots/post-generate.json', $generate['payload']['snapshots']['post']);
         $this->assertSame('.foundry/diffs/last.json', $generate['payload']['snapshots']['diff']);
+        $this->assertArrayHasKey('plan_confidence', $generate['payload']);
+        $this->assertArrayHasKey('outcome_confidence', $generate['payload']);
         $this->assertIsArray($generate['payload']['architecture_diff']);
+        $this->assertArrayHasKey('confidence', $generate['payload']['architecture_diff']);
         $this->assertGreaterThan(0, $generate['payload']['architecture_diff']['summary']['added']);
         $this->assertSame(
             'feature:' . $generate['payload']['plan']['metadata']['feature'],
             $generate['payload']['post_explain']['subject']['id'],
         );
+        $this->assertArrayHasKey('confidence', $generate['payload']['post_explain']);
 
         $diff = $this->runCommand($app, ['foundry', 'explain', '--diff', '--json']);
         $this->assertSame(0, $diff['status']);

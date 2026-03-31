@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Foundry\Explain;
 
 use Foundry\Compiler\ApplicationGraph;
+use Foundry\Confidence\ConfidenceEngine;
 use Foundry\Explain\Collectors\ExplainContextCollectorInterface;
 
 final class ExplainEngine implements ExplainEngineInterface
@@ -18,6 +19,7 @@ final class ExplainEngine implements ExplainEngineInterface
         private readonly ExplanationPlanAssembler $planAssembler,
         private readonly array $collectors,
         private readonly string $commandPrefix,
+        private readonly ConfidenceEngine $confidenceEngine = new ConfidenceEngine(),
     ) {}
 
     public function explain(ExplainTarget $target, ExplainOptions $options): ExplanationPlan
@@ -31,12 +33,14 @@ final class ExplainEngine implements ExplainEngineInterface
             }
         }
 
-        return $this->planAssembler->assemble(
+        $plan = $this->planAssembler->assemble(
             subject: $subject,
             context: $context,
             options: $options,
             metadata: $this->metadata($target, $options, $context),
         );
+
+        return $plan->withConfidence($this->confidenceEngine->explain($plan->model));
     }
 
     /**

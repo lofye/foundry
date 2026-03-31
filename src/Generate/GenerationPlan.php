@@ -14,6 +14,7 @@ final readonly class GenerationPlan
      * @param array<int,string> $risks
      * @param array<int,string> $validations
      * @param array<string,mixed> $metadata
+     * @param array<string,mixed> $confidence
      */
     public function __construct(
         public array $actions,
@@ -24,6 +25,7 @@ final readonly class GenerationPlan
         public string $generatorId,
         public ?string $extension = null,
         public array $metadata = [],
+        public array $confidence = [],
     ) {}
 
     /**
@@ -125,6 +127,24 @@ final readonly class GenerationPlan
     }
 
     /**
+     * @param array<string,mixed> $confidence
+     */
+    public function withConfidence(array $confidence): self
+    {
+        return new self(
+            actions: $this->actions,
+            affectedFiles: $this->affectedFiles,
+            risks: $this->risks,
+            validations: $this->validations,
+            origin: $this->origin,
+            generatorId: $this->generatorId,
+            extension: $this->extension,
+            metadata: $this->metadata,
+            confidence: $confidence,
+        );
+    }
+
+    /**
      * @return array<string,mixed>
      */
     public function toArray(): array
@@ -137,6 +157,7 @@ final readonly class GenerationPlan
             'origin' => $this->origin,
             'generator_id' => $this->generatorId,
             'extension' => $this->extension,
+            'confidence' => $this->confidence,
             'metadata' => $this->metadata,
         ];
     }

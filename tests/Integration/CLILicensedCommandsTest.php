@@ -119,6 +119,7 @@ YAML);
         $explain = $this->runCommand($app, ['foundry', 'explain', 'publish_post', '--json']);
         $this->assertSame(0, $explain['status']);
         $this->assertSame('feature:publish_post', $explain['payload']['subject']['id']);
+        $this->assertArrayHasKey('confidence', $explain['payload']);
 
         $deep = $this->runCommand($app, ['foundry', 'doctor', '--deep', '--json']);
         $this->assertSame(0, $deep['status']);
@@ -130,10 +131,14 @@ YAML);
         $this->assertTrue($generate['payload']['ok']);
         $this->assertSame('new', $generate['payload']['mode']);
         $this->assertSame('core.feature.new', $generate['payload']['plan']['generator_id']);
+        $this->assertArrayHasKey('confidence', $generate['payload']['plan']);
+        $this->assertArrayHasKey('plan_confidence', $generate['payload']);
+        $this->assertArrayHasKey('outcome_confidence', $generate['payload']);
 
         $explainText = $this->runCommandRaw($app, ['foundry', 'explain', 'publish_post']);
         $this->assertSame(0, $explainText['status']);
         $this->assertStringContainsString('Subject', $explainText['output']);
+        $this->assertStringContainsString('Confidence', $explainText['output']);
 
         $help = $this->runCommandRaw($app, ['foundry', 'help']);
         $this->assertSame(0, $help['status']);
@@ -160,6 +165,7 @@ YAML);
         $this->assertNotEmpty($explain['payload']['executionFlow']['events']);
         $this->assertNotEmpty($explain['payload']['relatedDocs']);
         $this->assertSame('publish_post', $explain['payload']['metadata']['target']['selector']);
+        $this->assertArrayHasKey('confidence', $explain['payload']);
 
         $trace = $this->runCommand($app, ['foundry', 'trace', 'publish', '--json']);
         $this->assertSame(0, $trace['status']);
@@ -209,6 +215,7 @@ YAML);
         $markdown = $this->runCommandRaw($app, ['foundry', 'explain', 'POST', '/posts', '--type', 'route', '--markdown']);
         $this->assertSame(0, $markdown['status']);
         $this->assertStringContainsString('## POST /posts', $markdown['output']);
+        $this->assertStringContainsString('### Confidence', $markdown['output']);
         $this->assertStringContainsString('### Summary', $markdown['output']);
         $this->assertStringContainsString('### Execution Flow', $markdown['output']);
         $this->assertStringContainsString('### Related Docs', $markdown['output']);
@@ -343,6 +350,8 @@ YAML);
         $this->assertTrue($generate['payload']['ok']);
         $this->assertSame('core.feature.modify', $generate['payload']['plan']['generator_id']);
         $this->assertTrue($generate['payload']['verification_results']['ok']);
+        $this->assertArrayHasKey('plan_confidence', $generate['payload']);
+        $this->assertArrayHasKey('outcome_confidence', $generate['payload']);
         $featureYaml = (string) file_get_contents($this->project->root . '/app/features/publish_post/feature.yaml');
         $prompts = (string) file_get_contents($this->project->root . '/app/features/publish_post/prompts.md');
         $this->assertStringContainsString('Modification intent: Add moderation notes.', $featureYaml);
@@ -372,6 +381,8 @@ YAML);
         $this->assertTrue($generate['payload']['ok']);
         $this->assertSame('core.feature.repair', $generate['payload']['plan']['generator_id']);
         $this->assertTrue($generate['payload']['verification_results']['ok']);
+        $this->assertArrayHasKey('plan_confidence', $generate['payload']);
+        $this->assertArrayHasKey('outcome_confidence', $generate['payload']);
         $this->assertFileExists($this->project->root . '/app/features/publish_post/context.manifest.json');
         $this->assertFileExists($this->project->root . '/app/features/publish_post/tests/publish_post_auth_test.php');
     }

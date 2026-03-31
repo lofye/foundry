@@ -27,8 +27,17 @@ final class MarkdownExplanationRenderer implements ExplanationRendererInterface
             $lines[] = '**Extension:** ' . $extension;
         }
 
+        $confidenceRendered = false;
         foreach ($this->sectionOrder($payload) as $sectionId) {
             $this->appendSection($lines, $payload, $sectionId);
+            if (!$confidenceRendered && in_array($sectionId, ['subject', 'summary'], true)) {
+                $this->appendConfidence($lines, $payload);
+                $confidenceRendered = true;
+            }
+        }
+
+        if (!$confidenceRendered) {
+            $this->appendConfidence($lines, $payload);
         }
 
         return implode(PHP_EOL, $lines);
@@ -103,6 +112,31 @@ final class MarkdownExplanationRenderer implements ExplanationRendererInterface
         $lines[] = '';
         $lines[] = '### ' . $title;
         $lines[] = $text;
+    }
+
+    /**
+     * @param array<int,string> $lines
+     * @param array<string,mixed> $payload
+     */
+    private function appendConfidence(array &$lines, array $payload): void
+    {
+        $confidence = is_array($payload['confidence'] ?? null) ? $payload['confidence'] : [];
+        if ($confidence === []) {
+            return;
+        }
+
+        $lines[] = '';
+        $lines[] = '### Confidence';
+        $lines[] = sprintf(
+            '%s (%.2f)',
+            ucfirst(str_replace('_', ' ', (string) ($confidence['band'] ?? 'unknown'))),
+            (float) ($confidence['score'] ?? 0.0),
+        );
+
+        $warnings = array_values(array_filter(array_map('strval', (array) ($confidence['warnings'] ?? []))));
+        if ($warnings !== [] && in_array((string) ($confidence['band'] ?? ''), ['medium', 'low', 'very_low'], true)) {
+            $lines[] = '- ' . $warnings[0];
+        }
     }
 
     /**

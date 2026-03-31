@@ -255,6 +255,11 @@ final class GenerateCommand extends Command
             'Packs: ' . $packSummary,
         ];
 
+        $planConfidence = is_array($payload['plan_confidence'] ?? null) ? $payload['plan_confidence'] : [];
+        if ($planConfidence !== []) {
+            $lines[] = 'Plan confidence: ' . $this->formatConfidence($planConfidence);
+        }
+
         if ($feature !== '') {
             $lines[] = 'Feature: ' . $feature;
         }
@@ -264,6 +269,15 @@ final class GenerateCommand extends Command
             $lines[] = 'Verification: skipped';
         } else {
             $lines[] = 'Verification: ' . ((bool) ($verification['ok'] ?? false) ? 'passed' : 'failed');
+        }
+
+        $outcomeConfidence = is_array($payload['outcome_confidence'] ?? null) ? $payload['outcome_confidence'] : [];
+        if ($outcomeConfidence !== []) {
+            $lines[] = 'Outcome confidence: ' . $this->formatConfidence($outcomeConfidence);
+            $warnings = array_values(array_filter(array_map('strval', (array) ($outcomeConfidence['warnings'] ?? []))));
+            if ($warnings !== [] && in_array((string) ($outcomeConfidence['band'] ?? ''), ['medium', 'low', 'very_low'], true)) {
+                $lines[] = 'Note: ' . $warnings[0];
+            }
         }
 
         $diff = is_array($payload['architecture_diff'] ?? null) ? $payload['architecture_diff'] : null;
@@ -358,5 +372,17 @@ final class GenerateCommand extends Command
         }
 
         return 'foundry generate "Refine feature" --mode=modify --target=<target>';
+    }
+
+    /**
+     * @param array<string,mixed> $confidence
+     */
+    private function formatConfidence(array $confidence): string
+    {
+        return sprintf(
+            '%s (%.2f)',
+            str_replace('_', ' ', (string) ($confidence['band'] ?? 'unknown')),
+            (float) ($confidence['score'] ?? 0.0),
+        );
     }
 }
