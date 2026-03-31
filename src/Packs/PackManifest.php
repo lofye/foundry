@@ -18,6 +18,8 @@ final readonly class PackManifest
         public string $description,
         public string $entry,
         public array $capabilities = [],
+        public string $checksum = '',
+        public ?string $signature = null,
     ) {}
 
     /**
@@ -31,6 +33,8 @@ final readonly class PackManifest
             'description' => $this->description,
             'entry' => $this->entry,
             'capabilities' => $this->capabilities,
+            'checksum' => $this->checksum,
+            'signature' => $this->signature,
         ];
     }
 
@@ -91,6 +95,8 @@ final readonly class PackManifest
         $description = trim((string) ($payload['description'] ?? ''));
         $entry = ltrim(trim((string) ($payload['entry'] ?? '')), '\\');
         $capabilities = $payload['capabilities'] ?? null;
+        $checksum = strtolower(trim((string) ($payload['checksum'] ?? '')));
+        $signature = $payload['signature'] ?? null;
 
         $errors = [];
 
@@ -108,6 +114,14 @@ final readonly class PackManifest
 
         if (!self::isValidClassName($entry)) {
             $errors['entry'] = 'entry must be a valid PHP class name.';
+        }
+
+        if (!array_key_exists('checksum', $payload) || !self::isValidChecksum($checksum)) {
+            $errors['checksum'] = 'checksum must be a 64-character SHA-256 hex string.';
+        }
+
+        if (!array_key_exists('signature', $payload) || !self::isValidSignature($signature)) {
+            $errors['signature'] = 'signature must be a non-empty string or null.';
         }
 
         if (!is_array($capabilities)) {
@@ -146,6 +160,8 @@ final readonly class PackManifest
             description: $description,
             entry: $entry,
             capabilities: $capabilityList,
+            checksum: $checksum,
+            signature: is_string($signature) ? trim($signature) : null,
         );
     }
 
@@ -162,5 +178,19 @@ final readonly class PackManifest
     public static function isValidClassName(string $value): bool
     {
         return preg_match('/^(?:[A-Za-z_][A-Za-z0-9_]*\\\\)*[A-Za-z_][A-Za-z0-9_]*$/', $value) === 1;
+    }
+
+    public static function isValidChecksum(string $value): bool
+    {
+        return preg_match('/^[a-f0-9]{64}$/', strtolower($value)) === 1;
+    }
+
+    public static function isValidSignature(mixed $value): bool
+    {
+        if ($value === null) {
+            return true;
+        }
+
+        return is_string($value) && trim($value) !== '';
     }
 }

@@ -28,7 +28,7 @@ final class HostedPackRegistry
 
         return $override !== ''
             ? $override
-            : 'https://foundryframework.org/registry.json';
+            : 'https://foundryframework.org/packs';
     }
 
     public function cachePath(): string
@@ -69,6 +69,14 @@ final class HostedPackRegistry
      */
     public function resolveLatest(string $name): array
     {
+        return $this->resolve($name);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public function resolve(string $name, ?string $version = null): array
+    {
         $candidates = array_values(array_filter(
             $this->entries(),
             static fn(HostedPackRegistryEntry $entry): bool => $entry->name === $name,
@@ -83,6 +91,25 @@ final class HostedPackRegistry
                     'registry_url' => $this->registryUrl(),
                 ],
                 'Pack was not found in the hosted registry.',
+            );
+        }
+
+        if ($version !== null && $version !== '') {
+            foreach ($candidates as $candidate) {
+                if ($candidate->version === $version) {
+                    return $candidate->toArray();
+                }
+            }
+
+            throw new FoundryError(
+                'PACK_REGISTRY_VERSION_NOT_FOUND',
+                'not_found',
+                [
+                    'pack' => $name,
+                    'version' => $version,
+                    'registry_url' => $this->registryUrl(),
+                ],
+                'Pack version was not found in the hosted registry.',
             );
         }
 

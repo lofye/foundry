@@ -5,5 +5,7 @@
   "entry": "Vendor\\Blog\\FoundryBlogPackServiceProvider",
   "capabilities": [
     "blog.notes"
-  ]
+  ],
+  "checksum": "dcdaf2a6bb0a338ac5a60a8c9fba90061696537e25c4e5aaaee220d34e25d567",
+  "signature": null
 }

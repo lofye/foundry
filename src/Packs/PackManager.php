@@ -6,6 +6,9 @@ namespace Foundry\Packs;
 
 use Foundry\CLI\CommandContext;
 use Foundry\Compiler\CompileOptions;
+use Foundry\Explain\ExplainOptions;
+use Foundry\Explain\ExplainTarget;
+use Foundry\Pro\ArchitectureExplainer;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
 
@@ -55,7 +58,23 @@ final class PackManager
         }
 
         if (PackManifest::isValidName($source)) {
-            return $this->installFromRegistry($source, $context);
+            return $this->installFromRegistry($source, null, $context);
+        }
+
+        if (preg_match('/^([^@]+)@([^@]+)$/', $source, $matches) === 1) {
+            $name = trim((string) ($matches[1] ?? ''));
+            $version = trim((string) ($matches[2] ?? ''));
+
+            if (!PackManifest::isValidName($name) || !PackManifest::isValidVersion($version)) {
+                throw new FoundryError(
+                    'PACK_REFERENCE_INVALID',
+                    'validation',
+                    ['source' => $source],
+                    'Pack reference must use vendor/pack or vendor/pack@1.2.3 format.',
+                );
+            }
+
+            return $this->installFromRegistry($name, $version, $context);
         }
 
         $this->resolveLocalSource($source);
@@ -88,6 +107,7 @@ final class PackManager
     private function installResolvedSource(string $resolved, ?CommandContext $context, array $metadata = []): array
     {
         $manifest = PackManifest::fromFile($resolved . '/foundry.json');
+        $this->assertChecksumMatches($resolved, $manifest);
         $target = $this->registry->installPath($manifest->name, $manifest->version);
 
         if (is_dir($target)) {
@@ -113,6 +133,7 @@ final class PackManager
             'install_path' => $this->relativePath($target),
             'active' => true,
             'manifest' => $manifest->toArray(),
+            'checksum' => $manifest->checksum,
         ] + $metadata;
 
         if ($context !== null) {
@@ -154,6 +175,10 @@ final class PackManager
             'active' => false,
             'active_version' => null,
             'installed_versions' => $entry['installed_versions'],
+            'source_kind' => $this->sourceKind(
+                is_array($entry['sources'] ?? null) ? $entry['sources'] : [],
+                $this->latestInstalledVersion($entry['installed_versions']),
+            ),
         ];
 
         if ($context !== null) {
@@ -185,6 +210,10 @@ final class PackManager
                 'active_version' => $entry['active_version'],
                 'installed_versions' => $entry['installed_versions'],
                 'active' => $entry['active_version'] !== null,
+                'source_kind' => $this->sourceKind(
+                    is_array($entry['sources'] ?? null) ? $entry['sources'] : [],
+                    $entry['active_version'] ?? $this->latestInstalledVersion($entry['installed_versions']),
+                ),
             ];
         }
 
@@ -199,7 +228,7 @@ final class PackManager
     /**
      * @return array<string,mixed>
      */
-    public function info(string $name): array
+    public function info(string $name, ?CommandContext $context = null): array
     {
         $entry = $this->registry->entry($name);
         if ($entry === null) {
@@ -222,8 +251,9 @@ final class PackManager
         }
 
         $manifest = PackManifest::fromFile($this->registry->manifestPath($name, $selectedVersion));
+        $source = is_array($entry['sources'][$selectedVersion] ?? null) ? $entry['sources'][$selectedVersion] : null;
 
-        return [
+        $payload = [
             'name' => $manifest->name,
             'version' => $selectedVersion,
             'active' => $entry['active_version'] === $selectedVersion,
@@ -232,16 +262,23 @@ final class PackManager
             'install_path' => $this->relativePath($this->registry->installPath($name, $selectedVersion)),
             'manifest' => $manifest->toArray(),
             'capabilities' => $manifest->capabilities,
-            'source' => is_array($entry['sources'][$selectedVersion] ?? null) ? $entry['sources'][$selectedVersion] : null,
+            'source' => $source,
+            'source_kind' => $this->normalizeSourceKind($source),
         ];
+
+        if ($context !== null && $payload['active'] === true) {
+            $payload['explain'] = $this->packExplainSummary($name, $context);
+        }
+
+        return $payload;
     }
 
     /**
      * @return array<string,mixed>
      */
-    private function installFromRegistry(string $name, ?CommandContext $context): array
+    private function installFromRegistry(string $name, ?string $version, ?CommandContext $context): array
     {
-        $entry = $this->hostedRegistry->resolveLatest($name);
+        $entry = $this->hostedRegistry->resolve($name, $version);
         $archiveBytes = $this->hostedRegistry->downloadArchive((string) ($entry['download_url'] ?? ''));
         $archivePath = $this->createTempFile('foundry-pack-archive-');
         $extractPath = $this->createTempDirectory('foundry-pack-src-');
@@ -263,6 +300,18 @@ final class PackManager
                 );
             }
 
+            if ($manifest->checksum !== (string) ($entry['checksum'] ?? '')) {
+                throw new FoundryError(
+                    'PACK_DOWNLOAD_CHECKSUM_MISMATCH',
+                    'validation',
+                    [
+                        'registry_entry' => $entry,
+                        'manifest' => $manifest->toArray(),
+                    ],
+                    'Downloaded pack checksum does not match the hosted registry entry.',
+                );
+            }
+
             return $this->installResolvedSource(
                 $extractPath,
                 $context,
@@ -271,6 +320,7 @@ final class PackManager
                         'type' => 'registry',
                         'registry_url' => $this->hostedRegistry->registryUrl(),
                         'download_url' => (string) ($entry['download_url'] ?? ''),
+                        'verified' => (bool) ($entry['verified'] ?? false),
                     ],
                 ],
             );
@@ -342,6 +392,77 @@ final class PackManager
         usort($versions, 'version_compare');
 
         return $versions[count($versions) - 1] ?? null;
+    }
+
+    private function assertChecksumMatches(string $directory, PackManifest $manifest): void
+    {
+        $actual = PackChecksum::forDirectory($directory);
+        if ($actual === $manifest->checksum) {
+            return;
+        }
+
+        throw new FoundryError(
+            'PACK_CHECKSUM_MISMATCH',
+            'validation',
+            [
+                'pack' => $manifest->name,
+                'version' => $manifest->version,
+                'path' => $directory,
+                'expected_checksum' => $manifest->checksum,
+                'actual_checksum' => $actual,
+            ],
+            'Pack checksum does not match the manifest.',
+        );
+    }
+
+    /**
+     * @param array<string,mixed>|null $source
+     */
+    private function normalizeSourceKind(?array $source): string
+    {
+        $type = trim((string) ($source['type'] ?? ''));
+
+        return $type === 'registry' ? 'remote' : 'local';
+    }
+
+    /**
+     * @param array<string,array<string,mixed>> $sources
+     */
+    private function sourceKind(array $sources, ?string $version): string
+    {
+        if ($version === null) {
+            return 'local';
+        }
+
+        $source = is_array($sources[$version] ?? null) ? $sources[$version] : null;
+
+        return $this->normalizeSourceKind($source);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function packExplainSummary(string $name, CommandContext $context): array
+    {
+        $compiler = $context->graphCompiler();
+        $graph = $compiler->loadGraph() ?? $compiler->compile(new CompileOptions())->graph;
+        $response = (new ArchitectureExplainer(
+            paths: $context->paths(),
+            impactAnalyzer: $compiler->impactAnalyzer(),
+            apiSurfaceRegistry: $context->apiSurfaceRegistry(),
+            extensionRows: $context->extensionRegistry()->inspectRows(),
+        ))->explain($graph, ExplainTarget::parse('pack:' . $name), new ExplainOptions());
+        $payload = $response->toArray();
+
+        return [
+            'subject' => is_array($payload['subject'] ?? null) ? $payload['subject'] : [],
+            'summary' => is_array($payload['summary'] ?? null) ? $payload['summary'] : [],
+            'responsibilities' => is_array($payload['responsibilities'] ?? null) ? $payload['responsibilities'] : [],
+            'impact' => is_array($payload['impact'] ?? null) ? $payload['impact'] : [],
+            'commands' => is_array($payload['commands'] ?? null) ? $payload['commands'] : [],
+            'schemas' => is_array($payload['schemas'] ?? null) ? $payload['schemas'] : [],
+            'extensions' => is_array($payload['extensions'] ?? null) ? $payload['extensions'] : [],
+        ];
     }
 
     private function copyDirectory(string $source, string $target): void

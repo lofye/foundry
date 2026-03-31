@@ -81,7 +81,19 @@ final class InstalledPackRegistry
             mkdir($directory, 0777, true);
         }
 
-        file_put_contents($this->registryPath(), Json::encode($normalized, true));
+        $temporaryPath = $this->registryPath() . '.tmp';
+        file_put_contents($temporaryPath, Json::encode($normalized, true));
+
+        if (!rename($temporaryPath, $this->registryPath())) {
+            @unlink($temporaryPath);
+
+            throw new FoundryError(
+                'PACK_REGISTRY_WRITE_FAILED',
+                'io',
+                ['path' => $this->registryPath()],
+                'Installed pack registry could not be written.',
+            );
+        }
     }
 
     /**

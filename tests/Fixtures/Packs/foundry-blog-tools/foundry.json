@@ -3,5 +3,7 @@
   "version": "1.0.0",
   "description": "Fixture pack that conflicts on declared command registration.",
   "entry": "Vendor\\BlogTools\\FoundryBlogToolsPackServiceProvider",
-  "capabilities": []
+  "capabilities": [],
+  "checksum": "56e2c2c231c8e107cba34eda93b75d03dae17b41a40776f07132df90be7bb1c3",
+  "signature": null
 }

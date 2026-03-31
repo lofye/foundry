@@ -13,6 +13,9 @@ final readonly class HostedPackRegistryEntry
         public string $version,
         public string $description,
         public string $downloadUrl,
+        public string $checksum,
+        public ?string $signature,
+        public bool $verified,
     ) {}
 
     /**
@@ -25,6 +28,9 @@ final readonly class HostedPackRegistryEntry
             'version' => $this->version,
             'description' => $this->description,
             'download_url' => $this->downloadUrl,
+            'checksum' => $this->checksum,
+            'signature' => $this->signature,
+            'verified' => $this->verified,
         ];
     }
 
@@ -37,6 +43,9 @@ final readonly class HostedPackRegistryEntry
         $version = trim((string) ($payload['version'] ?? ''));
         $description = trim((string) ($payload['description'] ?? ''));
         $downloadUrl = trim((string) ($payload['download_url'] ?? ''));
+        $checksum = strtolower(trim((string) ($payload['checksum'] ?? '')));
+        $signature = $payload['signature'] ?? null;
+        $verified = $payload['verified'] ?? null;
 
         $errors = [];
 
@@ -54,6 +63,18 @@ final readonly class HostedPackRegistryEntry
 
         if (!self::isValidDownloadUrl($downloadUrl)) {
             $errors['download_url'] = 'download_url must be an HTTPS URL.';
+        }
+
+        if (!array_key_exists('checksum', $payload) || !PackManifest::isValidChecksum($checksum)) {
+            $errors['checksum'] = 'checksum must be a 64-character SHA-256 hex string.';
+        }
+
+        if (!array_key_exists('signature', $payload) || !PackManifest::isValidSignature($signature)) {
+            $errors['signature'] = 'signature must be a non-empty string or null.';
+        }
+
+        if (!is_bool($verified)) {
+            $errors['verified'] = 'verified must be a boolean.';
         }
 
         if ($errors !== []) {
@@ -74,6 +95,9 @@ final readonly class HostedPackRegistryEntry
             version: $version,
             description: $description,
             downloadUrl: $downloadUrl,
+            checksum: $checksum,
+            signature: is_string($signature) ? trim($signature) : null,
+            verified: $verified,
         );
     }
 

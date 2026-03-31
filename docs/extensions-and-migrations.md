@@ -71,6 +71,7 @@ Rules:
 - installed files stay immutable once copied
 - active versions are tracked in `.foundry/packs/installed.json`
 - graph boot reads only active pack versions
+- pack manifests must declare `checksum` and `signature`, and installs fail when the package checksum does not match
 - pack entry classes must implement `Foundry\Packs\PackServiceProvider`
 - pack providers register graph-visible behavior explicitly through `Foundry\Packs\PackContext`
 
@@ -81,6 +82,7 @@ CLI commands:
 ```bash
 foundry pack search <query> --json
 foundry pack install vendor/pack --json
+foundry pack install vendor/pack@1.2.0 --json
 foundry pack install <path-or-name> --json
 foundry pack remove <vendor/pack> --json
 foundry pack list --json
@@ -100,7 +102,7 @@ Activation remains deterministic:
 Foundry can also discover packs through an optional public registry endpoint:
 
 ```text
-GET /registry.json
+GET /packs
 ```
 
 Registry response shape:
@@ -111,7 +113,10 @@ Registry response shape:
     "name": "vendor/pack",
     "version": "1.0.0",
     "description": "Short description",
-    "download_url": "https://example.com/packs/vendor-pack-1.0.0.zip"
+    "download_url": "https://example.com/packs/vendor-pack-1.0.0.zip",
+    "checksum": "sha256-hex",
+    "signature": null,
+    "verified": true
   }
 ]
 ```
@@ -123,8 +128,10 @@ Rules:
 - duplicate `name` + `version` rows fail validation
 - `download_url` must use HTTPS
 - `foundry pack install vendor/pack` resolves the highest semantic version deterministically
+- `foundry pack install vendor/pack@1.2.0` resolves that exact version or fails structurally
+- registry checksums must match the downloaded package manifest checksum before local install proceeds
 
-Downloaded archives must be `.zip` files with `foundry.json` at the archive root. Extraction must reject directory traversal and still delegates into the same local install pipeline after validation.
+Downloaded archives must be `.zip` files with `foundry.json` and `src/` at the archive root. Extraction must reject directory traversal and still delegates into the same local install pipeline after validation.
 
 ## Compatibility Model
 

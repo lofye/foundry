@@ -5,5 +5,7 @@
   "entry": "Acme\\Zeta\\AcmeZetaPackServiceProvider",
   "capabilities": [
     "zeta.docs"
-  ]
+  ],
+  "checksum": "fcccda1aca4a1e0354ef218dccf43b77a463474367b86397ac33aec7e27ef968",
+  "signature": null
 }

@@ -3,5 +3,7 @@
   "version": "1.0.0",
   "description": "Fixture pack that tries to add a duplicate graph node id.",
   "entry": "Vendor\\BlogDuplicate\\FoundryBlogDuplicatePackServiceProvider",
-  "capabilities": []
+  "capabilities": [],
+  "checksum": "6b3536d97fe57ef5956019848d2f5fc50e4644a39fe6953f0b1f7a4a760a9687",
+  "signature": null
 }

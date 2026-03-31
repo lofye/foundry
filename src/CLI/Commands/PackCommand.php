@@ -49,7 +49,7 @@ final class PackCommand extends Command
                 json: $context->expectsJson(),
             ),
             'info' => $this->result(
-                payload: ['pack' => $manager->info((string) ($args[2] ?? ''))],
+                payload: ['pack' => $manager->info((string) ($args[2] ?? ''), $context)],
                 message: fn(array $payload): string => $this->renderInfo((array) ($payload['pack'] ?? [])),
                 json: $context->expectsJson(),
             ),
@@ -90,8 +90,10 @@ final class PackCommand extends Command
 
         $source = is_array($pack['source'] ?? null) ? $pack['source'] : [];
         if (($source['type'] ?? null) === 'registry') {
-            $lines[] = 'Source: hosted registry';
+            $lines[] = 'Source: remote';
             $lines[] = 'Download: ' . (string) ($source['download_url'] ?? '');
+        } else {
+            $lines[] = 'Source: local';
         }
 
         return implode(PHP_EOL, $lines);
@@ -106,6 +108,7 @@ final class PackCommand extends Command
             'Pack deactivated.',
             'Name: ' . (string) ($pack['pack'] ?? ''),
             'Installed versions: ' . implode(', ', array_values(array_map('strval', (array) ($pack['installed_versions'] ?? [])))),
+            'Source: ' . (string) ($pack['source_kind'] ?? 'local'),
             'Active: no',
         ]);
     }
@@ -128,7 +131,7 @@ final class PackCommand extends Command
             $versions = implode(', ', array_values(array_map('strval', (array) ($pack['installed_versions'] ?? []))));
             $activeVersion = $pack['active_version'] ?? null;
             $status = $activeVersion !== null ? 'active ' . $activeVersion : 'inactive';
-            $lines[] = '- ' . (string) ($pack['name'] ?? '') . ' [' . $status . '] installed: ' . $versions;
+            $lines[] = '- ' . (string) ($pack['name'] ?? '') . ' [' . $status . '] source: ' . (string) ($pack['source_kind'] ?? 'local') . ' installed: ' . $versions;
         }
 
         return implode(PHP_EOL, $lines);
@@ -141,16 +144,27 @@ final class PackCommand extends Command
     {
         $manifest = is_array($pack['manifest'] ?? null) ? $pack['manifest'] : [];
 
-        return implode(PHP_EOL, [
+        $lines = [
             'Pack: ' . (string) ($pack['name'] ?? ''),
             'Version: ' . (string) ($pack['version'] ?? ''),
             'Active: ' . (($pack['active'] ?? false) ? 'yes' : 'no'),
+            'Source: ' . (string) ($pack['source_kind'] ?? 'local'),
             'Install path: ' . (string) ($pack['install_path'] ?? ''),
             'Description: ' . (string) ($manifest['description'] ?? ''),
             'Entry: ' . (string) ($manifest['entry'] ?? ''),
             'Capabilities: ' . implode(', ', array_values(array_map('strval', (array) ($pack['capabilities'] ?? [])))),
+            'Checksum: ' . (string) ($manifest['checksum'] ?? ''),
+            'Signature: ' . (string) (($manifest['signature'] ?? null) ?? 'none'),
             'Installed versions: ' . implode(', ', array_values(array_map('strval', (array) ($pack['installed_versions'] ?? [])))),
-        ]);
+        ];
+
+        $explain = is_array($pack['explain'] ?? null) ? $pack['explain'] : [];
+        $summary = is_array($explain['summary'] ?? null) ? $explain['summary'] : [];
+        if ($summary !== []) {
+            $lines[] = 'Explain: ' . (string) ($summary['headline'] ?? $summary['description'] ?? 'Available');
+        }
+
+        return implode(PHP_EOL, $lines);
     }
 
     /**

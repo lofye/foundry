@@ -32,6 +32,8 @@ final class PackArchiveExtractorTest extends TestCase
                 'description' => 'Blog workflow tools',
                 'entry' => 'Vendor\\Blog\\PackServiceProvider',
                 'capabilities' => ['blog.notes'],
+                'checksum' => str_repeat('a', 64),
+                'signature' => null,
             ], JSON_THROW_ON_ERROR),
             'src/PackServiceProvider.php' => "<?php\n",
         ]);
@@ -52,6 +54,8 @@ final class PackArchiveExtractorTest extends TestCase
                 'description' => 'Blog workflow tools',
                 'entry' => 'Vendor\\Blog\\PackServiceProvider',
                 'capabilities' => ['blog.notes'],
+                'checksum' => str_repeat('a', 64),
+                'signature' => null,
             ], JSON_THROW_ON_ERROR),
         ]);
 
@@ -74,6 +78,8 @@ final class PackArchiveExtractorTest extends TestCase
                 'description' => 'Blog workflow tools',
                 'entry' => 'Vendor\\Blog\\PackServiceProvider',
                 'capabilities' => ['blog.notes'],
+                'checksum' => str_repeat('a', 64),
+                'signature' => null,
             ], JSON_THROW_ON_ERROR),
             '../escape.txt' => 'bad',
         ]);
@@ -82,6 +88,30 @@ final class PackArchiveExtractorTest extends TestCase
 
         try {
             (new PackArchiveExtractor())->extract($archive, $this->project->root . '/unsafe-archive');
+        } catch (FoundryError $error) {
+            $this->assertSame('PACK_ARCHIVE_INVALID', $error->errorCode);
+            throw $error;
+        }
+    }
+
+    public function test_rejects_archives_without_root_src_directory(): void
+    {
+        $archive = $this->createArchive([
+            'foundry.json' => json_encode([
+                'name' => 'foundry/blog',
+                'version' => '1.0.0',
+                'description' => 'Blog workflow tools',
+                'entry' => 'Vendor\\Blog\\PackServiceProvider',
+                'capabilities' => ['blog.notes'],
+                'checksum' => str_repeat('a', 64),
+                'signature' => null,
+            ], JSON_THROW_ON_ERROR),
+        ]);
+
+        $this->expectException(FoundryError::class);
+
+        try {
+            (new PackArchiveExtractor())->extract($archive, $this->project->root . '/missing-src');
         } catch (FoundryError $error) {
             $this->assertSame('PACK_ARCHIVE_INVALID', $error->errorCode);
             throw $error;

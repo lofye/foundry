@@ -42,6 +42,7 @@ final class PackArchiveExtractor
         }
 
         $foundManifest = false;
+        $foundSourceDirectory = false;
 
         try {
             for ($index = 0; $index < $zip->numFiles; $index++) {
@@ -53,6 +54,10 @@ final class PackArchiveExtractor
                 $normalized = $this->normalizeEntryName($archivePath, $rawName);
                 if ($normalized === 'foundry.json') {
                     $foundManifest = true;
+                }
+
+                if ($normalized === 'src' || str_starts_with($normalized, 'src/')) {
+                    $foundSourceDirectory = true;
                 }
 
                 if (str_ends_with($rawName, '/')) {
@@ -92,10 +97,15 @@ final class PackArchiveExtractor
             $zip->close();
         }
 
-        if (!$foundManifest || !is_file($targetDirectory . '/foundry.json')) {
+        if (
+            !$foundManifest
+            || !is_file($targetDirectory . '/foundry.json')
+            || !$foundSourceDirectory
+            || !is_dir($targetDirectory . '/src')
+        ) {
             throw $this->archiveError(
                 $archivePath,
-                'Pack archive must contain foundry.json at the archive root.',
+                'Pack archive must contain foundry.json and src/ at the archive root.',
             );
         }
     }

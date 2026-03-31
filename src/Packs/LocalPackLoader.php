@@ -116,6 +116,34 @@ final class LocalPackLoader
                 continue;
             }
 
+            try {
+                $checksum = PackChecksum::forDirectory($installPath);
+            } catch (FoundryError $error) {
+                $diagnostics[] = $this->diagnostic(
+                    code: $error->errorCode,
+                    message: $error->getMessage(),
+                    sourcePath: $this->relativePath($manifestPath),
+                    pack: $name,
+                    details: $error->details + ['version' => $version],
+                );
+                continue;
+            }
+
+            if ($checksum !== $manifest->checksum) {
+                $diagnostics[] = $this->diagnostic(
+                    code: 'PACK_CHECKSUM_MISMATCH',
+                    message: 'Installed pack checksum does not match its manifest.',
+                    sourcePath: $this->relativePath($manifestPath),
+                    pack: $name,
+                    details: [
+                        'version' => $version,
+                        'expected_checksum' => $manifest->checksum,
+                        'actual_checksum' => $checksum,
+                    ],
+                );
+                continue;
+            }
+
             $source = is_array(($row['sources'][$version] ?? null)) ? $row['sources'][$version] : ['type' => 'local'];
 
             try {

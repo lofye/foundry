@@ -369,11 +369,11 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('license activate', 'license activate [--key=YOUR_KEY]', 'experimental', 'Validate and store a local Foundry license key. Optional remote validation runs only when explicitly configured.'),
             $this->cliCommandEntry('license deactivate', 'license deactivate', 'experimental', 'Remove the locally stored Foundry license file. Environment-provided keys remain active until the environment is cleared.'),
             $this->cliCommandEntry('features', 'features', 'experimental', 'List capability and service descriptors published by the monetization layer.'),
-            $this->cliCommandEntry('pack install', 'pack install <path-or-name>', 'experimental', 'Install a Foundry pack from disk or the hosted public registry and activate it deterministically.'),
+            $this->cliCommandEntry('pack install', 'pack install <path-or-name>', 'experimental', 'Install a Foundry pack from disk or the hosted public registry, optionally pinning an exact hosted version with vendor/pack@1.2.0.'),
             $this->cliCommandEntry('pack search', 'pack search <query>', 'experimental', 'Search the hosted public pack registry by name and description.'),
             $this->cliCommandEntry('pack remove', 'pack remove <vendor/pack>', 'experimental', 'Deactivate an installed Foundry pack without deleting its files.'),
-            $this->cliCommandEntry('pack list', 'pack list', 'experimental', 'List locally installed Foundry packs and active versions.'),
-            $this->cliCommandEntry('pack info', 'pack info <vendor/pack>', 'experimental', 'Inspect local manifest, install path, capabilities, and activation state for one pack.'),
+            $this->cliCommandEntry('pack list', 'pack list', 'experimental', 'List locally installed Foundry packs, active versions, and whether each pack came from local or remote install sources.'),
+            $this->cliCommandEntry('pack info', 'pack info <vendor/pack>', 'experimental', 'Inspect local manifest metadata, checksum/signature, install source, activation state, and explain summary for one pack.'),
             $this->cliCommandEntry('explain', 'explain <target> [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow]', 'experimental', 'Explain a framework, application, or installed pack subject from the compiled graph, projections, diagnostics, docs metadata, and extension registry.'),
             $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.'),
             $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.'),
@@ -534,7 +534,7 @@ final class ApiSurfaceRegistry
             $this->surfaceEntry('configuration_format', 'foundry.extensions.php', 'extension_api', 'stable', 'Root-level extension registration file for framework and app packs.'),
             $this->surfaceEntry('configuration_format', 'config/foundry/extensions.php', 'extension_api', 'stable', 'App-local extension registration file layered after the project root registration file.'),
             $this->surfaceEntry('configuration_format', '.foundry/packs/installed.json', 'extension_api', 'stable', 'Deterministic local pack activation registry used to load active packs offline.'),
-            $this->surfaceEntry('configuration_format', '.foundry/packs/*/*/*/foundry.json', 'extension_api', 'stable', 'Installed pack manifest contract used for deterministic offline pack loading.'),
+            $this->surfaceEntry('configuration_format', '.foundry/packs/*/*/*/foundry.json', 'extension_api', 'stable', 'Installed pack manifest contract used for deterministic offline pack loading, including checksum and signature metadata.'),
             $this->surfaceEntry('configuration_format', 'config/*.php', 'experimental_api', 'experimental', 'Application config files remain experimental until schema validation is finalized.'),
             $this->surfaceEntry('configuration_format', 'definitions/*.api-resource.yaml', 'experimental_api', 'experimental', 'Definition files used by API resource generators remain experimental.'),
             $this->surfaceEntry('configuration_format', 'definitions/*.workflow.yaml', 'experimental_api', 'experimental', 'Definition files used by workflow generators remain experimental.'),
@@ -621,7 +621,7 @@ final class ApiSurfaceRegistry
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/quality/*.json', 'internal_api', 'internal', 'Persisted quality-tool and doctor-quality artifacts.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/observability/*.json', 'internal_api', 'internal', 'Persisted trace, profile, and comparison artifacts.'),
             $this->surfaceEntry('generated_metadata', 'app/.foundry/build/history/*.json', 'internal_api', 'internal', 'Persisted build, quality, and observability history records.'),
-            $this->surfaceEntry('generated_metadata', '.foundry/cache/registry.json', 'internal_api', 'internal', 'Cached hosted pack registry metadata.'),
+            $this->surfaceEntry('generated_metadata', '.foundry/cache/registry.json', 'internal_api', 'internal', 'Cached hosted pack registry metadata fetched from the optional public /packs endpoint.'),
         ];
     }
 

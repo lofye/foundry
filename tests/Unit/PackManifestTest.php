@@ -18,12 +18,16 @@ final class PackManifestTest extends TestCase
             'description' => 'Blog tools',
             'entry' => 'Vendor\\Blog\\PackServiceProvider',
             'capabilities' => ['blog.notes', 'blog.notes'],
+            'checksum' => str_repeat('a', 64),
+            'signature' => null,
         ]);
 
         $this->assertSame('foundry/blog', $manifest->name);
         $this->assertSame('1.0.0', $manifest->version);
         $this->assertSame('Vendor\\Blog\\PackServiceProvider', $manifest->entry);
         $this->assertSame(['blog.notes'], $manifest->capabilities);
+        $this->assertSame(str_repeat('a', 64), $manifest->checksum);
+        $this->assertNull($manifest->signature);
     }
 
     public function test_manifest_validation_reports_structured_errors(): void
@@ -35,6 +39,8 @@ final class PackManifestTest extends TestCase
                 'description' => '',
                 'entry' => 'not a class',
                 'capabilities' => ['ok', ''],
+                'checksum' => 'not-a-checksum',
+                'signature' => '',
             ], '/tmp/foundry.json');
             self::fail('Expected invalid manifest to throw.');
         } catch (FoundryError $error) {
@@ -44,6 +50,8 @@ final class PackManifestTest extends TestCase
             $this->assertArrayHasKey('version', $error->details['errors']);
             $this->assertArrayHasKey('description', $error->details['errors']);
             $this->assertArrayHasKey('entry', $error->details['errors']);
+            $this->assertArrayHasKey('checksum', $error->details['errors']);
+            $this->assertArrayHasKey('signature', $error->details['errors']);
         }
     }
 }

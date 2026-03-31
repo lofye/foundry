@@ -37,6 +37,7 @@ final class CLIPackCommandsTest extends TestCase
         $install = $this->runCommand($app, ['foundry', 'pack', 'install', $this->fixturePath('foundry-blog'), '--json']);
         $this->assertSame(0, $install['status']);
         $this->assertSame('foundry/blog', $install['payload']['pack']['pack']);
+        $this->assertSame($this->fixtureManifest('foundry-blog')['checksum'], $install['payload']['pack']['checksum']);
         $this->assertFileExists($this->project->root . '/.foundry/packs/foundry/blog/1.0.0/foundry.json');
 
         $installedRegistry = json_decode((string) file_get_contents($this->project->root . '/.foundry/packs/installed.json'), true, 512, JSON_THROW_ON_ERROR);
@@ -46,12 +47,15 @@ final class CLIPackCommandsTest extends TestCase
         $this->assertSame(0, $list['status']);
         $this->assertSame('foundry/blog', $list['payload']['packs'][0]['name']);
         $this->assertSame('1.0.0', $list['payload']['packs'][0]['active_version']);
+        $this->assertSame('local', $list['payload']['packs'][0]['source_kind']);
 
         $info = $this->runCommand($app, ['foundry', 'pack', 'info', 'foundry/blog', '--json']);
         $this->assertSame(0, $info['status']);
         $this->assertTrue($info['payload']['pack']['active']);
         $this->assertSame('.foundry/packs/foundry/blog/1.0.0', $info['payload']['pack']['install_path']);
         $this->assertSame(['blog.notes'], $info['payload']['pack']['capabilities']);
+        $this->assertSame('local', $info['payload']['pack']['source_kind']);
+        $this->assertSame('foundry/blog', $info['payload']['pack']['explain']['subject']['extension']);
 
         $inspectPacks = $this->runCommand($app, ['foundry', 'inspect', 'packs', '--json']);
         $this->assertSame(0, $inspectPacks['status']);
@@ -107,6 +111,8 @@ final class CLIPackCommandsTest extends TestCase
             'description' => '',
             'entry' => 'bad entry',
             'capabilities' => [],
+            'checksum' => 'bad',
+            'signature' => '',
         ], JSON_THROW_ON_ERROR));
 
         $app = new Application();
@@ -114,6 +120,21 @@ final class CLIPackCommandsTest extends TestCase
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('PACK_MANIFEST_INVALID', $result['payload']['error']['code']);
+    }
+
+    public function test_pack_install_rejects_checksum_mismatches(): void
+    {
+        $source = $this->project->root . '/checksum-mismatch-pack';
+        $this->copyDirectory($this->fixturePath('foundry-blog'), $source);
+        $manifest = json_decode((string) file_get_contents($source . '/foundry.json'), true, 512, JSON_THROW_ON_ERROR);
+        $manifest['checksum'] = str_repeat('f', 64);
+        file_put_contents($source . '/foundry.json', json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+
+        $app = new Application();
+        $result = $this->runCommand($app, ['foundry', 'pack', 'install', $source, '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('PACK_CHECKSUM_MISMATCH', $result['payload']['error']['code']);
     }
 
     public function test_pack_install_fails_explicitly_on_declared_command_conflicts(): void
@@ -164,12 +185,18 @@ final class CLIPackCommandsTest extends TestCase
                     'version' => '1.1.0',
                     'description' => 'Blog workflow tools',
                     'download_url' => 'https://downloads.example/foundry-blog-1.1.0.zip',
+                    'checksum' => str_repeat('1', 64),
+                    'signature' => null,
+                    'verified' => true,
                 ],
                 [
                     'name' => 'foundry/blog-tools',
                     'version' => '1.0.0',
                     'description' => 'More blog tools',
                     'download_url' => 'https://downloads.example/foundry-blog-tools-1.0.0.zip',
+                    'checksum' => str_repeat('2', 64),
+                    'signature' => null,
+                    'verified' => false,
                 ],
             ],
         );
@@ -186,12 +213,16 @@ final class CLIPackCommandsTest extends TestCase
     public function test_pack_install_can_download_and_install_from_hosted_registry(): void
     {
         $downloadUrl = 'https://downloads.example/foundry-blog-1.0.0.zip';
+        $manifest = $this->fixtureManifest('foundry-blog');
         $app = $this->hostedPackApplication(
             [[
                 'name' => 'foundry/blog',
                 'version' => '1.0.0',
                 'description' => 'Blog workflow tools',
                 'download_url' => $downloadUrl,
+                'checksum' => $manifest['checksum'],
+                'signature' => $manifest['signature'],
+                'verified' => true,
             ]],
             [$downloadUrl => $this->fixtureArchive('foundry-blog')],
         );
@@ -202,10 +233,55 @@ final class CLIPackCommandsTest extends TestCase
         $this->assertSame('foundry/blog', $result['payload']['pack']['pack']);
         $this->assertSame('registry', $result['payload']['pack']['source']['type']);
         $this->assertSame($downloadUrl, $result['payload']['pack']['source']['download_url']);
+        $this->assertTrue($result['payload']['pack']['source']['verified']);
         $this->assertFileExists($this->project->root . '/.foundry/packs/foundry/blog/1.0.0/foundry.json');
 
         $info = $this->runCommand($app, ['foundry', 'pack', 'info', 'foundry/blog', '--json']);
         $this->assertSame('registry', $info['payload']['pack']['source']['type']);
+        $this->assertSame('remote', $info['payload']['pack']['source_kind']);
+    }
+
+    public function test_pack_install_can_resolve_an_exact_hosted_version(): void
+    {
+        $downloadV1 = 'https://downloads.example/foundry-blog-1.0.0.zip';
+        $downloadV11 = 'https://downloads.example/foundry-blog-1.1.0.zip';
+        $manifestV1 = $this->fixtureManifest('foundry-blog');
+        $manifestV11 = $this->manifestForVersion('foundry-blog', '1.1.0');
+
+        $app = $this->hostedPackApplication(
+            [
+                [
+                    'name' => 'foundry/blog',
+                    'version' => '1.1.0',
+                    'description' => 'Blog workflow tools',
+                    'download_url' => $downloadV11,
+                    'checksum' => $manifestV11['checksum'],
+                    'signature' => $manifestV11['signature'],
+                    'verified' => true,
+                ],
+                [
+                    'name' => 'foundry/blog',
+                    'version' => '1.0.0',
+                    'description' => 'Blog workflow tools',
+                    'download_url' => $downloadV1,
+                    'checksum' => $manifestV1['checksum'],
+                    'signature' => $manifestV1['signature'],
+                    'verified' => true,
+                ],
+            ],
+            [
+                $downloadV1 => $this->fixtureArchive('foundry-blog'),
+                $downloadV11 => $this->fixtureArchive('foundry-blog', [
+                    'version' => '1.1.0',
+                    'description' => 'Blog workflow tools',
+                ]),
+            ],
+        );
+
+        $result = $this->runCommand($app, ['foundry', 'pack', 'install', 'foundry/blog@1.0.0', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('1.0.0', $result['payload']['pack']['version']);
     }
 
     public function test_pack_install_prefers_existing_local_directory_over_hosted_pack_name(): void
@@ -214,7 +290,7 @@ final class CLIPackCommandsTest extends TestCase
         $this->copyDirectory($this->fixturePath('foundry-blog'), $localSource);
         $manifest = json_decode((string) file_get_contents($localSource . '/foundry.json'), true, 512, JSON_THROW_ON_ERROR);
         $manifest['name'] = 'packages/blog';
-        file_put_contents($localSource . '/foundry.json', json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+        $this->writeManifestWithChecksum($localSource, $manifest);
 
         $calls = 0;
         $app = $this->hostedPackApplication(
@@ -269,12 +345,12 @@ final class CLIPackCommandsTest extends TestCase
     }
 
     /**
-     * @param array<int,array<string,string>> $registryEntries
+     * @param array<int,array<string,mixed>> $registryEntries
      * @param array<string,string> $downloads
      */
     private function hostedPackApplication(array $registryEntries, array $downloads = [], ?callable $fetcher = null): Application
     {
-        $registryUrl = 'https://registry.example/registry.json';
+        $registryUrl = 'https://registry.example/packs';
         $responses = $downloads + [
             $registryUrl => json_encode($registryEntries, JSON_THROW_ON_ERROR),
         ];
@@ -294,7 +370,7 @@ final class CLIPackCommandsTest extends TestCase
         return new Application([new PackCommand($manager)]);
     }
 
-    private function fixtureArchive(string $fixtureName): string
+    private function fixtureArchive(string $fixtureName, array $manifestOverrides = []): string
     {
         $archive = tempnam(sys_get_temp_dir(), 'foundry-pack-cli-archive-');
         assert(is_string($archive));
@@ -314,6 +390,15 @@ final class CLIPackCommandsTest extends TestCase
             }
 
             $relative = substr($fileInfo->getPathname(), strlen(rtrim($source, '/') . '/'));
+            if ($relative === 'foundry.json' && $manifestOverrides !== []) {
+                $manifest = array_replace($this->fixtureManifest($fixtureName), $manifestOverrides);
+                unset($manifest['checksum'], $manifest['signature']);
+                $manifest['checksum'] = $this->checksumForManifestOverride($fixtureName, $manifest);
+                $manifest['signature'] = null;
+                $zip->addFromString($relative, json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+                continue;
+            }
+
             $zip->addFile($fileInfo->getPathname(), $relative);
         }
 
@@ -322,6 +407,84 @@ final class CLIPackCommandsTest extends TestCase
         @unlink($archive);
 
         return is_string($contents) ? $contents : '';
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function fixtureManifest(string $fixtureName): array
+    {
+        return json_decode((string) file_get_contents($this->fixturePath($fixtureName) . '/foundry.json'), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function manifestForVersion(string $fixtureName, string $version): array
+    {
+        $manifest = $this->fixtureManifest($fixtureName);
+        $manifest['version'] = $version;
+        unset($manifest['checksum'], $manifest['signature']);
+        $manifest['checksum'] = $this->checksumForManifestOverride($fixtureName, $manifest);
+        $manifest['signature'] = null;
+
+        return $manifest;
+    }
+
+    /**
+     * @param array<string,mixed> $manifest
+     */
+    private function checksumForManifestOverride(string $fixtureName, array $manifest): string
+    {
+        $temporary = $this->project->root . '/checksum-fixture-' . md5($fixtureName . json_encode($manifest, JSON_THROW_ON_ERROR));
+        $this->copyDirectory($this->fixturePath($fixtureName), $temporary);
+        file_put_contents($temporary . '/foundry.json', json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+
+        try {
+            return \Foundry\Packs\PackChecksum::forDirectory($temporary);
+        } finally {
+            $this->deleteDirectory($temporary);
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $manifest
+     */
+    private function writeManifestWithChecksum(string $directory, array $manifest): void
+    {
+        unset($manifest['checksum'], $manifest['signature']);
+        file_put_contents($directory . '/foundry.json', json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+
+        $manifest['checksum'] = \Foundry\Packs\PackChecksum::forDirectory($directory);
+        $manifest['signature'] = null;
+        file_put_contents($directory . '/foundry.json', json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+    }
+
+    private function deleteDirectory(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($iterator as $fileInfo) {
+            if (!$fileInfo instanceof \SplFileInfo) {
+                continue;
+            }
+
+            if ($fileInfo->isDir()) {
+                @rmdir($fileInfo->getPathname());
+                continue;
+            }
+
+            @unlink($fileInfo->getPathname());
+        }
+
+        @rmdir($path);
     }
 
     private function copyDirectory(string $source, string $target): void

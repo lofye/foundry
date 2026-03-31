@@ -69,19 +69,21 @@ Core commands do not depend on license state.
 
 Foundry supports deterministic local packs and an optional read-only hosted registry.
 
-- pack sources must include a `foundry.json` manifest with `name`, `version`, `description`, `entry`, and `capabilities`
+- pack sources must include a `foundry.json` manifest with `name`, `version`, `description`, `entry`, `capabilities`, `checksum`, and `signature`
 - installed files are copied into `.foundry/packs/{vendor}/{pack}/{version}/` and remain immutable once installed
 - active versions are tracked in `.foundry/packs/installed.json`
 - graph boot loads only active packs, with deterministic ordering by pack name then active version
 - activation fails explicitly when a pack introduces command collisions, schema collisions, or duplicate graph node ids
-- hosted discovery reads a public JSON index from `FOUNDRY_PACK_REGISTRY_URL` or `https://foundryframework.org/registry.json`
-- hosted downloads are metadata-only and must provide HTTPS `.zip` archives; installation still reuses the same local pack pipeline after extraction
+- hosted discovery reads a public JSON index from `FOUNDRY_PACK_REGISTRY_URL` or `https://foundryframework.org/packs`
+- hosted rows include `download_url`, `checksum`, `signature`, and `verified`
+- hosted downloads are metadata-only and must provide HTTPS `.zip` archives with `foundry.json` and `src/` at the root; installation still reuses the same local pack pipeline after extraction
 
 Manage packs with:
 
 ```bash
 foundry pack search blog --json
 foundry pack install foundry/blog --json
+foundry pack install foundry/blog@1.2.0 --json
 foundry pack install ../packs/acme-blog --json
 foundry pack list --json
 foundry pack info acme/blog --json
@@ -230,7 +232,7 @@ Rules:
 - `app/features/*` is source-of-truth behavior.
 - `app/.foundry/build/*` is canonical compiled output.
 - `.foundry/packs/installed.json` is explicit pack activation state when local packs are in use.
-- `.foundry/cache/registry.json` is optional cached hosted pack registry metadata.
+- `.foundry/cache/registry.json` is optional cached hosted pack registry metadata fetched from the public `/packs` endpoint.
 - `app/generated/*` remains a compatibility mirror of runtime projections.
 - hot-path runtime reads generated projections (no folder scanning in request path).
 

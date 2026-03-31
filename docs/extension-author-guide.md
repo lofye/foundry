@@ -81,14 +81,17 @@ A pack provider may either:
 
 ## Hosted Registry Publishing Contract
 
-Hosted discovery is intentionally minimal and read-only. Foundry expects a public `registry.json` endpoint whose rows look like:
+Hosted discovery is intentionally minimal and read-only. Foundry expects a public `/packs` endpoint whose rows look like:
 
 ```json
 {
   "name": "vendor/pack",
   "version": "1.0.0",
   "description": "Short description",
-  "download_url": "https://example.com/packs/vendor-pack-1.0.0.zip"
+  "download_url": "https://example.com/packs/vendor-pack-1.0.0.zip",
+  "checksum": "sha256-hex",
+  "signature": null,
+  "verified": true
 }
 ```
 
@@ -97,7 +100,8 @@ Publishing rules:
 - `download_url` must use HTTPS
 - each row represents one version
 - duplicate `name` + `version` pairs are invalid
-- archive downloads must be `.zip` files with `foundry.json` at the archive root
+- archive downloads must be `.zip` files with `foundry.json` and `src/` at the archive root
+- the registry checksum must match the package manifest checksum
 - hosted install still runs the same local manifest validation and pack activation flow after extraction
 
 ## Extension Descriptor Metadata

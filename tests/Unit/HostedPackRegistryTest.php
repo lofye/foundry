@@ -32,18 +32,27 @@ final class HostedPackRegistryTest extends TestCase
                 'version' => '1.1.0',
                 'description' => 'Blog workflow tools',
                 'download_url' => 'https://downloads.example/foundry-blog-1.1.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
             ],
             [
                 'name' => 'acme/blog-widgets',
                 'version' => '0.9.0',
                 'description' => 'Widgets for blog dashboards',
                 'download_url' => 'https://downloads.example/acme-blog-widgets-0.9.0.zip',
+                'checksum' => str_repeat('2', 64),
+                'signature' => null,
+                'verified' => false,
             ],
             [
                 'name' => 'foundry/blog',
                 'version' => '1.0.0',
                 'description' => 'Blog workflow tools',
                 'download_url' => 'https://downloads.example/foundry-blog-1.0.0.zip',
+                'checksum' => str_repeat('3', 64),
+                'signature' => null,
+                'verified' => true,
             ],
         ]);
 
@@ -59,7 +68,37 @@ final class HostedPackRegistryTest extends TestCase
 
         $latest = $registry->resolveLatest('foundry/blog');
         $this->assertSame('1.1.0', $latest['version']);
+        $this->assertTrue($latest['verified']);
         $this->assertFileExists($this->project->root . '/.foundry/cache/registry.json');
+    }
+
+    public function test_registry_can_resolve_an_exact_version(): void
+    {
+        $registry = $this->registry([
+            [
+                'name' => 'foundry/blog',
+                'version' => '1.1.0',
+                'description' => 'Blog workflow tools',
+                'download_url' => 'https://downloads.example/foundry-blog-1.1.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
+            ],
+            [
+                'name' => 'foundry/blog',
+                'version' => '1.0.0',
+                'description' => 'Blog workflow tools',
+                'download_url' => 'https://downloads.example/foundry-blog-1.0.0.zip',
+                'checksum' => str_repeat('2', 64),
+                'signature' => null,
+                'verified' => false,
+            ],
+        ]);
+
+        $resolved = $registry->resolve('foundry/blog', '1.0.0');
+
+        $this->assertSame('1.0.0', $resolved['version']);
+        $this->assertFalse($resolved['verified']);
     }
 
     public function test_registry_rejects_invalid_json(): void
@@ -69,7 +108,7 @@ final class HostedPackRegistryTest extends TestCase
         $this->expectExceptionObject(new FoundryError(
             'PACK_REGISTRY_INVALID_JSON',
             'parsing',
-            ['registry_url' => 'https://registry.example/registry.json'],
+            ['registry_url' => 'https://registry.example/packs'],
             'Hosted pack registry must return valid JSON.',
         ));
 
@@ -84,12 +123,18 @@ final class HostedPackRegistryTest extends TestCase
                 'version' => '1.0.0',
                 'description' => 'Blog workflow tools',
                 'download_url' => 'https://downloads.example/foundry-blog-1.0.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
             ],
             [
                 'name' => 'foundry/blog',
                 'version' => '1.0.0',
                 'description' => 'Blog workflow tools',
                 'download_url' => 'https://downloads.example/foundry-blog-1.0.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
             ],
         ]);
 
@@ -97,7 +142,7 @@ final class HostedPackRegistryTest extends TestCase
             'PACK_REGISTRY_DUPLICATE_ENTRY',
             'validation',
             [
-                'registry_url' => 'https://registry.example/registry.json',
+                'registry_url' => 'https://registry.example/packs',
                 'pack' => 'foundry/blog',
                 'version' => '1.0.0',
             ],
@@ -115,6 +160,9 @@ final class HostedPackRegistryTest extends TestCase
                 'version' => '1.0.0',
                 'description' => 'Blog workflow tools',
                 'download_url' => 'http://downloads.example/foundry-blog-1.0.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
             ],
         ]);
 
@@ -137,6 +185,9 @@ final class HostedPackRegistryTest extends TestCase
                 'version' => '1.0.0',
                 'description' => 'Blog workflow tools',
                 'download_url' => 'https://downloads.example/foundry-blog-1.0.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
             ],
         ]);
 
@@ -145,7 +196,7 @@ final class HostedPackRegistryTest extends TestCase
             'not_found',
             [
                 'pack' => 'foundry/missing-pack',
-                'registry_url' => 'https://registry.example/registry.json',
+                'registry_url' => 'https://registry.example/packs',
             ],
             'Pack was not found in the hosted registry.',
         ));
@@ -182,7 +233,7 @@ final class HostedPackRegistryTest extends TestCase
         return new HostedPackRegistry(
             Paths::fromCwd($this->project->root),
             $fetcher,
-            'https://registry.example/registry.json',
+            'https://registry.example/packs',
         );
     }
 }
