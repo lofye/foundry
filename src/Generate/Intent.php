@@ -17,7 +17,10 @@ final readonly class Intent
         public bool $skipVerify = false,
         public bool $explainAfter = false,
         public bool $allowRisky = false,
+        public bool $allowDirty = false,
         public bool $allowPackInstall = false,
+        public bool $gitCommit = false,
+        public ?string $gitCommitMessage = null,
         public array $packHints = [],
     ) {}
 
@@ -54,7 +57,10 @@ final readonly class Intent
             'skip_verify' => $this->skipVerify,
             'explain' => $this->explainAfter,
             'allow_risky' => $this->allowRisky,
+            'allow_dirty' => $this->allowDirty,
             'allow_pack_install' => $this->allowPackInstall,
+            'git_commit' => $this->gitCommit,
+            'git_commit_message' => $this->gitCommitMessage,
             'packs' => $this->packHints,
         ];
     }

@@ -116,6 +116,29 @@ final class BuildArtifactStore
     }
 
     /**
+     * @param array<string,mixed> $payload
+     * @return array<string,mixed>
+     */
+    public function persistGenerateRecord(array $payload): array
+    {
+        $intent = is_array($payload['intent'] ?? null) ? $payload['intent'] : [];
+        $plan = is_array($payload['plan'] ?? null) ? $payload['plan'] : [];
+        $target = trim((string) ($payload['target'] ?? ''));
+
+        return $this->persistRecord(
+            kind: 'generate',
+            payload: $payload,
+            latestPath: null,
+            label: sprintf(
+                'Generate %s%s',
+                (string) ($intent['mode'] ?? 'new'),
+                $target !== '' ? ' ' . $target : '',
+            ),
+            sourceHash: isset($payload['source_hash']) ? (string) $payload['source_hash'] : (isset($plan['metadata']['source_hash']) ? (string) $plan['metadata']['source_hash'] : null),
+        );
+    }
+
+    /**
      * @return array<int,array<string,mixed>>
      */
     public function listHistory(?string $kind = null): array
@@ -361,6 +384,16 @@ final class BuildArtifactStore
             'comparison' => [
                 'regressions' => count((array) ($payload['regressions'] ?? [])),
                 'changed_execution_paths' => count((array) ($payload['changed_execution_paths'] ?? [])),
+            ],
+            'generate' => [
+                'mode' => (string) (($payload['intent']['mode'] ?? 'new')),
+                'affected_files' => count((array) ($payload['plan']['affected_files'] ?? [])),
+                'actions' => count((array) ($payload['actions_taken'] ?? [])),
+                'dry_run' => (bool) (($payload['metadata']['dry_run'] ?? false)),
+                'verification_ok' => (bool) (($payload['verification_results']['ok'] ?? false)),
+                'git_available' => (bool) (($payload['git']['available'] ?? false)),
+                'git_dirty' => (bool) (($payload['git']['before']['dirty'] ?? false)),
+                'git_committed' => (bool) (($payload['git']['commit']['created'] ?? false)),
             ],
             default => [],
         };

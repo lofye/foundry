@@ -41,10 +41,12 @@ Recommended command loop:
 
 In a scaffolded app repo, bare `foundry` runs the first-run orientation for the current project. `foundry explain --json` without a target explains the first feature or route deterministically.
 Explain, explain diff, and generate JSON payloads include deterministic confidence scores, bands, and evidence factors; prefer them when an agent is deciding whether to proceed or ask for clarification.
+When Git is available, `foundry explain <target> --git --json` adds repository context for the explained target, and `foundry generate` returns Git safety metadata for the run.
 
 ```bash
 foundry
 foundry explain --json
+foundry explain <target> --git --json
 foundry explain --diff --json
 foundry inspect graph --json
 foundry inspect pipeline --json
@@ -55,6 +57,7 @@ foundry inspect packs --json
 foundry compile graph --json
 foundry inspect impact --file=app/features/<feature>/feature.yaml --json
 foundry doctor --feature=<feature> --json
+foundry history --kind=generate --json
 foundry generate docs --format=markdown --json
 foundry generate inspect-ui --json
 foundry verify graph --json

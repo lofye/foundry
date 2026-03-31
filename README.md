@@ -51,6 +51,8 @@ New to Foundry?
 - Run `foundry` for the guided first-run walkthrough
 - Use `foundry help inspect` and `foundry help verify` to discover the safest next commands
 - After each successful `foundry generate`, use `foundry explain --diff` to inspect architectural changes before the next iteration
+- Use `foundry explain <target> --git --json` when you want repository context for the explained target
+- Use `foundry history --kind=generate --json` to inspect persisted generate runs and their Git metadata
 - Use `--json` on `explain`, `explain --diff`, and `generate` when you want confidence scores, bands, and explicit evidence factors for LLM or automation use
 - Read `docs/quick-tour.md` and `docs/example-applications.md`
 - Start with `examples/hello-world`
@@ -362,6 +364,7 @@ foundry license status --json
 foundry license deactivate --json
 foundry features --json
 foundry explain publish_post --json
+foundry explain publish_post --git --json
 foundry explain publish_post --deep
 foundry explain route:POST /posts --markdown
 foundry explain route:POST /posts --neighbors
@@ -374,6 +377,8 @@ foundry generate "add moderation notes" --mode=modify --target=publish_post --js
 foundry generate "restore missing generated artifacts" --mode=repair --target=publish_post --json
 foundry generate "create blog post notes" --mode=new --packs=foundry/blog --allow-pack-install --json
 foundry generate "add comment support" --mode=new --explain --json
+foundry generate "add comment support" --mode=new --git-commit --json
+foundry history --kind=generate --json
 ```
 
 `explain` supports typed selectors such as `feature:publish_post`, `route:POST /posts`, `command:doctor`, `event:post.created`, `workflow:editorial`, `extension:core`, and `pack:foundry/blog`.
@@ -388,6 +393,9 @@ Extensions can enrich explain output deterministically by implementing `Foundry\
 - `--mode=modify` applies controlled updates against an explain-resolved target and preserves extension boundaries.
 - `--mode=repair` restores missing generated artifacts and reruns verification before keeping the change.
 - `--packs=vendor/pack` hints pack-specific generators, and `--allow-pack-install` lets Foundry install missing packs before planning.
+- when Git is available, generate checks repository state before writes and returns Git metadata in `--json`.
+- `--allow-dirty` lets a run proceed with existing repository changes while keeping the warning explicit.
+- `--git-commit` stages only safe generate-owned files and creates an explicit commit after verification; it never auto-commits by default.
 - successful generate runs capture explain-derived pre/post snapshots, persist `.foundry/diffs/last.json`, print the next iteration commands, and emit deterministic plan/outcome confidence
 - `--explain` appends the updated explain output after a successful change instead of making you run a second command manually
 

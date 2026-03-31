@@ -92,7 +92,10 @@ final class GenerateCommand extends Command
         $skipVerify = false;
         $explainAfter = false;
         $allowRisky = false;
+        $allowDirty = false;
         $allowPackInstall = false;
+        $gitCommit = false;
+        $gitCommitMessage = null;
         $packHints = [];
         $skipNext = false;
 
@@ -126,8 +129,18 @@ final class GenerateCommand extends Command
                 continue;
             }
 
+            if ($arg === '--allow-dirty') {
+                $allowDirty = true;
+                continue;
+            }
+
             if ($arg === '--allow-pack-install') {
                 $allowPackInstall = true;
+                continue;
+            }
+
+            if ($arg === '--git-commit') {
+                $gitCommit = true;
                 continue;
             }
 
@@ -160,6 +173,17 @@ final class GenerateCommand extends Command
 
             if ($arg === '--packs') {
                 $packHints = $this->parsePackList((string) ($args[$index + 1] ?? ''));
+                $skipNext = true;
+                continue;
+            }
+
+            if (str_starts_with($arg, '--git-commit-message=')) {
+                $gitCommitMessage = trim(substr($arg, strlen('--git-commit-message=')));
+                continue;
+            }
+
+            if ($arg === '--git-commit-message') {
+                $gitCommitMessage = trim((string) ($args[$index + 1] ?? ''));
                 $skipNext = true;
                 continue;
             }
@@ -208,6 +232,15 @@ final class GenerateCommand extends Command
             );
         }
 
+        if ($dryRun && $gitCommit) {
+            throw new FoundryError(
+                'GENERATE_GIT_COMMIT_DRY_RUN_INVALID',
+                'validation',
+                [],
+                'Generate cannot use --git-commit together with --dry-run.',
+            );
+        }
+
         return new Intent(
             raw: $rawIntent,
             mode: $mode,
@@ -216,7 +249,10 @@ final class GenerateCommand extends Command
             skipVerify: $skipVerify,
             explainAfter: $explainAfter,
             allowRisky: $allowRisky,
+            allowDirty: $allowDirty,
             allowPackInstall: $allowPackInstall,
+            gitCommit: $gitCommit,
+            gitCommitMessage: $gitCommitMessage !== '' ? $gitCommitMessage : null,
             packHints: $packHints,
         );
     }
@@ -264,6 +300,21 @@ final class GenerateCommand extends Command
             $lines[] = 'Feature: ' . $feature;
         }
 
+        $git = is_array($payload['git'] ?? null) ? $payload['git'] : [];
+        if ($git !== [] && ($git['available'] ?? false) === true) {
+            $before = is_array($git['before'] ?? null) ? $git['before'] : [];
+            $after = is_array($git['after'] ?? null) ? $git['after'] : [];
+            $branch = (string) (($after['branch'] ?? $before['branch']) ?? '');
+            $head = (string) (($after['head'] ?? $before['head']) ?? '');
+            if ($branch !== '' || $head !== '') {
+                $lines[] = sprintf(
+                    'Git: %s%s',
+                    $branch !== '' ? $branch : 'detached',
+                    $head !== '' ? ' @ ' . substr($head, 0, 12) : '',
+                );
+            }
+        }
+
         $verification = is_array($payload['verification_results'] ?? null) ? $payload['verification_results'] : [];
         if (($verification['skipped'] ?? false) === true) {
             $lines[] = 'Verification: skipped';
@@ -278,6 +329,18 @@ final class GenerateCommand extends Command
             if ($warnings !== [] && in_array((string) ($outcomeConfidence['band'] ?? ''), ['medium', 'low', 'very_low'], true)) {
                 $lines[] = 'Note: ' . $warnings[0];
             }
+        }
+
+        $gitWarnings = array_values(array_filter(array_map('strval', (array) ($git['warnings'] ?? []))));
+        if ($gitWarnings !== []) {
+            $lines[] = 'Git note: ' . $gitWarnings[0];
+        }
+
+        $gitCommit = is_array($git['commit'] ?? null) ? $git['commit'] : [];
+        if (($gitCommit['created'] ?? false) === true) {
+            $lines[] = 'Git commit: ' . substr((string) ($gitCommit['commit'] ?? ''), 0, 12);
+        } elseif (($gitCommit['requested'] ?? false) === true && isset($gitCommit['warning'])) {
+            $lines[] = 'Git commit skipped: ' . (string) $gitCommit['warning'];
         }
 
         $diff = is_array($payload['architecture_diff'] ?? null) ? $payload['architecture_diff'] : null;

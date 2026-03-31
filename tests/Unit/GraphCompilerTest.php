@@ -206,6 +206,14 @@ final class GraphCompilerTest extends TestCase
             $leftGraph = Json::decodeAssoc((string) file_get_contents($this->project->root . '/app/.foundry/build/graph/app_graph.json'));
             $rightGraph = Json::decodeAssoc((string) file_get_contents($otherProject->root . '/app/.foundry/build/graph/app_graph.json'));
             unset($leftGraph['compiled_at'], $rightGraph['compiled_at']);
+            unset(
+                $leftGraph['graph_metadata']['compiled_at'],
+                $rightGraph['graph_metadata']['compiled_at'],
+                $leftGraph['graph_metadata']['build_association']['compiled_at'],
+                $rightGraph['graph_metadata']['build_association']['compiled_at'],
+                $leftGraph['graph_metadata']['run_association']['build_id'],
+                $rightGraph['graph_metadata']['run_association']['build_id'],
+            );
 
             $this->assertSame($leftGraph, $rightGraph);
             $this->assertSame(

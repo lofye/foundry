@@ -18,6 +18,7 @@ use Foundry\Explain\ExplainResponse;
 use Foundry\Explain\ExplainSupport;
 use Foundry\Explain\ExplainTarget;
 use Foundry\Explain\Snapshot\ExplainSnapshotService;
+use Foundry\Git\GitRepositoryInspector;
 use Foundry\Generation\ContextManifestGenerator;
 use Foundry\Generation\FeatureGenerator;
 use Foundry\Generation\TestGenerator;
@@ -27,6 +28,7 @@ use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
 use Foundry\Support\Yaml;
+use Foundry\Tooling\BuildArtifactStore;
 
 final class GenerateEngine
 {
@@ -58,6 +60,12 @@ final class GenerateEngine
      */
     public function run(Intent $intent): array
     {
+        $gitInspector = new GitRepositoryInspector($this->paths->root());
+        $gitBefore = $gitInspector->inspect();
+        $gitWarnings = [];
+        $gitCommit = $intent->gitCommit
+            ? ['requested' => true, 'created' => false, 'message' => $this->defaultGitCommitMessage($intent), 'files' => []]
+            : null;
         $initialExtensions = ExtensionRegistry::forPaths($this->paths);
         $requirementResolver = new PackRequirementResolver();
         $initialRequirements = $requirementResolver->resolve($intent, $initialExtensions->packRegistry());
@@ -107,6 +115,7 @@ final class GenerateEngine
 
             $extensions = ExtensionRegistry::forPaths($this->paths);
             $compiler = new GraphCompiler($this->paths, $extensions);
+            $artifactStore = new BuildArtifactStore($compiler->buildLayout());
             $compile = $compiler->compile(new CompileOptions(emit: true));
 
             if ($compile->diagnostics->hasErrors() && $intent->mode !== 'repair' && !$intent->allowRisky) {
@@ -153,6 +162,7 @@ final class GenerateEngine
             $plan = (new GenerationPlanner($generatorRegistry))->plan($context);
             (new PlanValidator())->validate($plan, $intent);
             $plan = $plan->withConfidence($this->confidenceEngine->plan($context, $plan));
+            $this->assertGitPlanSafe($gitBefore, $plan, $intent, $gitWarnings);
 
             if ($intent->dryRun) {
                 $outcomeConfidence = $this->confidenceEngine->outcome(
@@ -162,7 +172,7 @@ final class GenerateEngine
                     ['skipped' => true, 'ok' => true],
                 );
 
-                return $this->buildPayload(
+                $payload = $this->buildPayload(
                     intent: $intent,
                     plan: $plan,
                     actionsTaken: [],
@@ -171,7 +181,18 @@ final class GenerateEngine
                     errors: [],
                     context: $context,
                     packsInstalled: $packsInstalled,
+                    git: $this->gitPayload(
+                        before: $gitBefore,
+                        after: null,
+                        warnings: $gitWarnings,
+                        commit: $gitCommit,
+                    ),
                 );
+
+                $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
+                $payload['record'] = $this->historyRecordReference($record);
+
+                return $payload;
             }
 
             $fileSnapshots = $this->codeWriter->snapshot($this->absolutePaths($plan->affectedFiles));
@@ -210,6 +231,20 @@ final class GenerateEngine
                 $this->diffService->storeLast($architectureDiff);
             }
 
+            $gitAfter = $gitInspector->inspect();
+            if ($intent->gitCommit) {
+                $gitCommit = $this->commitGenerateChanges(
+                    $gitInspector,
+                    $gitBefore,
+                    $gitAfter,
+                    $intent,
+                    $plan,
+                    $packsInstalled,
+                    $gitWarnings,
+                );
+                $gitAfter = $gitInspector->inspect();
+            }
+
             $postExplain = null;
             $postExplainRendered = null;
             if ($intent->explainAfter) {
@@ -227,7 +262,7 @@ final class GenerateEngine
                 $packsInstalled,
             );
 
-            return $this->buildPayload(
+            $payload = $this->buildPayload(
                 intent: $intent,
                 plan: $plan,
                 actionsTaken: $actionsTaken,
@@ -236,6 +271,12 @@ final class GenerateEngine
                 errors: [],
                 context: $context,
                 packsInstalled: $packsInstalled,
+                git: $this->gitPayload(
+                    before: $gitBefore,
+                    after: $gitAfter,
+                    warnings: $gitWarnings,
+                    commit: $gitCommit,
+                ),
                 snapshots: [
                     'pre' => $this->relativePath($this->snapshotService->snapshotPath('pre-generate')),
                     'post' => $this->relativePath($this->snapshotService->snapshotPath('post-generate')),
@@ -245,6 +286,11 @@ final class GenerateEngine
                 postExplain: $postExplain,
                 postExplainRendered: $postExplainRendered,
             );
+
+            $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $postCompile->graph->sourceHash()));
+            $payload['record'] = $this->historyRecordReference($record);
+
+            return $payload;
         } catch (\Throwable $error) {
             $this->restoreGenerateState($packSnapshots, $fileSnapshots, $iterationSnapshots);
 
@@ -264,6 +310,7 @@ final class GenerateEngine
         array $errors,
         GenerationContextPacket $context,
         array $packsInstalled,
+        array $git = [],
         array $snapshots = [],
         ?array $architectureDiff = null,
         ?array $postExplain = null,
@@ -286,6 +333,7 @@ final class GenerateEngine
                 'target' => $context->targets[0] ?? null,
                 'context' => $context->toArray(),
             ],
+            'git' => $git,
             'snapshots' => $snapshots,
             'architecture_diff' => $architectureDiff,
             'post_explain' => $postExplain,
@@ -293,6 +341,274 @@ final class GenerateEngine
             'packs_used' => $packsUsed,
             'packs_installed' => $packsInstalled,
         ];
+    }
+
+    /**
+     * @param array<string,mixed> $before
+     * @param array<string,mixed>|null $after
+     * @param array<int,string> $warnings
+     * @param array<string,mixed>|null $commit
+     * @return array<string,mixed>
+     */
+    private function gitPayload(array $before, ?array $after, array $warnings, ?array $commit): array
+    {
+        return [
+            'available' => (bool) ($before['available'] ?? false),
+            'warnings' => array_values(array_unique(array_map('strval', $warnings))),
+            'before' => $this->publicGitState($before),
+            'after' => $after !== null ? $this->publicGitState($after) : null,
+            'commit' => $commit,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @return array<string,mixed>
+     */
+    private function historyPayload(array $payload, string $sourceHash): array
+    {
+        return [
+            'intent' => [
+                'raw' => $payload['intent'] ?? '',
+                'mode' => $payload['mode'] ?? 'new',
+            ],
+            'target' => $payload['metadata']['target']['resolved'] ?? null,
+            'plan' => $payload['plan'] ?? [],
+            'plan_confidence' => $payload['plan_confidence'] ?? [],
+            'outcome_confidence' => $payload['outcome_confidence'] ?? [],
+            'actions_taken' => $payload['actions_taken'] ?? [],
+            'verification_results' => $payload['verification_results'] ?? [],
+            'metadata' => [
+                'dry_run' => $payload['metadata']['dry_run'] ?? false,
+                'target' => $payload['metadata']['target'] ?? null,
+            ],
+            'snapshots' => $payload['snapshots'] ?? [],
+            'architecture_diff' => is_array($payload['architecture_diff'] ?? null)
+                ? ['summary' => $payload['architecture_diff']['summary'] ?? []]
+                : null,
+            'git' => $payload['git'] ?? [],
+            'packs_used' => $payload['packs_used'] ?? [],
+            'packs_installed' => $payload['packs_installed'] ?? [],
+            'source_hash' => $sourceHash,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     * @return array<string,mixed>
+     */
+    private function historyRecordReference(array $record): array
+    {
+        return [
+            'id' => $record['id'] ?? null,
+            'kind' => $record['kind'] ?? null,
+            'label' => $record['label'] ?? null,
+            'sequence' => $record['sequence'] ?? null,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $gitState
+     * @param array<int,string> $warnings
+     */
+    private function assertGitPlanSafe(array $gitState, GenerationPlan $plan, Intent $intent, array &$warnings): void
+    {
+        if (($gitState['available'] ?? false) !== true) {
+            if ($intent->gitCommit) {
+                $warnings[] = 'Git repository not detected; commit support is unavailable for this generate run.';
+            }
+
+            return;
+        }
+
+        $relevant = is_array($gitState['safety_relevant'] ?? null) ? $gitState['safety_relevant'] : [];
+        $dirtyFiles = array_values(array_map('strval', (array) ($relevant['changed_files'] ?? [])));
+        $untrackedFiles = array_values(array_map('strval', (array) ($relevant['untracked_files'] ?? [])));
+        $conflictingUntracked = array_values(array_intersect($plan->affectedFiles, $untrackedFiles));
+        sort($conflictingUntracked);
+
+        if ($conflictingUntracked !== []) {
+            throw new FoundryError(
+                'GENERATE_GIT_UNTRACKED_CONFLICT',
+                'validation',
+                [
+                    'conflicting_files' => $conflictingUntracked,
+                    'plan_files' => $plan->affectedFiles,
+                ],
+                'Generate would overwrite untracked files. Move or commit them before retrying.',
+            );
+        }
+
+        if ($dirtyFiles !== [] && !$intent->allowDirty) {
+            throw new FoundryError(
+                'GENERATE_GIT_DIRTY_TREE',
+                'validation',
+                [
+                    'changed_files' => $dirtyFiles,
+                    'staged_files' => (array) ($relevant['staged_files'] ?? []),
+                    'unstaged_files' => (array) ($relevant['unstaged_files'] ?? []),
+                    'untracked_files' => $untrackedFiles,
+                    'conflicting_files' => array_values(array_intersect($plan->affectedFiles, $dirtyFiles)),
+                ],
+                'Git working tree is dirty. Re-run with --allow-dirty or clean the repository first.',
+            );
+        }
+
+        if ($dirtyFiles !== [] && $intent->allowDirty) {
+            $warnings[] = 'Git working tree was dirty before generation; auto-commit may be skipped for safety.';
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $before
+     * @param array<string,mixed> $after
+     * @param array<int,array<string,mixed>> $packsInstalled
+     * @param array<int,string> $warnings
+     * @return array<string,mixed>
+     */
+    private function commitGenerateChanges(
+        GitRepositoryInspector $gitInspector,
+        array $before,
+        array $after,
+        Intent $intent,
+        GenerationPlan $plan,
+        array $packsInstalled,
+        array &$warnings,
+    ): array {
+        $commitMessage = trim((string) ($intent->gitCommitMessage ?? $this->defaultGitCommitMessage($intent)));
+        $beforeStagedFiles = array_values(array_map('strval', (array) ($before['staged_files'] ?? [])));
+        if ($beforeStagedFiles !== []) {
+            $warning = 'Git commit skipped because the index already contained staged files before generation.';
+            $warnings[] = $warning;
+
+            return [
+                'requested' => true,
+                'created' => false,
+                'message' => $commitMessage,
+                'commit' => null,
+                'branch' => $after['branch'] ?? $before['branch'] ?? null,
+                'files' => [],
+                'warning' => $warning,
+            ];
+        }
+
+        $safeFiles = $this->planCommitPaths($plan, $packsInstalled, $after);
+        $preexistingConflicts = array_values(array_intersect(
+            $safeFiles,
+            array_values(array_map('strval', (array) ($before['safety_relevant']['changed_files'] ?? []))),
+        ));
+        sort($preexistingConflicts);
+
+        if ($preexistingConflicts !== []) {
+            $warning = 'Git commit skipped because some generated targets were already dirty before generation.';
+            $warnings[] = $warning;
+
+            return [
+                'requested' => true,
+                'created' => false,
+                'message' => $commitMessage,
+                'commit' => null,
+                'branch' => $after['branch'] ?? $before['branch'] ?? null,
+                'files' => $preexistingConflicts,
+                'warning' => $warning,
+            ];
+        }
+
+        $result = $gitInspector->commit($safeFiles, $commitMessage);
+        if (($result['created'] ?? false) !== true && isset($result['warning'])) {
+            $warnings[] = (string) $result['warning'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $packsInstalled
+     * @param array<string,mixed> $after
+     * @return array<int,string>
+     */
+    private function planCommitPaths(GenerationPlan $plan, array $packsInstalled, array $after): array
+    {
+        $candidatePaths = $plan->affectedFiles;
+        $changedAfter = array_values(array_map('strval', (array) ($after['changed_files'] ?? [])));
+        $candidatePaths[] = '.foundry/packs/installed.json';
+
+        foreach ($packsInstalled as $pack) {
+            if (!is_array($pack)) {
+                continue;
+            }
+
+            $installPath = trim((string) ($pack['install_path'] ?? ''));
+            if ($installPath === '') {
+                continue;
+            }
+
+            foreach ($changedAfter as $path) {
+                if ($path === $installPath || str_starts_with($path, $installPath . '/')) {
+                    $candidatePaths[] = $path;
+                }
+            }
+        }
+
+        $candidatePaths = array_values(array_unique(array_filter(array_map('strval', $candidatePaths))));
+        sort($candidatePaths);
+
+        return array_values(array_intersect($candidatePaths, $changedAfter));
+    }
+
+    private function defaultGitCommitMessage(Intent $intent): string
+    {
+        return sprintf('foundry generate (%s): %s', $intent->mode, $intent->raw);
+    }
+
+    /**
+     * @param array<string,mixed> $state
+     * @return array<string,mixed>
+     */
+    private function publicGitState(array $state): array
+    {
+        if (($state['available'] ?? false) !== true) {
+            return ['available' => false];
+        }
+
+        return [
+            'available' => true,
+            'repository_root' => $this->relativeRoot((string) ($state['repository_root'] ?? '')),
+            'branch' => $state['branch'] ?? null,
+            'head' => $state['head'] ?? null,
+            'dirty' => (bool) ($state['dirty'] ?? false),
+            'changed_files' => array_values(array_map('strval', (array) ($state['changed_files'] ?? []))),
+            'staged_files' => array_values(array_map('strval', (array) ($state['staged_files'] ?? []))),
+            'unstaged_files' => array_values(array_map('strval', (array) ($state['unstaged_files'] ?? []))),
+            'untracked_files' => array_values(array_map('strval', (array) ($state['untracked_files'] ?? []))),
+            'ignored_internal_files' => array_values(array_map('strval', (array) ($state['ignored_internal_files'] ?? []))),
+            'safety_relevant' => [
+                'dirty' => (bool) ($state['safety_relevant']['dirty'] ?? false),
+                'changed_files' => array_values(array_map('strval', (array) ($state['safety_relevant']['changed_files'] ?? []))),
+                'staged_files' => array_values(array_map('strval', (array) ($state['safety_relevant']['staged_files'] ?? []))),
+                'unstaged_files' => array_values(array_map('strval', (array) ($state['safety_relevant']['unstaged_files'] ?? []))),
+                'untracked_files' => array_values(array_map('strval', (array) ($state['safety_relevant']['untracked_files'] ?? []))),
+            ],
+        ];
+    }
+
+    private function relativeRoot(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return '.';
+        }
+
+        $root = rtrim($this->paths->root(), '/');
+        if ($path === $root) {
+            return '.';
+        }
+
+        $prefix = $root . '/';
+
+        return str_starts_with($path, $prefix)
+            ? substr($path, strlen($prefix))
+            : $path;
     }
 
     private function resolveTarget(Intent $intent, ApplicationGraph $graph, ExtensionRegistry $extensions): ?string

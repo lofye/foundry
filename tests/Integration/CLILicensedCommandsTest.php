@@ -226,6 +226,30 @@ YAML);
         $this->assertSame('feature:publish_post', $default['payload']['subject']['id']);
     }
 
+    public function test_explain_can_include_git_context_when_requested(): void
+    {
+        $this->initGitRepository();
+        file_put_contents(
+            $this->project->root . '/app/features/publish_post/feature.yaml',
+            str_replace('description: test', 'description: git-aware test', (string) file_get_contents($this->project->root . '/app/features/publish_post/feature.yaml')),
+        );
+
+        $app = new Application();
+        $explain = $this->runCommand($app, ['foundry', 'explain', 'publish_post', '--git', '--json']);
+
+        $this->assertSame(0, $explain['status']);
+        $this->assertTrue($explain['payload']['git']['available']);
+        $this->assertGreaterThan(0, $explain['payload']['git']['summary']['relevant_files']);
+        $this->assertGreaterThan(0, $explain['payload']['git']['summary']['dirty_relevant_files']);
+        $this->assertContains(
+            'app/features/publish_post/feature.yaml',
+            array_values(array_map(
+                static fn(array $row): string => (string) ($row['path'] ?? ''),
+                $explain['payload']['git']['relevant_files'],
+            )),
+        );
+    }
+
     public function test_explain_reports_unsupported_kind_and_ambiguous_targets_cleanly(): void
     {
         $app = new Application();
@@ -428,6 +452,16 @@ YAML);
         putenv($name . '=' . $value);
     }
 
+    private function initGitRepository(): void
+    {
+        $this->git(['init']);
+        $this->git(['branch', '-m', 'main']);
+        $this->git(['config', 'user.name', 'Foundry Tests']);
+        $this->git(['config', 'user.email', 'foundry-tests@example.invalid']);
+        $this->git(['add', '.']);
+        $this->git(['commit', '-m', 'Initial commit']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
@@ -455,5 +489,32 @@ YAML);
         $output = (string) (ob_get_clean() ?: '');
 
         return ['status' => $status, 'output' => $output];
+    }
+
+    /**
+     * @param array<int,string> $args
+     */
+    private function git(array $args): string
+    {
+        $command = array_merge(['git', '-C', $this->project->root], $args);
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = proc_open($command, $descriptors, $pipes);
+        $this->assertIsResource($process);
+
+        fclose($pipes[0]);
+        $stdout = (string) stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = (string) stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+        $status = proc_close($process);
+
+        $this->assertSame(0, $status, trim($stderr) !== '' ? trim($stderr) : trim($stdout));
+
+        return trim($stdout);
     }
 }

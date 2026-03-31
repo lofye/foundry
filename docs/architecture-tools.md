@@ -37,12 +37,15 @@ foundry license deactivate --json
 foundry features --json
 foundry doctor --deep --json
 foundry explain [<target>] --json
+foundry explain [<target>] --git --json
 foundry diff --json
 foundry trace [<target>] --json
 foundry generate "<intent>" --mode=new --dry-run --json
 foundry generate "<intent>" --mode=modify --target=<target> --json
 foundry generate "<intent>" --mode=repair --target=<target> --json
 foundry generate "<intent>" --mode=new --packs=<vendor/pack> --allow-pack-install --json
+foundry generate "<intent>" --mode=new --allow-dirty --git-commit --json
+foundry history --kind=generate --json
 ```
 
 `generate` is explain-driven and deterministic:
@@ -50,6 +53,7 @@ foundry generate "<intent>" --mode=new --packs=<vendor/pack> --allow-pack-instal
 - it resolves intent through `ExplainModel` before selecting a generator.
 - `--mode=new|modify|repair` makes the execution path explicit and reviewable.
 - packs can contribute generators, and `--allow-pack-install` enables explicit pack installation before planning.
+- when Git is available, generate checks repository state before writes and can attach Git metadata or create an explicit scoped commit.
 
 ## Foundry Doctor
 
@@ -167,6 +171,7 @@ Context extraction prioritizes feature matches by instruction tokens, route path
 ## Explain, Diff, Trace, And Generate
 
 - `explain [<target>]` resolves a typed selector, route signature, command name, exact node id, or deterministic alias into a canonical subject and explains it from compiled graph and projection metadata.
+- `explain [<target>] --git` adds optional repository context for the explained target without changing the canonical explain model itself.
 - `explain --diff` renders the last stored architectural generate diff from explain-derived snapshots.
 - explain JSON and explain diff JSON include deterministic confidence signals with explicit factors and warnings.
 - `diff` compares the last compiled baseline graph against the current source state without changing core runtime requirements.
@@ -175,9 +180,12 @@ Context extraction prioritizes feature matches by instruction tokens, route path
 - `generate "<intent>" --mode=modify --target=<target>` uses explain attribution to constrain writes to the intended subject.
 - `generate "<intent>" --mode=repair --target=<target>` restores missing generated artifacts and reruns verification before keeping the change.
 - `generate "<intent>" --packs=<vendor/pack> --allow-pack-install` can install a missing pack and immediately route planning through its generator surface.
+- `generate "<intent>" --allow-dirty` lets a run proceed with pre-existing repository changes while keeping the dirty-state warning explicit in the result.
+- `generate "<intent>" --git-commit` stages only safe generate-owned files and creates an explicit commit after verification.
 - generation captures explain-derived pre/post snapshots, recomputes architectural diffs, and reruns verification after writes so failures remain inspectable and rollback can restore the prior state.
 - `generate "<intent>" --explain` appends the updated explain output after the architectural diff summary.
 - generate JSON includes both plan confidence and post-verification outcome confidence.
+- `history --kind=generate` lists persisted generate runs, including Git metadata when Git was available.
 
 When no explain target is provided, Foundry explains the first feature or route deterministically. The first-run walkthrough relies on that contract intentionally.
 

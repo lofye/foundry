@@ -200,6 +200,7 @@ YAML);
         $this->assertSame('explain', $explainHelp['payload']['command']['signature']);
         $this->assertSame('core', $explainHelp['payload']['command']['availability']);
         $this->assertStringContainsString('--neighbors', $explainHelp['payload']['command']['usage']);
+        $this->assertStringContainsString('--git', $explainHelp['payload']['command']['usage']);
         $this->assertStringContainsString('--diff', $explainHelp['payload']['command']['usage']);
         $this->assertStringContainsString('first feature or route deterministically', $explainHelp['payload']['command']['summary']);
         $this->assertSame('Architecture', $explainHelp['payload']['command']['category']);
@@ -260,7 +261,9 @@ YAML);
         $this->assertSame('core', $generatePromptHelp['payload']['command']['availability']);
         $this->assertStringContainsString('--mode=<new|modify|repair>', $generatePromptHelp['payload']['command']['usage']);
         $this->assertStringContainsString('--explain', $generatePromptHelp['payload']['command']['usage']);
+        $this->assertStringContainsString('--allow-dirty', $generatePromptHelp['payload']['command']['usage']);
         $this->assertStringContainsString('--allow-pack-install', $generatePromptHelp['payload']['command']['usage']);
+        $this->assertStringContainsString('--git-commit', $generatePromptHelp['payload']['command']['usage']);
         $this->assertStringContainsString('explain [<target>]', $explainHelp['payload']['command']['usage']);
 
         $apiSurface = $this->runCommand($app, ['foundry', 'inspect', 'api-surface', '--command=compile graph', '--json']);
