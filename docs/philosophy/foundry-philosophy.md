@@ -1,5 +1,7 @@
 # The Philosophical and Architectural Foundations of Foundry
 
+Foundry is an LLM-first web framework that competes with human-first web frameworks like Laravel
+
 ⸻
 
 ## 0. Purpose
