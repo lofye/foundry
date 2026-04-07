@@ -170,3 +170,24 @@ For any new meaningful feature work, prefer creating and maintaining:
 Until Foundry context tooling is implemented, treat this as a manual workflow convention.
 
 Do not assume `foundry context ...` commands exist yet unless they have already been implemented in this repository.
+
+## Spec Evolution (Bootstrap Rule)
+
+Feature specs evolve over time, but there must always be exactly one canonical spec per feature:
+
+- `docs/features/<feature-name>.spec.md`
+
+Do NOT create multiple spec files for the same feature (e.g. `.spec.v2.md`, `.phase2.md`, etc).
+
+When a feature evolves:
+
+1. Update the existing spec to reflect the new intended behavior
+2. Record the change in the decision ledger
+3. Continue implementation against the updated spec
+
+Optional:
+- Execution specs (e.g. "Spec 35D1", "Spec 35D2") may exist elsewhere (e.g. `docs/specs/`)
+- These are NOT the source of truth once implemented
+
+The spec file always represents the current intended behavior.
+The decision ledger preserves the history of how it evolved.
