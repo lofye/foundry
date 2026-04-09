@@ -1,3 +1,13 @@
+This spec establishes context-persistence as the first fully self-hosting feature in Foundry.
+
+It ensures that:
+- the spec
+- the current state
+- the decision ledger
+- and the implementation
+
+are all mutually consistent and verifiable through Foundry’s own context tooling.
+
 Implement Foundry Master Spec 35D4A — Context-Persistence Reconciliation
 
 Objective

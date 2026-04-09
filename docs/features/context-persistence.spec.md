@@ -7,7 +7,7 @@
 ## Goals
 - Add canonical feature context artifacts under docs/features/.
 - Support deterministic validation of those artifacts.
-- Introduce CLI tooling to initialize and validate feature context.
+- Introduce CLI tooling to initialize, validate, inspect, and verify feature context.
 - Introduce deterministic spec-state alignment checking.
 - Support future execution driven by canonical feature context.
 
@@ -28,16 +28,23 @@
 - Validators can check structure and required sections.
 - CLI commands can initialize and validate feature context.
 - CLI commands can detect spec-state mismatches using deterministic heuristics.
+- Inspect context aggregates doctor and alignment results into a single deterministic view.
+- Verify context maps doctor and alignment results to deterministic pass/fail semantics.
+- Verify context fails when doctor is repairable or non_compliant.
+- Verify context fails when alignment status is mismatch.
+- Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
-- Later execution systems can consume these files safely.
+- Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
 - Canonical files exist for the feature.
-- Required sections are present.
+- Required sections are present in canonical feature files.
 - Validation passes.
 - CLI can initialize missing context files deterministically.
 - CLI can validate context and produce actionable repair guidance.
 - CLI can detect spec-state alignment issues deterministically.
+- Inspect context returns a deterministic combined context view.
+- Verify context returns deterministic pass/fail status for feature context.
 - Alignment results include actionable repair guidance.
 
 ## Assumptions

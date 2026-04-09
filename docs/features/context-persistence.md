@@ -10,6 +10,8 @@
 - Decision ledger created.
 - 35D1 implementation completed.
 - 35D2 implementation completed.
+- Validators can check context file structure and required sections deterministically.
+- Required sections are present in canonical feature files.
 - Context init command implemented.
 - Context doctor command implemented.
 - Canonical feature context can be initialized deterministically.
@@ -31,7 +33,8 @@
 - Verify context maps doctor and alignment results to deterministic pass/fail semantics.
 - Verify context fails when doctor is repairable or non_compliant.
 - Verify context fails when alignment status is mismatch.
-- Existing context services are reused rather than duplicated.
+- Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
+- Later execution systems can consume canonical feature context files safely.
 
 ## Open Questions
 - How should refusal-to-proceed rules be expressed in AGENTS.md and APP-AGENTS.md in 35D5?
@@ -39,6 +42,5 @@
 - How should future phases expose repair-first workflow guidance without duplicating CLI behavior?
 
 ## Next Steps
-- Update context-persistence feature files so verify context passes for this feature.
 - Create execution spec 005-agents-app-agents-scaffold-and-onboarding-integration.
 - Implement 35D5 using verify context as the primary proceed/fail gate.

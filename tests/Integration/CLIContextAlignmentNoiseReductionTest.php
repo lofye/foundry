@@ -22,28 +22,29 @@ final class CLIContextAlignmentNoiseReductionTest extends TestCase
         chdir($this->cwd);
     }
 
-    public function test_context_persistence_alignment_output_is_concise_and_deterministic(): void
+    public function test_context_persistence_alignment_output_is_self_hosting_and_deterministic(): void
     {
         $first = $this->runCommand(['foundry', 'context', 'check-alignment', '--feature=context-persistence', '--json']);
         $second = $this->runCommand(['foundry', 'context', 'check-alignment', '--feature=context-persistence', '--json']);
 
-        $codes = array_values(array_map(
-            static fn(array $issue): string => (string) ($issue['code'] ?? ''),
-            $first['payload']['issues'],
-        ));
+        $this->assertSame($first, $second);
+        $this->assertSame(0, $first['status']);
+        $this->assertSame('ok', $first['payload']['status']);
+        $this->assertSame([], $first['payload']['issues']);
+        $this->assertSame([], $first['payload']['required_actions']);
+    }
+
+    public function test_context_persistence_verification_passes_deterministically(): void
+    {
+        $first = $this->runCommand(['foundry', 'verify', 'context', '--feature=context-persistence', '--json']);
+        $second = $this->runCommand(['foundry', 'verify', 'context', '--feature=context-persistence', '--json']);
 
         $this->assertSame($first, $second);
-        $this->assertSame(1, $first['status']);
-        $this->assertSame('mismatch', $first['payload']['status']);
-        $this->assertCount(3, $first['payload']['issues']);
-        $this->assertSame([
-            'untracked_spec_requirement',
-            'untracked_spec_requirement',
-            'untracked_spec_requirement',
-        ], $codes);
-        $this->assertSame([
-            'Reflect the spec requirement in Current State, Open Questions, or Next Steps.',
-        ], $first['payload']['required_actions']);
+        $this->assertSame(0, $first['status']);
+        $this->assertSame('pass', $first['payload']['status']);
+        $this->assertSame('ok', $first['payload']['doctor_status']);
+        $this->assertSame('ok', $first['payload']['alignment_status']);
+        $this->assertSame([], $first['payload']['issues']);
     }
 
     /**
