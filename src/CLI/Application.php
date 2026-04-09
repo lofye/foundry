@@ -30,6 +30,7 @@ use Foundry\CLI\Commands\ImpactCommand;
 use Foundry\CLI\Commands\InitAppCommand;
 use Foundry\CLI\Commands\InitCommand;
 use Foundry\CLI\Commands\InspectApiCommand;
+use Foundry\CLI\Commands\InspectContextCommand;
 use Foundry\CLI\Commands\InspectFeatureCommand;
 use Foundry\CLI\Commands\InspectGraphCommand;
 use Foundry\CLI\Commands\InspectNotificationCommand;
@@ -49,6 +50,7 @@ use Foundry\CLI\Commands\ServeCommand;
 use Foundry\CLI\Commands\TraceCommand;
 use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
+use Foundry\CLI\Commands\VerifyContextCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
 use Foundry\CLI\Commands\VerifyGraphCommand;
@@ -126,7 +128,9 @@ final class Application
             new GenerateIndexesCommand(),
             new ExportOpenApiCommand(),
             new PreviewNotificationCommand(),
+            new InspectContextCommand(),
             new VerifyFeatureCommand(),
+            new VerifyContextCommand(),
             new VerifyResourceCommand(),
             new VerifyIntegrationCommand(),
             new VerifyPlatformCommand(),

@@ -117,3 +117,36 @@ Timestamp: 2026-04-07T13:30:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: compose doctor and alignment into inspect and verify workflows
+Timestamp: 2026-04-07T14:00:00-04:00
+
+**Context**
+- Structural validation and semantic alignment existed separately, but there was no unified inspection or verification surface.
+- Later enforcement phases need a deterministic proceed/fail signal rather than ad hoc interpretation of multiple commands.
+
+**Decision**
+- Add:
+  - inspect context
+  - verify context
+- Reuse doctor and alignment services rather than reimplementing either path.
+
+**Reasoning**
+- A single inspection surface improves visibility.
+- A deterministic verification surface provides a clean machine-readable gate for future enforcement.
+- Reuse preserves consistency and reduces duplicate logic.
+
+**Alternatives Considered**
+- Keep doctor and alignment as separate manual checks only.
+- Reimplement validation and alignment inside inspect and verify.
+- Delay verify semantics until later phases.
+
+**Impact**
+- Foundry now has a unified context inspection workflow.
+- Foundry now has deterministic pass/fail semantics for feature context.
+- This creates the clean proceed/fail boundary needed for 35D5.
+
+**Spec Reference**
+- Goals
+- Expected Behavior
+- Acceptance Criteria

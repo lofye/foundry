@@ -17,21 +17,28 @@
 - Context doctor returns actionable repair guidance.
 - 35D3 implementation completed.
 - Context check-alignment command implemented.
-- Spec-state alignment checking is implemented for feature context artifacts.
+- Deterministic spec-state alignment checking is implemented for feature context artifacts.
 - Alignment checking compares spec Expected Behavior against Current State, Open Questions, and Next Steps.
 - Alignment checking compares spec Acceptance Criteria against Current State, Open Questions, and Next Steps.
 - Untracked spec requirements are reported deterministically.
 - Unsupported Current State claims are reported deterministically.
 - Decision-backed divergence is treated differently from unexplained divergence.
 - Alignment results return actionable repair guidance.
+- 35D4 implementation completed.
+- Inspect context command implemented.
+- Verify context command implemented.
+- Inspect context aggregates doctor and alignment results into a single deterministic view.
+- Verify context maps doctor and alignment results to deterministic pass/fail semantics.
+- Verify context fails when doctor is repairable or non_compliant.
+- Verify context fails when alignment status is mismatch.
+- Existing context services are reused rather than duplicated.
 
 ## Open Questions
-- How should inspect context compose doctor and alignment results in 35D4?
-- How should verify context map doctor and alignment results to pass/fail semantics?
-- How should later phases refine alignment heuristics without introducing non-determinism?
+- How should refusal-to-proceed rules be expressed in AGENTS.md and APP-AGENTS.md in 35D5?
+- How should scaffolded apps receive the finalized context workflow guidance?
+- How should future phases expose repair-first workflow guidance without duplicating CLI behavior?
 
 ## Next Steps
-- Create execution spec 004-inspect-context-integration-and-verification-wiring.
-- Implement inspect context.
-- Implement verify context.
-- Reuse doctor and alignment results consistently in inspect and verify flows.
+- Update context-persistence feature files so verify context passes for this feature.
+- Create execution spec 005-agents-app-agents-scaffold-and-onboarding-integration.
+- Implement 35D5 using verify context as the primary proceed/fail gate.

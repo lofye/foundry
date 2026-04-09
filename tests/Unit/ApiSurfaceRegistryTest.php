@@ -59,9 +59,11 @@ final class ApiSurfaceRegistryTest extends TestCase
         $generatePrompt = $registry->classifyCliCommand(['generate', 'Add', 'bookmarks']);
         $licenseStatus = $registry->classifyCliCommand(['license', 'status']);
         $features = $registry->classifyCliCommand(['features']);
+        $inspectContext = $registry->classifyCliCommand(['inspect', 'context', 'event-bus']);
         $contextInit = $registry->classifyCliCommand(['context', 'init', 'event-bus']);
         $contextDoctor = $registry->classifyCliCommand(['context', 'doctor', '--feature=event-bus']);
         $contextCheckAlignment = $registry->classifyCliCommand(['context', 'check-alignment', '--feature=event-bus']);
+        $verifyContext = $registry->classifyCliCommand(['verify', 'context', '--feature=event-bus']);
         $init = $registry->classifyCliCommand(['init']);
         $examplesList = $registry->classifyCliCommand(['examples:list']);
         $examplesLoad = $registry->classifyCliCommand(['examples:load', 'blog-api']);
@@ -86,9 +88,11 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($generatePrompt);
         $this->assertNotNull($licenseStatus);
         $this->assertNotNull($features);
+        $this->assertNotNull($inspectContext);
         $this->assertNotNull($contextInit);
         $this->assertNotNull($contextDoctor);
         $this->assertNotNull($contextCheckAlignment);
+        $this->assertNotNull($verifyContext);
         $this->assertNotNull($init);
         $this->assertNotNull($examplesList);
         $this->assertNotNull($examplesLoad);
@@ -153,6 +157,9 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('Monetization', $features['category']);
         $this->assertSame('features', $features['command_type']);
         $this->assertFalse($features['supports_pipeline_stage_filter']);
+        $this->assertSame('stable', $inspectContext['stability']);
+        $this->assertSame('Architecture', $inspectContext['category']);
+        $this->assertSame('inspect', $inspectContext['command_type']);
         $this->assertSame('stable', $contextInit['stability']);
         $this->assertSame('Architecture', $contextInit['category']);
         $this->assertSame('context', $contextInit['command_type']);
@@ -162,6 +169,9 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $contextCheckAlignment['stability']);
         $this->assertSame('Architecture', $contextCheckAlignment['category']);
         $this->assertSame('context', $contextCheckAlignment['command_type']);
+        $this->assertSame('stable', $verifyContext['stability']);
+        $this->assertSame('Verification', $verifyContext['category']);
+        $this->assertSame('verify', $verifyContext['command_type']);
         $this->assertSame('experimental', $packSearch['stability']);
         $this->assertSame('Extensions', $packSearch['category']);
         $this->assertSame('pack', $packSearch['command_type']);

@@ -6,11 +6,7 @@ namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
-use Foundry\Context\AlignmentChecker;
-use Foundry\Context\AlignmentIssue;
-use Foundry\Context\AlignmentResult;
-use Foundry\Context\ContextDoctorService;
-use Foundry\Context\ContextFileResolver;
+use Foundry\Context\ContextInspectionService;
 use Foundry\Support\FoundryError;
 
 final class ContextCheckAlignmentCommand extends Command
@@ -49,21 +45,7 @@ final class ContextCheckAlignmentCommand extends Command
             );
         }
 
-        $doctorPayload = (new ContextDoctorService($context->paths()))->checkFeature($featureName);
-        $doctorStatus = (string) ($doctorPayload['status'] ?? 'repairable');
-
-        if (!in_array($doctorStatus, ['ok', 'warning'], true)) {
-            $payload = $this->preflightFailurePayload($featureName, $doctorPayload);
-        } else {
-            $resolver = new ContextFileResolver();
-            $checker = new AlignmentChecker();
-
-            $payload = $checker->check(
-                $this->readFile($context, $resolver->specPath($featureName)),
-                $this->readFile($context, $resolver->statePath($featureName)),
-                $this->readFile($context, $resolver->decisionsPath($featureName)),
-            )->toArray($featureName);
-        }
+        $payload = (new ContextInspectionService($context->paths()))->alignmentForFeature($featureName);
 
         return [
             'status' => ((string) ($payload['status'] ?? 'warning')) === 'mismatch' ? 1 : 0,
@@ -92,51 +74,6 @@ final class ContextCheckAlignmentCommand extends Command
         }
 
         return null;
-    }
-
-    private function readFile(CommandContext $context, string $relativePath): string
-    {
-        $contents = file_get_contents($context->paths()->join($relativePath));
-        if ($contents === false) {
-            throw new FoundryError(
-                'CLI_CONTEXT_ALIGNMENT_FILE_UNREADABLE',
-                'filesystem',
-                ['path' => $relativePath],
-                'Context file could not be read for alignment.',
-            );
-        }
-
-        return $contents;
-    }
-
-    /**
-     * @param array<string,mixed> $doctorPayload
-     * @return array{status:string,feature:string,issues:list<array<string,mixed>>,required_actions:list<string>}
-     */
-    private function preflightFailurePayload(string $featureName, array $doctorPayload): array
-    {
-        $requiredActions = array_values(array_map(
-            'strval',
-            (array) ($doctorPayload['required_actions'] ?? []),
-        ));
-
-        $message = $requiredActions === ['Use a lowercase kebab-case feature name.']
-            ? 'Feature name must be lowercase kebab-case before alignment can be checked.'
-            : 'Context files must be structurally valid before alignment can be checked.';
-
-        return (new AlignmentResult(
-            status: 'mismatch',
-            issues: [
-                new AlignmentIssue(
-                    code: 'mismatch',
-                    message: $message,
-                    spec_section: null,
-                    state_section: null,
-                    decision_reference_found: false,
-                ),
-            ],
-            required_actions: $requiredActions === [] ? ['Repair the feature context files before checking alignment.'] : $requiredActions,
-        ))->toArray($featureName);
     }
 
     /**

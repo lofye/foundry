@@ -452,7 +452,7 @@ final class ApiSurfaceRegistry
             'cache' => ['stable', 'inspect cache <feature>', 'Inspect feature cache declarations.'],
             'events' => ['stable', 'inspect events <feature>', 'Inspect feature event declarations.'],
             'jobs' => ['stable', 'inspect jobs <feature>', 'Inspect feature job declarations.'],
-            'context' => ['stable', 'inspect context <feature>', 'Inspect feature context manifest data.'],
+            'context' => ['stable', 'inspect context <feature>', 'Inspect unified feature context health using doctor and alignment results.'],
             'notification' => ['stable', 'inspect notification <name>', 'Inspect a notification contract.'],
             'api' => ['stable', 'inspect api <name>', 'Inspect an API resource contract.'],
             'resource' => ['stable', 'inspect resource <name>', 'Inspect a generated resource contract.'],
@@ -501,6 +501,7 @@ final class ApiSurfaceRegistry
             'extensions' => ['experimental', 'verify extensions', 'Verify extension registration and compatibility warnings.'],
             'compatibility' => ['experimental', 'verify compatibility', 'Verify extension and pack compatibility contracts.'],
             'feature' => ['stable', 'verify feature <feature>', 'Verify feature-local contract completeness.'],
+            'context' => ['stable', 'verify context [--feature=<feature>]', 'Verify feature context health using doctor and alignment results.'],
             'resource' => ['stable', 'verify resource <name>', 'Verify resource contracts.'],
             'notifications' => ['stable', 'verify notifications', 'Verify notification contracts.'],
             'api' => ['stable', 'verify api', 'Verify API resource contracts.'],
@@ -692,7 +693,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['init', 'new', 'init app', 'examples:list', 'examples:load', 'preview notification'], true)
                 || str_starts_with($signature, 'generate ')
                 => 'App Scaffolding',
-            in_array($signature, ['upgrade-check', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)
+            in_array($signature, ['upgrade-check', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify context', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)
                 => 'Verification',
             in_array($signature, ['migrate definitions', 'codemod run', 'inspect extensions', 'inspect extension', 'inspect packs', 'inspect pack', 'inspect compatibility', 'inspect migrations', 'inspect definition-format', 'generate migration'], true)
                 => 'Extensions',

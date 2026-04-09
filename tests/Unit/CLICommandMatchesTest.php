@@ -29,6 +29,7 @@ use Foundry\CLI\Commands\ImpactCommand;
 use Foundry\CLI\Commands\InitAppCommand;
 use Foundry\CLI\Commands\InitCommand;
 use Foundry\CLI\Commands\InspectApiCommand;
+use Foundry\CLI\Commands\InspectContextCommand;
 use Foundry\CLI\Commands\InspectFeatureCommand;
 use Foundry\CLI\Commands\InspectGraphCommand;
 use Foundry\CLI\Commands\InspectNotificationCommand;
@@ -48,6 +49,7 @@ use Foundry\CLI\Commands\ServeCommand;
 use Foundry\CLI\Commands\TraceCommand;
 use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
+use Foundry\CLI\Commands\VerifyContextCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
 use Foundry\CLI\Commands\VerifyGraphCommand;
@@ -62,6 +64,7 @@ final class CLICommandMatchesTest extends TestCase
     public function test_matches_methods_cover_all_commands(): void
     {
         $this->assertTrue((new InspectFeatureCommand())->matches(['inspect', 'feature', 'x']));
+        $this->assertTrue((new InspectContextCommand())->matches(['inspect', 'context', 'x']));
         $this->assertTrue((new InspectNotificationCommand())->matches(['inspect', 'notification', 'welcome_email']));
         $this->assertTrue((new InspectApiCommand())->matches(['inspect', 'api', 'posts']));
         $this->assertTrue((new InspectResourceCommand())->matches(['inspect', 'resource', 'posts']));
@@ -153,6 +156,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new InspectPlatformCommand())->matches(['inspect', 'locales']));
         $this->assertTrue((new InspectPlatformCommand())->matches(['inspect', 'roles']));
         $this->assertTrue((new VerifyFeatureCommand())->matches(['verify', 'feature', 'x']));
+        $this->assertTrue((new VerifyContextCommand())->matches(['verify', 'context', '--feature=x']));
         $this->assertTrue((new VerifyResourceCommand())->matches(['verify', 'resource', 'posts']));
         $this->assertTrue((new VerifyIntegrationCommand())->matches(['verify', 'notifications']));
         $this->assertTrue((new VerifyIntegrationCommand())->matches(['verify', 'api']));

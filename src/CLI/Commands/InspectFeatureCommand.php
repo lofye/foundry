@@ -13,7 +13,7 @@ final class InspectFeatureCommand extends Command
     #[\Override]
     public function supportedSignatures(): array
     {
-        return ['inspect feature', 'inspect auth', 'inspect cache', 'inspect events', 'inspect jobs', 'inspect context'];
+        return ['inspect feature', 'inspect auth', 'inspect cache', 'inspect events', 'inspect jobs'];
     }
 
     #[\Override]
@@ -77,11 +77,6 @@ final class InspectFeatureCommand extends Command
                 'status' => 0,
                 'message' => null,
                 'payload' => ['feature' => $featureName, 'jobs' => $feature->jobs],
-            ],
-            'context' => [
-                'status' => 0,
-                'message' => null,
-                'payload' => $manifest?->toArray() ?? ['feature' => $featureName, 'missing' => true],
             ],
             default => throw new FoundryError('CLI_INSPECT_KIND_INVALID', 'validation', ['kind' => $kind], 'Unsupported inspect target.'),
         };
