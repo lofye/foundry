@@ -15,7 +15,7 @@ final class Action implements FeatureAction
     {
         return [
             'status' => 'ok',
-            'feature' => 'context_persistence',
+            'feature' => 'context-persistence',
         ];
     }
 }

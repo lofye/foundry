@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Foundry\Context;
 
 use Foundry\Context\Validation\ValidationIssue;
+use Foundry\Support\FeatureNaming;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
 
@@ -39,6 +40,8 @@ final class ContextInitService
      */
     public function init(string $featureName): array
     {
+        $featureName = FeatureNaming::canonical($featureName);
+
         $nameValidation = $this->featureNameValidator->validate($featureName);
         if (!$nameValidation->valid) {
             return [

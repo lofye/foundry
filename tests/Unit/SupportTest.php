@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Foundry\Tests\Unit;
 
 use Foundry\Support\Arr;
+use Foundry\Support\FeatureNaming;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
 use Foundry\Support\Str;
@@ -31,6 +32,9 @@ final class SupportTest extends TestCase
         $this->assertSame('publish_post', Str::toSnakeCase('PublishPost'));
         $this->assertTrue(Str::isSnakeCase('publish_post'));
         $this->assertSame('PublishPost', Str::studly('publish_post'));
+        $this->assertSame('context-persistence', FeatureNaming::canonical('context_persistence'));
+        $this->assertSame('context_persistence', FeatureNaming::codeSafe('context-persistence'));
+        $this->assertSame('app/features/context-persistence', FeatureNaming::directory('context_persistence'));
     }
 
     public function test_json_round_trip(): void

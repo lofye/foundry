@@ -6,6 +6,7 @@ namespace Foundry\Context;
 
 use Foundry\Generation\ContextManifestGenerator;
 use Foundry\Generation\FeatureGenerator;
+use Foundry\Support\FeatureNaming;
 use Foundry\Support\Paths;
 use Foundry\Support\Str;
 use Foundry\Support\Yaml;
@@ -35,7 +36,6 @@ final class ContextExecutionService
     /**
      * @return array{
      *     feature:string,
-     *     app_feature:string,
      *     mode:string,
      *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
      *     spec:array<string,string>,
@@ -48,11 +48,11 @@ final class ContextExecutionService
      */
     public function buildExecutionInput(string $featureName): array
     {
-        $appFeature = Str::toSnakeCase($featureName);
+        $featureName = FeatureNaming::canonical($featureName);
         $specPath = $this->resolver->specPath($featureName);
         $statePath = $this->resolver->statePath($featureName);
         $decisionsPath = $this->resolver->decisionsPath($featureName);
-        $featureBase = 'app/features/' . $appFeature;
+        $featureBase = FeatureNaming::directory($featureName);
         $manifestPath = $featureBase . '/feature.yaml';
         $promptsPath = $featureBase . '/prompts.md';
 
@@ -80,7 +80,6 @@ final class ContextExecutionService
 
         return [
             'feature' => $featureName,
-            'app_feature' => $appFeature,
             'mode' => is_file($this->paths->join($manifestPath)) ? 'modify' : 'new',
             'paths' => [
                 'spec' => $specPath,
@@ -101,6 +100,7 @@ final class ContextExecutionService
 
     public function execute(string $featureName, bool $repair = false, bool $autoRepair = false): ExecutionResult
     {
+        $featureName = FeatureNaming::canonical($featureName);
         $nameValidation = $this->featureNameValidator->validate($featureName);
         if (!$nameValidation->valid) {
             return new ExecutionResult(
@@ -225,7 +225,6 @@ final class ContextExecutionService
     /**
      * @param array{
      *     feature:string,
-     *     app_feature:string,
      *     mode:string,
      *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
      *     spec:array<string,string>,
@@ -247,7 +246,6 @@ final class ContextExecutionService
     /**
      * @param array{
      *     feature:string,
-     *     app_feature:string,
      *     mode:string,
      *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
      *     spec:array<string,string>,
@@ -262,13 +260,14 @@ final class ContextExecutionService
     private function createFeatureFromContext(array $input): array
     {
         $definition = [
-            'feature' => $input['app_feature'],
+            'feature' => FeatureNaming::codeSafe($input['feature']),
+            'canonical_feature' => $input['feature'],
             'description' => $input['description'],
             'kind' => 'http',
             'owners' => ['platform'],
             'route' => [
                 'method' => 'POST',
-                'path' => '/' . str_replace('_', '-', $input['app_feature']),
+                'path' => '/' . $input['feature'],
             ],
             'input' => ['fields' => []],
             'output' => [
@@ -320,7 +319,6 @@ final class ContextExecutionService
     /**
      * @param array{
      *     feature:string,
-     *     app_feature:string,
      *     mode:string,
      *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
      *     spec:array<string,string>,
@@ -340,21 +338,20 @@ final class ContextExecutionService
         file_put_contents($manifestPath, Yaml::dump($manifest));
 
         $promptsPath = $this->paths->join($input['paths']['prompts']);
-        $prompts = $this->updatedPrompts($promptsPath, $input['app_feature'], $input['execution_summary']);
+        $prompts = $this->updatedPrompts($promptsPath, $input['feature'], $input['execution_summary']);
         file_put_contents($promptsPath, $prompts);
-        $this->contextManifestGenerator->write($input['app_feature'], $manifest);
+        $this->contextManifestGenerator->write($input['feature'], $manifest);
 
         return [
             'Updated feature manifest: ' . $input['paths']['manifest'],
             'Updated feature prompts: ' . $input['paths']['prompts'],
-            'Updated context manifest: app/features/' . $input['app_feature'] . '/context.manifest.json',
+            'Updated context manifest: app/features/' . $input['feature'] . '/context.manifest.json',
         ];
     }
 
     /**
      * @param array{
      *     feature:string,
-     *     app_feature:string,
      *     mode:string,
      *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
      *     spec:array<string,string>,
@@ -582,7 +579,6 @@ final class ContextExecutionService
     /**
      * @param array{
      *     feature:string,
-     *     app_feature:string,
      *     mode:string,
      *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
      *     spec:array<string,string>,
@@ -647,7 +643,6 @@ final class ContextExecutionService
     /**
      * @param array{
      *     feature:string,
-     *     app_feature:string,
      *     mode:string,
      *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
      *     spec:array<string,string>,

@@ -59,4 +59,32 @@ final class ContextManifestGeneratorTest extends TestCase
 
         $this->assertFileExists($path);
     }
+
+    public function test_build_uses_canonical_feature_directory_and_snake_case_test_identifiers(): void
+    {
+        $base = $this->project->root . '/app/features/context-persistence/tests';
+        mkdir($base, 0777, true);
+
+        file_put_contents($this->project->root . '/app/features/context-persistence/feature.yaml', 'x');
+        file_put_contents($this->project->root . '/app/features/context-persistence/action.php', '<?php');
+        file_put_contents($this->project->root . '/app/features/context-persistence/input.schema.json', '{}');
+        file_put_contents($this->project->root . '/app/features/context-persistence/output.schema.json', '{}');
+        file_put_contents($this->project->root . '/app/features/context-persistence/tests/context_persistence_contract_test.php', '<?php');
+
+        $generator = new ContextManifestGenerator(Paths::fromCwd($this->project->root));
+        $manifest = $generator->build('context-persistence', [
+            'kind' => 'http',
+            'database' => ['queries' => []],
+            'jobs' => ['dispatch' => []],
+            'events' => ['emit' => []],
+            'cache' => ['invalidate' => []],
+            'tests' => ['required' => ['contract', 'feature']],
+            'llm' => ['risk' => 'medium'],
+        ]);
+
+        $this->assertSame('context-persistence', $manifest['feature']);
+        $this->assertContains('app/features/context-persistence/action.php', $manifest['relevant_files']);
+        $this->assertContains('context_persistence_contract_test', $manifest['tests']);
+        $this->assertContains('app/features/context-persistence/input.schema.json', $manifest['contracts']);
+    }
 }

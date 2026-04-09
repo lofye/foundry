@@ -60,6 +60,21 @@ final class ContextServicesTest extends TestCase
         $this->assertSame("# Custom Spec\n", file_get_contents($path));
     }
 
+    public function test_init_service_normalizes_underscore_input_to_canonical_feature_paths(): void
+    {
+        $result = $this->initService()->init('event_bus');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('event-bus', $result['feature']);
+        $this->assertSame([
+            'docs/features/event-bus.spec.md',
+            'docs/features/event-bus.md',
+            'docs/features/event-bus.decisions.md',
+        ], $result['created']);
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus.spec.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/features/event_bus.spec.md');
+    }
+
     public function test_doctor_service_maps_validation_results_to_statuses_consistently(): void
     {
         $doctor = $this->doctorService();

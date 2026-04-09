@@ -49,9 +49,23 @@ final class CLIImplementFeatureCommandTest extends TestCase
         $this->assertSame('completed', $result['payload']['status']);
         $this->assertTrue($result['payload']['can_proceed']);
         $this->assertFalse($result['payload']['requires_repair']);
-        $this->assertFileExists($this->project->root . '/app/features/event_bus/feature.yaml');
+        $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
         $this->assertSame(0, $verify['status']);
         $this->assertSame('pass', $verify['payload']['status']);
+    }
+
+    public function test_implement_feature_normalizes_underscore_cli_input_to_canonical_directory(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event_bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+
+        $result = $this->runCommand(['foundry', 'implement', 'feature', 'event_bus', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('event-bus', $result['payload']['feature']);
+        $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
+        $this->assertFileExists($this->project->root . '/app/features/event-bus/tests/event_bus_contract_test.php');
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/event_bus/feature.yaml');
     }
 
     public function test_blocked_feature_returns_correct_blocked_result(): void

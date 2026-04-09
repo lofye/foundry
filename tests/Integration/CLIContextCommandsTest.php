@@ -54,7 +54,6 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertFalse($result['payload']['success']);
         $this->assertFalse($result['payload']['feature_valid']);
         $this->assertContains('CONTEXT_FEATURE_NAME_UPPERCASE', $codes);
-        $this->assertContains('CONTEXT_FEATURE_NAME_UNDERSCORE', $codes);
     }
 
     public function test_context_doctor_feature_json_returns_required_contract(): void

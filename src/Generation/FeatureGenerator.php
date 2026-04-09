@@ -36,22 +36,33 @@ final class FeatureGenerator
     public function generateFromArray(array $definition, bool $force = false): array
     {
         $feature = (string) ($definition['feature'] ?? '');
+        $canonicalFeature = (string) ($definition['canonical_feature'] ?? $feature);
+
         if ($feature === '' || !Str::isSnakeCase($feature)) {
             throw new FoundryError('FEATURE_NAME_INVALID', 'validation', ['feature' => $feature], 'Feature name must be snake_case.');
         }
 
-        $base = $this->paths->join('app/features/' . $feature);
+        if (array_key_exists('canonical_feature', $definition) && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $canonicalFeature) !== 1) {
+            throw new FoundryError(
+                'FEATURE_CANONICAL_NAME_INVALID',
+                'validation',
+                ['canonical_feature' => $canonicalFeature],
+                'Canonical feature name must be lowercase kebab-case.',
+            );
+        }
+
+        $base = $this->paths->join('app/features/' . $canonicalFeature);
         if (!is_dir($base)) {
             mkdir($base, 0777, true);
         }
 
-        $manifest = $this->buildFeatureManifest($definition);
+        $manifest = $this->buildFeatureManifest($definition, $canonicalFeature);
 
         $written = [];
         $written[] = $this->writeIfAllowed($base . '/feature.yaml', Yaml::dump($manifest), true, $force);
         $written[] = $this->writeIfAllowed($base . '/input.schema.json', Json::encode($this->schemas->fromFieldDefinition($feature . '_input', (array) $definition['input']), true) . "\n", true, $force);
         $written[] = $this->writeIfAllowed($base . '/output.schema.json', Json::encode($this->schemas->fromFieldDefinition($feature . '_output', (array) $definition['output']), true) . "\n", true, $force);
-        $written[] = $this->writeIfAllowed($base . '/action.php', $this->actionTemplate($feature), false, $force);
+        $written[] = $this->writeIfAllowed($base . '/action.php', $this->actionTemplate($feature, $canonicalFeature), false, $force);
 
         $queries = array_values(array_map('strval', (array) (($definition['database']['queries'] ?? []))));
         $written[] = $this->writeIfAllowed($base . '/queries.sql', $this->queries->generate($queries), true, $force);
@@ -68,7 +79,7 @@ final class FeatureGenerator
                 'key' => $key,
                 'kind' => 'computed',
                 'ttl_seconds' => 300,
-                'invalidated_by' => [$feature],
+                'invalidated_by' => [$canonicalFeature],
             ], array_values(array_map('strval', (array) ($definition['cache']['invalidate'] ?? [])))),
         ]), true, $force);
 
@@ -109,7 +120,7 @@ final class FeatureGenerator
         $written = array_merge($written, $this->tests->generate($feature, $base, $required));
 
         $context = new ContextManifestGenerator($this->paths);
-        $written[] = $context->write($feature, $manifest);
+        $written[] = $context->write($canonicalFeature, $manifest);
 
         return array_values(array_filter($written));
     }
@@ -118,17 +129,17 @@ final class FeatureGenerator
      * @param array<string,mixed> $definition
      * @return array<string,mixed>
      */
-    private function buildFeatureManifest(array $definition): array
+    private function buildFeatureManifest(array $definition, string $canonicalFeature): array
     {
         $manifest = [
             'version' => 2,
-            'feature' => (string) $definition['feature'],
+            'feature' => $canonicalFeature,
             'kind' => (string) ($definition['kind'] ?? 'http'),
             'description' => (string) ($definition['description'] ?? 'No description.'),
             'owners' => (array) ($definition['owners'] ?? ['platform']),
             'route' => (array) ($definition['route'] ?? []),
-            'input' => ['schema' => 'app/features/' . $definition['feature'] . '/input.schema.json'],
-            'output' => ['schema' => 'app/features/' . $definition['feature'] . '/output.schema.json'],
+            'input' => ['schema' => 'app/features/' . $canonicalFeature . '/input.schema.json'],
+            'output' => ['schema' => 'app/features/' . $canonicalFeature . '/output.schema.json'],
             'auth' => (array) ($definition['auth'] ?? ['required' => true, 'strategies' => ['bearer'], 'permissions' => []]),
             'database' => array_merge([
                 'reads' => [],
@@ -150,7 +161,7 @@ final class FeatureGenerator
             ], (array) ($definition['jobs'] ?? [])),
             'rate_limit' => array_merge([
                 'strategy' => 'user',
-                'bucket' => (string) $definition['feature'],
+                'bucket' => $canonicalFeature,
                 'cost' => 1,
             ], (array) ($definition['rate_limit'] ?? [])),
             'observability' => array_merge([
@@ -177,7 +188,7 @@ final class FeatureGenerator
         return $manifest;
     }
 
-    private function actionTemplate(string $feature): string
+    private function actionTemplate(string $feature, string $canonicalFeature): string
     {
         $namespace = 'App\\Features\\' . Str::studly($feature);
         $template = <<<'PHP'
@@ -206,7 +217,7 @@ PHP;
 
         return str_replace(
             ['{{NAMESPACE}}', '{{FEATURE}}'],
-            [$namespace, $feature],
+            [$namespace, $canonicalFeature],
             $template,
         );
     }

@@ -1,19 +1,19 @@
 {
     "version": 1,
-    "feature": "context_persistence",
+    "feature": "context-persistence",
     "kind": "http",
     "relevant_files": [
-        "app/features/context_persistence/feature.yaml",
-        "app/features/context_persistence/action.php",
-        "app/features/context_persistence/input.schema.json",
-        "app/features/context_persistence/output.schema.json",
-        "app/features/context_persistence/queries.sql",
-        "app/features/context_persistence/permissions.yaml",
-        "app/features/context_persistence/cache.yaml",
-        "app/features/context_persistence/events.yaml",
-        "app/features/context_persistence/jobs.yaml",
-        "app/features/context_persistence/tests/context_persistence_contract_test.php",
-        "app/features/context_persistence/tests/context_persistence_feature_test.php"
+        "app/features/context-persistence/feature.yaml",
+        "app/features/context-persistence/action.php",
+        "app/features/context-persistence/input.schema.json",
+        "app/features/context-persistence/output.schema.json",
+        "app/features/context-persistence/queries.sql",
+        "app/features/context-persistence/permissions.yaml",
+        "app/features/context-persistence/cache.yaml",
+        "app/features/context-persistence/events.yaml",
+        "app/features/context-persistence/jobs.yaml",
+        "app/features/context-persistence/tests/context_persistence_contract_test.php",
+        "app/features/context-persistence/tests/context_persistence_feature_test.php"
     ],
     "generated_files": [
         "app/.foundry/build/graph/app_graph.json",
@@ -43,8 +43,8 @@
     ],
     "downstream_dependents": [],
     "contracts": {
-        "input": "app/features/context_persistence/input.schema.json",
-        "output": "app/features/context_persistence/output.schema.json"
+        "input": "app/features/context-persistence/input.schema.json",
+        "output": "app/features/context-persistence/output.schema.json"
     },
     "tests": [
         "context_persistence_contract_test",

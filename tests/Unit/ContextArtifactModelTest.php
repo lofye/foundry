@@ -101,6 +101,15 @@ final class ContextArtifactModelTest extends TestCase
         $this->assertSame($original, $featureName);
     }
 
+    public function test_context_file_resolver_normalizes_underscore_input_to_canonical_paths(): void
+    {
+        $paths = (new ContextFileResolver())->paths('blog_posts');
+
+        $this->assertSame('docs/features/blog-posts.spec.md', $paths['spec']);
+        $this->assertSame('docs/features/blog-posts.md', $paths['state']);
+        $this->assertSame('docs/features/blog-posts.decisions.md', $paths['decisions']);
+    }
+
     public function test_spec_validator_accepts_valid_minimal_spec(): void
     {
         $featureName = 'blog-posts';

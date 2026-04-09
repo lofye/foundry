@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Foundry\Generation;
 
+use Foundry\Support\FeatureNaming;
 use Foundry\Support\Json;
 use Foundry\Support\Paths;
 
@@ -17,6 +18,7 @@ final class ContextManifestGenerator
      */
     public function build(string $feature, array $manifest): array
     {
+        $codeSafeFeature = FeatureNaming::codeSafe($feature);
         $featureDir = 'app/features/' . $feature;
 
         $relevant = [
@@ -29,9 +31,9 @@ final class ContextManifestGenerator
             $featureDir . '/cache.yaml',
             $featureDir . '/events.yaml',
             $featureDir . '/jobs.yaml',
-            $featureDir . '/tests/' . $feature . '_contract_test.php',
-            $featureDir . '/tests/' . $feature . '_feature_test.php',
-            $featureDir . '/tests/' . $feature . '_auth_test.php',
+            $featureDir . '/tests/' . $codeSafeFeature . '_contract_test.php',
+            $featureDir . '/tests/' . $codeSafeFeature . '_feature_test.php',
+            $featureDir . '/tests/' . $codeSafeFeature . '_auth_test.php',
         ];
 
         $relevant = array_values(array_filter($relevant, fn(string $path): bool => is_file($this->paths->join($path))));
@@ -80,7 +82,7 @@ final class ContextManifestGenerator
                 'input' => $featureDir . '/input.schema.json',
                 'output' => $featureDir . '/output.schema.json',
             ],
-            'tests' => array_values(array_map(static fn(string $name): string => $feature . '_' . $name . '_test', (array) ($manifest['tests']['required'] ?? []))),
+            'tests' => array_values(array_map(static fn(string $name): string => $codeSafeFeature . '_' . $name . '_test', (array) ($manifest['tests']['required'] ?? []))),
             'forbidden_paths' => ['src/Core', 'src/Http'],
             'risk_level' => (string) (($manifest['llm']['risk_level'] ?? $manifest['llm']['risk'] ?? 'medium')),
         ];

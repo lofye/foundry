@@ -6,6 +6,7 @@ namespace Foundry\Context;
 
 use Foundry\Context\Validation\ValidationIssue;
 use Foundry\Context\Validation\ValidationResult;
+use Foundry\Support\FeatureNaming;
 use Foundry\Support\Paths;
 
 final class ContextDoctorService
@@ -34,6 +35,7 @@ final class ContextDoctorService
      */
     public function checkFeature(string $featureName): array
     {
+        $featureName = FeatureNaming::canonical($featureName);
         $relativePaths = $this->resolver->paths($featureName);
         $nameValidation = $this->featureNameValidator->validate($featureName);
 

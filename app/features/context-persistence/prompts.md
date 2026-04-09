@@ -1,3 +1,3 @@
-# context_persistence
+# context-persistence
 
 Feature-local LLM notes.

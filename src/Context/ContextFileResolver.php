@@ -4,20 +4,28 @@ declare(strict_types=1);
 
 namespace Foundry\Context;
 
+use Foundry\Support\FeatureNaming;
+
 final class ContextFileResolver
 {
     public function specPath(string $featureName): string
     {
+        $featureName = FeatureNaming::canonical($featureName);
+
         return 'docs/features/' . $featureName . '.spec.md';
     }
 
     public function statePath(string $featureName): string
     {
+        $featureName = FeatureNaming::canonical($featureName);
+
         return 'docs/features/' . $featureName . '.md';
     }
 
     public function decisionsPath(string $featureName): string
     {
+        $featureName = FeatureNaming::canonical($featureName);
+
         return 'docs/features/' . $featureName . '.decisions.md';
     }
 

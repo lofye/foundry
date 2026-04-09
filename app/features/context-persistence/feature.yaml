@@ -1,5 +1,5 @@
 version: 2
-feature: context_persistence
+feature: context-persistence
 kind: http
 description: 'Preserve feature intent, implementation state, and decision history across sessions.'
 owners:
@@ -8,9 +8,9 @@ route:
   method: POST
   path: /context-persistence
 input:
-  schema: app/features/context_persistence/input.schema.json
+  schema: app/features/context-persistence/input.schema.json
 output:
-  schema: app/features/context_persistence/output.schema.json
+  schema: app/features/context-persistence/output.schema.json
 auth:
   required: false
   strategies: []
@@ -31,7 +31,7 @@ jobs:
   dispatch: []
 rate_limit:
   strategy: user
-  bucket: context_persistence
+  bucket: context-persistence
   cost: 1
 observability:
   audit: true

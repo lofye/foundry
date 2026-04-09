@@ -70,4 +70,39 @@ YAML);
         $this->assertFileExists($this->project->root . '/app/features/publish_post/feature.yaml');
         $this->assertFileExists($this->project->root . '/app/features/publish_post/context.manifest.json');
     }
+
+    public function test_generates_canonical_kebab_case_feature_directory_with_snake_case_code_identifiers(): void
+    {
+        $generator = new FeatureGenerator(Paths::fromCwd($this->project->root));
+        $files = $generator->generateFromArray([
+            'version' => 1,
+            'feature' => 'context_persistence',
+            'canonical_feature' => 'context-persistence',
+            'kind' => 'http',
+            'description' => 'Persist feature context.',
+            'route' => [
+                'method' => 'POST',
+                'path' => '/context-persistence',
+            ],
+            'input' => ['fields' => []],
+            'output' => ['fields' => []],
+            'auth' => [
+                'required' => false,
+                'strategies' => [],
+                'permissions' => [],
+            ],
+            'database' => ['queries' => []],
+            'cache' => ['invalidate' => []],
+            'events' => ['emit' => []],
+            'jobs' => ['dispatch' => []],
+            'tests' => ['required' => ['contract', 'feature']],
+        ]);
+
+        $this->assertNotEmpty($files);
+        $this->assertFileExists($this->project->root . '/app/features/context-persistence/feature.yaml');
+        $this->assertFileExists($this->project->root . '/app/features/context-persistence/context.manifest.json');
+        $this->assertFileExists($this->project->root . '/app/features/context-persistence/tests/context_persistence_contract_test.php');
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/context_persistence/feature.yaml');
+        $this->assertStringContainsString('feature: context-persistence', (string) file_get_contents($this->project->root . '/app/features/context-persistence/feature.yaml'));
+    }
 }

@@ -54,7 +54,7 @@ final class InspectFeatureCommand extends Command
                     'events' => $feature->events,
                     'jobs' => $feature->jobs,
                     'tests' => $feature->tests['required'] ?? [],
-                    'context_manifest' => 'app/features/' . $featureName . '/context.manifest.json',
+                    'context_manifest' => 'app/features/' . $feature->name . '/context.manifest.json',
                     'relevant_files' => $manifest?->relevantFiles ?? [],
                 ],
             ],

@@ -46,7 +46,7 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertFalse($result['requires_repair']);
         $this->assertFalse($result['repair_attempted']);
         $this->assertFalse($result['repair_successful']);
-        $this->assertFileExists($this->project->root . '/app/features/event_bus/feature.yaml');
+        $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
         $this->assertStringContainsString('Implemented Event bus feature scaffolding exists in the app.', (string) file_get_contents($this->project->root . '/docs/features/event-bus.md'));
         $this->assertStringContainsString('### Decision: context-driven execution for event-bus', (string) file_get_contents($this->project->root . '/docs/features/event-bus.decisions.md'));
     }
@@ -89,7 +89,19 @@ final class ContextExecutionServiceTest extends TestCase
 
         $this->assertSame($first, $second);
         $this->assertSame('event-bus', $first['feature']);
-        $this->assertSame('event_bus', $first['app_feature']);
+        $this->assertSame('app/features/event-bus', $first['paths']['feature_base']);
+    }
+
+    public function test_execution_normalizes_underscore_input_but_keeps_code_safe_identifiers_snake_case(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+
+        $result = $this->service()->execute('event_bus')->toArray();
+
+        $this->assertSame('completed', $result['status']);
+        $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
+        $this->assertFileExists($this->project->root . '/app/features/event-bus/tests/event_bus_contract_test.php');
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/event_bus/feature.yaml');
     }
 
     public function test_result_shape_is_stable(): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Foundry\Context;
 
+use Foundry\Support\FeatureNaming;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
 
@@ -33,6 +34,7 @@ final class ContextInspectionService
      */
     public function inspectFeature(string $featureName): array
     {
+        $featureName = FeatureNaming::canonical($featureName);
         $doctor = $this->doctorService->checkFeature($featureName);
         $alignment = $this->alignmentForFeature($featureName, $doctor);
         $readiness = ContextExecutionReadiness::fromDoctorAndAlignment(
@@ -60,6 +62,7 @@ final class ContextInspectionService
      */
     public function alignmentForFeature(string $featureName, ?array $doctor = null): array
     {
+        $featureName = FeatureNaming::canonical($featureName);
         $doctor ??= $this->doctorService->checkFeature($featureName);
         $doctorStatus = (string) ($doctor['status'] ?? 'repairable');
 
@@ -88,6 +91,8 @@ final class ContextInspectionService
      */
     public function verifyFeature(string $featureName): array
     {
+        $featureName = FeatureNaming::canonical($featureName);
+
         return $this->verificationPayload($this->inspectFeature($featureName));
     }
 
