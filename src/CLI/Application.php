@@ -27,6 +27,7 @@ use Foundry\CLI\Commands\GenerateScaffoldCommand;
 use Foundry\CLI\Commands\GraphVisualizeCommand;
 use Foundry\CLI\Commands\HistoryCommand;
 use Foundry\CLI\Commands\ImpactCommand;
+use Foundry\CLI\Commands\ImplementFeatureCommand;
 use Foundry\CLI\Commands\InitAppCommand;
 use Foundry\CLI\Commands\InitCommand;
 use Foundry\CLI\Commands\InspectApiCommand;
@@ -89,6 +90,7 @@ final class Application
             new ContextInitCommand(),
             new ContextDoctorCommand(),
             new ContextCheckAlignmentCommand(),
+            new ImplementFeatureCommand(),
             new CacheInspectCommand(),
             new CacheClearCommand(),
             new InspectGraphCommand(),

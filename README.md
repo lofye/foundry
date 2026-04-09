@@ -211,6 +211,46 @@ foundry verify jobs --json
 vendor/bin/phpunit
 ```
 
+## Context-Driven Feature Workflow Checklist
+
+Use this workflow for meaningful feature work after the context system has been implemented.
+
+### 1. Identify the feature
+
+Determine the canonical feature name in lowercase kebab-case.
+
+Examples:
+- `blog`
+- `event-bus`
+- `context-persistence`
+
+### 2. Ensure canonical context artifacts exist
+
+Required files:
+
+- `docs/features/<feature>.spec.md`
+- `docs/features/<feature>.md`
+- `docs/features/<feature>.decisions.md`
+
+If they do not exist, create them first using the context tooling.
+
+### 3. Read the feature context before doing anything else
+
+Read:
+- feature spec
+- feature state document
+- decision ledger
+
+Do not rely on chat history as authoritative context.
+
+### 4. Validate context structure
+
+Run:
+
+```bash
+php bin/foundry context doctor --feature=<feature> --json
+```
+
 ## App Structure
 ```text
 .foundry/

@@ -259,6 +259,7 @@ final class CliSurfaceVerifier
             'inspect definition-format' => ['inspect', 'definition-format', 'example'],
             'inspect subgraph' => ['inspect', 'subgraph', 'example_feature'],
             'inspect route' => ['inspect', 'route', 'GET', '/example'],
+            'implement feature' => ['implement', 'feature', 'example-feature'],
             default => array_values(array_filter(explode(' ', $signature), static fn(string $part): bool => $part !== '')),
         };
     }

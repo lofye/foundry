@@ -1,0 +1,200 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Foundry\Tests\Integration;
+
+use Foundry\CLI\Application;
+use Foundry\Tests\Fixtures\TempProject;
+use PHPUnit\Framework\TestCase;
+
+final class CLIImplementFeatureCommandTest extends TestCase
+{
+    private TempProject $project;
+    private string $cwd;
+
+    protected function setUp(): void
+    {
+        $this->project = new TempProject();
+        $this->cwd = getcwd() ?: '.';
+        chdir($this->project->root);
+    }
+
+    protected function tearDown(): void
+    {
+        chdir($this->cwd);
+        $this->project->cleanup();
+    }
+
+    public function test_implement_feature_succeeds_with_valid_context(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+
+        $result = $this->runCommand(['foundry', 'implement', 'feature', 'event-bus', '--json']);
+        $verify = $this->runCommand(['foundry', 'verify', 'context', '--feature=event-bus', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame([
+            'feature',
+            'status',
+            'can_proceed',
+            'requires_repair',
+            'repair_attempted',
+            'repair_successful',
+            'actions_taken',
+            'issues',
+            'required_actions',
+        ], array_keys($result['payload']));
+        $this->assertSame('completed', $result['payload']['status']);
+        $this->assertTrue($result['payload']['can_proceed']);
+        $this->assertFalse($result['payload']['requires_repair']);
+        $this->assertFileExists($this->project->root . '/app/features/event_bus/feature.yaml');
+        $this->assertSame(0, $verify['status']);
+        $this->assertSame('pass', $verify['payload']['status']);
+    }
+
+    public function test_blocked_feature_returns_correct_blocked_result(): void
+    {
+        $result = $this->runCommand(['foundry', 'implement', 'feature', 'event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
+        $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $result['payload']['required_actions']);
+    }
+
+    public function test_repair_enables_recovery_when_repairable(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+        unlink($this->project->root . '/docs/features/event-bus.md');
+
+        $result = $this->runCommand(['foundry', 'implement', 'feature', 'event-bus', '--repair', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('repaired', $result['payload']['status']);
+        $this->assertTrue($result['payload']['repair_attempted']);
+        $this->assertTrue($result['payload']['repair_successful']);
+    }
+
+    public function test_auto_repair_enables_safe_recovery_when_repairable(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+        $path = $this->project->root . '/docs/features/event-bus.spec.md';
+        file_put_contents($path, str_replace('# Feature Spec: event-bus', '# Spec: event-bus', (string) file_get_contents($path)));
+
+        $result = $this->runCommand(['foundry', 'implement', 'feature', 'event-bus', '--auto-repair', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('repaired', $result['payload']['status']);
+        $this->assertTrue($result['payload']['repair_attempted']);
+        $this->assertTrue($result['payload']['repair_successful']);
+    }
+
+    public function test_state_and_decisions_are_updated_after_execution(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+
+        $result = $this->runCommand(['foundry', 'implement', 'feature', 'event-bus', '--json']);
+        $state = (string) file_get_contents($this->project->root . '/docs/features/event-bus.md');
+        $decisions = (string) file_get_contents($this->project->root . '/docs/features/event-bus.decisions.md');
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('## Current State', $state);
+        $this->assertStringContainsString('Implemented Event bus feature scaffolding exists in the app.', $state);
+        $this->assertStringContainsString('### Decision: context-driven execution for event-bus', $decisions);
+    }
+
+    public function test_failed_revalidation_returns_completed_with_issues(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+
+        $result = $this->runCommand(['foundry', 'implement', 'feature', 'event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('completed_with_issues', $result['payload']['status']);
+        $this->assertTrue($result['payload']['can_proceed']);
+        $this->assertFalse($result['payload']['requires_repair']);
+        $this->assertNotSame([], $result['payload']['issues']);
+        $this->assertContains(
+            'Update the spec to reflect the decision-backed behavior if it is now intended behavior.',
+            $result['payload']['required_actions'],
+        );
+    }
+
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,payload:array<string,mixed>}
+     */
+    private function runCommand(array $argv): array
+    {
+        ob_start();
+        $status = (new Application())->run($argv);
+        $output = ob_get_clean() ?: '';
+
+        /** @var array<string,mixed> $payload */
+        $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+
+        return ['status' => $status, 'payload' => $payload];
+    }
+
+    private function writeMeaningfulContext(string $feature): void
+    {
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+# Feature Spec: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Goals
+
+- Add deterministic event bus feature scaffolding.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Constraints
+
+- Keep output deterministic.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Event bus feature files are present.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+# Feature: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Current State
+
+- Event bus feature implementation is pending.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Event bus feature scaffolding exists in the app.
+- Event bus feature files are present.
+MD);
+    }
+}

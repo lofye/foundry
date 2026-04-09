@@ -150,3 +150,124 @@ Timestamp: 2026-04-07T14:00:00-04:00
 - Goals
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: promote context workflow guidance into framework and scaffold onboarding
+Timestamp: 2026-04-07T14:30:00-04:00
+
+**Context**
+- Context commands were implemented, but framework and scaffold guidance still described the workflow as not yet available.
+- This created drift between the documented onboarding path and the actual CLI behavior.
+
+**Decision**
+- Update framework and scaffold onboarding guidance to describe the implemented context workflow.
+- Use verify context as the primary machine-readable proceed / fail gate.
+
+**Reasoning**
+- Onboarding docs must reflect real command behavior once the contract exists.
+- A single documented gate reduces ambiguity for both humans and automation.
+
+**Alternatives Considered**
+- Leave bootstrap-only wording in place.
+- Document different proceed / fail gates across framework and app scaffolds.
+- Delay onboarding updates until later phases.
+
+**Impact**
+- Framework and scaffold guidance now match the implemented context system.
+- New apps inherit the same deterministic context workflow expectations as the framework repo.
+
+**Spec Reference**
+- Goals
+- Expected Behavior
+- Acceptance Criteria
+
+### Decision: expose explicit readiness signals for context enforcement
+Timestamp: 2026-04-07T15:00:00-04:00
+
+**Context**
+- Doctor, alignment, inspect, and verify each reported context health, but later execution phases need a single explicit readiness interpretation.
+- The workflow needed a deterministic answer to whether meaningful implementation may proceed.
+
+**Decision**
+- Expose can_proceed and requires_repair consistently across context doctor, context check-alignment, inspect context, and verify context.
+- Keep refusal-to-proceed semantics aligned across CLI output and onboarding guidance.
+
+**Reasoning**
+- A shared readiness model keeps inspection, verification, and later enforcement layers consistent.
+- Explicit readiness signals reduce hidden interpretation by users and tooling.
+
+**Alternatives Considered**
+- Infer readiness separately in each command.
+- Keep pass / fail semantics only in verify context.
+- Delay readiness hardening until feature execution exists.
+
+**Impact**
+- Later execution commands can reuse the existing context readiness contract without inventing a second policy path.
+- Users and automation now receive the same deterministic readiness signals from every context surface.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
+### Decision: execute feature work from canonical context with bounded repair
+Timestamp: 2026-04-07T15:30:00-04:00
+
+**Context**
+- Foundry could inspect and verify feature context, but it still lacked a public execution path that consumed canonical context artifacts directly.
+- Later execution needed to remain fail-closed, deterministic, and repair-first.
+
+**Decision**
+- Add implement feature as a strict extension of the context system.
+- Reuse context validation and readiness signals as the execution gate.
+- Allow only bounded, deterministic repair operations before execution when repair is explicitly requested.
+
+**Reasoning**
+- Canonical context must remain authoritative once feature execution begins.
+- Reusing doctor, alignment, inspect, and verify preserves consistency and avoids a second execution policy path.
+- Bounded repair keeps execution deterministic while still unblocking simple context issues.
+
+**Alternatives Considered**
+- Execute from ad hoc prompts only.
+- Bypass context enforcement during implementation.
+- Allow speculative context rewriting during auto-repair.
+
+**Impact**
+- Foundry can now execute feature work from canonical context artifacts.
+- Feature execution updates state and decisions, then revalidates context before finishing.
+- CI and scripted workflows can consume deterministic blocked / repaired / completed results from the same context contract.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
+### Decision: execute feature work from canonical context for context-persistence
+Timestamp: 2026-04-07T15:30:00-04:00
+
+**Context**
+- Foundry could validate, align, inspect, and verify feature context, but it still lacked a public execution path that consumed canonical context artifacts directly.
+- Feature execution needed to remain fail-closed, deterministic, and repair-first.
+
+**Decision**
+- Add `implement feature` as a strict extension of the context system.
+- Use the canonical spec, state, and decision ledger as the deterministic execution input.
+- Update feature context after execution and revalidate before finishing.
+
+**Reasoning**
+- This keeps feature execution traceable to the canonical context contract.
+- This preserves fail-closed behavior when repair is still required.
+- This avoids introducing a second execution policy path separate from doctor, alignment, inspect, and verify.
+
+**Alternatives Considered**
+- Execute from ad hoc prompts only.
+- Skip post-execution context updates.
+- Repair context only after implementation.
+
+**Impact**
+- Foundry can now execute feature work from canonical context artifacts.
+- Feature execution now leaves an explicit context trail.
+- Later runs can resume from updated state instead of relying on chat history.
+
+**Spec Reference**
+- Expected Behavior
+- Acceptance Criteria

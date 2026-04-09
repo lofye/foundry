@@ -15,7 +15,7 @@
     "phpstan/phpstan": "^2.1",
     "laravel/pint": "^1.29",
     "rector/rector": "^2.3",
-    "nunomaduro/pao": "0.x-dev"
+    "nunomaduro/pao": "^0.1"
   },
   "suggest": {
     "ext-redis": "Enable production-grade Redis queue support via RedisQueueDriver.",

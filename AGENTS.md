@@ -2,50 +2,87 @@
 
 Use this file when working in the Foundry framework repository itself.
 
-When a developer creates an application using Foundry, the `APP-AGENTS.md` file's contents will overwrite `AGENTS.md`, and the `APP-README.md` file's contents will overwrite `README.md`
+When a developer creates an application using Foundry, the `APP-AGENTS.md` file's contents will overwrite `AGENTS.md`, and the `APP-README.md` file's contents will overwrite `README.md`.
+
+---
 
 ## Philosophy
 
-The philosophy behind the Foundry Framework is in docs/philosophy/foundry-philosophy.md
-If you haven't already read it during this session, read it now, then proceed.
+Foundry is an LLM-first web framework that competes with human-first frameworks like Laravel.
+
+The philosophy behind the Foundry Framework is in:
+
+docs/philosophy/foundry-philosophy.md
+
+If you have not read it during this session, read it before proceeding.
+
+---
 
 ## Scope
 
 This repository owns framework internals:
+
 - runtime and compiler code in `src/*`
 - CLI commands in `src/CLI/*`
 - documentation in `README.md`, `docs/*`, and `examples/*`
 - app scaffolding in `src/CLI/Commands/InitAppCommand.php`
 - stub templates in `stubs/*`
 
-The root `app/*` tree is a framework-owned demo and smoke app used for compile and verification flows. Within that app, `app/features/*` remains source of truth and `app/generated/*` remains generated output.
+The root `app/*` tree is a framework-owned demo and smoke app.
+
+- `app/features/*` = source of truth
+- `app/generated/*` = generated output
+
+---
 
 ## Command Rule
 
-- In this repository, use `php bin/foundry ...`
-- In generated Foundry apps, use `foundry ...`
-- Prefer `--json` for inspect, verify, doctor, prompt, export, and generation commands when an agent is consuming the output
+- In this repository, use: `php bin/foundry ...`
+- In generated apps, use: `foundry ...`
+- Prefer `--json` when output is consumed by agents
+
+---
 
 ## Source Of Truth
 
-- Treat `src/*` as the source of truth for framework behavior
-- Treat `tests/*` as the source of truth for expected framework behavior
-- Treat feature context documents under `docs/features/*` as the source of truth for feature intent, recorded implementation state, and reasoning history
-- Treat `src/CLI/Commands/InitAppCommand.php`, `APP-AGENTS.md`, and `APP-README.md` as the source of truth for the default app scaffold and app onboarding copy
-- Treat `README.md` as the source of truth for framework-level onboarding and contributor guidance
-- Treat `stubs/*` as source templates only when a generator actually reads them
-- Do not hand-edit `app/generated/*`; regenerate from the source feature files
-- Do not patch emitted build artifacts to make tests pass; fix the generator, compiler, verifier, or source inputs instead
+- `src/*` → framework behavior
+- `tests/*` → expected behavior
+- `docs/features/*` → feature intent, state, reasoning
+- `README.md` → contributor + onboarding guidance
+- `APP-AGENTS.md`, `APP-README.md` → scaffold defaults
+- `stubs/*` → generator templates only when used
+
+Do NOT:
+
+- edit `app/generated/*` manually
+- patch generated output to make tests pass
+
+---
+
+## Workflow Reference
+
+For full context-driven workflow, follow the checklist in `README.md`.
+
+Do not skip:
+
+- context validation
+- alignment checking
+- refusal handling
+- state updates
+- decision logging
+
+---
 
 ## Safe Edit Loop
 
-1. If the task is meaningful feature work, read the feature spec, state document, and decision ledger, then inspect and verify feature context before changing code.
-2. Make the smallest change in framework source files.
-3. If the change affects graph behavior, generated projections, or the demo app, recompile the root app.
-4. Run the narrowest relevant PHPUnit coverage first.
-5. Run broader verification before finalizing.
+1. Inspect relevant code, command, or service.
+2. If feature work, read spec, state, decisions.
+3. Make the smallest possible change.
+4. Recompile if needed.
+5. Run focused tests first.
+6. Run full verification before finishing.
 
-Common command loop:
+### Common loop
 
 ```bash
 php bin/foundry compile graph --json
@@ -56,187 +93,321 @@ php bin/foundry verify contracts --json
 vendor/bin/phpunit
 ```
 
-Feature- or file-targeted inspection is preferred when it makes the task smaller:
+### Feature-focused loop
 
 ```bash
-php bin/foundry context init <feature> --json
 php bin/foundry context doctor --feature=<feature> --json
 php bin/foundry context check-alignment --feature=<feature> --json
-php bin/foundry inspect feature <feature> --json
 php bin/foundry inspect context <feature> --json
 php bin/foundry verify context --feature=<feature> --json
+php bin/foundry inspect feature <feature> --json
 php bin/foundry inspect impact --file=<path> --json
 ```
 
+---
+
 ## Change Rules
 
-- Keep framework changes minimal and explicit
-- Preserve deterministic CLI and JSON output shapes unless the task explicitly changes them
-- If you change a command, verifier, export, scaffold, or docs generator, update the corresponding tests in the same change
-- If you change scaffolded app defaults, keep `APP-README.md`, `APP-AGENTS.md`, the promoted app `README.md` and `AGENTS.md` behavior, and init-app tests aligned
-- If you change framework onboarding, command loops, starter guidance, or user-visible workflow docs, review `README.md`, `APP-README.md`, and `APP-AGENTS.md` together and update every file whose guidance is now stale
-- If you change compiler or projection behavior, update both verification coverage and integration coverage
-- Do not add app-specific policy to framework internals unless it is meant to be scaffolded into every app
-- Renderers must never access graph, compiler, or runtime state directly; they consume only assembled plan data
-- Preserve git history whenever possible (rename, don’t delete/recreate)
+- Keep changes minimal and explicit
+- Preserve deterministic output shapes
+- Update tests alongside behavior changes
+- Keep scaffold docs (`APP-*`) in sync
+- Update all onboarding docs together when workflows change
+- Do not introduce duplicate logic paths
+- Preserve git history where possible
+
+---
 
 ## Scaffold Doc Sync
 
-- `APP-AGENTS.md` and `APP-README.md` live beside the framework `AGENTS.md` and `README.md` so scaffolded app guidance stays easy to inspect and update
-- Generated apps must end with `AGENTS.md` and `README.md`; if scaffold promotion behavior changes, keep the promotion logic, template files, and init-app tests aligned
-- When framework commands, directory conventions, starter modes, inspect/verify flows, or testing guidance change, update the framework `README.md` plus any matching guidance in `APP-AGENTS.md` and `APP-README.md` in the same change
-- Do not update one of these onboarding files in isolation when the same guidance appears in the others
+- `APP-AGENTS.md` and `APP-README.md` define app defaults
+- Generated apps must end with `AGENTS.md` and `README.md`
+- If scaffold behavior changes, update:
+    - templates
+    - promotion logic
+    - tests
+
+Never update onboarding docs in isolation.
+
+---
 
 ## Frozen Contracts
 
-- Once a documented contract has been implemented, reviewed, and aligned with shipped examples, treat it as frozen
-- Do not casually rewrite stable contract wording, examples, or user-visible behavior
-- Any behavioral change must follow this order: propose the change, update the contract docs first, implement it, re-align examples, then verify determinism and tests
-- Patch releases may contain bug fixes only and must not change stable contracts
-- Minor releases may extend stable contracts additively, but must remain backward compatible and keep existing JSON output shapes stable
-- Breaking changes to stable CLI behavior, JSON contracts, section structure, or explain semantics (including `foundry explain`) require a major-version plan
-- If behavior matters to users or tooling, it must be reflected in docs, implementation, and tests
-- Stable output must remain deterministic: same input must produce identical output, with no timestamps, randomness, ordering instability, or environment leakage
-- The `foundry explain` output (text, JSON, markdown, and deep mode) is a versioned contract
-- Its structure, section ordering, and JSON shape must remain stable across patch and minor releases
-- Do not "improve", reformat, or expand examples unless required to match actual behavior
+Once implemented and aligned:
+
+- Treat contracts as stable
+- Do not casually rewrite behavior or examples
+
+Change order:
+
+1. update spec
+2. implement
+3. realign examples
+4. verify determinism
+
+Rules:
+
+- patch = bugfix only
+- minor = additive, backward compatible
+- breaking = requires major plan
+
+Outputs must remain deterministic:
+- no timestamps
+- no randomness
+- stable ordering
+
+---
 
 ## Testing Discipline
 
-- Every framework behavior change needs PHPUnit coverage
-- Prefer focused test runs while iterating, then finish with the broader relevant suite
-- Do not weaken assertions, delete failing coverage, or edit previously-passing tests or generated output to hide regressions
-- When changing CLI scaffolding or textual contract surfaces, assert the generated files and key content in integration tests
-- When a bug is encountered, create a test that fails because of that bug, then modify the non-test code so that the test passes while maintaining the intent of the original code.
-- Keep test coverage above 90% for all new features and existing code.
+- Every change requires PHPUnit coverage
+- Prefer narrow tests → then full suite
+- Never weaken assertions
+- Never hide regressions
+- Add regression tests for bugs
+- Above 90% test coverage MUST be maintained at all times
+
+---
 
 ## Ask First
 
-Stop and ask before:
-- changing package names, Composer constraints, or public command names without explicit direction
-- making breaking changes to scaffolded app structure or generated file conventions
-- changing verification semantics in ways that could invalidate existing apps without a migration path
-- making a behavior choice when the existing docs, tests, and code disagree
+Stop before:
+
+- changing public commands
+- altering scaffold structure
+- changing verification semantics
+- resolving unclear conflicts between docs/tests/code
+
+---
 
 ## SPEC DISCIPLINE RULE
 
-Specs are contracts, not drafts.
+Specs are contracts.
 
-If a spec has been implemented and aligned:
-- Do NOT modify it casually
-- Do NOT change examples unless implementation has changed
+If behavior changes:
 
-If behavior needs to change:
-1. update the spec first
-2. implement the change
+1. update spec
+2. implement
 3. realign examples
-4. verify tests + determinism
+4. verify
 
-Never let docs drift from implementation.
-Never let implementation drift from spec.
+Never allow:
+- docs drift
+- implementation drift
 
-Determinism and contract stability are required.
-If a change would surprise a user or break tooling, it is a contract change.
+---
 
-## Docs
+# Context Anchoring
 
-### Source of truth
+Foundry uses feature-level context anchoring.
 
-•	The framework/ submodule is the canonical source of framework documentation.
-•	In the framework repo, everything under docs/ is authored canonical content unless explicitly marked otherwise.
-•	The website repo is the presentation layer and may contain:
-•	content/docs/authored/ for website-only docs
-•	content/docs/imported/ for docs synced from framework/docs/
-•	public/docs/ for generated output
-•	The website repo is the only canonical renderer/publisher of public docs and version snapshots.
-•	Do not create duplicate canonical framework docs in content/docs/authored/.
-•	Do not edit imported docs manually.
-•	Website HTML pages in public/*.html belong to the website repo, not the framework repo.
-•	Do not use `scripts/build-docs.php`, `DocsSiteBuilder`, or `docs/versions/` as the primary publishing path; they are deprecated framework-local preview helpers only.
-•	Before moving or deleting docs, audit which docs are actually used by the build pipeline.
+Canonical files:
 
-### Docs mental model
-•	framework/docs/ = truth
-•	framework/docs/versions/ = deprecated legacy preview snapshot input, not published source of record
-•	website/content/docs/imported/ = synced copy
-•	website/content/docs/authored/ = website-only authored docs
-•	website/public/docs/ = generated output
+- `docs/features/<feature>.spec.md`
+- `docs/features/<feature>.md`
+- `docs/features/<feature>.decisions.md`
 
-## Context Anchoring
+Execution specs under `docs/specs/*` are:
 
-Foundry uses feature-level context anchoring for meaningful feature work.
+- optional
+- non-authoritative after implementation
 
-Canonical feature context files:
+---
 
-- `docs/features/<feature-name>.spec.md`
-- `docs/features/<feature-name>.md`
-- `docs/features/<feature-name>.decisions.md`
+## Source-of-Truth Boundaries
 
-Execution specs may exist under `docs/specs/<feature-name>/<NNN-name>.md`, but they are optional and are never authoritative once a feature has canonical context files.
+- spec → intent
+- state → current reality
+- decisions → reasoning history
+- code/tests → behavior
 
-Feature naming rules:
+---
 
-- use lowercase kebab-case only
-- match the filename exactly
-- do not use spaces, underscores, repeated dashes, or alternative spec filenames
+## Read Before Acting
 
-Source-of-truth boundaries:
+Before meaningful work:
 
-- spec = intended behavior
-- state = current known implementation state
-- decisions = append-only reasoning history
-- code/tests = implementation and runtime behavior
+1. read spec
+2. read state
+3. read decisions
+4. run context commands
 
-Read-before-acting rule:
+Do NOT rely on chat history.
 
-- Before meaningful feature work, read the spec, state document, and decision ledger.
-- Do not rely on chat history as authoritative context.
-- Use the context tools that match the task: `context doctor`, `context check-alignment`, `inspect context`, and `verify context`.
+---
 
-Primary execution gate:
+## Execution Gate (CRITICAL)
 
-- `php bin/foundry verify context --feature=<feature> --json` is the primary machine-readable proceed/fail gate.
-- Meaningful work may proceed only when `verify context` passes.
-- `can_proceed=true` means meaningful work may proceed.
-- `can_proceed=false` means meaningful work is blocked and repair must happen first.
-- `requires_repair=true` means repair is the only valid next step before implementation.
-- If `verify context` is not run directly, the equivalent proceed condition is: doctor status is `ok` or `warning`, and alignment status is `ok` or `warning`.
+Primary gate:
 
-Refuse-to-proceed rule:
+```bash
+php bin/foundry verify context --feature=<feature> --json
+```
 
-- Meaningful work must not proceed when `verify context` fails.
-- Meaningful work must not proceed when doctor status is `repairable` or `non_compliant`.
-- Meaningful work must not proceed when alignment status is `mismatch`.
+Rules:
 
-When context is non-compliant:
+- `status=pass` → work may proceed
+- `status=fail` → work is blocked
 
-1. Stop.
-2. Explain the non-compliance.
-3. List the required corrective actions.
-4. Repair or propose repair as the immediate next step.
+Derived signals:
 
-Refusal semantics:
+- `can_proceed=true` → proceed allowed
+- `can_proceed=false` → HARD STOP
+- `requires_repair=true` → repair only
 
-- `context doctor`, `context check-alignment`, `inspect context`, and `verify context` all expose `can_proceed` and `requires_repair`.
-- Treat `can_proceed=false` as a hard refusal-to-proceed condition for meaningful implementation.
+Equivalent condition:
 
-Allowed recovery actions before implementation:
+- doctor = ok|warning
+- alignment = ok|warning
 
-- run `php bin/foundry context init <feature> --json`
-- repair missing or malformed context files
-- update the feature state document
-- append a decision ledger entry
-- update the feature spec and log the corresponding decision
+---
 
-Repair-first workflow:
+## Refuse-to-Proceed Rule
 
-- Repair is the only valid next step before implementation when context is invalid.
-- After meaningful implementation or planning work, update the feature state document.
-- After meaningful technical or architectural decisions, append a decision ledger entry.
-- If implementation diverges from the spec, either realign implementation, update the spec and log the change, or log and explain the divergence in the decision ledger and state document.
+You MUST stop when:
 
-Spec evolution rule:
+- doctor = repairable | non_compliant
+- alignment = mismatch
+- required files missing
+- required sections missing
+- mismatch without decision support
 
-- Each feature must have exactly one canonical spec file: `docs/features/<feature-name>.spec.md`.
-- Do not create alternate spec filenames such as `.spec.v2.md`, `.phase2.spec.md`, or `-v2.spec.md`.
-- When a feature evolves, update the canonical spec, log the change in the decision ledger, and continue implementation against the updated spec.
+---
+
+## Allowed Actions While Blocked
+
+Only:
+
+- create missing files
+- repair malformed files
+- update state
+- append decisions
+- update spec (with decision log)
+
+No implementation allowed.
+
+---
+
+## Repair-First Workflow
+
+When blocked:
+
+1. stop
+2. explain issue
+2. list required actions
+3. repair
+
+After implementation:
+
+- update state
+- log decisions
+- re-run verification
+
+---
+
+## Spec Rules
+
+Each feature:
+
+- MUST have exactly one spec file
+- MUST NOT have versioned filenames
+
+### Optional Spec Version Section
+
+Specs MAY include:
+
+## Spec Version
+
+But it is optional and must NOT be enforced by tooling.
+
+---
+
+## Spec Evolution
+
+When intent changes:
+
+1. update spec
+2. log decision
+3. update state
+
+Spec always reflects current intent.
+
+---
+
+## Decision Ledger Rules
+
+- append-only
+- never edit
+- never summarize
+- never delete
+
+Each entry must include:
+
+- context
+- decision
+- reasoning
+- alternatives
+- impact
+
+---
+
+## State Document Rules
+
+Must include:
+
+- current state
+- open questions
+- next steps
+
+Must always reflect latest reality.
+
+---
+
+## Alignment Rules
+
+You MUST detect and resolve:
+
+- spec vs state mismatch
+- spec vs implementation mismatch
+- state vs implementation mismatch
+
+Resolve via:
+
+- implementation change
+- spec update + decision
+- decision logging
+
+---
+
+## Enforcement
+
+System is NON-COMPLIANT if:
+
+- required files missing
+- decisions not logged
+- state outdated
+- mismatch unresolved
+- work proceeds without validation
+
+---
+
+## Final Rule
+
+If non-compliant:
+
+- STOP
+- explain why
+- list required actions
+- repair first
+
+Never proceed in a broken state.
+
+---
+
+## Guiding Principle
+
+Intent must survive.
+
+Every decision must be recorded.
+
+Any agent must be able to resume work with zero prior conversation.

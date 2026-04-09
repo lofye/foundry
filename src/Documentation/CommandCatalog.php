@@ -155,6 +155,8 @@ final class CommandCatalog
     }
 
     /**
+     * @param array<int,string> $availableExtensions
+     * @param array<int,string> $availablePipelineStages
      * @return array<int,string>
      */
     private function usageExamples(
@@ -229,6 +231,7 @@ final class CommandCatalog
             $signature === 'export graph' => 'export graph --format=json --json',
             $signature === 'export openapi' => 'export openapi --format=json --json',
             $signature === 'preview notification' => 'preview notification welcome_email --json',
+            $signature === 'implement feature' => 'implement feature ' . str_replace('_', '-', $examples['feature']) . ' --json',
             str_starts_with($signature, 'inspect node') => 'inspect node ' . $examples['node'] . ' --json',
             str_starts_with($signature, 'inspect dependents') => 'inspect dependents ' . $examples['node'] . ' --json',
             str_starts_with($signature, 'inspect affected-tests') => 'inspect affected-tests ' . $examples['node'] . ' --json',
@@ -426,8 +429,8 @@ final class CommandCatalog
 
         $unique = [];
         foreach ($links as $link) {
-            $href = (string) ($link['href'] ?? '');
-            if ($href === '' || isset($unique[$href])) {
+            $href = (string) $link['href'];
+            if (isset($unique[$href])) {
                 continue;
             }
 
@@ -466,8 +469,8 @@ final class CommandCatalog
 
         $unique = [];
         foreach ($targets as $target) {
-            $title = (string) ($target['title'] ?? '');
-            if ($title === '' || isset($unique[$title])) {
+            $title = (string) $target['title'];
+            if (isset($unique[$title])) {
                 continue;
             }
 

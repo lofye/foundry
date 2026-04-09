@@ -1,0 +1,47 @@
+version: 2
+feature: context_persistence
+kind: http
+description: 'Preserve feature intent, implementation state, and decision history across sessions.'
+owners:
+  - platform
+route:
+  method: POST
+  path: /context-persistence
+input:
+  schema: app/features/context_persistence/input.schema.json
+output:
+  schema: app/features/context_persistence/output.schema.json
+auth:
+  required: false
+  strategies: []
+  permissions: []
+database:
+  reads: []
+  writes: []
+  transactions: optional
+  queries: []
+cache:
+  reads: []
+  writes: []
+  invalidate: []
+events:
+  emit: []
+  subscribe: []
+jobs:
+  dispatch: []
+rate_limit:
+  strategy: user
+  bucket: context_persistence
+  cost: 1
+observability:
+  audit: true
+  trace: true
+  log_level: info
+tests:
+  required:
+    - contract
+    - feature
+llm:
+  editable: true
+  risk_level: medium
+  notes_file: prompts.md

@@ -1,0 +1,58 @@
+{
+    "version": 1,
+    "feature": "context_persistence",
+    "kind": "http",
+    "relevant_files": [
+        "app/features/context_persistence/feature.yaml",
+        "app/features/context_persistence/action.php",
+        "app/features/context_persistence/input.schema.json",
+        "app/features/context_persistence/output.schema.json",
+        "app/features/context_persistence/queries.sql",
+        "app/features/context_persistence/permissions.yaml",
+        "app/features/context_persistence/cache.yaml",
+        "app/features/context_persistence/events.yaml",
+        "app/features/context_persistence/jobs.yaml",
+        "app/features/context_persistence/tests/context_persistence_contract_test.php",
+        "app/features/context_persistence/tests/context_persistence_feature_test.php"
+    ],
+    "generated_files": [
+        "app/.foundry/build/graph/app_graph.json",
+        "app/.foundry/build/projections/routes_index.php",
+        "app/.foundry/build/projections/schema_index.php",
+        "app/.foundry/build/projections/feature_index.php",
+        "app/.foundry/build/projections/permission_index.php",
+        "app/.foundry/build/projections/event_index.php",
+        "app/.foundry/build/projections/job_index.php",
+        "app/.foundry/build/projections/cache_index.php",
+        "app/.foundry/build/projections/scheduler_index.php",
+        "app/.foundry/build/projections/webhook_index.php",
+        "app/.foundry/build/projections/query_index.php",
+        "app/generated/routes.php",
+        "app/generated/schema_index.php",
+        "app/generated/feature_index.php",
+        "app/generated/permission_index.php",
+        "app/generated/event_index.php",
+        "app/generated/job_index.php",
+        "app/generated/cache_index.php",
+        "app/generated/scheduler_index.php",
+        "app/generated/webhook_index.php",
+        "app/generated/query_index.php"
+    ],
+    "upstream_dependencies": [
+        "auth"
+    ],
+    "downstream_dependents": [],
+    "contracts": {
+        "input": "app/features/context_persistence/input.schema.json",
+        "output": "app/features/context_persistence/output.schema.json"
+    },
+    "tests": [
+        "context_persistence_contract_test",
+        "context_persistence_feature_test"
+    ],
+    "forbidden_paths": [
+        "src/Core",
+        "src/Http"
+    ],
+    "risk_level": "medium"
+}

@@ -13,7 +13,11 @@ use Foundry\Support\Paths;
 
 final class FirstRunService
 {
-    public function __construct(private readonly ?ExampleLoader $exampleLoader = null) {}
+    public function __construct(
+        private readonly ?ExampleLoader $exampleLoader = null,
+        private readonly ?bool $interactive = null,
+        private readonly ?\Closure $inputReader = null,
+    ) {}
 
     /**
      * @param array<int,string> $args
@@ -29,6 +33,17 @@ final class FirstRunService
 
         if ($this->projectDetected($context->paths())) {
             return $this->existingProjectFlow($context, 'default');
+        }
+
+        if ($context->expectsJson()) {
+            $recommended = $loader->recommended();
+
+            return $this->loadExampleFlow(
+                $context,
+                (string) ($recommended['name'] ?? 'blog-api'),
+                !$this->isWorkingDirectoryEmpty($context->paths()->root()),
+                'default',
+            );
         }
 
         $selection = $this->interactiveSelection($loader);
@@ -261,6 +276,7 @@ final class FirstRunService
     }
 
     /**
+     * @param array<int,string> $argv
      * @return array{status:int,output:string,payload:array<string,mixed>|null}
      */
     private function runCli(string $cwd, array $argv, bool $json): array
@@ -430,6 +446,10 @@ final class FirstRunService
 
     private function isInteractive(): bool
     {
+        if ($this->interactive !== null) {
+            return $this->interactive;
+        }
+
         if (!defined('STDIN')) {
             return false;
         }
@@ -447,6 +467,12 @@ final class FirstRunService
 
     private function readLine(string $prompt): string
     {
+        if ($this->inputReader instanceof \Closure) {
+            $line = ($this->inputReader)($prompt);
+
+            return is_string($line) ? trim($line) : '';
+        }
+
         if (function_exists('readline')) {
             $line = readline($prompt);
 

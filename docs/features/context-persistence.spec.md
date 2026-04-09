@@ -9,12 +9,14 @@
 - Support deterministic validation of those artifacts.
 - Introduce CLI tooling to initialize, validate, inspect, and verify feature context.
 - Introduce deterministic spec-state alignment checking.
-- Support future execution driven by canonical feature context.
+- Introduce deterministic, context-driven feature execution.
+- Support safe repair-first execution when context is invalid.
 
 ## Non-Goals
 - Do not add model-specific behavior.
 - Do not replace code/tests as the source of implementation truth.
 - Do not compact or rewrite decision history.
+- Do not allow prompt-only execution without canonical context.
 
 ## Constraints
 - Must remain deterministic.
@@ -22,6 +24,7 @@
 - Must use human-readable Markdown files.
 - Must preserve exactly one canonical spec per feature.
 - Alignment checking must remain conservative and explainable.
+- Execution must fail closed unless context is valid or explicitly repaired through allowed repair flows.
 
 ## Expected Behavior
 - Each feature has one canonical spec, one state document, and one decision ledger.
@@ -34,6 +37,10 @@
 - Verify context fails when alignment status is mismatch.
 - Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
+- Implement feature consumes canonical feature context as authoritative execution input.
+- Implement feature blocks execution when can_proceed is false unless explicit repair mode succeeds.
+- Implement feature updates feature state and decision history after meaningful execution.
+- Implement feature revalidates context after execution.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -46,7 +53,12 @@
 - Inspect context returns a deterministic combined context view.
 - Verify context returns deterministic pass/fail status for feature context.
 - Alignment results include actionable repair guidance.
+- Implement feature executes only from canonical context artifacts.
+- Implement feature returns deterministic blocked, repaired, completed, or completed_with_issues results.
+- Implement feature updates state and decisions when execution changes feature reality.
+- Implement feature revalidates context before finishing.
 
 ## Assumptions
 - Initial feature work may still be partly manual.
 - Execution specs may exist separately under docs/specs/<feature>/<NNN-name>.md
+- Execution specs are secondary work orders and do not override the canonical feature spec.
