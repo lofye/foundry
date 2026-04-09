@@ -30,7 +30,7 @@ final class ContextDoctorService
     ) {}
 
     /**
-     * @return array{status:string,feature:string,files:array<string,array<string,mixed>>,required_actions:list<string>}
+     * @return array{status:string,feature:string,can_proceed:bool,requires_repair:bool,files:array<string,array<string,mixed>>,required_actions:list<string>}
      */
     public function checkFeature(string $featureName): array
     {
@@ -38,9 +38,13 @@ final class ContextDoctorService
         $nameValidation = $this->featureNameValidator->validate($featureName);
 
         if (!$nameValidation->valid) {
+            $readiness = ContextExecutionReadiness::fromDoctorStatus('non_compliant');
+
             return [
                 'status' => 'non_compliant',
                 'feature' => $featureName,
+                'can_proceed' => $readiness['can_proceed'],
+                'requires_repair' => $readiness['requires_repair'],
                 'files' => $this->emptyFiles($relativePaths),
                 'required_actions' => $this->requiredActionsForFeatureName($nameValidation),
             ];
@@ -57,17 +61,20 @@ final class ContextDoctorService
         ];
 
         $status = $this->statusForResults([$spec, $state, $decisions]);
+        $readiness = ContextExecutionReadiness::fromDoctorStatus($status);
 
         return [
             'status' => $status,
             'feature' => $featureName,
+            'can_proceed' => $readiness['can_proceed'],
+            'requires_repair' => $readiness['requires_repair'],
             'files' => $files,
             'required_actions' => $this->requiredActionsForFiles($files),
         ];
     }
 
     /**
-     * @return array{status:string,summary:array{ok:int,warning:int,repairable:int,non_compliant:int,total:int},features:list<array<string,mixed>>,required_actions:list<string>}
+     * @return array{status:string,can_proceed:bool,requires_repair:bool,summary:array{ok:int,warning:int,repairable:int,non_compliant:int,total:int},features:list<array<string,mixed>>,required_actions:list<string>}
      */
     public function checkAll(): array
     {
@@ -97,11 +104,15 @@ final class ContextDoctorService
             }
         }
 
+        $readiness = ContextExecutionReadiness::fromDoctorStatus($status);
+
         return [
             'status' => $status,
+            'can_proceed' => $readiness['can_proceed'],
+            'requires_repair' => $readiness['requires_repair'],
             'summary' => $summary,
             'features' => $features,
-            'required_actions' => $requiredActions,
+            'required_actions' => array_values(array_unique($requiredActions)),
         ];
     }
 
@@ -273,7 +284,7 @@ final class ContextDoctorService
             }
         }
 
-        return $actions;
+        return array_values(array_unique($actions));
     }
 
     /**

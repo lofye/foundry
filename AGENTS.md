@@ -197,6 +197,9 @@ Primary execution gate:
 
 - `php bin/foundry verify context --feature=<feature> --json` is the primary machine-readable proceed/fail gate.
 - Meaningful work may proceed only when `verify context` passes.
+- `can_proceed=true` means meaningful work may proceed.
+- `can_proceed=false` means meaningful work is blocked and repair must happen first.
+- `requires_repair=true` means repair is the only valid next step before implementation.
 - If `verify context` is not run directly, the equivalent proceed condition is: doctor status is `ok` or `warning`, and alignment status is `ok` or `warning`.
 
 Refuse-to-proceed rule:
@@ -211,6 +214,11 @@ When context is non-compliant:
 2. Explain the non-compliance.
 3. List the required corrective actions.
 4. Repair or propose repair as the immediate next step.
+
+Refusal semantics:
+
+- `context doctor`, `context check-alignment`, `inspect context`, and `verify context` all expose `can_proceed` and `requires_repair`.
+- Treat `can_proceed=false` as a hard refusal-to-proceed condition for meaningful implementation.
 
 Allowed recovery actions before implementation:
 

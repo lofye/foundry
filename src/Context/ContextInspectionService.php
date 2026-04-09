@@ -23,30 +23,40 @@ final class ContextInspectionService
     /**
      * @return array{
      *     feature:string,
+     *     can_proceed:bool,
+     *     requires_repair:bool,
      *     doctor:array<string,mixed>,
      *     alignment:array<string,mixed>,
-     *     summary:array{doctor_status:string,alignment_status:string}
+     *     summary:array{doctor_status:string,alignment_status:string},
+     *     required_actions:list<string>
      * }
      */
     public function inspectFeature(string $featureName): array
     {
         $doctor = $this->doctorService->checkFeature($featureName);
         $alignment = $this->alignmentForFeature($featureName, $doctor);
+        $readiness = ContextExecutionReadiness::fromDoctorAndAlignment(
+            (string) ($doctor['status'] ?? 'non_compliant'),
+            (string) ($alignment['status'] ?? 'mismatch'),
+        );
 
         return [
             'feature' => $featureName,
+            'can_proceed' => $readiness['can_proceed'],
+            'requires_repair' => $readiness['requires_repair'],
             'doctor' => $doctor,
             'alignment' => $alignment,
             'summary' => [
                 'doctor_status' => (string) ($doctor['status'] ?? 'non_compliant'),
                 'alignment_status' => (string) ($alignment['status'] ?? 'mismatch'),
             ],
+            'required_actions' => $this->requiredActionsFromInspection($doctor, $alignment),
         ];
     }
 
     /**
      * @param array<string,mixed>|null $doctor
-     * @return array{status:string,feature:string,issues:list<array<string,mixed>>,required_actions:list<string>}
+     * @return array{status:string,feature:string,can_proceed:bool,requires_repair:bool,issues:list<array<string,mixed>>,required_actions:list<string>}
      */
     public function alignmentForFeature(string $featureName, ?array $doctor = null): array
     {
@@ -68,9 +78,12 @@ final class ContextInspectionService
      * @return array{
      *     feature:string,
      *     status:string,
+     *     can_proceed:bool,
+     *     requires_repair:bool,
      *     doctor_status:string,
      *     alignment_status:string,
-     *     issues:list<array<string,mixed>>
+     *     issues:list<array<string,mixed>>,
+     *     required_actions:list<string>
      * }
      */
     public function verifyFeature(string $featureName): array
@@ -81,8 +94,11 @@ final class ContextInspectionService
     /**
      * @return array{
      *     status:string,
+     *     can_proceed:bool,
+     *     requires_repair:bool,
      *     summary:array{pass:int,fail:int,total:int},
-     *     features:list<array<string,mixed>>
+     *     features:list<array<string,mixed>>,
+     *     required_actions:list<string>
      * }
      */
     public function verifyAll(): array
@@ -95,6 +111,7 @@ final class ContextInspectionService
             'total' => 0,
         ];
         $status = 'pass';
+        $requiredActions = [];
 
         foreach ((array) ($doctorAll['features'] ?? []) as $doctorFeature) {
             if (!is_array($doctorFeature)) {
@@ -119,16 +136,24 @@ final class ContextInspectionService
             $features[] = $payload;
             $summary[$payload['status']]++;
             $summary['total']++;
+            foreach ((array) ($payload['required_actions'] ?? []) as $action) {
+                $requiredActions[] = (string) ($payload['feature'] ?? '') . ': ' . (string) $action;
+            }
 
             if ($payload['status'] === 'fail') {
                 $status = 'fail';
             }
         }
 
+        $readiness = ContextExecutionReadiness::fromVerifyStatus($status);
+
         return [
             'status' => $status,
+            'can_proceed' => $readiness['can_proceed'],
+            'requires_repair' => $readiness['requires_repair'],
             'summary' => $summary,
             'features' => $features,
+            'required_actions' => array_values(array_unique($requiredActions)),
         ];
     }
 
@@ -149,7 +174,7 @@ final class ContextInspectionService
 
     /**
      * @param array<string,mixed> $doctor
-     * @return array{status:string,feature:string,issues:list<array<string,mixed>>,required_actions:list<string>}
+     * @return array{status:string,feature:string,can_proceed:bool,requires_repair:bool,issues:list<array<string,mixed>>,required_actions:list<string>}
      */
     private function preflightFailurePayload(string $featureName, array $doctor): array
     {
@@ -187,32 +212,37 @@ final class ContextInspectionService
      * @return array{
      *     feature:string,
      *     status:string,
+     *     can_proceed:bool,
+     *     requires_repair:bool,
      *     doctor_status:string,
      *     alignment_status:string,
-     *     issues:list<array<string,mixed>>
+     *     issues:list<array<string,mixed>>,
+     *     required_actions:list<string>
      * }
      */
     private function verificationPayload(array $inspection): array
     {
         $doctorStatus = (string) ($inspection['summary']['doctor_status'] ?? 'non_compliant');
         $alignmentStatus = (string) ($inspection['summary']['alignment_status'] ?? 'mismatch');
+        $status = ContextExecutionReadiness::verifyStatus($doctorStatus, $alignmentStatus);
+        $readiness = ContextExecutionReadiness::fromVerifyStatus($status);
 
         return [
             'feature' => (string) ($inspection['feature'] ?? ''),
-            'status' => $this->passesVerification($doctorStatus, $alignmentStatus) ? 'pass' : 'fail',
+            'status' => $status,
+            'can_proceed' => $readiness['can_proceed'],
+            'requires_repair' => $readiness['requires_repair'],
             'doctor_status' => $doctorStatus,
             'alignment_status' => $alignmentStatus,
             'issues' => $this->verificationIssues(
                 (array) ($inspection['doctor'] ?? []),
                 (array) ($inspection['alignment'] ?? []),
             ),
+            'required_actions' => $this->requiredActionsFromInspection(
+                (array) ($inspection['doctor'] ?? []),
+                (array) ($inspection['alignment'] ?? []),
+            ),
         ];
-    }
-
-    private function passesVerification(string $doctorStatus, string $alignmentStatus): bool
-    {
-        return in_array($doctorStatus, ['ok', 'warning'], true)
-            && in_array($alignmentStatus, ['ok', 'warning'], true);
     }
 
     /**
@@ -262,5 +292,18 @@ final class ContextInspectionService
         }
 
         return $issues;
+    }
+
+    /**
+     * @param array<string,mixed> $doctor
+     * @param array<string,mixed> $alignment
+     * @return list<string>
+     */
+    private function requiredActionsFromInspection(array $doctor, array $alignment): array
+    {
+        return array_values(array_unique(array_merge(
+            array_values(array_map('strval', (array) ($doctor['required_actions'] ?? []))),
+            array_values(array_map('strval', (array) ($alignment['required_actions'] ?? []))),
+        )));
     }
 }

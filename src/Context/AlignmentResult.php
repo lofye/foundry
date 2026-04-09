@@ -17,13 +17,17 @@ final readonly class AlignmentResult
     ) {}
 
     /**
-     * @return array{status:string,feature:string,issues:list<array<string,mixed>>,required_actions:list<string>}
+     * @return array{status:string,feature:string,can_proceed:bool,requires_repair:bool,issues:list<array<string,mixed>>,required_actions:list<string>}
      */
     public function toArray(string $feature): array
     {
+        $readiness = ContextExecutionReadiness::fromAlignmentStatus($this->status);
+
         return [
             'status' => $this->status,
             'feature' => $feature,
+            'can_proceed' => $readiness['can_proceed'],
+            'requires_repair' => $readiness['requires_repair'],
             'issues' => array_values(array_map(
                 static fn(AlignmentIssue $issue): array => $issue->toArray(),
                 $this->issues,

@@ -66,7 +66,17 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame(0, $result['status']);
         $this->assertSame('ok', $result['payload']['status']);
         $this->assertSame('event-bus', $result['payload']['feature']);
+        $this->assertTrue($result['payload']['can_proceed']);
+        $this->assertFalse($result['payload']['requires_repair']);
         $this->assertSame([], $result['payload']['required_actions']);
+        $this->assertSame([
+            'status',
+            'feature',
+            'can_proceed',
+            'requires_repair',
+            'files',
+            'required_actions',
+        ], array_keys($result['payload']));
         $this->assertSame([
             'path',
             'exists',
@@ -98,6 +108,8 @@ final class CLIContextCommandsTest extends TestCase
 
         $this->assertSame(0, $result['status']);
         $this->assertSame('ok', $result['payload']['status']);
+        $this->assertTrue($result['payload']['can_proceed']);
+        $this->assertFalse($result['payload']['requires_repair']);
         $this->assertSame(['alpha-feature', 'zeta-feature'], $features);
         $this->assertSame(2, $result['payload']['summary']['ok']);
         $this->assertSame(2, $result['payload']['summary']['total']);
@@ -113,6 +125,8 @@ final class CLIContextCommandsTest extends TestCase
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('repairable', $result['payload']['status']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
         $this->assertContains('Fix malformed spec heading in docs/features/event-bus.spec.md.', $result['payload']['required_actions']);
         $this->assertSame('CONTEXT_SPEC_HEADING_INVALID', $result['payload']['files']['spec']['issues'][0]['code']);
     }
@@ -123,8 +137,38 @@ final class CLIContextCommandsTest extends TestCase
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('repairable', $result['payload']['status']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
         $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $result['payload']['required_actions']);
         $this->assertContains('Create missing state file: docs/features/event-bus.md', $result['payload']['required_actions']);
+        $this->assertContains('Create missing decision ledger: docs/features/event-bus.decisions.md', $result['payload']['required_actions']);
+    }
+
+    public function test_context_doctor_missing_state_produces_blocked_readiness(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        unlink($this->project->root . '/docs/features/event-bus.md');
+
+        $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('repairable', $result['payload']['status']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
+        $this->assertContains('Create missing state file: docs/features/event-bus.md', $result['payload']['required_actions']);
+    }
+
+    public function test_context_doctor_missing_decisions_produces_blocked_readiness(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        unlink($this->project->root . '/docs/features/event-bus.decisions.md');
+
+        $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('repairable', $result['payload']['status']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
         $this->assertContains('Create missing decision ledger: docs/features/event-bus.decisions.md', $result['payload']['required_actions']);
     }
 

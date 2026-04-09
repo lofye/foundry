@@ -31,10 +31,15 @@ final class ContextInspectionServiceTest extends TestCase
         $result = $this->service()->inspectFeature('event-bus');
 
         $this->assertSame('event-bus', $result['feature']);
+        $this->assertTrue($result['can_proceed']);
+        $this->assertFalse($result['requires_repair']);
         $this->assertSame('ok', $result['summary']['doctor_status']);
         $this->assertSame('warning', $result['summary']['alignment_status']);
         $this->assertSame('ok', $result['doctor']['status']);
         $this->assertSame('warning', $result['alignment']['status']);
+        $this->assertSame([
+            'Update the feature state to reflect current implementation.',
+        ], $result['required_actions']);
     }
 
     public function test_verification_mapping_produces_correct_pass_fail_outcomes(): void
@@ -45,9 +50,16 @@ final class ContextInspectionServiceTest extends TestCase
         $fail = $this->service()->verifyFeature('missing-feature');
 
         $this->assertSame('pass', $pass['status']);
+        $this->assertTrue($pass['can_proceed']);
+        $this->assertFalse($pass['requires_repair']);
         $this->assertSame('ok', $pass['doctor_status']);
         $this->assertSame('warning', $pass['alignment_status']);
+        $this->assertSame([
+            'Update the feature state to reflect current implementation.',
+        ], $pass['required_actions']);
         $this->assertSame('fail', $fail['status']);
+        $this->assertFalse($fail['can_proceed']);
+        $this->assertTrue($fail['requires_repair']);
         $this->assertSame('repairable', $fail['doctor_status']);
         $this->assertSame('mismatch', $fail['alignment_status']);
     }
@@ -64,6 +76,8 @@ final class ContextInspectionServiceTest extends TestCase
         ));
 
         $this->assertSame('pass', $result['status']);
+        $this->assertTrue($result['can_proceed']);
+        $this->assertFalse($result['requires_repair']);
         $this->assertSame(['alpha-feature', 'zeta-feature'], $features);
         $this->assertSame(2, $result['summary']['pass']);
         $this->assertSame(2, $result['summary']['total']);

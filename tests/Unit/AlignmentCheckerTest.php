@@ -130,9 +130,11 @@ final class AlignmentCheckerTest extends TestCase
             '',
         )->toArray('event-bus');
 
-        $this->assertSame(['status', 'feature', 'issues', 'required_actions'], array_keys($payload));
+        $this->assertSame(['status', 'feature', 'can_proceed', 'requires_repair', 'issues', 'required_actions'], array_keys($payload));
         $this->assertSame('ok', $payload['status']);
         $this->assertSame('event-bus', $payload['feature']);
+        $this->assertTrue($payload['can_proceed']);
+        $this->assertFalse($payload['requires_repair']);
         $this->assertSame([], $payload['issues']);
         $this->assertSame([], $payload['required_actions']);
     }

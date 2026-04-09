@@ -64,11 +64,22 @@ final class ContextServicesTest extends TestCase
     {
         $doctor = $this->doctorService();
 
-        $this->assertSame('repairable', $doctor->checkFeature('event-bus')['status']);
-        $this->assertSame('non_compliant', $doctor->checkFeature('Event_Bus')['status']);
+        $missing = $doctor->checkFeature('event-bus');
+        $invalid = $doctor->checkFeature('Event_Bus');
+
+        $this->assertSame('repairable', $missing['status']);
+        $this->assertFalse($missing['can_proceed']);
+        $this->assertTrue($missing['requires_repair']);
+
+        $this->assertSame('non_compliant', $invalid['status']);
+        $this->assertFalse($invalid['can_proceed']);
+        $this->assertTrue($invalid['requires_repair']);
 
         $this->initService()->init('event-bus');
-        $this->assertSame('ok', $doctor->checkFeature('event-bus')['status']);
+        $ok = $doctor->checkFeature('event-bus');
+        $this->assertSame('ok', $ok['status']);
+        $this->assertTrue($ok['can_proceed']);
+        $this->assertFalse($ok['requires_repair']);
     }
 
     public function test_doctor_service_generates_required_actions_correctly(): void
@@ -87,6 +98,8 @@ final class ContextServicesTest extends TestCase
         $result = $this->doctorService()->checkFeature('event-bus');
 
         $this->assertSame('repairable', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
         $this->assertContains('Fix malformed spec heading in docs/features/event-bus.spec.md.', $result['required_actions']);
         $this->assertContains('Add missing required section "## Goals" to docs/features/event-bus.spec.md.', $result['required_actions']);
     }

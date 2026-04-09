@@ -38,9 +38,11 @@ final class CLIContextAlignmentCommandTest extends TestCase
         $result = $this->runCommand(['foundry', 'context', 'check-alignment', '--feature=event-bus', '--json']);
 
         $this->assertSame(1, $result['status']);
-        $this->assertSame(['status', 'feature', 'issues', 'required_actions'], array_keys($result['payload']));
+        $this->assertSame(['status', 'feature', 'can_proceed', 'requires_repair', 'issues', 'required_actions'], array_keys($result['payload']));
         $this->assertSame('mismatch', $result['payload']['status']);
         $this->assertSame('event-bus', $result['payload']['feature']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
         $this->assertSame('untracked_spec_requirement', $result['payload']['issues'][0]['code']);
     }
 
@@ -57,6 +59,8 @@ final class CLIContextAlignmentCommandTest extends TestCase
 
         $this->assertSame(0, $result['status']);
         $this->assertSame('ok', $result['payload']['status']);
+        $this->assertTrue($result['payload']['can_proceed']);
+        $this->assertFalse($result['payload']['requires_repair']);
         $this->assertSame([], $result['payload']['issues']);
         $this->assertSame([], $result['payload']['required_actions']);
     }
@@ -78,6 +82,8 @@ final class CLIContextAlignmentCommandTest extends TestCase
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('mismatch', $result['payload']['status']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
         $this->assertContains('unsupported_state_claim', $codes);
     }
 

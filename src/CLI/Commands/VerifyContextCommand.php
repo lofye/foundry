@@ -72,13 +72,15 @@ final class VerifyContextCommand extends Command
     }
 
     /**
-     * @param array{feature:string,status:string,doctor_status:string,alignment_status:string,issues:list<array<string,mixed>>} $payload
+     * @param array{feature:string,status:string,can_proceed:bool,requires_repair:bool,doctor_status:string,alignment_status:string,issues:list<array<string,mixed>>,required_actions:list<string>} $payload
      */
     private function renderFeature(array $payload): string
     {
         $lines = [
             'Context verification: ' . $payload['feature'],
             'Status: ' . $payload['status'],
+            'Can proceed: ' . ($payload['can_proceed'] ? 'yes' : 'no'),
+            'Requires repair: ' . ($payload['requires_repair'] ? 'yes' : 'no'),
             'Doctor: ' . $payload['doctor_status'],
             'Alignment: ' . $payload['alignment_status'],
             'Issues:',
@@ -92,17 +94,28 @@ final class VerifyContextCommand extends Command
             }
         }
 
+        $lines[] = 'Required actions:';
+        if ($payload['required_actions'] === []) {
+            $lines[] = '- none';
+        } else {
+            foreach ($payload['required_actions'] as $action) {
+                $lines[] = '- ' . $action;
+            }
+        }
+
         return implode(PHP_EOL, $lines);
     }
 
     /**
-     * @param array{status:string,summary:array{pass:int,fail:int,total:int},features:list<array<string,mixed>>} $payload
+     * @param array{status:string,can_proceed:bool,requires_repair:bool,summary:array{pass:int,fail:int,total:int},features:list<array<string,mixed>>,required_actions:list<string>} $payload
      */
     private function renderAll(array $payload): string
     {
         $lines = [
             'Context verification: all',
             'Status: ' . $payload['status'],
+            'Can proceed: ' . ($payload['can_proceed'] ? 'yes' : 'no'),
+            'Requires repair: ' . ($payload['requires_repair'] ? 'yes' : 'no'),
             'Features:',
         ];
 
@@ -115,6 +128,15 @@ final class VerifyContextCommand extends Command
                 }
 
                 $lines[] = '- ' . (string) ($feature['feature'] ?? '') . ': ' . (string) ($feature['status'] ?? '');
+            }
+        }
+
+        $lines[] = 'Required actions:';
+        if ($payload['required_actions'] === []) {
+            $lines[] = '- none';
+        } else {
+            foreach ($payload['required_actions'] as $action) {
+                $lines[] = '- ' . $action;
             }
         }
 

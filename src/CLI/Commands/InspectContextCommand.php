@@ -43,24 +43,25 @@ final class InspectContextCommand extends Command
     /**
      * @param array{
      *     feature:string,
+     *     can_proceed:bool,
+     *     requires_repair:bool,
      *     doctor:array<string,mixed>,
      *     alignment:array<string,mixed>,
-     *     summary:array{doctor_status:string,alignment_status:string}
+     *     summary:array{doctor_status:string,alignment_status:string},
+     *     required_actions:list<string>
      * } $payload
      */
     private function renderMessage(array $payload): string
     {
         $lines = [
             'Context inspection: ' . $payload['feature'],
+            'Can proceed: ' . ($payload['can_proceed'] ? 'yes' : 'no'),
+            'Requires repair: ' . ($payload['requires_repair'] ? 'yes' : 'no'),
             'Doctor: ' . $payload['summary']['doctor_status'],
             'Alignment: ' . $payload['summary']['alignment_status'],
             'Required actions:',
         ];
-
-        $actions = array_values(array_unique(array_merge(
-            array_values(array_map('strval', (array) ($payload['doctor']['required_actions'] ?? []))),
-            array_values(array_map('strval', (array) ($payload['alignment']['required_actions'] ?? []))),
-        )));
+        $actions = array_values(array_map('strval', $payload['required_actions']));
 
         if ($actions === []) {
             $lines[] = '- none';

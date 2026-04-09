@@ -97,6 +97,8 @@ final class ContextDoctorCommand extends Command
         $lines = [
             'Context doctor: ' . (string) ($payload['feature'] ?? ''),
             'Status: ' . (string) ($payload['status'] ?? ''),
+            'Can proceed: ' . (((bool) ($payload['can_proceed'] ?? false)) ? 'yes' : 'no'),
+            'Requires repair: ' . (((bool) ($payload['requires_repair'] ?? true)) ? 'yes' : 'no'),
             'Files:',
         ];
 
@@ -122,6 +124,8 @@ final class ContextDoctorCommand extends Command
         $lines = [
             'Context doctor: all',
             'Status: ' . (string) ($payload['status'] ?? ''),
+            'Can proceed: ' . (((bool) ($payload['can_proceed'] ?? false)) ? 'yes' : 'no'),
+            'Requires repair: ' . (((bool) ($payload['requires_repair'] ?? true)) ? 'yes' : 'no'),
             'Features:',
         ];
 

@@ -77,13 +77,15 @@ final class ContextCheckAlignmentCommand extends Command
     }
 
     /**
-     * @param array{status:string,feature:string,issues:list<array<string,mixed>>,required_actions:list<string>} $payload
+     * @param array{status:string,feature:string,can_proceed:bool,requires_repair:bool,issues:list<array<string,mixed>>,required_actions:list<string>} $payload
      */
     private function renderMessage(array $payload): string
     {
         $lines = [
             'Context alignment: ' . $payload['feature'],
             'Status: ' . $payload['status'],
+            'Can proceed: ' . ($payload['can_proceed'] ? 'yes' : 'no'),
+            'Requires repair: ' . ($payload['requires_repair'] ? 'yes' : 'no'),
             'Issues:',
         ];
 
