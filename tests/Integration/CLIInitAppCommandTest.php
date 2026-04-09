@@ -92,11 +92,21 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertStringContainsString("composer install\nfoundry\nfoundry explain --json", $readme);
         $this->assertStringContainsString('foundry compile graph --json', $readme);
         $this->assertStringContainsString('Foundry scaffolds a project-local `foundry` launcher.', $readme);
+        $this->assertStringContainsString('Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate.', $readme);
+        $this->assertStringContainsString('foundry context init <feature> --json', $readme);
+        $this->assertStringNotContainsString('{{', $readme);
 
         $agents = file_get_contents($target . '/AGENTS.md');
         $this->assertIsString($agents);
         $this->assertStringContainsString('prefer `foundry ...`', $agents);
         $this->assertStringContainsString('use `./foundry ...`', $agents);
+        $this->assertStringContainsString('foundry verify context --feature=<feature> --json', $agents);
+        $this->assertStringContainsString('Meaningful work may proceed only when `verify context` passes.', $agents);
+        $this->assertStringNotContainsString('Yes. Here is a revised APP-AGENTS.md', $agents);
+        $this->assertSame(
+            file_get_contents($this->frameworkRoot() . '/APP-AGENTS.md'),
+            $agents,
+        );
 
         $docsReadme = file_get_contents($target . '/docs/README.md');
         $this->assertIsString($docsReadme);
@@ -226,7 +236,12 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertFileDoesNotExist($target . '/APP-AGENTS.md');
         $this->assertFileDoesNotExist($target . '/APP-README.md');
         $this->assertStringContainsString('prefer `foundry ...`', (string) file_get_contents($target . '/AGENTS.md'));
+        $this->assertSame(
+            file_get_contents($this->frameworkRoot() . '/APP-AGENTS.md'),
+            file_get_contents($target . '/AGENTS.md'),
+        );
         $this->assertStringContainsString('Start with `AGENTS.md`.', (string) file_get_contents($target . '/README.md'));
+        $this->assertStringContainsString('foundry context init <feature> --json', (string) file_get_contents($target . '/README.md'));
         $this->assertStringNotContainsString('legacy agents', (string) file_get_contents($target . '/AGENTS.md'));
         $this->assertStringNotContainsString('legacy readme', (string) file_get_contents($target . '/README.md'));
     }
@@ -319,5 +334,10 @@ JSON);
         @mkdir($target . '/vendor/bin', 0777, true);
         file_put_contents($target . '/vendor/autoload.php', "<?php\n");
         file_put_contents($target . '/vendor/bin/foundry', "#!/usr/bin/env php\n<?php\n");
+    }
+
+    private function frameworkRoot(): string
+    {
+        return dirname(__DIR__, 2);
     }
 }

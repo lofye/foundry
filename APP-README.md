@@ -8,6 +8,14 @@ This Foundry project was scaffolded in `{{STARTER_LABEL}}` mode.
 
 Start with `AGENTS.md`. It defines the repo-local workflow and command rules for AI assistants working in this app.
 
+For meaningful feature work, maintain canonical feature context under:
+
+- `docs/features/<feature>.spec.md`
+- `docs/features/<feature>.md`
+- `docs/features/<feature>.decisions.md`
+
+Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If a feature does not have canonical context yet, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
+
 ## First Run
 
 Foundry scaffolds a project-local `foundry` launcher. If your shell does not resolve current-directory executables, use `./foundry ...` instead.

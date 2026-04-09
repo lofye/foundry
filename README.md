@@ -61,6 +61,8 @@ Contributing to the framework itself?
 
 - Start with `docs/contributor-portal.md`
 - Read `docs/architecture/architecture-overview.md`
+- Read `AGENTS.md` before meaningful feature work
+- Use `php bin/foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate for feature-scoped work
 - Use `php bin/foundry help inspect` and `php bin/foundry inspect cli-surface --json`
 
 Initial Prompt: Derek Martin
@@ -172,6 +174,14 @@ foundry verify contracts --json
 ## Core Workflow for LLMs
 If you are just learning Foundry, stop after the first-run loop above and start with `examples/hello-world`. Use this fuller edit loop once you are actively changing features.
 
+For meaningful feature work, canonical context lives in:
+
+- `docs/features/<feature>.spec.md`
+- `docs/features/<feature>.md`
+- `docs/features/<feature>.decisions.md`
+
+Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If canonical context is missing, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
+
 Use this loop for every change:
 1. Inspect current reality.
 2. Edit the minimum feature-local files.
@@ -183,7 +193,10 @@ Use this loop for every change:
 Recommended command sequence:
 ```bash
 foundry inspect feature <feature> --json
+foundry context doctor --feature=<feature> --json
+foundry context check-alignment --feature=<feature> --json
 foundry inspect context <feature> --json
+foundry verify context --feature=<feature> --json
 foundry compile graph --json
 foundry inspect graph --json
 foundry inspect impact --file=app/features/<feature>/feature.yaml --json

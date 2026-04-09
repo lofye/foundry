@@ -30,6 +30,7 @@ The root `app/*` tree is a framework-owned demo and smoke app used for compile a
 
 - Treat `src/*` as the source of truth for framework behavior
 - Treat `tests/*` as the source of truth for expected framework behavior
+- Treat feature context documents under `docs/features/*` as the source of truth for feature intent, recorded implementation state, and reasoning history
 - Treat `src/CLI/Commands/InitAppCommand.php`, `APP-AGENTS.md`, and `APP-README.md` as the source of truth for the default app scaffold and app onboarding copy
 - Treat `README.md` as the source of truth for framework-level onboarding and contributor guidance
 - Treat `stubs/*` as source templates only when a generator actually reads them
@@ -38,7 +39,7 @@ The root `app/*` tree is a framework-owned demo and smoke app used for compile a
 
 ## Safe Edit Loop
 
-1. Inspect the relevant command, compiler pass, runtime path, or verifier before changing code.
+1. If the task is meaningful feature work, read the feature spec, state document, and decision ledger, then inspect and verify feature context before changing code.
 2. Make the smallest change in framework source files.
 3. If the change affects graph behavior, generated projections, or the demo app, recompile the root app.
 4. Run the narrowest relevant PHPUnit coverage first.
@@ -58,10 +59,13 @@ vendor/bin/phpunit
 Feature- or file-targeted inspection is preferred when it makes the task smaller:
 
 ```bash
+php bin/foundry context init <feature> --json
+php bin/foundry context doctor --feature=<feature> --json
+php bin/foundry context check-alignment --feature=<feature> --json
 php bin/foundry inspect feature <feature> --json
 php bin/foundry inspect context <feature> --json
+php bin/foundry verify context --feature=<feature> --json
 php bin/foundry inspect impact --file=<path> --json
-php bin/foundry doctor --feature=<feature> --json
 ```
 
 ## Change Rules
@@ -158,37 +162,73 @@ If a change would surprise a user or break tooling, it is a contract change.
 •	website/content/docs/authored/ = website-only authored docs
 •	website/public/docs/ = generated output
 
-## Context Anchoring Bootstrap Note
+## Context Anchoring
 
-Foundry is adopting feature-level context anchoring.
+Foundry uses feature-level context anchoring for meaningful feature work.
 
-For any new meaningful feature work, prefer creating and maintaining:
+Canonical feature context files:
 
 - `docs/features/<feature-name>.spec.md`
 - `docs/features/<feature-name>.md`
 - `docs/features/<feature-name>.decisions.md`
 
-Until Foundry context tooling is implemented, treat this as a manual workflow convention.
+Execution specs may exist under `docs/specs/<feature-name>/<NNN-name>.md`, but they are optional and are never authoritative once a feature has canonical context files.
 
-Do not assume `foundry context ...` commands exist yet unless they have already been implemented in this repository.
+Feature naming rules:
 
-## Spec Evolution (Bootstrap Rule)
+- use lowercase kebab-case only
+- match the filename exactly
+- do not use spaces, underscores, repeated dashes, or alternative spec filenames
 
-Feature specs evolve over time, but there must always be exactly one canonical spec per feature:
+Source-of-truth boundaries:
 
-- `docs/features/<feature-name>.spec.md`
+- spec = intended behavior
+- state = current known implementation state
+- decisions = append-only reasoning history
+- code/tests = implementation and runtime behavior
 
-Do NOT create multiple spec files for the same feature (e.g. `.spec.v2.md`, `.phase2.md`, etc).
+Read-before-acting rule:
 
-When a feature evolves:
+- Before meaningful feature work, read the spec, state document, and decision ledger.
+- Do not rely on chat history as authoritative context.
+- Use the context tools that match the task: `context doctor`, `context check-alignment`, `inspect context`, and `verify context`.
 
-1. Update the existing spec to reflect the new intended behavior
-2. Record the change in the decision ledger
-3. Continue implementation against the updated spec
+Primary execution gate:
 
-Optional:
-- Execution specs (e.g. "Spec 35D1", "Spec 35D2") may exist elsewhere (e.g. `docs/specs/`)
-- These are NOT the source of truth once implemented
+- `php bin/foundry verify context --feature=<feature> --json` is the primary machine-readable proceed/fail gate.
+- Meaningful work may proceed only when `verify context` passes.
+- If `verify context` is not run directly, the equivalent proceed condition is: doctor status is `ok` or `warning`, and alignment status is `ok` or `warning`.
 
-The spec file always represents the current intended behavior.
-The decision ledger preserves the history of how it evolved.
+Refuse-to-proceed rule:
+
+- Meaningful work must not proceed when `verify context` fails.
+- Meaningful work must not proceed when doctor status is `repairable` or `non_compliant`.
+- Meaningful work must not proceed when alignment status is `mismatch`.
+
+When context is non-compliant:
+
+1. Stop.
+2. Explain the non-compliance.
+3. List the required corrective actions.
+4. Repair or propose repair as the immediate next step.
+
+Allowed recovery actions before implementation:
+
+- run `php bin/foundry context init <feature> --json`
+- repair missing or malformed context files
+- update the feature state document
+- append a decision ledger entry
+- update the feature spec and log the corresponding decision
+
+Repair-first workflow:
+
+- Repair is the only valid next step before implementation when context is invalid.
+- After meaningful implementation or planning work, update the feature state document.
+- After meaningful technical or architectural decisions, append a decision ledger entry.
+- If implementation diverges from the spec, either realign implementation, update the spec and log the change, or log and explain the divergence in the decision ledger and state document.
+
+Spec evolution rule:
+
+- Each feature must have exactly one canonical spec file: `docs/features/<feature-name>.spec.md`.
+- Do not create alternate spec filenames such as `.spec.v2.md`, `.phase2.spec.md`, or `-v2.spec.md`.
+- When a feature evolves, update the canonical spec, log the change in the decision ledger, and continue implementation against the updated spec.

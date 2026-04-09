@@ -14,6 +14,8 @@ This spec connects:
 
 to real-world usage via AGENTS and scaffolded apps.
 
+The guidance introduced here must reflect the actual implemented system and must use `verify context` as the primary machine-readable proceed / fail gate.
+
 ---
 
 Scope
@@ -30,11 +32,11 @@ Do NOT introduce new commands or change existing JSON contracts.
 
 Core Requirement
 
-The documentation must reflect the actual implemented system.
+Documentation must reflect the actual implemented system.
 
 Do NOT describe aspirational behavior.
 
-All guidance must align with:
+All workflow guidance must align with:
 - context doctor
 - context check-alignment
 - inspect context
@@ -44,19 +46,20 @@ All guidance must align with:
 
 Enforcement Model
 
-AGENTS guidance must explicitly enforce:
+AGENTS guidance must explicitly enforce the following rules.
 
 ## Rule — Mandatory Context Usage
 
 Before performing meaningful work:
 - read:
-    - feature spec
-    - feature state document
-    - decision ledger
-- use Foundry context tooling to validate context health when available:
-    - context doctor
-    - context check-alignment
-    - verify context
+  - feature spec
+  - feature state document
+  - decision ledger
+- use Foundry context tooling when available:
+  - context doctor
+  - context check-alignment
+  - inspect context
+  - verify context
 
 Do NOT rely on chat history as authoritative context.
 
@@ -64,14 +67,13 @@ Do NOT rely on chat history as authoritative context.
 
 ## Rule — Primary Execution Gate
 
-`verify context` is the primary machine-readable gate for determining whether meaningful work may proceed.
+`verify context` is the primary machine-readable gate for whether meaningful work may proceed.
 
-AGENTS guidance must reflect:
+Guidance must reflect:
+- if `verify context` passes, meaningful work may proceed
+- if `verify context` fails, meaningful work must not proceed
 
-- if `verify context` passes, work may proceed
-- if `verify context` fails, work must not proceed
-
-When `verify context` is not available in the immediate workflow, the same conclusion must be derived from:
+When `verify context` is not immediately used in the workflow, equivalent conclusions must still align with:
 - doctor status
 - alignment status
 
@@ -90,7 +92,7 @@ In this case, the agent MUST:
 1. STOP
 2. explain the non-compliance
 3. list required corrective actions
-4. perform or propose context repair as the next step
+4. perform or propose repair as the next step
 
 ---
 
@@ -101,7 +103,7 @@ When context is invalid, the agent MAY:
 - repair missing or malformed context files
 - update the feature state document
 - append decision ledger entries
-- update the feature spec (with decision logging)
+- update the feature spec with corresponding decision logging
 
 Repair is the only valid next step before implementation.
 
@@ -114,10 +116,10 @@ Framework AGENTS.md
 Must include:
 - purpose of the context anchoring system
 - source-of-truth boundaries:
-    - spec → intent
-    - state → current implementation state
-    - decisions → reasoning history
-    - code/tests → implementation and runtime behavior
+  - spec → intent
+  - state → current implementation state
+  - decisions → reasoning history
+  - code/tests → implementation and runtime behavior
 - canonical file structure
 - feature naming rules
 - spec/state/decision roles
@@ -125,9 +127,9 @@ Must include:
 - state sync rule
 - decision logging rule
 - spec-vs-state mismatch rule
-- enforcement / refusal-to-proceed rules
+- refusal-to-proceed rules
 - repair-first workflow guidance
-- reference to verify context as the primary machine gate
+- verify context as the primary proceed / fail gate
 
 Must be:
 - deterministic
@@ -140,17 +142,18 @@ APP-AGENTS.md
 
 Must:
 - preserve the same operational rules as framework AGENTS
-- be slightly simplified (less framework-internal detail)
+- be slightly simpler and less framework-internal
 - remain equally strict about:
-    - file model
-    - enforcement rules
-    - refusal-to-proceed
+  - canonical file model
+  - refusal-to-proceed semantics
+  - repair-first behavior
+  - verify context as the proceed / fail gate
 
 Do NOT weaken enforcement semantics.
 
 ---
 
-README Updates
+README / APP-README Updates
 
 Update only where necessary to prevent stale guidance.
 
@@ -160,7 +163,7 @@ Prefer:
 - short references to the context system
 - references to AGENTS behavior
 - alignment with actual CLI commands
-- a concise workflow pointer rather than duplicating all rules
+- concise workflow pointers rather than repeating all rules
 
 ---
 
@@ -201,7 +204,7 @@ Responsibilities
 - ensure scaffolded apps receive correct guidance
 - ensure docs match actual CLI behavior
 - ensure no contradictions across onboarding surfaces
-- ensure `verify context` is represented as the primary machine-readable proceed / stop signal
+- ensure verify context is represented as the primary machine-readable proceed / fail signal
 
 ---
 
@@ -209,7 +212,7 @@ Tests (PHPUnit)
 
 Integration tests
 - generated app contains updated AGENTS.md
-- generated app contains updated README.md (if applicable)
+- generated app contains updated README.md if applicable
 - scaffold promotion produces correct files
 - no drift between APP-AGENTS.md and generated AGENTS.md
 
@@ -228,7 +231,7 @@ The work is complete only when:
 - scaffolded apps receive correct guidance automatically
 - scaffold tests verify promoted output
 - onboarding docs are not stale
-- documentation reflects verify context as the primary proceed / stop gate
+- documentation reflects verify context as the primary proceed / fail gate
 - all tests pass
 
 ---
