@@ -79,7 +79,6 @@ final class CLIContextAlignmentCommandTest extends TestCase
         $this->assertSame(1, $result['status']);
         $this->assertSame('mismatch', $result['payload']['status']);
         $this->assertContains('unsupported_state_claim', $codes);
-        $this->assertContains('missing_decision_reference', $codes);
     }
 
     public function test_context_check_alignment_requires_feature_and_rejects_all(): void

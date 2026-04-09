@@ -86,3 +86,34 @@ Timestamp: 2026-04-07T13:00:00-04:00
 - Constraints
 - Acceptance Criteria
 
+### Decision: add deterministic spec-state alignment checking
+Timestamp: 2026-04-07T13:30:00-04:00
+
+**Context**
+- Structural validation alone cannot detect drift between intended behavior and recorded feature state.
+- The context system needs a deterministic semantic layer before inspect, verify, and enforcement can be trusted.
+
+**Decision**
+- Add a conservative alignment engine and CLI command:
+  - context check-alignment
+
+**Reasoning**
+- Alignment checking is necessary to detect untracked requirements, unsupported state claims, and unexplained divergence.
+- Deterministic heuristics are easier to test, explain, and trust than aggressive semantic inference.
+- Decision-backed divergence must be handled differently from unexplained divergence.
+
+**Alternatives Considered**
+- Rely on manual review only.
+- Delay alignment until later phases.
+- Use LLM-based semantic matching immediately.
+
+**Impact**
+- Foundry can now detect meaningful mismatches between spec and state.
+- The context system now has a semantic validation layer in addition to structural validation.
+- This enables later inspect, verify, and refusal-to-proceed phases.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

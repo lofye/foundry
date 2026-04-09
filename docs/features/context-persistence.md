@@ -12,17 +12,26 @@
 - 35D2 implementation completed.
 - Context init command implemented.
 - Context doctor command implemented.
-- Feature context can be initialized and structurally validated.
-- Execution spec 003-spec-state-alignment-engine created.
-- 35D3 not yet implemented.
+- Canonical feature context can be initialized deterministically.
+- Canonical feature context can be validated deterministically.
+- Context doctor returns actionable repair guidance.
+- 35D3 implementation completed.
+- Context check-alignment command implemented.
+- Spec-state alignment checking is implemented for feature context artifacts.
+- Alignment checking compares spec Expected Behavior against Current State, Open Questions, and Next Steps.
+- Alignment checking compares spec Acceptance Criteria against Current State, Open Questions, and Next Steps.
+- Untracked spec requirements are reported deterministically.
+- Unsupported Current State claims are reported deterministically.
+- Decision-backed divergence is treated differently from unexplained divergence.
+- Alignment results return actionable repair guidance.
 
 ## Open Questions
-- How strict should alignment heuristics be in early versions?
-- What threshold distinguishes warning vs mismatch?
-- How should future phases refine alignment without introducing non-determinism?
+- How should inspect context compose doctor and alignment results in 35D4?
+- How should verify context map doctor and alignment results to pass/fail semantics?
+- How should later phases refine alignment heuristics without introducing non-determinism?
 
 ## Next Steps
-- Implement execution spec 003-spec-state-alignment-engine.
-- Add alignment checker.
-- Add context check-alignment CLI command.
-- Validate alignment behavior on real feature context.
+- Create execution spec 004-inspect-context-integration-and-verification-wiring.
+- Implement inspect context.
+- Implement verify context.
+- Reuse doctor and alignment results consistently in inspect and verify flows.
