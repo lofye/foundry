@@ -187,6 +187,7 @@ final class ApiSurfaceRegistry
             'context' => match ($second) {
                 'init' => 'context init',
                 'doctor' => 'context doctor',
+                'check-alignment' => 'context check-alignment',
                 default => null,
             },
             'compile' => $second === 'graph' ? 'compile graph' : null,
@@ -355,6 +356,7 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('cache clear', 'cache clear', 'stable', 'Clear deterministic compile cache artifacts and generated projections.'),
             $this->cliCommandEntry('context init', 'context init <feature>', 'stable', 'Create missing canonical feature context files without overwriting existing files.'),
             $this->cliCommandEntry('context doctor', 'context doctor --feature=<feature>|--all', 'stable', 'Validate canonical feature context files and report deterministic repair guidance.'),
+            $this->cliCommandEntry('context check-alignment', 'context check-alignment --feature=<feature>', 'stable', 'Check deterministic spec-state alignment for one feature and report actionable mismatches.'),
             $this->cliCommandEntry('doctor', 'doctor [--feature=<feature>] [--graph] [--strict] [--cli] [--deep] [--static] [--style] [--quality] [--tests]', 'experimental', 'Diagnose environment, install, build, architecture, and optional quality-tool issues from current Foundry state. Use --graph to focus on canonical graph health.'),
             $this->cliCommandEntry('upgrade-check', 'upgrade-check [--target=<version>]', 'stable', 'Assess whether the current app is ready for a target framework upgrade.'),
             $this->cliCommandEntry('observe:trace', 'observe:trace [<feature>] [--feature=<feature>] [--route=<METHOD PATH>]', 'experimental', 'Capture a graph-aware execution trace summary mapped to features, execution plans, guards, and interceptors.'),

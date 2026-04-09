@@ -8,6 +8,7 @@
 - Add canonical feature context artifacts under docs/features/.
 - Support deterministic validation of those artifacts.
 - Introduce CLI tooling to initialize and validate feature context.
+- Introduce deterministic spec-state alignment checking.
 - Support future execution driven by canonical feature context.
 
 ## Non-Goals
@@ -20,11 +21,14 @@
 - Must be compatible with multiple LLMs.
 - Must use human-readable Markdown files.
 - Must preserve exactly one canonical spec per feature.
+- Alignment checking must remain conservative and explainable.
 
 ## Expected Behavior
 - Each feature has one canonical spec, one state document, and one decision ledger.
 - Validators can check structure and required sections.
 - CLI commands can initialize and validate feature context.
+- CLI commands can detect spec-state mismatches using deterministic heuristics.
+- Divergence backed by decision entries is treated differently from unexplained divergence.
 - Later execution systems can consume these files safely.
 
 ## Acceptance Criteria
@@ -33,6 +37,8 @@
 - Validation passes.
 - CLI can initialize missing context files deterministically.
 - CLI can validate context and produce actionable repair guidance.
+- CLI can detect spec-state alignment issues deterministically.
+- Alignment results include actionable repair guidance.
 
 ## Assumptions
 - Initial feature work may still be partly manual.

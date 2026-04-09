@@ -52,3 +52,37 @@ Timestamp: 2026-04-07T12:30:00-04:00
 - Goals
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: introduce deterministic spec-state alignment checking
+Timestamp: 2026-04-07T13:00:00-04:00
+
+**Context**
+- Structural validation exists but cannot detect divergence between spec and actual feature state.
+- Without alignment checking, the system cannot enforce consistency or detect drift.
+
+**Decision**
+- Introduce a deterministic alignment engine to compare feature spec, state, and decisions.
+- Provide a CLI command:
+  - context check-alignment
+
+**Reasoning**
+- Alignment is required before execution enforcement can be trusted.
+- Deterministic heuristics allow explainable and testable mismatch detection.
+- Decision-backed divergence must be treated differently from unexplained divergence.
+
+**Alternatives Considered**
+- Rely on manual review only.
+- Introduce LLM-based semantic alignment immediately.
+- Delay alignment until later phases.
+
+**Impact**
+- Enables early detection of drift between intent and implementation.
+- Provides the first semantic enforcement layer in the system.
+- Establishes the foundation for future inspect/verify and execution phases.
+
+**Spec Reference**
+- Goals
+- Expected Behavior
+- Constraints
+- Acceptance Criteria
+

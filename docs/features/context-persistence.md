@@ -9,15 +9,20 @@
 - Feature state document created.
 - Decision ledger created.
 - 35D1 implementation completed.
-- Execution spec 002-context-init-and-doctor created.
-- 35D2 not yet implemented.
+- 35D2 implementation completed.
+- Context init command implemented.
+- Context doctor command implemented.
+- Feature context can be initialized and structurally validated.
+- Execution spec 003-spec-state-alignment-engine created.
+- 35D3 not yet implemented.
 
 ## Open Questions
-- How much context creation should be automated in 35D2?
-- When should execution specs become first-class inputs?
+- How strict should alignment heuristics be in early versions?
+- What threshold distinguishes warning vs mismatch?
+- How should future phases refine alignment without introducing non-determinism?
 
 ## Next Steps
-- Implement execution spec 002-context-init-and-doctor.
-- Implement context init CLI command.
-- Implement context doctor CLI command.
-- Validate real feature context files using doctor.
+- Implement execution spec 003-spec-state-alignment-engine.
+- Add alignment checker.
+- Add context check-alignment CLI command.
+- Validate alignment behavior on real feature context.
