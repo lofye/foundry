@@ -32,8 +32,8 @@ Timestamp: 2026-04-07T12:30:00-04:00
 
 **Decision**
 - Introduce CLI commands to initialize and validate feature context:
-    - context init
-    - context doctor
+  - context init
+  - context doctor
 
 **Reasoning**
 - A CLI surface makes the system usable for both humans and LLMs.
@@ -51,39 +51,6 @@ Timestamp: 2026-04-07T12:30:00-04:00
 **Spec Reference**
 - Goals
 - Expected Behavior
-- Acceptance Criteria
-
-### Decision: introduce deterministic spec-state alignment checking
-Timestamp: 2026-04-07T13:00:00-04:00
-
-**Context**
-- Structural validation exists but cannot detect divergence between spec and actual feature state.
-- Without alignment checking, the system cannot enforce consistency or detect drift.
-
-**Decision**
-- Introduce a deterministic alignment engine to compare feature spec, state, and decisions.
-- Provide a CLI command:
-  - context check-alignment
-
-**Reasoning**
-- Alignment is required before execution enforcement can be trusted.
-- Deterministic heuristics allow explainable and testable mismatch detection.
-- Decision-backed divergence must be treated differently from unexplained divergence.
-
-**Alternatives Considered**
-- Rely on manual review only.
-- Introduce LLM-based semantic alignment immediately.
-- Delay alignment until later phases.
-
-**Impact**
-- Enables early detection of drift between intent and implementation.
-- Provides the first semantic enforcement layer in the system.
-- Establishes the foundation for future inspect/verify and execution phases.
-
-**Spec Reference**
-- Goals
-- Expected Behavior
-- Constraints
 - Acceptance Criteria
 
 ### Decision: add deterministic spec-state alignment checking
@@ -197,7 +164,7 @@ Timestamp: 2026-04-07T15:00:00-04:00
 
 **Alternatives Considered**
 - Infer readiness separately in each command.
-- Keep pass / fail semantics only in verify context.
+- Keep pass/fail semantics only in verify context.
 - Delay readiness hardening until feature execution exists.
 
 **Impact**
@@ -241,39 +208,40 @@ Timestamp: 2026-04-07T15:30:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
-### Decision: execute feature work from canonical context for context-persistence
-Timestamp: 2026-04-07T15:30:00-04:00
+### Decision: add spec-driven execution as a secondary entry point
+Timestamp: 2026-04-10T12:00:00-04:00
 
 **Context**
-- Foundry could validate, align, inspect, and verify feature context, but it still lacked a public execution path that consumed canonical context artifacts directly.
-- Feature execution needed to remain fail-closed, deterministic, and repair-first.
+- Foundry could already execute feature work from canonical context artifacts, but it did not yet have a workflow-oriented entry point for bounded execution specs.
+- Execution specs needed to remain secondary work orders rather than becoming a second source of feature truth.
 
 **Decision**
-- Add `implement feature` as a strict extension of the context system.
-- Use the canonical spec, state, and decision ledger as the deterministic execution input.
-- Update feature context after execution and revalidate before finishing.
+- Add implement spec as a secondary entry point into the existing context-driven feature execution pipeline.
+- Resolve execution specs deterministically from `docs/specs/<feature>/<NNN-name>.md`.
+- Block execution when execution-spec instructions conflict with canonical feature truth.
 
 **Reasoning**
-- This keeps feature execution traceable to the canonical context contract.
-- This preserves fail-closed behavior when repair is still required.
-- This avoids introducing a second execution policy path separate from doctor, alignment, inspect, and verify.
+- This preserves the rule that the canonical feature spec remains authoritative.
+- This reuses the existing doctor, alignment, verification, repair, and execution behavior instead of creating a second policy path.
+- This keeps execution-spec usage explainable and deterministic for CI and agent workflows.
 
 **Alternatives Considered**
-- Execute from ad hoc prompts only.
-- Skip post-execution context updates.
-- Repair context only after implementation.
+- Make execution specs authoritative after implementation.
+- Duplicate the implement feature orchestration in a second command path.
+- Allow execution specs to silently override canonical feature behavior.
 
 **Impact**
-- Foundry can now execute feature work from canonical context artifacts.
-- Feature execution now leaves an explicit context trail.
-- Later runs can resume from updated state instead of relying on chat history.
+- Foundry can now execute bounded implementation work orders without weakening canonical context authority.
+- `implement spec` remains aligned with the existing blocked / repaired / completed execution contract.
 
 **Spec Reference**
+- Goals
+- Non-Goals
 - Expected Behavior
 - Acceptance Criteria
 
 ### Decision: derive the next execution spec from canonical feature context
-Timestamp: 2026-04-10T12:00:00-04:00
+Timestamp: 2026-04-10T12:15:00-04:00
 
 **Context**
 - Foundry could execute bounded work from canonical context and secondary execution specs, but it still lacked a public planning entry point.
@@ -300,72 +268,6 @@ Timestamp: 2026-04-10T12:00:00-04:00
 **Spec Reference**
 - Goals
 - Constraints
-- Expected Behavior
-- Acceptance Criteria
-
-### Decision: add spec-driven execution as a secondary entry point
-Timestamp: 2026-04-10T12:00:00-04:00
-
-**Context**
-- Foundry could already execute feature work from canonical context artifacts, but it did not yet have a workflow-oriented entry point for bounded execution specs.
-- Execution specs needed to remain secondary work orders rather than becoming a second source of feature truth.
-
-**Decision**
-- Add `implement spec` as a secondary entry point into the existing context-driven feature execution pipeline.
-- Resolve execution specs deterministically from `docs/specs/<feature>/<NNN-name>.md`.
-- Block execution when execution-spec instructions conflict with canonical feature truth.
-
-**Reasoning**
-- This preserves the rule that the canonical feature spec remains authoritative.
-- This reuses the existing doctor, alignment, verification, repair, and execution behavior instead of creating a second policy path.
-- This keeps execution-spec usage explainable and deterministic for CI and agent workflows.
-
-**Alternatives Considered**
-- Make execution specs authoritative after implementation.
-- Duplicate the `implement feature` orchestration in a second command path.
-- Allow execution specs to silently override canonical feature behavior.
-
-**Impact**
-- Foundry can now execute bounded implementation work orders without weakening canonical context authority.
-- `implement spec` remains aligned with the existing blocked / repaired / completed execution contract.
-
-**Spec Reference**
-- Goals
-- Non-Goals
-- Expected Behavior
-- Acceptance Criteria
-
-### Decision: context-driven execution for context-persistence
-
-Timestamp: <ISO-8601>
-
-**Context**
-
-- Foundry executed feature work for `context-persistence` from canonical context artifacts.
-
-**Decision**
-
-- Use the canonical spec, state, and decision ledger as the deterministic execution input.
-- Update feature context after execution and revalidate before finishing.
-
-**Reasoning**
-
-- This keeps feature execution traceable to the canonical context contract.
-- This preserves fail-closed behavior when repair is still required.
-
-**Alternatives Considered**
-
-- Execute from ad hoc prompts only.
-- Skip post-execution context updates.
-- Repair context only after implementation.
-
-**Impact**
-
-- Feature execution now leaves an explicit context trail.
-- Later runs can resume from updated state instead of relying on chat history.
-
-**Spec Reference**
-
 - Expected Behavior
 - Acceptance Criteria
 
@@ -400,92 +302,62 @@ Timestamp: 2026-04-10T13:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
-### Decision: context-driven execution for context-persistence
-
-Timestamp: <ISO-8601>
-
-**Context**
-
-- Foundry executed feature work for `context-persistence` from canonical context artifacts.
-
-**Decision**
-
-- Use the canonical spec, state, and decision ledger as the deterministic execution input.
-- Update feature context after execution and revalidate before finishing.
-
-**Reasoning**
-
-- This keeps feature execution traceable to the canonical context contract.
-- This preserves fail-closed behavior when repair is still required.
-
-**Alternatives Considered**
-
-- Execute from ad hoc prompts only.
-- Skip post-execution context updates.
-- Repair context only after implementation.
-
-**Impact**
-
-- Feature execution now leaves an explicit context trail.
-- Later runs can resume from updated state instead of relying on chat history.
-
-**Spec Reference**
-
-- Expected Behavior
-- Acceptance Criteria
-
-### Decision: context-driven execution for context-persistence
-
-Timestamp: <ISO-8601>
-
-**Context**
-
-- Foundry executed feature work for `context-persistence` from canonical context artifacts.
-
-**Decision**
-
-- Use the canonical spec, state, and decision ledger as the deterministic execution input.
-- Update feature context after execution and revalidate before finishing.
-
-**Reasoning**
-
-- This keeps feature execution traceable to the canonical context contract.
-- This preserves fail-closed behavior when repair is still required.
-
-**Alternatives Considered**
-
-- Execute from ad hoc prompts only.
-- Skip post-execution context updates.
-- Repair context only after implementation.
-
-**Impact**
-
-- Feature execution now leaves an explicit context trail.
-- Later runs can resume from updated state instead of relying on chat history.
-
-**Spec Reference**
-
-- Expected Behavior
-- Acceptance Criteria
-
 ### Decision: enforce planner determinism and reproducibility guarantees
-Timestamp: 2026-04-10T<time>
+Timestamp: 2026-04-10T13:45:00-04:00
 
 **Context**
-- Planner output must be reliable for CI and repeated runs.
-- Non-deterministic planning would break reproducibility and trust.
+- Planner output quality had improved, but the system still needed strong guarantees that identical canonical inputs would always produce identical planning results.
+- Non-deterministic planning would weaken CI reliability, reproducibility, and trust in generated execution specs.
 
 **Decision**
-- Normalize planning inputs into a stable deterministic structure.
-- Guarantee identical outputs for identical canonical inputs.
+- Normalize planning input into a stable deterministic structure before handing it to the planner.
+- Guarantee identical planned or blocked results for identical canonical inputs.
 
 **Reasoning**
-- Planner must behave as a pure function of canonical context.
-- Determinism is required for automation, CI, and debugging.
+- The planner must behave like a pure function of canonical context.
+- Deterministic planning is required for automation, debugging, and stable downstream execution-spec generation.
+- Stable ordering should preserve author-meaningful sequencing where that sequencing is itself canonical input.
+
+**Alternatives Considered**
+- Accept planner nondeterminism as harmless.
+- Add retries or “best of several” planning attempts.
+- Defer reproducibility hardening until later phases.
 
 **Impact**
-- Planning output is now stable across runs.
-- Blocked and planned results are reproducible.
+- Planner output is now stable across repeated runs with identical input.
+- Blocked planning responses are reproducible.
+- Planning is safer to use in automated workflows and tests.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
+### Decision: render generated execution specs from a canonical stub template
+Timestamp: 2026-04-10T14:15:00-04:00
+
+**Context**
+- Planner quality and determinism were in place, but generated execution specs were still assembled inline.
+- Inline assembly risked structural drift between generated specs over time.
+
+**Decision**
+- Add a canonical execution-spec stub template.
+- Render generated execution specs by merging planner content into the stub instead of assembling markdown structure inline.
+
+**Reasoning**
+- A single template keeps structure centralized and easier to evolve safely.
+- This separates planner responsibility for content from renderer responsibility for structure.
+- Canonical stub rendering reduces structural drift while preserving deterministic output.
+
+**Alternatives Considered**
+- Keep inline string assembly in the planner.
+- Duplicate execution-spec structure logic across multiple planner paths.
+- Introduce a full templating engine.
+
+**Impact**
+- Generated execution specs now share one canonical structure.
+- Future structural changes can be made in one place without rewriting planner content logic.
+- Planner content quality and structural rendering are now cleanly separated.
 
 **Spec Reference**
 - Constraints
