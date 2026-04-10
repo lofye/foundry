@@ -27,6 +27,7 @@ use Foundry\CLI\Commands\GraphVisualizeCommand;
 use Foundry\CLI\Commands\HistoryCommand;
 use Foundry\CLI\Commands\ImpactCommand;
 use Foundry\CLI\Commands\ImplementFeatureCommand;
+use Foundry\CLI\Commands\ImplementSpecCommand;
 use Foundry\CLI\Commands\InitAppCommand;
 use Foundry\CLI\Commands\InitCommand;
 use Foundry\CLI\Commands\InspectApiCommand;
@@ -123,6 +124,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new CompileGraphCommand())->matches(['compile', 'graph']));
         $this->assertTrue((new ContextCheckAlignmentCommand())->matches(['context', 'check-alignment', '--feature=event-bus']));
         $this->assertTrue((new ImplementFeatureCommand())->matches(['implement', 'feature', 'event-bus']));
+        $this->assertTrue((new ImplementSpecCommand())->matches(['implement', 'spec', 'event-bus/001-initial']));
         $this->assertTrue((new CacheInspectCommand())->matches(['cache', 'inspect']));
         $this->assertTrue((new CacheClearCommand())->matches(['cache', 'clear']));
         $this->assertTrue((new DeepDoctorCommand())->matches(['doctor', '--deep']));

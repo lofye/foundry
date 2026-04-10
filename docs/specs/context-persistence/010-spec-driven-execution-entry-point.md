@@ -125,7 +125,7 @@ If structure is validated, support:
 # Execution Spec: <id>
 
 ## Feature
-- <feature-name>
+- context-persistence
 
 ## Purpose
 - What this implementation step is for
@@ -307,12 +307,11 @@ ExecutionSpec:
 
 Constraints
 
-Do NOT:
-- make execution specs authoritative
-- duplicate `implement feature` logic
-- introduce alternate context rules
-- silently resolve conflicts between execution spec and canonical feature spec
-- weaken repair or refusal semantics established in 35D7 / 35D6
+- keep execution specs secondary to canonical feature truth
+- reuse the existing `implement feature` pipeline rather than duplicating execution logic
+- preserve the existing context rules
+- fail clearly instead of silently resolving conflicts between execution specs and canonical feature truth
+- preserve repair and refusal semantics established in 35D7 / 35D6
 
 If conflict exists, fail clearly and explain required corrective actions.
 

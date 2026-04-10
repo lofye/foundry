@@ -6,6 +6,7 @@ namespace Foundry\Tests\Unit;
 
 use Foundry\Context\ContextExecutionService;
 use Foundry\Context\ContextInitService;
+use Foundry\Context\ExecutionSpec;
 use Foundry\Support\Paths;
 use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
@@ -102,6 +103,72 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
         $this->assertFileExists($this->project->root . '/app/features/event-bus/tests/event_bus_contract_test.php');
         $this->assertFileDoesNotExist($this->project->root . '/app/features/event_bus/feature.yaml');
+    }
+
+    public function test_execution_spec_conflict_with_canonical_spec_is_blocked(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $specPath = $this->project->root . '/docs/features/event-bus.spec.md';
+        file_put_contents($specPath, str_replace(
+            '- Do not add async delivery.',
+            '- Do not make execution specs authoritative after implementation.',
+            (string) file_get_contents($specPath),
+        ));
+
+        $result = $this->service()->executeSpec(
+            new ExecutionSpec(
+                specId: 'event-bus/001-initial',
+                feature: 'event-bus',
+                path: 'docs/specs/event-bus/001-initial.md',
+                requestedChanges: ['Make execution specs authoritative after implementation.'],
+            ),
+        );
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC', $result['issues'][0]['code']);
+    }
+
+    public function test_execution_spec_repair_mode_reuses_feature_execution_pipeline(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        unlink($this->project->root . '/docs/features/event-bus.md');
+
+        $result = $this->service()->executeSpec(
+            new ExecutionSpec(
+                specId: 'event-bus/001-initial',
+                feature: 'event-bus',
+                path: 'docs/specs/event-bus/001-initial.md',
+                requestedChanges: ['Add deterministic event bus scaffolding.'],
+            ),
+            repair: true,
+        );
+
+        $this->assertSame('repaired', $result['status']);
+        $this->assertTrue($result['repair_attempted']);
+        $this->assertTrue($result['repair_successful']);
+    }
+
+    public function test_execution_spec_auto_repair_reuses_feature_execution_pipeline(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $path = $this->project->root . '/docs/features/event-bus.spec.md';
+        file_put_contents($path, str_replace('# Feature Spec: event-bus', '# Spec: event-bus', (string) file_get_contents($path)));
+
+        $result = $this->service()->executeSpec(
+            new ExecutionSpec(
+                specId: 'event-bus/001-initial',
+                feature: 'event-bus',
+                path: 'docs/specs/event-bus/001-initial.md',
+                requestedChanges: ['Add deterministic event bus scaffolding.'],
+            ),
+            autoRepair: true,
+        );
+
+        $this->assertSame('repaired', $result['status']);
+        $this->assertTrue($result['repair_attempted']);
+        $this->assertTrue($result['repair_successful']);
     }
 
     public function test_result_shape_is_stable(): void

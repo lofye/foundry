@@ -271,3 +271,69 @@ Timestamp: 2026-04-07T15:30:00-04:00
 **Spec Reference**
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: add spec-driven execution as a secondary entry point
+Timestamp: 2026-04-10T12:00:00-04:00
+
+**Context**
+- Foundry could already execute feature work from canonical context artifacts, but it did not yet have a workflow-oriented entry point for bounded execution specs.
+- Execution specs needed to remain secondary work orders rather than becoming a second source of feature truth.
+
+**Decision**
+- Add `implement spec` as a secondary entry point into the existing context-driven feature execution pipeline.
+- Resolve execution specs deterministically from `docs/specs/<feature>/<NNN-name>.md`.
+- Block execution when execution-spec instructions conflict with canonical feature truth.
+
+**Reasoning**
+- This preserves the rule that the canonical feature spec remains authoritative.
+- This reuses the existing doctor, alignment, verification, repair, and execution behavior instead of creating a second policy path.
+- This keeps execution-spec usage explainable and deterministic for CI and agent workflows.
+
+**Alternatives Considered**
+- Make execution specs authoritative after implementation.
+- Duplicate the `implement feature` orchestration in a second command path.
+- Allow execution specs to silently override canonical feature behavior.
+
+**Impact**
+- Foundry can now execute bounded implementation work orders without weakening canonical context authority.
+- `implement spec` remains aligned with the existing blocked / repaired / completed execution contract.
+
+**Spec Reference**
+- Goals
+- Non-Goals
+- Expected Behavior
+- Acceptance Criteria
+
+### Decision: context-driven execution for context-persistence
+
+Timestamp: <ISO-8601>
+
+**Context**
+
+- Foundry executed feature work for `context-persistence` from canonical context artifacts.
+
+**Decision**
+
+- Use the canonical spec, state, and decision ledger as the deterministic execution input.
+- Update feature context after execution and revalidate before finishing.
+
+**Reasoning**
+
+- This keeps feature execution traceable to the canonical context contract.
+- This preserves fail-closed behavior when repair is still required.
+
+**Alternatives Considered**
+
+- Execute from ad hoc prompts only.
+- Skip post-execution context updates.
+- Repair context only after implementation.
+
+**Impact**
+
+- Feature execution now leaves an explicit context trail.
+- Later runs can resume from updated state instead of relying on chat history.
+
+**Spec Reference**
+
+- Expected Behavior
+- Acceptance Criteria

@@ -223,6 +223,57 @@ final class ContextExecutionService
     }
 
     /**
+     * @return array{
+     *     spec_id:string,
+     *     feature:string,
+     *     status:string,
+     *     can_proceed:bool,
+     *     requires_repair:bool,
+     *     repair_attempted:bool,
+     *     repair_successful:bool,
+     *     actions_taken:list<string>,
+     *     issues:list<array<string,mixed>>,
+     *     required_actions:list<string>
+     * }
+     */
+    public function executeSpec(ExecutionSpec $executionSpec, bool $repair = false, bool $autoRepair = false): array
+    {
+        $conflict = $this->canonicalConflictForExecutionSpec($executionSpec);
+        if ($conflict !== null) {
+            return [
+                'spec_id' => $executionSpec->specId,
+                'feature' => $executionSpec->feature,
+                'status' => 'blocked',
+                'can_proceed' => false,
+                'requires_repair' => true,
+                'repair_attempted' => false,
+                'repair_successful' => false,
+                'actions_taken' => [],
+                'issues' => [$conflict['issue']],
+                'required_actions' => $conflict['required_actions'],
+            ];
+        }
+
+        $payload = $this->execute($executionSpec->feature, repair: $repair, autoRepair: $autoRepair)->toArray();
+        if (in_array($payload['status'], ['completed', 'repaired', 'completed_with_issues'], true)) {
+            $payload['actions_taken'][] = 'Applied execution spec: ' . $executionSpec->path;
+        }
+
+        return [
+            'spec_id' => $executionSpec->specId,
+            'feature' => (string) $payload['feature'],
+            'status' => (string) $payload['status'],
+            'can_proceed' => (bool) $payload['can_proceed'],
+            'requires_repair' => (bool) $payload['requires_repair'],
+            'repair_attempted' => (bool) $payload['repair_attempted'],
+            'repair_successful' => (bool) $payload['repair_successful'],
+            'actions_taken' => array_values(array_map('strval', (array) $payload['actions_taken'])),
+            'issues' => array_values((array) $payload['issues']),
+            'required_actions' => array_values(array_map('strval', (array) $payload['required_actions'])),
+        ];
+    }
+
+    /**
      * @param array{
      *     feature:string,
      *     mode:string,
@@ -946,6 +997,117 @@ final class ContextExecutionService
             },
             $issues,
         ));
+    }
+
+    /**
+     * @return array{issue:array<string,mixed>,required_actions:list<string>}|null
+     */
+    private function canonicalConflictForExecutionSpec(ExecutionSpec $executionSpec): ?array
+    {
+        $canonicalSpecPath = $this->paths->join($this->resolver->specPath($executionSpec->feature));
+        if (!is_file($canonicalSpecPath)) {
+            return null;
+        }
+
+        $contents = file_get_contents($canonicalSpecPath);
+        if ($contents === false) {
+            return null;
+        }
+
+        $sections = $this->parseSections($contents, ['Non-Goals', 'Constraints']);
+        $negativeItems = array_values(array_merge(
+            $this->meaningfulSectionItems($sections['Non-Goals'] ?? ''),
+            array_values(array_filter(
+                $this->meaningfulSectionItems($sections['Constraints'] ?? ''),
+                fn(string $item): bool => $this->isNegativeRequirement($item),
+            )),
+        ));
+
+        foreach ($executionSpec->instructionItems() as $item) {
+            foreach ($negativeItems as $negativeItem) {
+                if (!$this->itemsConflict($item, $negativeItem)) {
+                    continue;
+                }
+
+                return [
+                    'issue' => [
+                        'code' => 'EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC',
+                        'message' => 'Execution spec instructions conflict with the canonical feature spec.',
+                        'file_path' => $executionSpec->path,
+                    ],
+                    'required_actions' => [
+                        'Update the execution spec so it no longer conflicts with docs/features/' . $executionSpec->feature . '.spec.md.',
+                        'If intended behavior changed, update the canonical feature spec and log a decision before rerunning implement spec.',
+                    ],
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    private function isNegativeRequirement(string $item): bool
+    {
+        $normalized = strtolower($item);
+
+        return str_contains($normalized, 'do not')
+            || str_contains($normalized, 'must not')
+            || str_contains($normalized, 'never ')
+            || str_contains($normalized, 'cannot ')
+            || str_contains($normalized, "can't ");
+    }
+
+    private function itemsConflict(string $executionItem, string $canonicalItem): bool
+    {
+        $executionTokens = $this->significantTokens($executionItem);
+        $canonicalTokens = $this->significantTokens($canonicalItem);
+        $overlap = array_values(array_intersect($executionTokens, $canonicalTokens));
+
+        return count($overlap) >= 3;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function significantTokens(string $value): array
+    {
+        $normalized = strtolower($value);
+        $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized) ?? $normalized;
+        $parts = preg_split('/\s+/', trim($normalized)) ?: [];
+        $stopWords = [
+            'a',
+            'an',
+            'and',
+            'as',
+            'be',
+            'by',
+            'for',
+            'from',
+            'if',
+            'in',
+            'into',
+            'is',
+            'it',
+            'may',
+            'must',
+            'not',
+            'of',
+            'on',
+            'or',
+            'the',
+            'their',
+            'then',
+            'this',
+            'to',
+            'use',
+            'when',
+            'with',
+        ];
+
+        return array_values(array_unique(array_filter(
+            array_map('strval', $parts),
+            static fn(string $part): bool => $part !== '' && !in_array($part, $stopWords, true),
+        )));
     }
 
     private function readFile(string $relativePath): string

@@ -10,6 +10,7 @@
 - Introduce CLI tooling to initialize, validate, inspect, and verify feature context.
 - Introduce deterministic spec-state alignment checking.
 - Introduce deterministic, context-driven feature execution.
+- Introduce deterministic, spec-driven execution as a secondary entry point into feature execution.
 - Support safe repair-first execution when context is invalid.
 
 ## Non-Goals
@@ -17,6 +18,7 @@
 - Do not replace code/tests as the source of implementation truth.
 - Do not compact or rewrite decision history.
 - Do not allow prompt-only execution without canonical context.
+- Do not make execution specs authoritative after implementation.
 
 ## Constraints
 - Must remain deterministic.
@@ -41,6 +43,10 @@
 - Implement feature blocks execution when can_proceed is false unless explicit repair mode succeeds.
 - Implement feature updates feature state and decision history after meaningful execution.
 - Implement feature revalidates context after execution.
+- Implement spec resolves execution specs deterministically from docs/specs/<feature>/<NNN-name>.md.
+- Implement spec reuses the existing feature execution pipeline rather than creating a second execution policy path.
+- Implement spec blocks when execution-spec instructions conflict with canonical feature truth.
+- Implement spec records that execution was driven by a specific execution spec without changing canonical authority.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -57,8 +63,12 @@
 - Implement feature returns deterministic blocked, repaired, completed, or completed_with_issues results.
 - Implement feature updates state and decisions when execution changes feature reality.
 - Implement feature revalidates context before finishing.
+- Implement spec executes a discrete implementation spec without bypassing canonical context validation.
+- Implement spec returns deterministic blocked, repaired, completed, or completed_with_issues results aligned with implement feature.
+- Execution spec conflicts do not override canonical feature authority.
 
 ## Assumptions
 - Initial feature work may still be partly manual.
 - Execution specs may exist separately under docs/specs/<feature>/<NNN-name>.md
 - Execution specs are secondary work orders and do not override the canonical feature spec.
+- Implement spec may consume execution specs as bounded work orders while canonical feature context remains authoritative.
