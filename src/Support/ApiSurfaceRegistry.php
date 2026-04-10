@@ -184,6 +184,10 @@ final class ApiSurfaceRegistry
                 'spec' => 'implement spec',
                 default => null,
             },
+            'plan' => match ($second) {
+                'feature' => 'plan feature',
+                default => null,
+            },
             'cache' => match ($second) {
                 'inspect' => 'cache inspect',
                 'clear' => 'cache clear',
@@ -364,6 +368,7 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('context check-alignment', 'context check-alignment --feature=<feature>', 'stable', 'Check deterministic spec-state alignment for one feature and report actionable mismatches.'),
             $this->cliCommandEntry('implement feature', 'implement feature <feature> [--repair|--auto-repair]', 'stable', 'Execute deterministic feature work from canonical context artifacts, with bounded repair when explicitly requested.'),
             $this->cliCommandEntry('implement spec', 'implement spec <feature>/<NNN-name>|<NNN-name> [--repair|--auto-repair]', 'stable', 'Execute deterministic feature work from an execution spec while preserving canonical feature authority and the existing context gate.'),
+            $this->cliCommandEntry('plan feature', 'plan feature <feature>', 'stable', 'Generate the next bounded execution spec from canonical feature context without executing it.'),
             $this->cliCommandEntry('doctor', 'doctor [--feature=<feature>] [--graph] [--strict] [--cli] [--deep] [--static] [--style] [--quality] [--tests]', 'experimental', 'Diagnose environment, install, build, architecture, and optional quality-tool issues from current Foundry state. Use --graph to focus on canonical graph health.'),
             $this->cliCommandEntry('upgrade-check', 'upgrade-check [--target=<version>]', 'stable', 'Assess whether the current app is ready for a target framework upgrade.'),
             $this->cliCommandEntry('observe:trace', 'observe:trace [<feature>] [--feature=<feature>] [--route=<METHOD PATH>]', 'experimental', 'Capture a graph-aware execution trace summary mapped to features, execution plans, guards, and interceptors.'),
@@ -697,7 +702,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail'], true) => 'Runtime',
             in_array($signature, ['license status', 'license activate', 'license deactivate', 'features'], true) => 'Monetization',
             in_array($signature, ['pack install', 'pack search', 'pack remove', 'pack list', 'pack info'], true) => 'Extensions',
-            in_array($signature, ['init', 'new', 'init app', 'examples:list', 'examples:load', 'preview notification', 'implement feature', 'implement spec'], true)
+            in_array($signature, ['init', 'new', 'init app', 'examples:list', 'examples:load', 'preview notification', 'implement feature', 'implement spec', 'plan feature'], true)
                 || str_starts_with($signature, 'generate ')
                 => 'App Scaffolding',
             in_array($signature, ['upgrade-check', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify context', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)

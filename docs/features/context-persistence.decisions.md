@@ -272,6 +272,37 @@ Timestamp: 2026-04-07T15:30:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: derive the next execution spec from canonical feature context
+Timestamp: 2026-04-10T12:00:00-04:00
+
+**Context**
+- Foundry could execute bounded work from canonical context and secondary execution specs, but it still lacked a public planning entry point.
+- Future execution needed a deterministic way to create the next bounded work order without making execution specs authoritative.
+
+**Decision**
+- Add `plan feature` as a deterministic planning command.
+- Derive one bounded execution spec at a time from the canonical feature spec, feature state, and decision ledger.
+
+**Reasoning**
+- Planning should reuse the existing context gate instead of inventing a separate planning policy path.
+- Canonical feature context must remain authoritative even when Foundry generates secondary execution specs automatically.
+- Generating one bounded execution spec at a time keeps planning explicit and reproducible instead of drifting into roadmap generation.
+
+**Alternatives Considered**
+- Leave execution-spec creation manual.
+- Generate multi-step roadmaps from canonical context.
+- Allow planning from prompt-only context outside the canonical files.
+
+**Impact**
+- Foundry can now generate the next bounded execution spec deterministically from canonical feature context.
+- Generated execution specs remain secondary work orders that are immediately usable by `implement spec`.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: add spec-driven execution as a secondary entry point
 Timestamp: 2026-04-10T12:00:00-04:00
 

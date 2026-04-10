@@ -42,6 +42,7 @@ use Foundry\CLI\Commands\LicenseCommand;
 use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\ObserveCommand;
 use Foundry\CLI\Commands\PackCommand;
+use Foundry\CLI\Commands\PlanFeatureCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
 use Foundry\CLI\Commands\PromptCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
@@ -125,6 +126,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new ContextCheckAlignmentCommand())->matches(['context', 'check-alignment', '--feature=event-bus']));
         $this->assertTrue((new ImplementFeatureCommand())->matches(['implement', 'feature', 'event-bus']));
         $this->assertTrue((new ImplementSpecCommand())->matches(['implement', 'spec', 'event-bus/001-initial']));
+        $this->assertTrue((new PlanFeatureCommand())->matches(['plan', 'feature', 'event-bus']));
         $this->assertTrue((new CacheInspectCommand())->matches(['cache', 'inspect']));
         $this->assertTrue((new CacheClearCommand())->matches(['cache', 'clear']));
         $this->assertTrue((new DeepDoctorCommand())->matches(['doctor', '--deep']));

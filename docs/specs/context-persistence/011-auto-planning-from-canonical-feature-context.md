@@ -4,66 +4,75 @@
 - context-persistence
 
 ## Purpose
-- Add deterministic auto-planning so Foundry can generate the next bounded execution spec from canonical feature context.
-- Complete the loop in which canonical context drives planning, execution specs guide implementation, implementation updates context, and updated context drives future planning.
+- Introduce deterministic auto-planning so Foundry can generate the next bounded execution spec from canonical feature context.
+- Complete the loop where canonical context drives planning, execution specs guide implementation, implementation updates context, and updated context drives future planning.
 
 ## Scope
-- Add `foundry plan feature <feature>`
-- Reuse canonical context inputs:
+- Add CLI command:
+    - `foundry plan feature <feature>`
+    - `foundry plan feature <feature> --json`
+- Load and use canonical inputs:
     - `docs/features/<feature>.spec.md`
     - `docs/features/<feature>.md`
     - `docs/features/<feature>.decisions.md`
-- Generate one next bounded execution spec under:
+- Generate one bounded execution spec under:
     - `docs/specs/<feature>/<NNN-name>.md`
-- Reuse existing context infrastructure where practical:
-    - path resolution
-    - validators
-    - doctor
-    - alignment
-    - execution-spec path conventions
-- Return deterministic text and JSON output
+- Determine next sequence number deterministically
+- Generate a stable kebab-case slug
+- Write execution spec using canonical structure
+- Return deterministic output (text and JSON)
 - Add PHPUnit coverage
 
 ## Constraints
-- Keep canonical feature context authoritative for planning inputs.
+- Keep canonical feature context authoritative for all planning inputs.
 - Keep generated execution specs secondary to canonical feature truth.
-- Reuse existing readiness, validation, and path logic rather than duplicating it.
-- Keep planning narrow and bounded to the next coherent work step.
+- Reuse existing context infrastructure (doctor, alignment, path resolution, validators) where possible.
+- Keep planning bounded to the next coherent work step.
+- Preserve deterministic numbering, slugging, and output ordering.
 - Fail clearly when canonical context is missing, malformed, or unusable.
-- Preserve deterministic numbering, slugging, file generation, and output ordering.
 - Preserve separation between planning and execution.
 
 ## Requested Changes
-- Add `foundry plan feature <feature>`
-- Create:
-    - `src/CLI/Commands/PlanFeatureCommand.php`
-    - `src/Context/ContextPlanningService.php`
-    - `src/Context/ExecutionSpecPlanner.php`
-    - `src/Context/PlanResult.php`
-- Implement deterministic execution-spec generation under:
-    - `docs/specs/<feature>/<NNN-name>.md`
-- Determine the next sequence number deterministically from existing execution specs in that feature directory
-- Generate a stable kebab-case slug for the new execution spec
-- Write execution-spec content using the canonical execution-spec structure
-- Return stable JSON with:
-    - `feature`
-    - `status`
-    - `can_proceed`
-    - `requires_repair`
-    - `spec_id`
-    - `spec_path`
-    - `actions_taken`
-    - `issues`
-    - `required_actions`
+- Add `PlanFeatureCommand`
+    - orchestrates planning flow
+    - enforces preconditions
+    - supports `--json`
+- Add `ContextPlanningService`
+    - loads canonical context
+    - runs readiness checks
+    - coordinates planning + file creation
+- Add `ExecutionSpecPlanner`
+    - identifies gaps between:
+        - intended behavior
+        - current state
+        - prior decisions
+    - derives next bounded work step
+    - determines next sequence number
+    - generates deterministic slug
+    - builds execution spec content
+- Add `PlanResult`
+    - contains:
+        - status
+        - can_proceed
+        - requires_repair
+        - spec_id
+        - spec_path
+        - actions_taken
+        - issues
+        - required_actions
+- Implement execution spec generation:
+    - create feature directory if missing
+    - never overwrite existing specs
+    - write file deterministically
 
 ## Non-Goals
 - Do not execute the generated spec automatically.
-- Do not add `plan spec` or multi-feature planning.
-- Do not generate a broad roadmap.
-- Do not rewrite the canonical feature spec.
-- Do not rewrite or compact the decision ledger.
-- Do not bypass doctor, alignment, or readiness semantics.
-- Do not add prompt-only planning detached from canonical context.
+- Do not support `plan spec` or multi-feature planning.
+- Do not generate a full roadmap.
+- Do not rewrite canonical feature spec.
+- Do not rewrite decision ledger.
+- Do not bypass context validation or readiness checks.
+- Do not rely on prompt-only or chat-derived planning.
 
 ## Canonical Context
 - Canonical feature spec: `docs/features/context-persistence.spec.md`
@@ -71,57 +80,33 @@
 - Canonical decision ledger: `docs/features/context-persistence.decisions.md`
 
 ## Authority Rule
-- This execution spec adds planning as a bounded derivative of canonical feature context.
+- Planning is derived strictly from canonical feature context.
 - Generated execution specs are bounded work orders only.
-- Generated execution specs MUST NOT override the canonical feature spec.
-- If planning detects that intended behavior has changed, it must fail clearly rather than rewriting canonical feature truth.
+- Generated execution specs must not override canonical feature intent.
+- When intent ambiguity or conflict is detected, planning must fail clearly rather than infer new behavior.
 
 ## Completion Signals
-- `foundry plan feature <feature>` exists and works deterministically
-- planning consumes canonical feature context only
-- planning generates a new execution spec under the canonical feature-scoped directory
-- the next sequence number is correct and deterministic
-- generated execution spec content matches the required structure
-- blocked planning returns deterministic `issues` and `required_actions`
-- generated execution specs are usable by `implement spec`
+- `foundry plan feature <feature>` generates a new execution spec file
+- next sequence number is correct and deterministic
+- slug generation is stable
+- generated spec matches required structure
+- planning fails cleanly when context is unusable
+- generated spec is usable by `implement spec`
 - all tests pass
 
 ## Post-Execution Expectations
-- Generated execution specs should be immediately usable by:
+- Generated execution specs are immediately usable via:
     - `foundry implement spec <feature>/<NNN-name>`
-- Planning should not mutate canonical feature spec, feature state, or decision ledger
-- Planning should fail closed when context is structurally invalid or unusable
-- After implementation of this spec, `context-persistence` should remain green under:
+- Planning does not modify:
+    - canonical feature spec
+    - feature state
+    - decision ledger
+- Context validation remains green:
     - `context doctor`
     - `context check-alignment`
-    - `inspect context`
     - `verify context`
 
-## Implementation Notes
-- `plan feature` should support:
-    - `foundry plan feature <feature>`
-    - `foundry plan feature <feature> --json`
-- Optional flags are allowed only if they do not complicate the initial design
-- Planning should typically produce one bounded next step
-- A very small number of tightly scoped next steps is acceptable only if required by the context and still deterministic
-- Prefer delegation into shared context services over bespoke orchestration logic
-- Generated execution specs should use this structure:
-
-    - `# Execution Spec: <feature>/<NNN-name>`
-    - `## Feature`
-    - `## Purpose`
-    - `## Scope`
-    - `## Constraints`
-    - `## Requested Changes`
-    - `## Non-Goals`
-    - `## Canonical Context`
-    - `## Authority Rule`
-    - `## Completion Signals`
-    - `## Post-Execution Expectations`
-
 ## JSON Contract
-Use this stable top-level shape:
-
 ```json
 {
   "feature": "blog",
@@ -146,20 +131,20 @@ Requirements:
 
 ## Test Requirements
 
-Unit tests:
+### Unit tests
 •	next execution spec number is determined correctly
-•	execution spec slug generation is deterministic
-•	bounded requested changes are generated from simple context gaps
-•	planning is blocked when required context is missing or unusable
+•	slug generation is deterministic
+•	bounded requested changes are derived from simple context gaps
+•	planning is blocked when required context is missing or invalid
 •	result shape is stable
 
-Integration tests:
-•	plan feature <feature> generates the next execution spec file
-•	generated spec uses canonical directory structure
-•	blocked feature returns correct blocked result
+### Integration tests
+•	plan feature <feature> generates next execution spec file
+•	generated spec uses correct directory structure
+•	blocked feature returns correct result
 •	generated spec content matches required structure
-•	generated spec is usable by implement spec
-•	output is deterministic and stable
+•	generated spec is executable via implement spec
+•	output is deterministic
 
 ## Final Instruction
 
@@ -167,10 +152,11 @@ Implement auto-planning as the next bounded step in the context-driven execution
 
 Planning must:
 •	consume canonical context
+•	derive the next bounded work step
 •	generate deterministic execution specs
 •	respect readiness and enforcement boundaries
-•	remain narrow, explicit, and reusable
+•	remain narrow, explicit, and reproducible
 
 Do not generate vague plans.
 Do not bypass canonical context.
-Do not turn planning into execution.
+Do not expand planning into roadmap generation.

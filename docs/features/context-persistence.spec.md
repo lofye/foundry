@@ -11,6 +11,7 @@
 - Introduce deterministic spec-state alignment checking.
 - Introduce deterministic, context-driven feature execution.
 - Introduce deterministic, spec-driven execution as a secondary entry point into feature execution.
+- Introduce deterministic auto-planning from canonical feature context.
 - Support safe repair-first execution when context is invalid.
 
 ## Non-Goals
@@ -47,6 +48,9 @@
 - Implement spec reuses the existing feature execution pipeline rather than creating a second execution policy path.
 - Implement spec blocks when execution-spec instructions conflict with canonical feature truth.
 - Implement spec records that execution was driven by a specific execution spec without changing canonical authority.
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Plan feature uses canonical feature context as authoritative planning input.
+- Plan feature fails clearly when context cannot proceed or no bounded next step can be derived.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -66,9 +70,12 @@
 - Implement spec executes a discrete implementation spec without bypassing canonical context validation.
 - Implement spec returns deterministic blocked, repaired, completed, or completed_with_issues results aligned with implement feature.
 - Execution spec conflicts do not override canonical feature authority.
+- Plan feature returns deterministic planned or blocked results.
+- Plan feature creates an execution spec that is immediately usable by implement spec.
 
 ## Assumptions
 - Initial feature work may still be partly manual.
 - Execution specs may exist separately under docs/specs/<feature>/<NNN-name>.md
 - Execution specs are secondary work orders and do not override the canonical feature spec.
 - Implement spec may consume execution specs as bounded work orders while canonical feature context remains authoritative.
+- Plan feature may derive one bounded execution spec at a time from canonical feature context without generating a roadmap.

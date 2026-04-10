@@ -232,6 +232,7 @@ final class CommandCatalog
             $signature === 'export openapi' => 'export openapi --format=json --json',
             $signature === 'preview notification' => 'preview notification welcome_email --json',
             $signature === 'implement feature' => 'implement feature ' . str_replace('_', '-', $examples['feature']) . ' --json',
+            $signature === 'plan feature' => 'plan feature ' . str_replace('_', '-', $examples['feature']) . ' --json',
             str_starts_with($signature, 'inspect node') => 'inspect node ' . $examples['node'] . ' --json',
             str_starts_with($signature, 'inspect dependents') => 'inspect dependents ' . $examples['node'] . ' --json',
             str_starts_with($signature, 'inspect affected-tests') => 'inspect affected-tests ' . $examples['node'] . ' --json',

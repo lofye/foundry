@@ -261,6 +261,7 @@ final class CliSurfaceVerifier
             'inspect route' => ['inspect', 'route', 'GET', '/example'],
             'implement feature' => ['implement', 'feature', 'example-feature'],
             'implement spec' => ['implement', 'spec', 'example-feature/001-initial'],
+            'plan feature' => ['plan', 'feature', 'example-feature'],
             default => array_values(array_filter(explode(' ', $signature), static fn(string $part): bool => $part !== '')),
         };
     }

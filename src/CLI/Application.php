@@ -43,6 +43,7 @@ use Foundry\CLI\Commands\LicenseCommand;
 use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\ObserveCommand;
 use Foundry\CLI\Commands\PackCommand;
+use Foundry\CLI\Commands\PlanFeatureCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
 use Foundry\CLI\Commands\PromptCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
@@ -93,6 +94,7 @@ final class Application
             new ContextCheckAlignmentCommand(),
             new ImplementFeatureCommand(),
             new ImplementSpecCommand(),
+            new PlanFeatureCommand(),
             new CacheInspectCommand(),
             new CacheClearCommand(),
             new InspectGraphCommand(),
