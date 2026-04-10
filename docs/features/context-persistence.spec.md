@@ -50,7 +50,10 @@
 - Implement spec records that execution was driven by a specific execution spec without changing canonical authority.
 - Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
 - Plan feature uses canonical feature context as authoritative planning input.
+- Plan feature derives concrete planning gaps from Expected Behavior versus Current State.
+- Plan feature generates non-tautological purpose, scope, requested changes, and slug output for concrete gaps.
 - Plan feature fails clearly when context cannot proceed or no bounded next step can be derived.
+- Plan feature blocks when only abstract or non-actionable gaps remain.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -72,6 +75,7 @@
 - Execution spec conflicts do not override canonical feature authority.
 - Plan feature returns deterministic planned or blocked results.
 - Plan feature creates an execution spec that is immediately usable by implement spec.
+- Plan feature blocks rather than generating vague or self-referential execution specs.
 
 ## Assumptions
 - Initial feature work may still be partly manual.

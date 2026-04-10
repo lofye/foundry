@@ -368,3 +368,102 @@ Timestamp: <ISO-8601>
 
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: block planner output when the remaining gap is too abstract
+Timestamp: 2026-04-10T13:00:00-04:00
+
+**Context**
+- The first auto-planning implementation could still produce execution specs with vague or self-referential wording when the remaining unmatched spec gap was too abstract.
+- Foundry needed planner output that stays actionable and bounded rather than emitting low-value work orders.
+
+**Decision**
+- Refine `plan feature` to derive concrete planning gaps from Expected Behavior versus Current State.
+- Generate differentiated purpose, scope, requested changes, and slug output only for meaningful concrete gaps.
+- Block planning when the remaining gap is abstract or non-actionable.
+
+**Reasoning**
+- A blocked result is safer than generating an execution spec that looks valid but does not actually guide implementation.
+- Concrete spec-state gaps are a more reliable planning input than vague high-level future statements.
+- This keeps planning deterministic without weakening canonical feature authority or inventing a second planning policy path.
+
+**Alternatives Considered**
+- Keep generating execution specs from any unmatched spec or next-step text.
+- Add fuzzy semantic or LLM-based planning heuristics.
+- Solve low-quality plans by rewriting canonical context automatically.
+
+**Impact**
+- Planner output is now narrower, clearer, and less tautological.
+- `plan feature` now fails cleanly when canonical context does not identify a meaningful next implementation step.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
+### Decision: context-driven execution for context-persistence
+
+Timestamp: <ISO-8601>
+
+**Context**
+
+- Foundry executed feature work for `context-persistence` from canonical context artifacts.
+
+**Decision**
+
+- Use the canonical spec, state, and decision ledger as the deterministic execution input.
+- Update feature context after execution and revalidate before finishing.
+
+**Reasoning**
+
+- This keeps feature execution traceable to the canonical context contract.
+- This preserves fail-closed behavior when repair is still required.
+
+**Alternatives Considered**
+
+- Execute from ad hoc prompts only.
+- Skip post-execution context updates.
+- Repair context only after implementation.
+
+**Impact**
+
+- Feature execution now leaves an explicit context trail.
+- Later runs can resume from updated state instead of relying on chat history.
+
+**Spec Reference**
+
+- Expected Behavior
+- Acceptance Criteria
+
+### Decision: context-driven execution for context-persistence
+
+Timestamp: <ISO-8601>
+
+**Context**
+
+- Foundry executed feature work for `context-persistence` from canonical context artifacts.
+
+**Decision**
+
+- Use the canonical spec, state, and decision ledger as the deterministic execution input.
+- Update feature context after execution and revalidate before finishing.
+
+**Reasoning**
+
+- This keeps feature execution traceable to the canonical context contract.
+- This preserves fail-closed behavior when repair is still required.
+
+**Alternatives Considered**
+
+- Execute from ad hoc prompts only.
+- Skip post-execution context updates.
+- Repair context only after implementation.
+
+**Impact**
+
+- Feature execution now leaves an explicit context trail.
+- Later runs can resume from updated state instead of relying on chat history.
+
+**Spec Reference**
+
+- Expected Behavior
+- Acceptance Criteria

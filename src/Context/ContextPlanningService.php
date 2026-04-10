@@ -75,11 +75,11 @@ final class ContextPlanningService
                 actionsTaken: [],
                 issues: [[
                     'code' => 'PLANNING_NO_BOUNDED_STEP',
-                    'message' => 'No bounded next work step could be derived from canonical feature context.',
+                    'message' => 'No meaningful bounded work step could be derived from the gap between Expected Behavior and Current State.',
                     'file_path' => $this->resolver->statePath($featureName),
                 ]],
                 requiredActions: [
-                    'Update docs/features/' . $featureName . '.md so Next Steps or Current State identifies the next bounded work step.',
+                    'Update docs/features/' . $featureName . '.spec.md or docs/features/' . $featureName . '.md so there is a concrete actionable gap between Expected Behavior and Current State.',
                 ],
             );
         }

@@ -46,18 +46,21 @@ final class CLIPlanFeatureCommandTest extends TestCase
             'required_actions',
         ], array_keys($result['payload']));
         $this->assertSame('planned', $result['payload']['status']);
-        $this->assertSame('event-bus/001-add-contract-test-coverage', $result['payload']['spec_id']);
-        $this->assertSame('docs/specs/event-bus/001-add-contract-test-coverage.md', $result['payload']['spec_path']);
+        $this->assertSame('event-bus/001-contract-test-coverage', $result['payload']['spec_id']);
+        $this->assertSame('docs/specs/event-bus/001-contract-test-coverage.md', $result['payload']['spec_path']);
         $this->assertSame(['generated execution spec'], $result['payload']['actions_taken']);
-        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/001-add-contract-test-coverage.md');
+        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
 
-        $contents = (string) file_get_contents($this->project->root . '/docs/specs/event-bus/001-add-contract-test-coverage.md');
-        $this->assertStringContainsString('# Execution Spec: event-bus/001-add-contract-test-coverage', $contents);
+        $contents = (string) file_get_contents($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
+        $this->assertStringContainsString('# Execution Spec: event-bus/001-contract-test-coverage', $contents);
         $this->assertStringContainsString('## Feature', $contents);
         $this->assertStringContainsString('## Purpose', $contents);
         $this->assertStringContainsString('## Scope', $contents);
         $this->assertStringContainsString('## Constraints', $contents);
         $this->assertStringContainsString('## Requested Changes', $contents);
+        $this->assertStringContainsString('- Current State does not yet reflect contract test coverage for the event bus feature, so this is the next bounded step now.', $contents);
+        $this->assertStringContainsString('- Event bus contract-test coverage and generated verification.', $contents);
+        $this->assertStringContainsString('- Add contract test coverage for the event bus feature.', $contents);
     }
 
     public function test_blocked_feature_returns_correct_result(): void
@@ -89,6 +92,18 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertSame(0, $implemented['status']);
         $this->assertSame('completed', $implemented['payload']['status']);
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
+    }
+
+    public function test_plan_feature_blocks_when_only_non_actionable_gap_remains(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'context-persistence', '--json']);
+        $this->writeGenericPlanningContext('context-persistence');
+
+        $result = $this->runCommand(['foundry', 'plan', 'feature', 'context-persistence', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertSame('PLANNING_NO_BOUNDED_STEP', $result['payload']['issues'][0]['code']);
     }
 
     /**
@@ -159,6 +174,63 @@ Introduce event bus handling.
 ## Next Steps
 
 - Add contract test coverage for the event bus feature.
+MD);
+    }
+
+    private function writeGenericPlanningContext(string $feature): void
+    {
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+# Feature Spec: {$feature}
+
+## Purpose
+
+Preserve feature intent across sessions.
+
+## Goals
+
+- Introduce deterministic planning.
+
+## Non-Goals
+
+- Do not add prompt-only execution.
+
+## Constraints
+
+- Must remain deterministic.
+
+## Expected Behavior
+
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Later execution systems can consume canonical feature context files safely.
+
+## Acceptance Criteria
+
+- Plan feature returns deterministic planned or blocked results.
+
+## Assumptions
+
+- Execution specs remain secondary.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+# Feature: {$feature}
+
+## Purpose
+
+Preserve feature intent across sessions.
+
+## Current State
+
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Plan feature returns deterministic planned or blocked results.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Keep later execution systems safely consumable from canonical feature context files.
 MD);
     }
 }

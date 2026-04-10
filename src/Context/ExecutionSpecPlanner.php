@@ -6,6 +6,41 @@ namespace Foundry\Context;
 
 final class ExecutionSpecPlanner
 {
+    private const array ACTIONABLE_LEADING_VERBS = [
+        'add',
+        'append',
+        'block',
+        'create',
+        'derive',
+        'detect',
+        'generate',
+        'initialize',
+        'inspect',
+        'load',
+        'map',
+        'parse',
+        'record',
+        'resolve',
+        'return',
+        'reuse',
+        'update',
+        'validate',
+        'verify',
+        'write',
+    ];
+
+    private const array GENERIC_LEADING_WORDS = [
+        'ensure',
+        'future',
+        'improve',
+        'keep',
+        'later',
+        'maintain',
+        'preserve',
+        'remain',
+        'support',
+    ];
+
     private const array STOP_WORDS = [
         'a',
         'an',
@@ -44,12 +79,25 @@ final class ExecutionSpecPlanner
         'implementation',
         'implement',
         'ledger',
+        'later',
         'next',
         'spec',
         'state',
         'step',
         'steps',
         'work',
+    ];
+
+    private const array SUBJECT_PREFIXES = [
+        'Plan feature ' => 'plan feature',
+        'Implement spec ' => 'implement spec',
+        'Implement feature ' => 'implement feature',
+        'Inspect context ' => 'inspect context',
+        'Verify context ' => 'verify context',
+        'CLI commands can ' => 'cli',
+        'CLI can ' => 'cli',
+        'Validators can ' => 'validators',
+        'Alignment results include ' => 'alignment',
     ];
 
     /**
@@ -81,29 +129,50 @@ final class ExecutionSpecPlanner
 
         $currentStateItems = $this->meaningfulItems((string) ($executionInput['state']['Current State'] ?? ''));
         $nextStepItems = $this->meaningfulItems((string) ($executionInput['state']['Next Steps'] ?? ''));
-        $specTrackingItems = array_values(array_map(
+        $unimplementedSpecItems = [];
+
+        foreach (array_values(array_map(
             'strval',
             (array) ($executionInput['spec_tracking_items'] ?? []),
-        ));
+        )) as $item) {
+            if ($this->matchesAny($item, $currentStateItems, $ignoredTokens)) {
+                continue;
+            }
 
-        $candidate = $this->firstUnimplementedNextStep($nextStepItems, $currentStateItems, $ignoredTokens)
-            ?? $this->firstUnimplementedSpecItem($specTrackingItems, $currentStateItems, $ignoredTokens);
+            $unimplementedSpecItems[] = $item;
+        }
+
+        $candidate = $this->firstMeaningfulSpecGap($unimplementedSpecItems, $nextStepItems, $ignoredTokens);
 
         if ($candidate === null) {
             return null;
         }
 
+        $requestedChange = $this->requestedChangeFromCandidate($candidate);
+        if ($requestedChange === null) {
+            return null;
+        }
+
+        $focus = $this->focusFromText($requestedChange);
+        $scope = $this->scopeFromCandidate($featureName, $candidate, $focus);
+        $purpose = $this->purposeFromFocus($focus);
+        $slug = $this->slugFromText($focus === '' ? $requestedChange : $focus, $featureName);
+
+        if ($this->isTautologicalOutput($purpose, $scope, $requestedChange)) {
+            return null;
+        }
+
         return [
-            'slug' => $this->slugFromText($candidate, $featureName),
-            'purpose' => 'Advance the next bounded implementation step for ' . $featureName . ' from canonical feature context.',
-            'scope' => [$candidate],
+            'slug' => $slug,
+            'purpose' => $purpose,
+            'scope' => [$scope],
             'constraints' => [
                 'Keep canonical feature context authoritative.',
                 'Keep generated execution specs secondary to canonical feature truth.',
                 'Keep this work deterministic and bounded to one coherent step.',
                 'Respect prior decisions recorded in docs/features/' . $featureName . '.decisions.md.',
             ],
-            'requested_changes' => [$candidate],
+            'requested_changes' => [$requestedChange],
         ];
     }
 
@@ -152,30 +221,29 @@ final class ExecutionSpecPlanner
     }
 
     /**
+     * @param list<string> $specItems
      * @param list<string> $nextStepItems
-     * @param list<string> $currentStateItems
      * @param list<string> $ignoredTokens
      */
-    private function firstUnimplementedNextStep(array $nextStepItems, array $currentStateItems, array $ignoredTokens): ?string
+    private function firstMeaningfulSpecGap(array $specItems, array $nextStepItems, array $ignoredTokens): ?string
     {
-        foreach ($nextStepItems as $item) {
-            if (!$this->matchesAny($item, $currentStateItems, $ignoredTokens)) {
-                return $item;
+        $preferred = [];
+        $fallback = [];
+
+        foreach ($specItems as $item) {
+            if (!$this->isMeaningfulCandidate($item)) {
+                continue;
+            }
+
+            if ($this->matchesAny($item, $nextStepItems, $ignoredTokens)) {
+                $preferred[] = $item;
+            } else {
+                $fallback[] = $item;
             }
         }
 
-        return null;
-    }
-
-    /**
-     * @param list<string> $specTrackingItems
-     * @param list<string> $currentStateItems
-     * @param list<string> $ignoredTokens
-     */
-    private function firstUnimplementedSpecItem(array $specTrackingItems, array $currentStateItems, array $ignoredTokens): ?string
-    {
-        foreach ($specTrackingItems as $item) {
-            if (!$this->matchesAny($item, $currentStateItems, $ignoredTokens)) {
+        foreach (array_merge($preferred, $fallback) as $item) {
+            if ($this->requestedChangeFromCandidate($item) !== null) {
                 return $item;
             }
         }
@@ -273,12 +341,144 @@ final class ExecutionSpecPlanner
         return $overlap >= max(2, $threshold);
     }
 
+    private function requestedChangeFromCandidate(string $candidate): ?string
+    {
+        $candidate = trim($candidate);
+        if ($candidate === '' || !$this->isMeaningfulCandidate($candidate)) {
+            return null;
+        }
+
+        return $candidate;
+    }
+
+    private function focusFromText(string $text): string
+    {
+        $text = trim($text);
+
+        foreach (array_keys(self::SUBJECT_PREFIXES) as $prefix) {
+            if (str_starts_with($text, $prefix)) {
+                $text = substr($text, strlen($prefix));
+
+                break;
+            }
+        }
+
+        $text = preg_replace(
+            '/^(?:' . implode('|', self::ACTIONABLE_LEADING_VERBS) . ')\s+/i',
+            '',
+            $text,
+        ) ?? $text;
+
+        return rtrim(trim($text), '.');
+    }
+
+    private function purposeFromFocus(string $focus): string
+    {
+        $focus = trim($focus);
+
+        if ($focus === '') {
+            return 'Current State does not yet reflect this canonical requirement, so this is the next bounded step now.';
+        }
+
+        return 'Current State does not yet reflect ' . $focus . ', so this is the next bounded step now.';
+    }
+
+    private function scopeFromCandidate(string $featureName, string $candidate, string $focus): string
+    {
+        $lower = strtolower($candidate);
+
+        if (str_contains($lower, 'plan feature') || str_contains($lower, 'planner')) {
+            return 'Plan feature command and execution-spec generation.';
+        }
+
+        if (str_contains($lower, 'implement spec') || str_contains($lower, 'execution spec')) {
+            return 'Execution-spec generation and spec-driven execution orchestration.';
+        }
+
+        if (str_contains($lower, 'implement feature')) {
+            return 'Canonical feature execution orchestration.';
+        }
+
+        if (str_contains($lower, 'verify context')) {
+            return 'Verify context status mapping and output.';
+        }
+
+        if (str_contains($lower, 'inspect context')) {
+            return 'Inspect context aggregation and output.';
+        }
+
+        if (str_contains($lower, 'alignment')) {
+            return 'Alignment detection and reporting.';
+        }
+
+        if (str_contains($lower, 'validator') || str_contains($lower, 'validate')) {
+            return 'Context validation behavior.';
+        }
+
+        if (str_contains($lower, 'contract test')) {
+            return $this->humanizeFeatureName($featureName) . ' contract-test coverage and generated verification.';
+        }
+
+        if ($focus !== '') {
+            return ucfirst($focus) . '.';
+        }
+
+        return 'Canonical feature planning behavior.';
+    }
+
+    private function isTautologicalOutput(string $purpose, string $scope, string $requestedChange): bool
+    {
+        $normalizedScope = $this->normalizedText($scope);
+        $normalizedRequestedChange = $this->normalizedText($requestedChange);
+        $normalizedPurpose = $this->normalizedText($purpose);
+
+        if ($normalizedScope === '' || $normalizedRequestedChange === '' || $normalizedPurpose === '') {
+            return true;
+        }
+
+        return $normalizedScope === $normalizedRequestedChange
+            || $normalizedPurpose === $normalizedRequestedChange
+            || $normalizedPurpose === $normalizedScope;
+    }
+
+    private function isMeaningfulCandidate(string $candidate): bool
+    {
+        $candidate = trim($candidate);
+        if ($candidate === '') {
+            return false;
+        }
+
+        $lower = strtolower($candidate);
+        $firstWord = strtok($lower, ' ');
+        if (is_string($firstWord) && in_array($firstWord, self::GENERIC_LEADING_WORDS, true)) {
+            return false;
+        }
+
+        foreach (array_keys(self::SUBJECT_PREFIXES) as $prefix) {
+            if (str_starts_with($candidate, $prefix)) {
+                return true;
+            }
+        }
+
+        return preg_match(
+            '/^(?:' . implode('|', self::ACTIONABLE_LEADING_VERBS) . ')\b/i',
+            $candidate,
+        ) === 1;
+    }
+
+    private function humanizeFeatureName(string $featureName): string
+    {
+        return ucfirst(str_replace('-', ' ', $featureName));
+    }
+
     private function slugFromText(string $text, string $featureName): string
     {
         $featureTokens = array_values(array_filter(explode('-', $featureName)));
         $ignored = array_values(array_unique(array_merge(
             self::STOP_WORDS,
             self::SLUG_NOISE,
+            self::GENERIC_LEADING_WORDS,
+            self::ACTIONABLE_LEADING_VERBS,
             $featureTokens,
         )));
 

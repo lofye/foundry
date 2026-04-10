@@ -33,8 +33,8 @@ final class ContextPlanningServiceTest extends TestCase
         $result = $this->service()->plan('event-bus')->toArray();
 
         $this->assertSame('planned', $result['status']);
-        $this->assertSame('event-bus/003-add-contract-test-coverage', $result['spec_id']);
-        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/003-add-contract-test-coverage.md');
+        $this->assertSame('event-bus/003-contract-test-coverage', $result['spec_id']);
+        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/003-contract-test-coverage.md');
     }
 
     public function test_planning_is_blocked_when_required_context_is_missing(): void
@@ -45,6 +45,22 @@ final class ContextPlanningServiceTest extends TestCase
         $this->assertFalse($result['can_proceed']);
         $this->assertTrue($result['requires_repair']);
         $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $result['required_actions']);
+    }
+
+    public function test_planning_is_blocked_when_only_non_meaningful_gap_remains(): void
+    {
+        $this->writeGenericPlanningContext('context-persistence');
+
+        $result = $this->service()->plan('context-persistence')->toArray();
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('PLANNING_NO_BOUNDED_STEP', $result['issues'][0]['code']);
+        $this->assertContains(
+            'Update docs/features/context-persistence.spec.md or docs/features/context-persistence.md so there is a concrete actionable gap between Expected Behavior and Current State.',
+            $result['required_actions'],
+        );
     }
 
     public function test_result_shape_is_stable(): void
@@ -157,6 +173,65 @@ Introduce event bus handling.
 ## Next Steps
 
 - Add contract test coverage for the event bus feature.
+MD);
+    }
+
+    private function writeGenericPlanningContext(string $feature): void
+    {
+        $this->initService()->init($feature);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+# Feature Spec: {$feature}
+
+## Purpose
+
+Preserve feature intent across sessions.
+
+## Goals
+
+- Introduce deterministic planning.
+
+## Non-Goals
+
+- Do not add prompt-only execution.
+
+## Constraints
+
+- Must remain deterministic.
+
+## Expected Behavior
+
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Later execution systems can consume canonical feature context files safely.
+
+## Acceptance Criteria
+
+- Plan feature returns deterministic planned or blocked results.
+
+## Assumptions
+
+- Execution specs remain secondary.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+# Feature: {$feature}
+
+## Purpose
+
+Preserve feature intent across sessions.
+
+## Current State
+
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Plan feature returns deterministic planned or blocked results.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Keep later execution systems safely consumable from canonical feature context files.
 MD);
     }
 }

@@ -24,7 +24,7 @@ final class ExecutionSpecPlannerTest extends TestCase
         $this->assertIsArray($first);
         $this->assertIsArray($second);
         $this->assertSame($first['slug'], $second['slug']);
-        $this->assertSame('add-rss-feed-support', $first['slug']);
+        $this->assertSame('rss-feed-published-posts', $first['slug']);
     }
 
     public function test_bounded_requested_changes_are_derived_from_simple_context_gaps(): void
@@ -51,9 +51,30 @@ final class ExecutionSpecPlannerTest extends TestCase
             $plan['requested_changes'],
         );
         $this->assertSame(
-            ['Add RSS feed support for published posts.'],
+            ['RSS feed support for published posts.'],
             $plan['scope'],
         );
+        $this->assertSame(
+            'Current State does not yet reflect RSS feed support for published posts, so this is the next bounded step now.',
+            $plan['purpose'],
+        );
+    }
+
+    public function test_non_actionable_gap_is_rejected_instead_of_generating_tautological_output(): void
+    {
+        $planner = new ExecutionSpecPlanner();
+        $input = $this->executionInput(
+            currentState: ['Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.'],
+            nextSteps: ['Keep later execution systems safely consumable from canonical feature context files.'],
+            specTrackingItems: [
+                'Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.',
+                'Later execution systems can consume canonical feature context files safely.',
+            ],
+        );
+
+        $plan = $planner->plan('context-persistence', $input);
+
+        $this->assertNull($plan);
     }
 
     /**
