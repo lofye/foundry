@@ -58,9 +58,13 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertStringContainsString('## Scope', $contents);
         $this->assertStringContainsString('## Constraints', $contents);
         $this->assertStringContainsString('## Requested Changes', $contents);
+        $this->assertStringContainsString('## Non-Goals', $contents);
+        $this->assertStringContainsString('## Completion Signals', $contents);
+        $this->assertStringContainsString('## Post-Execution Expectations', $contents);
         $this->assertStringContainsString('- Current State does not yet reflect contract test coverage for the event bus feature, so this is the next bounded step now.', $contents);
         $this->assertStringContainsString('- Event bus contract-test coverage and generated verification.', $contents);
         $this->assertStringContainsString('- Add contract test coverage for the event bus feature.', $contents);
+        $this->assertStringContainsString('- Do not change canonical feature context authority.', $contents);
     }
 
     public function test_blocked_feature_returns_correct_result(): void

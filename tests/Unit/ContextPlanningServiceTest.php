@@ -37,6 +37,50 @@ final class ContextPlanningServiceTest extends TestCase
         $this->assertFileExists($this->project->root . '/docs/specs/event-bus/003-contract-test-coverage.md');
     }
 
+    public function test_generated_execution_spec_matches_stub_structure_exactly(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+
+        $result = $this->service()->plan('event-bus')->toArray();
+        $contents = (string) file_get_contents($this->project->root . '/' . (string) $result['spec_path']);
+
+        $this->assertSame(<<<'MD'
+# Execution Spec: event-bus/001-contract-test-coverage
+
+## Feature
+- event-bus
+
+## Purpose
+- Current State does not yet reflect contract test coverage for the event bus feature, so this is the next bounded step now.
+
+## Scope
+- Event bus contract-test coverage and generated verification.
+
+## Constraints
+- Keep canonical feature context authoritative.
+- Keep generated execution specs secondary to canonical feature truth.
+- Keep this work deterministic and bounded to one coherent step.
+- Respect prior decisions recorded in docs/features/event-bus.decisions.md.
+
+## Requested Changes
+- Add contract test coverage for the event bus feature.
+
+## Non-Goals
+- Do not broaden this step beyond Event bus contract-test coverage and generated verification.
+- Do not change canonical feature context authority.
+
+## Completion Signals
+- Add contract test coverage for the event bus feature.
+- docs/features/event-bus.md reflects the completed bounded step.
+- verify context --feature=event-bus returns pass after execution.
+
+## Post-Execution Expectations
+- Current State reflects the completed bounded work.
+- Meaningful execution decisions are appended to docs/features/event-bus.decisions.md when needed.
+- Canonical feature context remains authoritative for later work.
+MD . "\n", $contents);
+    }
+
     public function test_planning_outputs_are_identical_for_identical_projects(): void
     {
         $this->writeMeaningfulContext('event-bus');
@@ -61,6 +105,50 @@ final class ContextPlanningServiceTest extends TestCase
 
         $this->assertSame($firstResult, $secondResult);
         $this->assertSame($firstContents, $secondContents);
+    }
+
+    public function test_stub_changes_propagate_without_planner_changes(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+
+        $frameworkRoot = $this->project->root . '/framework-fixture';
+        mkdir($frameworkRoot . '/stubs/specs', 0777, true);
+        file_put_contents($frameworkRoot . '/stubs/specs/execution-spec.stub.md', <<<'MD'
+# Execution Spec: {{spec_id}}
+
+## Feature
+- {{feature}}
+
+## Purpose
+- Planned via custom stub: {{purpose}}
+
+## Scope
+{{scope}}
+
+## Constraints
+{{constraints}}
+
+## Requested Changes
+{{requested_changes}}
+
+## Non-Goals
+{{non_goals}}
+
+## Completion Signals
+{{completion_signals}}
+
+## Post-Execution Expectations
+{{post_execution_expectations}}
+MD);
+
+        $service = new ContextPlanningService(new Paths($this->project->root, $frameworkRoot));
+        $result = $service->plan('event-bus')->toArray();
+        $contents = (string) file_get_contents($this->project->root . '/' . (string) $result['spec_path']);
+
+        $this->assertStringContainsString(
+            '- Planned via custom stub: Current State does not yet reflect contract test coverage for the event bus feature, so this is the next bounded step now.',
+            $contents,
+        );
     }
 
     public function test_planning_is_blocked_when_required_context_is_missing(): void

@@ -125,6 +125,20 @@ final class ExecutionSpecPlannerTest extends TestCase
                 'Respect prior decisions recorded in docs/features/event-bus.decisions.md.',
             ],
             'requested_changes' => ['Add contract test coverage for the event bus feature.'],
+            'non_goals' => [
+                'Do not broaden this step beyond Event bus contract-test coverage and generated verification.',
+                'Do not change canonical feature context authority.',
+            ],
+            'completion_signals' => [
+                'Add contract test coverage for the event bus feature.',
+                'docs/features/event-bus.md reflects the completed bounded step.',
+                'verify context --feature=event-bus returns pass after execution.',
+            ],
+            'post_execution_expectations' => [
+                'Current State reflects the completed bounded work.',
+                'Meaningful execution decisions are appended to docs/features/event-bus.decisions.md when needed.',
+                'Canonical feature context remains authoritative for later work.',
+            ],
         ], $planner->plan('event-bus', $input));
     }
 

@@ -59,6 +59,9 @@
 - Implement feature updates state and decisions when execution changes feature reality.
 - Implement feature revalidates context before finishing.
 - Implemented Each feature has one canonical spec, one state document, and one decision ledger.
+- Planner input is normalized into a deterministic structure before execution.
+- Planner output is fully deterministic and reproducible for identical inputs.
+- Blocked planning responses are deterministic.
 
 ## Open Questions
 

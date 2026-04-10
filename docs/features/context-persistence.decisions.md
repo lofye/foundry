@@ -467,3 +467,27 @@ Timestamp: <ISO-8601>
 
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: enforce planner determinism and reproducibility guarantees
+Timestamp: 2026-04-10T<time>
+
+**Context**
+- Planner output must be reliable for CI and repeated runs.
+- Non-deterministic planning would break reproducibility and trust.
+
+**Decision**
+- Normalize planning inputs into a stable deterministic structure.
+- Guarantee identical outputs for identical canonical inputs.
+
+**Reasoning**
+- Planner must behave as a pure function of canonical context.
+- Determinism is required for automation, CI, and debugging.
+
+**Impact**
+- Planning output is now stable across runs.
+- Blocked and planned results are reproducible.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

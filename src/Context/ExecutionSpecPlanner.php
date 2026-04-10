@@ -117,7 +117,10 @@ final class ExecutionSpecPlanner
      *     purpose:string,
      *     scope:list<string>,
      *     constraints:list<string>,
-     *     requested_changes:list<string>
+     *     requested_changes:list<string>,
+     *     non_goals:list<string>,
+     *     completion_signals:list<string>,
+     *     post_execution_expectations:list<string>
      * }|null
      */
     public function plan(string $featureName, array $executionInput): ?array
@@ -173,51 +176,10 @@ final class ExecutionSpecPlanner
                 'Respect prior decisions recorded in docs/features/' . $featureName . '.decisions.md.',
             ],
             'requested_changes' => [$requestedChange],
+            'non_goals' => $this->nonGoals($scope),
+            'completion_signals' => $this->completionSignals($featureName, $requestedChange),
+            'post_execution_expectations' => $this->postExecutionExpectations($featureName),
         ];
-    }
-
-    /**
-     * @param array{
-     *     slug:string,
-     *     purpose:string,
-     *     scope:list<string>,
-     *     constraints:list<string>,
-     *     requested_changes:list<string>
-     * } $plan
-     */
-    public function render(string $specId, string $featureName, array $plan): string
-    {
-        $lines = [
-            '# Execution Spec: ' . $specId,
-            '',
-            '## Feature',
-            '- ' . $featureName,
-            '',
-            '## Purpose',
-            '- ' . $plan['purpose'],
-            '',
-            '## Scope',
-        ];
-
-        foreach ($plan['scope'] as $item) {
-            $lines[] = '- ' . $item;
-        }
-
-        $lines[] = '';
-        $lines[] = '## Constraints';
-        foreach ($plan['constraints'] as $item) {
-            $lines[] = '- ' . $item;
-        }
-
-        $lines[] = '';
-        $lines[] = '## Requested Changes';
-        foreach ($plan['requested_changes'] as $item) {
-            $lines[] = '- ' . $item;
-        }
-
-        $lines[] = '';
-
-        return implode(PHP_EOL, $lines);
     }
 
     /**
@@ -249,6 +211,41 @@ final class ExecutionSpecPlanner
         }
 
         return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function nonGoals(string $scope): array
+    {
+        return [
+            'Do not broaden this step beyond ' . rtrim($scope, '.') . '.',
+            'Do not change canonical feature context authority.',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function completionSignals(string $featureName, string $requestedChange): array
+    {
+        return [
+            $requestedChange,
+            'docs/features/' . $featureName . '.md reflects the completed bounded step.',
+            'verify context --feature=' . $featureName . ' returns pass after execution.',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function postExecutionExpectations(string $featureName): array
+    {
+        return [
+            'Current State reflects the completed bounded work.',
+            'Meaningful execution decisions are appended to docs/features/' . $featureName . '.decisions.md when needed.',
+            'Canonical feature context remains authoritative for later work.',
+        ];
     }
 
     /**

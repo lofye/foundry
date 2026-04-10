@@ -132,7 +132,7 @@ final class ContextPlanningService
             );
         }
 
-        $contents = $this->planner->render($specId, $featureName, $plan);
+        $contents = $this->renderExecutionSpec($specId, $featureName, $plan);
         if (file_put_contents($absolutePath, $contents) === false) {
             throw new FoundryError(
                 'PLANNING_SPEC_WRITE_FAILED',
@@ -171,6 +171,76 @@ final class ContextPlanningService
         sort($numbers);
 
         return $numbers === [] ? 1 : max($numbers) + 1;
+    }
+
+    /**
+     * @param array{
+     *     slug:string,
+     *     purpose:string,
+     *     scope:list<string>,
+     *     constraints:list<string>,
+     *     requested_changes:list<string>,
+     *     non_goals:list<string>,
+     *     completion_signals:list<string>,
+     *     post_execution_expectations:list<string>
+     * } $plan
+     */
+    private function renderExecutionSpec(string $specId, string $featureName, array $plan): string
+    {
+        return str_replace(
+            [
+                '{{spec_id}}',
+                '{{feature}}',
+                '{{purpose}}',
+                '{{scope}}',
+                '{{constraints}}',
+                '{{requested_changes}}',
+                '{{non_goals}}',
+                '{{completion_signals}}',
+                '{{post_execution_expectations}}',
+            ],
+            [
+                $specId,
+                $featureName,
+                $plan['purpose'],
+                $this->renderBulletList($plan['scope']),
+                $this->renderBulletList($plan['constraints']),
+                $this->renderBulletList($plan['requested_changes']),
+                $this->renderBulletList($plan['non_goals']),
+                $this->renderBulletList($plan['completion_signals']),
+                $this->renderBulletList($plan['post_execution_expectations']),
+            ],
+            $this->loadExecutionSpecStub(),
+        );
+    }
+
+    private function loadExecutionSpecStub(): string
+    {
+        $relativePath = 'stubs/specs/execution-spec.stub.md';
+        $stubPath = $this->paths->frameworkJoin($relativePath);
+        $contents = file_get_contents($stubPath);
+
+        if ($contents === false) {
+            throw new FoundryError(
+                'PLANNING_SPEC_STUB_MISSING',
+                'filesystem',
+                ['path' => $relativePath],
+                'Execution spec stub could not be read.',
+            );
+        }
+
+        return $contents;
+    }
+
+    /**
+     * @param list<string> $items
+     */
+    private function renderBulletList(array $items): string
+    {
+        return implode("\n", array_map(
+            static fn(string $item): string => '- ' . $item,
+            $items,
+        ));
     }
 
     /**
