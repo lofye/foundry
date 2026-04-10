@@ -61,7 +61,9 @@ final class ContextPlanningService
             );
         }
 
-        $executionInput = $this->executionService->buildExecutionInput($featureName);
+        $executionInput = $this->normalizeExecutionInput(
+            $this->executionService->buildExecutionInput($featureName),
+        );
         $plan = $this->planner->plan($featureName, $executionInput);
 
         if ($plan === null) {
@@ -169,6 +171,75 @@ final class ContextPlanningService
         sort($numbers);
 
         return $numbers === [] ? 1 : max($numbers) + 1;
+    }
+
+    /**
+     * @param array{
+     *     feature:string,
+     *     mode:string,
+     *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
+     *     spec:array<string,string>,
+     *     state:array<string,string>,
+     *     decisions:list<array<string,string>>,
+     *     spec_tracking_items:list<string>,
+     *     description:string,
+     *     execution_summary:string
+     * } $executionInput
+     * @return array{
+     *     feature:string,
+     *     mode:string,
+     *     paths:array{spec:string,state:string,decisions:string,feature_base:string,manifest:string,prompts:string},
+     *     spec:array<string,string>,
+     *     state:array<string,string>,
+     *     decisions:list<array<string,string>>,
+     *     spec_tracking_items:list<string>,
+     *     description:string,
+     *     execution_summary:string
+     * }
+     */
+    private function normalizeExecutionInput(array $executionInput): array
+    {
+        $spec = $executionInput['spec'];
+        ksort($spec);
+
+        $state = $executionInput['state'];
+        ksort($state);
+
+        $executionInput['spec'] = $spec;
+        $executionInput['state'] = $state;
+        $executionInput['decisions'] = $this->stableDecisionEntries($executionInput['decisions']);
+
+        return $executionInput;
+    }
+
+    /**
+     * @param list<array<string,string>> $decisions
+     * @return list<array<string,string>>
+     */
+    private function stableDecisionEntries(array $decisions): array
+    {
+        usort($decisions, function (array $left, array $right): int {
+            return strcmp($this->decisionSortKey($left), $this->decisionSortKey($right));
+        });
+
+        return $decisions;
+    }
+
+    /**
+     * @param array<string,string> $decision
+     */
+    private function decisionSortKey(array $decision): string
+    {
+        return implode("\n", [
+            strtolower((string) ($decision['title'] ?? '')),
+            strtolower((string) ($decision['timestamp'] ?? '')),
+            strtolower((string) ($decision['context'] ?? '')),
+            strtolower((string) ($decision['decision'] ?? '')),
+            strtolower((string) ($decision['reasoning'] ?? '')),
+            strtolower((string) ($decision['alternatives_considered'] ?? '')),
+            strtolower((string) ($decision['impact'] ?? '')),
+            strtolower((string) ($decision['spec_reference'] ?? '')),
+        ]);
     }
 
     /**

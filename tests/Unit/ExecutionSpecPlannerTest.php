@@ -23,7 +23,7 @@ final class ExecutionSpecPlannerTest extends TestCase
 
         $this->assertIsArray($first);
         $this->assertIsArray($second);
-        $this->assertSame($first['slug'], $second['slug']);
+        $this->assertSame($first, $second);
         $this->assertSame('rss-feed-published-posts', $first['slug']);
     }
 
@@ -58,6 +58,74 @@ final class ExecutionSpecPlannerTest extends TestCase
             'Current State does not yet reflect RSS feed support for published posts, so this is the next bounded step now.',
             $plan['purpose'],
         );
+    }
+
+    public function test_reordering_irrelevant_inputs_does_not_change_output(): void
+    {
+        $planner = new ExecutionSpecPlanner();
+
+        $ordered = $this->executionInput(
+            currentState: [
+                'Blog feature scaffolding exists in the app.',
+                'Contract tests already cover the publish endpoint.',
+            ],
+            nextSteps: [
+                'Add RSS feed support for published posts.',
+                'Document the publish endpoint.',
+            ],
+            specTrackingItems: [
+                'Document the publish endpoint.',
+                'Add RSS feed support for published posts.',
+                'Blog feature scaffolding exists in the app.',
+            ],
+        );
+
+        $reordered = $this->executionInput(
+            currentState: [
+                'Contract tests already cover the publish endpoint.',
+                'Blog feature scaffolding exists in the app.',
+            ],
+            nextSteps: [
+                'Add RSS feed support for published posts.',
+                'Document the publish endpoint.',
+            ],
+            specTrackingItems: [
+                'Document the publish endpoint.',
+                'Add RSS feed support for published posts.',
+                'Blog feature scaffolding exists in the app.',
+            ],
+        );
+
+        $this->assertSame(
+            $planner->plan('blog', $ordered),
+            $planner->plan('blog', $reordered),
+        );
+    }
+
+    public function test_known_fixture_input_produces_fixed_expected_output(): void
+    {
+        $planner = new ExecutionSpecPlanner();
+        $input = $this->executionInput(
+            currentState: ['Event bus feature scaffolding exists in the app.'],
+            nextSteps: ['Add contract test coverage for the event bus feature.'],
+            specTrackingItems: [
+                'Event bus feature scaffolding exists in the app.',
+                'Add contract test coverage for the event bus feature.',
+            ],
+        );
+
+        $this->assertSame([
+            'slug' => 'contract-test-coverage',
+            'purpose' => 'Current State does not yet reflect contract test coverage for the event bus feature, so this is the next bounded step now.',
+            'scope' => ['Event bus contract-test coverage and generated verification.'],
+            'constraints' => [
+                'Keep canonical feature context authoritative.',
+                'Keep generated execution specs secondary to canonical feature truth.',
+                'Keep this work deterministic and bounded to one coherent step.',
+                'Respect prior decisions recorded in docs/features/event-bus.decisions.md.',
+            ],
+            'requested_changes' => ['Add contract test coverage for the event bus feature.'],
+        ], $planner->plan('event-bus', $input));
     }
 
     public function test_non_actionable_gap_is_rejected_instead_of_generating_tautological_output(): void

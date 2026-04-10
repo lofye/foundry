@@ -37,6 +37,32 @@ final class ContextPlanningServiceTest extends TestCase
         $this->assertFileExists($this->project->root . '/docs/specs/event-bus/003-contract-test-coverage.md');
     }
 
+    public function test_planning_outputs_are_identical_for_identical_projects(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+
+        $firstResult = $this->service()->plan('event-bus')->toArray();
+        $firstContents = (string) file_get_contents(
+            $this->project->root . '/' . (string) $firstResult['spec_path'],
+        );
+
+        $otherProject = new TempProject();
+
+        try {
+            $this->writeMeaningfulContextForProject($otherProject, 'event-bus');
+            $otherService = new ContextPlanningService(new Paths($otherProject->root));
+            $secondResult = $otherService->plan('event-bus')->toArray();
+            $secondContents = (string) file_get_contents(
+                $otherProject->root . '/' . (string) $secondResult['spec_path'],
+            );
+        } finally {
+            $otherProject->cleanup();
+        }
+
+        $this->assertSame($firstResult, $secondResult);
+        $this->assertSame($firstContents, $secondContents);
+    }
+
     public function test_planning_is_blocked_when_required_context_is_missing(): void
     {
         $result = $this->service()->plan('event-bus')->toArray();
@@ -61,6 +87,16 @@ final class ContextPlanningServiceTest extends TestCase
             'Update docs/features/context-persistence.spec.md or docs/features/context-persistence.md so there is a concrete actionable gap between Expected Behavior and Current State.',
             $result['required_actions'],
         );
+    }
+
+    public function test_blocked_planning_response_is_identical_across_repeated_runs(): void
+    {
+        $this->writeGenericPlanningContext('context-persistence');
+
+        $first = $this->service()->plan('context-persistence')->toArray();
+        $second = $this->service()->plan('context-persistence')->toArray();
+
+        $this->assertSame($first, $second);
     }
 
     public function test_result_shape_is_stable(): void
@@ -156,6 +192,64 @@ Introduce event bus handling.
 MD);
 
         file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+# Feature: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Current State
+
+- Event bus feature scaffolding exists in the app.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Add contract test coverage for the event bus feature.
+MD);
+    }
+
+    private function writeMeaningfulContextForProject(TempProject $project, string $feature): void
+    {
+        $initService = new ContextInitService(new Paths($project->root));
+        $initService->init($feature);
+
+        file_put_contents($project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+# Feature Spec: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Goals
+
+- Add deterministic event bus feature scaffolding.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Constraints
+
+- Keep output deterministic.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Add contract test coverage for the event bus feature.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        file_put_contents($project->root . '/docs/features/' . $feature . '.md', <<<MD
 # Feature: {$feature}
 
 ## Purpose

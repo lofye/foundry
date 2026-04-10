@@ -94,6 +94,23 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
     }
 
+    public function test_plan_feature_output_is_identical_for_identical_projects(): void
+    {
+        $first = $this->planFeatureInProject($this->project->root, 'event-bus');
+
+        $otherProject = new TempProject();
+
+        try {
+            $second = $this->planFeatureInProject($otherProject->root, 'event-bus');
+        } finally {
+            $otherProject->cleanup();
+            chdir($this->project->root);
+        }
+
+        $this->assertSame($first['payload'], $second['payload']);
+        $this->assertSame($first['contents'], $second['contents']);
+    }
+
     public function test_plan_feature_blocks_when_only_non_actionable_gap_remains(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'context-persistence', '--json']);
@@ -166,6 +183,77 @@ Introduce event bus handling.
 ## Current State
 
 - Event bus feature implementation is pending.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Add contract test coverage for the event bus feature.
+MD);
+    }
+
+    /**
+     * @return array{payload:array<string,mixed>,contents:string}
+     */
+    private function planFeatureInProject(string $root, string $feature): array
+    {
+        chdir($root);
+        $this->runCommand(['foundry', 'context', 'init', $feature, '--json']);
+        $this->writeMeaningfulContextInRoot($root, $feature);
+        $result = $this->runCommand(['foundry', 'plan', 'feature', $feature, '--json']);
+
+        return [
+            'payload' => $result['payload'],
+            'contents' => (string) file_get_contents($root . '/' . (string) $result['payload']['spec_path']),
+        ];
+    }
+
+    private function writeMeaningfulContextInRoot(string $root, string $feature): void
+    {
+        file_put_contents($root . '/docs/features/' . $feature . '.spec.md', <<<MD
+# Feature Spec: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Goals
+
+- Add deterministic event bus feature scaffolding.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Constraints
+
+- Keep output deterministic.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Add contract test coverage for the event bus feature.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        file_put_contents($root . '/docs/features/' . $feature . '.md', <<<MD
+# Feature: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Current State
+
+- Event bus feature scaffolding exists in the app.
 
 ## Open Questions
 
