@@ -1,3 +1,5 @@
+# Execution Spec: 005-inspect-context-integration-and-verification-wiring
+
 Implement Foundry Master Spec 35D4 — Inspect Context Integration and Verification Wiring
 
 Objective

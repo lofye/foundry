@@ -146,10 +146,10 @@ final class ExecutionSpecPlannerTest extends TestCase
     {
         $planner = new ExecutionSpecPlanner();
         $input = $this->executionInput(
-            currentState: ['Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.'],
+            currentState: ['Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.'],
             nextSteps: ['Keep later execution systems safely consumable from canonical feature context files.'],
             specTrackingItems: [
-                'Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.',
+                'Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.',
                 'Later execution systems can consume canonical feature context files safely.',
             ],
         );

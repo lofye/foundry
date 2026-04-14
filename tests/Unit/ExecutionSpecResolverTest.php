@@ -33,6 +33,9 @@ final class ExecutionSpecResolverTest extends TestCase
         $this->assertSame('blog/001-initial', $spec->specId);
         $this->assertSame('blog', $spec->feature);
         $this->assertSame('docs/specs/blog/001-initial.md', $spec->path);
+        $this->assertSame('001-initial', $spec->name);
+        $this->assertSame('001', $spec->id);
+        $this->assertNull($spec->parentId);
         $this->assertSame(['Add initial blog scaffolding.'], $spec->requestedChanges);
     }
 
@@ -44,6 +47,18 @@ final class ExecutionSpecResolverTest extends TestCase
 
         $this->assertSame('blog/001-initial', $spec->specId);
         $this->assertSame('blog', $spec->feature);
+    }
+
+    public function test_hierarchical_execution_spec_ids_resolve_and_expose_parent_relationship(): void
+    {
+        $this->writeExecutionSpec('blog', '015.002.001-grandchild', 'blog');
+
+        $spec = $this->resolver()->resolve('015.002.001-grandchild');
+
+        $this->assertSame('blog/015.002.001-grandchild', $spec->specId);
+        $this->assertSame('015.002.001-grandchild', $spec->name);
+        $this->assertSame('015.002.001', $spec->id);
+        $this->assertSame('015.002', $spec->parentId);
     }
 
     public function test_file_path_and_feature_section_disagreement_fails_clearly(): void
@@ -80,12 +95,21 @@ final class ExecutionSpecResolverTest extends TestCase
         $this->assertSame('EXECUTION_SPEC_PATH_NON_CANONICAL', $error->errorCode);
     }
 
+    public function test_heading_must_match_filename_only(): void
+    {
+        $this->writeExecutionSpec('blog', '001-initial', 'blog', '# Execution Spec: blog/001-initial');
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('blog/001-initial'));
+
+        $this->assertSame('EXECUTION_SPEC_HEADING_NON_CANONICAL', $error->errorCode);
+    }
+
     private function resolver(): ExecutionSpecResolver
     {
         return new ExecutionSpecResolver(new Paths($this->project->root));
     }
 
-    private function writeExecutionSpec(string $feature, string $name, string $declaredFeature): void
+    private function writeExecutionSpec(string $feature, string $name, string $declaredFeature, ?string $heading = null): void
     {
         $path = $this->project->root . '/docs/specs/' . $feature . '/' . $name . '.md';
         $directory = dirname($path);
@@ -93,8 +117,10 @@ final class ExecutionSpecResolverTest extends TestCase
             mkdir($directory, 0777, true);
         }
 
+        $heading ??= '# Execution Spec: ' . $name;
+
         file_put_contents($path, <<<MD
-# Execution Spec: {$feature}/{$name}
+{$heading}
 
 ## Feature
 

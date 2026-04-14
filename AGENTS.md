@@ -217,8 +217,9 @@ Agents MUST:
 - treat filename and path as the only required identity/state metadata
 - infer hierarchy from the numeric ID
 - append a correctly formatted entry to docs/specs/implementation-log.md immediately after completing an active execution spec implementation
-- NOT rename existing spec IDs
+- ensure no duplicate IDs exist within a feature before creating a new draft spec.
 - use only padded numeric segments (3 digits per segment)
+- NOT rename existing spec IDs
 - NOT add metadata fields like id, parent, or status inside spec files
 - NOT include <feature-name>/ in the spec heading
 - NOT append implementation-log entries for any specs that have not been implemented (especially draft specs)

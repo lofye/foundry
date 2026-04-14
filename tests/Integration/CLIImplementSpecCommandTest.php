@@ -142,7 +142,7 @@ final class CLIImplementSpecCommandTest extends TestCase
         ));
 
         file_put_contents($path, <<<MD
-# Execution Spec: {$feature}/{$name}
+# Execution Spec: {$name}
 
 ## Feature
 

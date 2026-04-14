@@ -47,11 +47,12 @@
 - Implement feature blocks execution when `can_proceed` is false unless explicit repair mode succeeds.
 - Implement feature updates feature state and decision history after meaningful execution.
 - Implement feature revalidates context after execution.
-- Implement spec resolves execution specs deterministically from `docs/specs/<feature>/<NNN-name>.md`.
+- Implement spec resolves execution specs deterministically from `docs/specs/<feature>/<id>-<slug>.md`, where `<id>` uses one or more dot-separated 3-digit segments.
+- Execution spec headings mirror the filename only using `# Execution Spec: <id>-<slug>`.
 - Implement spec reuses the existing feature execution pipeline rather than creating a second execution policy path.
 - Implement spec blocks when execution-spec instructions conflict with canonical feature truth.
 - Implement spec records that execution was driven by a specific execution spec without changing canonical authority.
-- Plan feature generates the next bounded execution spec deterministically under `docs/specs/<feature>/<NNN-name>.md`.
+- Plan feature generates the next bounded execution spec deterministically under `docs/specs/<feature>/<id>-<slug>.md`, where `<id>` uses one or more dot-separated 3-digit segments.
 - Plan feature uses canonical feature context as authoritative planning input.
 - Plan feature derives concrete planning gaps from Expected Behavior versus Current State.
 - Plan feature generates non-tautological purpose, scope, requested changes, and slug output for concrete gaps.
@@ -59,6 +60,7 @@
 - Plan feature blocks when only abstract or non-actionable gaps remain.
 - Planner output is deterministic and reproducible for identical canonical inputs.
 - Generated execution specs are rendered from a canonical stub template.
+- Planner allocation does not reuse root ids that are already present in active or draft execution-spec filenames.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -83,10 +85,11 @@
 - Plan feature blocks rather than generating vague or self-referential execution specs.
 - Identical canonical planning inputs produce identical planning outputs.
 - Generated execution specs match the canonical stub structure exactly.
+- Implement spec rejects noncanonical execution-spec headings.
 
 ## Assumptions
 - Initial feature work may still be partly manual.
-- Execution specs may exist separately under `docs/specs/<feature>/<NNN-name>.md`.
+- Execution specs may exist separately under `docs/specs/<feature>/<id>-<slug>.md`.
 - Execution specs are secondary work orders and do not override the canonical feature spec.
 - Implement spec may consume execution specs as bounded work orders while canonical feature context remains authoritative.
 - Plan feature may derive one bounded execution spec at a time from canonical feature context without generating a roadmap.

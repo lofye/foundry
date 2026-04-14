@@ -38,6 +38,22 @@ final class ExecutionSpecResolver
             );
         }
 
+        $specName = basename($relativePath, '.md');
+        $expectedHeading = ExecutionSpecFilename::heading($specName);
+        if ($this->firstLine($contents) !== $expectedHeading) {
+            throw new FoundryError(
+                'EXECUTION_SPEC_HEADING_NON_CANONICAL',
+                'validation',
+                [
+                    'spec_id' => $resolvedId,
+                    'path' => $relativePath,
+                    'feature' => $pathFeature,
+                    'expected_heading' => $expectedHeading,
+                ],
+                'Execution spec heading must mirror the filename only.',
+            );
+        }
+
         $featureSection = $this->featureFromContents($contents);
         if ($featureSection === null || trim($featureSection) === '') {
             throw new FoundryError(
@@ -73,6 +89,16 @@ final class ExecutionSpecResolver
             );
         }
 
+        $parsedName = ExecutionSpecFilename::parseName($specName);
+        if ($parsedName === null) {
+            throw new FoundryError(
+                'EXECUTION_SPEC_PATH_NON_CANONICAL',
+                'validation',
+                ['path' => $relativePath],
+                'Execution spec ids must resolve to docs/specs/<feature>/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+            );
+        }
+
         return new ExecutionSpec(
             specId: $resolvedId,
             feature: $feature,
@@ -81,6 +107,9 @@ final class ExecutionSpecResolver
             scope: $this->meaningfulItems($this->sectionBody($contents, 'Scope') ?? ''),
             constraints: $this->meaningfulItems($this->sectionBody($contents, 'Constraints') ?? ''),
             requestedChanges: $this->meaningfulItems($this->sectionBody($contents, 'Requested Changes') ?? ''),
+            name: $parsedName['name'],
+            id: $parsedName['id'],
+            parentId: $parsedName['parent_id'],
         );
     }
 
@@ -113,17 +142,17 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['spec_id' => $specId],
-                'Execution spec ids must resolve to docs/specs/<feature>/<NNN-name>.md.',
+                'Execution spec ids must resolve to docs/specs/<feature>/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
         $basename = $this->stripMarkdownExtension($trimmed);
-        if (!$this->isCanonicalFilename($basename)) {
+        if (!ExecutionSpecFilename::isCanonicalName($basename)) {
             throw new FoundryError(
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['spec_id' => $specId],
-                'Execution spec ids must resolve to docs/specs/<feature>/<NNN-name>.md.',
+                'Execution spec ids must resolve to docs/specs/<feature>/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
@@ -136,7 +165,7 @@ final class ExecutionSpecResolver
                 continue;
             }
 
-            if (preg_match('#^docs/specs/([a-z0-9]+(?:-[a-z0-9]+)*)/(\d{3}-[a-z0-9]+(?:-[a-z0-9]+)*)\.md$#', $relative) !== 1) {
+            if (ExecutionSpecFilename::parseActivePath($relative) === null) {
                 continue;
             }
 
@@ -171,12 +200,13 @@ final class ExecutionSpecResolver
      */
     private function canonicalPathParts(string $relativePath): array
     {
-        if (preg_match('#^docs/specs/([a-z0-9]+(?:-[a-z0-9]+)*)/(\d{3}-[a-z0-9]+(?:-[a-z0-9]+)*)\.md$#', $relativePath, $matches) !== 1) {
+        $parsedPath = ExecutionSpecFilename::parseActivePath($relativePath);
+        if ($parsedPath === null) {
             throw new FoundryError(
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['path' => $relativePath],
-                'Execution spec ids must resolve to docs/specs/<feature>/<NNN-name>.md.',
+                'Execution spec ids must resolve to docs/specs/<feature>/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
@@ -184,12 +214,12 @@ final class ExecutionSpecResolver
             throw new FoundryError(
                 'EXECUTION_SPEC_NOT_FOUND',
                 'filesystem',
-                ['spec_id' => $matches[1] . '/' . $matches[2], 'path' => $relativePath, 'feature' => $matches[1]],
+                ['spec_id' => $parsedPath['feature'] . '/' . $parsedPath['name'], 'path' => $relativePath, 'feature' => $parsedPath['feature']],
                 'Execution spec not found.',
             );
         }
 
-        return [$matches[1] . '/' . $matches[2], $relativePath, $matches[1]];
+        return [$parsedPath['feature'] . '/' . $parsedPath['name'], $relativePath, $parsedPath['feature']];
     }
 
     private function stripMarkdownExtension(string $value): string
@@ -197,11 +227,6 @@ final class ExecutionSpecResolver
         return str_ends_with($value, '.md')
             ? substr($value, 0, -strlen('.md'))
             : $value;
-    }
-
-    private function isCanonicalFilename(string $value): bool
-    {
-        return preg_match('/^\d{3}-[a-z0-9]+(?:-[a-z0-9]+)*$/', $value) === 1;
     }
 
     private function relativePath(string $absolutePath): ?string
@@ -226,6 +251,13 @@ final class ExecutionSpecResolver
         }
 
         return null;
+    }
+
+    private function firstLine(string $contents): string
+    {
+        $firstLine = strtok(str_replace("\r\n", "\n", $contents), "\n");
+
+        return $firstLine === false ? '' : trim($firstLine);
     }
 
     private function sectionBody(string $contents, string $section): ?string

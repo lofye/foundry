@@ -1,3 +1,5 @@
+# Execution Spec: 006-context-persistence-reconciliation
+
 This spec establishes context-persistence as the first fully self-hosting feature in Foundry.
 
 It ensures that:

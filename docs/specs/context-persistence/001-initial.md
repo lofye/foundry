@@ -1,3 +1,5 @@
+# Execution Spec: 001-initial
+
 Implement Foundry Master Spec 35D1 — Context Artifact Model, Templates, and Validators
 
 Objective
@@ -30,7 +32,7 @@ Foundry may support optional execution specs used to guide implementation.
 
 Canonical structure (recommended):
 
-docs/specs/<feature>/<NNN-name>.md
+docs/specs/<feature>/<id>-<slug>.md
 
 Examples:
 

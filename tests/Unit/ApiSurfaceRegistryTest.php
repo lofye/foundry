@@ -66,6 +66,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $implementFeature = $registry->classifyCliCommand(['implement', 'feature', 'event-bus']);
         $implementSpec = $registry->classifyCliCommand(['implement', 'spec', 'event-bus/001-initial']);
         $planFeature = $registry->classifyCliCommand(['plan', 'feature', 'event-bus']);
+        $specNew = $registry->classifyCliCommand(['spec:new', 'execution-spec-system', 'add-cli-command']);
         $verifyContext = $registry->classifyCliCommand(['verify', 'context', '--feature=event-bus']);
         $init = $registry->classifyCliCommand(['init']);
         $examplesList = $registry->classifyCliCommand(['examples:list']);
@@ -98,6 +99,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($implementFeature);
         $this->assertNotNull($implementSpec);
         $this->assertNotNull($planFeature);
+        $this->assertNotNull($specNew);
         $this->assertNotNull($verifyContext);
         $this->assertNotNull($init);
         $this->assertNotNull($examplesList);
@@ -184,6 +186,9 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $planFeature['stability']);
         $this->assertSame('App Scaffolding', $planFeature['category']);
         $this->assertSame('plan', $planFeature['command_type']);
+        $this->assertSame('stable', $specNew['stability']);
+        $this->assertSame('App Scaffolding', $specNew['category']);
+        $this->assertSame('spec:new', $specNew['command_type']);
         $this->assertSame('stable', $verifyContext['stability']);
         $this->assertSame('Verification', $verifyContext['category']);
         $this->assertSame('verify', $verifyContext['command_type']);

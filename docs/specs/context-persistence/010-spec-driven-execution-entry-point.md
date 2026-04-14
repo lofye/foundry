@@ -1,3 +1,5 @@
+# Execution Spec: 010-spec-driven-execution-entry-point
+
 Implement Foundry Master Spec 35D7B — Spec-Driven Execution Entry Point
 
 Objective
@@ -68,7 +70,7 @@ Execution Spec Model
 
 Execution specs MUST live under:
 
-`docs/specs/<feature>/<NNN-name>.md`
+`docs/specs/<feature>/<id>-<slug>.md`
 
 Examples:
 
@@ -122,7 +124,7 @@ Suggested Execution Spec Structure
 
 If structure is validated, support:
 
-# Execution Spec: <id>
+# Execution Spec: <id>-<slug>
 
 ## Feature
 - context-persistence

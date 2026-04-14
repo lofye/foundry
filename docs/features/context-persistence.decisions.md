@@ -176,6 +176,37 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: adopt hierarchical padded execution-spec filenames and filename-only headings
+Timestamp: 2026-04-14T10:05:00-04:00
+
+**Context**
+- Foundry’s execution-spec workflows were using a mix of feature-prefixed headings and single-segment filename assumptions even though spec placement and naming were already evolving into a broader contract.
+- The system needed a canonical rule that keeps ordering deterministic and removes identity duplication from the spec body.
+
+**Decision**
+- Use `docs/specs/<feature>/<id>-<slug>.md` as the canonical execution-spec path, with `<id>` composed of one or more dot-separated 3-digit segments.
+- Make execution-spec headings mirror the filename only as `# Execution Spec: <id>-<slug>`.
+- Keep root-id planning draft-aware so existing active or draft ids are not reused accidentally.
+
+**Reasoning**
+- Padded segments preserve logical ordering under ordinary lexical sort.
+- Filename-only headings align the visible document identity with the actual canonical identity.
+- Scanning both active and draft ids preserves immutability and avoids accidental collisions during planning.
+
+**Alternatives Considered**
+- Keep single-segment `NNN-name` assumptions in the planner and resolver.
+- Preserve feature-prefixed headings.
+- Ignore draft ids when allocating the next planned execution spec.
+
+**Impact**
+- `implement spec`, `plan feature`, templates, docs, and tests now share one execution-spec naming contract.
+- Execution specs remain secondary work orders, but their identity and hierarchy are now clearer and more deterministic.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: execute feature work from canonical context with bounded repair
 Timestamp: 2026-04-07T15:30:00-04:00
 

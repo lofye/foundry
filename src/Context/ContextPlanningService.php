@@ -13,17 +13,20 @@ final class ContextPlanningService
 {
     private readonly ContextInspectionService $inspectionService;
     private readonly ContextExecutionService $executionService;
+    private readonly ExecutionSpecCatalog $executionSpecCatalog;
 
     public function __construct(
         private readonly Paths $paths,
         private readonly FeatureNameValidator $featureNameValidator = new FeatureNameValidator(),
         private readonly ContextFileResolver $resolver = new ContextFileResolver(),
         private readonly ExecutionSpecPlanner $planner = new ExecutionSpecPlanner(),
+        ?ExecutionSpecCatalog $executionSpecCatalog = null,
         ?ContextInspectionService $inspectionService = null,
         ?ContextExecutionService $executionService = null,
     ) {
         $this->inspectionService = $inspectionService ?? new ContextInspectionService($paths);
         $this->executionService = $executionService ?? new ContextExecutionService($paths);
+        $this->executionSpecCatalog = $executionSpecCatalog ?? new ExecutionSpecCatalog($paths);
     }
 
     public function plan(string $featureName): PlanResult
@@ -106,9 +109,10 @@ final class ContextPlanningService
             );
         }
 
-        $sequence = $this->nextSequenceNumber($featureName);
-        $filename = sprintf('%03d-%s.md', $sequence, $plan['slug']);
-        $specId = $featureName . '/' . substr($filename, 0, -strlen('.md'));
+        $rootId = $this->executionSpecCatalog->nextRootId($featureName);
+        $name = $rootId . '-' . $plan['slug'];
+        $filename = $name . '.md';
+        $specId = $featureName . '/' . $name;
         $relativePath = $relativeDirectory . '/' . $filename;
         $absolutePath = $this->paths->join($relativePath);
 
@@ -132,7 +136,7 @@ final class ContextPlanningService
             );
         }
 
-        $contents = $this->renderExecutionSpec($specId, $featureName, $plan);
+        $contents = $this->renderExecutionSpec($specId, $name, $featureName, $plan);
         if (file_put_contents($absolutePath, $contents) === false) {
             throw new FoundryError(
                 'PLANNING_SPEC_WRITE_FAILED',
@@ -155,24 +159,6 @@ final class ContextPlanningService
         );
     }
 
-    private function nextSequenceNumber(string $featureName): int
-    {
-        $matches = glob($this->paths->join('docs/specs/' . $featureName . '/*.md')) ?: [];
-        $numbers = [];
-
-        foreach ($matches as $path) {
-            if (preg_match('/\/(\d{3})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/', $path, $pathMatches) !== 1) {
-                continue;
-            }
-
-            $numbers[] = (int) $pathMatches[1];
-        }
-
-        sort($numbers);
-
-        return $numbers === [] ? 1 : max($numbers) + 1;
-    }
-
     /**
      * @param array{
      *     slug:string,
@@ -185,11 +171,12 @@ final class ContextPlanningService
      *     post_execution_expectations:list<string>
      * } $plan
      */
-    private function renderExecutionSpec(string $specId, string $featureName, array $plan): string
+    private function renderExecutionSpec(string $specId, string $specName, string $featureName, array $plan): string
     {
-        return str_replace(
+        $contents = str_replace(
             [
                 '{{spec_id}}',
+                '{{spec_name}}',
                 '{{feature}}',
                 '{{purpose}}',
                 '{{scope}}',
@@ -201,6 +188,7 @@ final class ContextPlanningService
             ],
             [
                 $specId,
+                $specName,
                 $featureName,
                 $plan['purpose'],
                 $this->renderBulletList($plan['scope']),
@@ -212,6 +200,17 @@ final class ContextPlanningService
             ],
             $this->loadExecutionSpecStub(),
         );
+
+        if ($this->firstLine($contents) !== ExecutionSpecFilename::heading($specName)) {
+            throw new FoundryError(
+                'PLANNING_SPEC_STUB_INVALID',
+                'validation',
+                ['spec_name' => $specName],
+                'Execution spec stub must render a canonical filename-only heading.',
+            );
+        }
+
+        return $contents;
     }
 
     private function loadExecutionSpecStub(): string
@@ -310,6 +309,13 @@ final class ContextPlanningService
             strtolower((string) ($decision['impact'] ?? '')),
             strtolower((string) ($decision['spec_reference'] ?? '')),
         ]);
+    }
+
+    private function firstLine(string $contents): string
+    {
+        $firstLine = strtok(str_replace("\r\n", "\n", $contents), "\n");
+
+        return $firstLine === false ? '' : trim($firstLine);
     }
 
     /**

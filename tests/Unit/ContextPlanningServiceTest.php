@@ -37,6 +37,19 @@ final class ContextPlanningServiceTest extends TestCase
         $this->assertFileExists($this->project->root . '/docs/specs/event-bus/003-contract-test-coverage.md');
     }
 
+    public function test_next_execution_spec_number_considers_drafts_and_hierarchical_ids(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $this->writeExistingSpec('event-bus', '001-initial');
+        $this->writeExistingSpec('event-bus', '003.001-draft-follow-up', 'drafts');
+
+        $result = $this->service()->plan('event-bus')->toArray();
+
+        $this->assertSame('planned', $result['status']);
+        $this->assertSame('event-bus/004-contract-test-coverage', $result['spec_id']);
+        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/004-contract-test-coverage.md');
+    }
+
     public function test_generated_execution_spec_matches_stub_structure_exactly(): void
     {
         $this->writeMeaningfulContext('event-bus');
@@ -45,7 +58,7 @@ final class ContextPlanningServiceTest extends TestCase
         $contents = (string) file_get_contents($this->project->root . '/' . (string) $result['spec_path']);
 
         $this->assertSame(<<<'MD'
-# Execution Spec: event-bus/001-contract-test-coverage
+# Execution Spec: 001-contract-test-coverage
 
 ## Feature
 - event-bus
@@ -114,7 +127,7 @@ MD . "\n", $contents);
         $frameworkRoot = $this->project->root . '/framework-fixture';
         mkdir($frameworkRoot . '/stubs/specs', 0777, true);
         file_put_contents($frameworkRoot . '/stubs/specs/execution-spec.stub.md', <<<'MD'
-# Execution Spec: {{spec_id}}
+# Execution Spec: {{spec_name}}
 
 ## Feature
 - {{feature}}
@@ -216,15 +229,15 @@ MD);
         return new ContextInitService(new Paths($this->project->root));
     }
 
-    private function writeExistingSpec(string $feature, string $name): void
+    private function writeExistingSpec(string $feature, string $name, string $subdirectory = ''): void
     {
-        $directory = $this->project->root . '/docs/specs/' . $feature;
+        $directory = $this->project->root . '/docs/specs/' . $feature . ($subdirectory !== '' ? '/' . $subdirectory : '');
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }
 
         file_put_contents($directory . '/' . $name . '.md', <<<MD
-# Execution Spec: {$feature}/{$name}
+# Execution Spec: {$name}
 
 ## Feature
 - {$feature}
@@ -383,7 +396,7 @@ Preserve feature intent across sessions.
 
 ## Expected Behavior
 
-- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -404,7 +417,7 @@ Preserve feature intent across sessions.
 
 ## Current State
 
-- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.
 - Plan feature returns deterministic planned or blocked results.
 
 ## Open Questions

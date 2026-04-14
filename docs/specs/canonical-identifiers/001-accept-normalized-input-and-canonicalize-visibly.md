@@ -1,4 +1,4 @@
-# Execution Spec: canonical-identifiers/001-accept-normalized-input-and-canonicalize-visibly
+# Execution Spec: 001-accept-normalized-input-and-canonicalize-visibly
 
 ## Feature
 - canonical-identifiers

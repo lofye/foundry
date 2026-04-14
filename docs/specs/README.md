@@ -60,6 +60,7 @@ Invalid example:
 - Root specs have one segment: `015`
 - Child specs append a segment: `015.001`
 - Deeper descendants continue similarly: `015.002.001`
+- IDs must be unique within a feature, not necessarily across the whole project.
 
 ## Hierarchy rules
 
@@ -76,6 +77,8 @@ The parent is obtained by removing the final segment.
 - Slugs use lowercase kebab-case.
 - Slugs are descriptive but not authoritative.
 - The numeric ID is the true immutable address.
+- Slugs do not need to be unique within a feature.
+- Within a feature, identity uniqueness is enforced by ID, not by slug.
 
 ## Status rules
 
@@ -87,6 +90,168 @@ Status is inferred from path:
 - `docs/specs/<feature-name>/<id>-<slug>.md` = active, executable
 
 Moving a spec from `drafts/` to the feature root promotes it from draft to executable without changing its contents.
+
+---
+
+## Draft to Spec Lifecycle
+
+### Draft Definition
+
+A draft spec is any spec located in:
+
+`docs/specs/<feature>/drafts/<id>-<slug>.md`
+
+Drafts:
+- are not executed
+- may be incomplete
+- may be replaced, merged, or deleted
+- must still follow canonical naming rules
+
+Standard creation path:
+
+`foundry spec:new <feature> "<slug>"`
+
+### ID Assignment Rules
+
+- IDs must be unique within a feature.
+- Draft specs must not share the same ID.
+- An ID is considered reserved once a draft spec exists with that ID.
+- Reusing a slug is allowed as long as the ID is different.
+
+### Promotion to Active Spec
+
+A draft becomes an active spec when it is moved to:
+
+`docs/specs/<feature>/<id>-<slug>.md`
+
+Promotion rules:
+- The filename must not change during promotion.
+- The spec must be complete and implementable.
+- The spec must conform to all naming and formatting rules.
+
+### Implementation
+
+After an active spec is implemented:
+
+- The agent must append a correctly formatted entry to:
+  `docs/specs/implementation-log.md`
+
+### Deletion and Replacement
+
+- Draft specs may be deleted freely.
+- If a draft is replaced by a more complete version:
+  - the new version should reuse the same ID if appropriate
+  - or use a new ID if it represents a different bounded step
+
+### Invariant
+
+At all times:
+
+- Each `<feature>` must not contain more than one spec (draft or active) with the same ID.
+
+---
+
+## Spec ID Allocation Rules
+
+### Purpose
+
+Define how new spec IDs are assigned deterministically to avoid collisions and preserve append-only behavior.
+
+---
+
+### Root Spec Allocation
+
+To create a new root spec within a feature:
+
+1. Collect all root-segment IDs already in use (active and drafts).
+   - Root IDs are single-segment (e.g. `001`, `002`).
+   - Child specs reserve their root segment as well.
+   - Example: `015.002.001` means root segment `015` is already in use.
+
+2. Select the highest existing root ID.
+
+3. Allocate the next ID by incrementing:
+
+Example:
+- existing: `001`, `002`, `003`
+- next: `004`
+
+---
+
+### Child Spec Allocation
+
+To create a child spec under a parent:
+
+1. Identify the parent ID (e.g. `015` or `015.002`).
+
+2. Collect all direct children:
+   - children share the same prefix
+   - and have exactly one additional segment
+
+Example:
+- parent: `015`
+- children: `015.001`, `015.002`
+
+3. Select the highest child segment.
+
+4. Allocate the next segment by incrementing:
+
+Example:
+- existing: `015.001`, `015.002`
+- next: `015.003`
+
+---
+
+### Nested Child Allocation
+
+This rule applies recursively.
+
+Example:
+
+- parent: `015.002`
+- existing children: `015.002.001`, `015.002.002`
+- next: `015.002.003`
+
+---
+
+### Draft and Active Inclusion
+
+Allocation must consider:
+
+- active specs
+- draft specs
+
+Both reserve IDs.
+
+---
+
+### Collision Prevention
+
+Before creating a new spec:
+
+- the agent must verify that no spec (draft or active) already uses the target ID within the feature
+
+If a collision is detected:
+- the agent must select the next available ID
+
+---
+
+### Determinism Requirement
+
+Given the same filesystem state, allocation must always produce the same ID.
+
+No randomness or heuristic ordering is allowed.
+
+---
+
+### Invariant
+
+At all times:
+
+- No two specs within a feature may share the same ID
+- IDs are never reused once assigned
+
+---
 
 ## Metadata rules
 
@@ -129,11 +294,11 @@ Draft specs must not be logged as implemented unless they were first promoted to
 ## Design goals
 
 This convention is intended to provide:
-•	stable immutable spec addresses
-•	sortable filenames
-•	arbitrarily deep hierarchy
-•	URL-safe and aesthetically clean names
-•	no renaming when new child specs are added
-•	no need to edit internal file metadata when reorganizing execution state
-•	clean separation between feature grouping and implementation chronology
 
+- stable immutable spec addresses
+- sortable filenames
+- arbitrarily deep hierarchy
+- URL-safe and aesthetically clean names
+- no renaming when new child specs are added
+- no need to edit internal file metadata when reorganizing execution state
+- clean separation between feature grouping and implementation chronology

@@ -1,4 +1,4 @@
-# Execution Spec: context-persistence/011-auto-planning-from-canonical-feature-context
+# Execution Spec: 011-auto-planning-from-canonical-feature-context
 
 ## Feature
 - context-persistence
@@ -16,7 +16,7 @@
     - `docs/features/<feature>.md`
     - `docs/features/<feature>.decisions.md`
 - Generate one bounded execution spec under:
-    - `docs/specs/<feature>/<NNN-name>.md`
+    - `docs/specs/<feature>/<id>-<slug>.md`
 - Determine next sequence number deterministically
 - Generate a stable kebab-case slug
 - Write execution spec using canonical structure
@@ -96,7 +96,7 @@
 
 ## Post-Execution Expectations
 - Generated execution specs are immediately usable via:
-    - `foundry implement spec <feature>/<NNN-name>`
+    - `foundry implement spec <feature>/<id>-<slug>`
 - Planning does not modify:
     - canonical feature spec
     - feature state

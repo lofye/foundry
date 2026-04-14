@@ -19,7 +19,8 @@
 - `implement feature` blocks execution when `can_proceed` is false unless explicit repair mode succeeds.
 - `implement feature` updates feature state and decision history after meaningful execution.
 - `implement feature` returns deterministic blocked, repaired, completed, or `completed_with_issues` results.
-- `implement spec` resolves execution specs from `docs/specs/<feature>/<NNN-name>.md` and reuses the existing feature execution pipeline.
+- `implement spec` resolves execution specs from `docs/specs/<feature>/<id>-<slug>.md` and reuses the existing feature execution pipeline.
+- `implement spec` now validates filename-only execution-spec headings and accepts padded hierarchical ids.
 - `implement spec` records that execution was driven by a specific execution spec without changing canonical authority.
 - Execution spec conflicts do not override canonical feature authority.
 - `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec when a concrete gap exists.
@@ -31,6 +32,8 @@
 - Planner output is deterministic and reproducible for identical canonical inputs.
 - Blocked planning responses are deterministic.
 - Generated execution specs are rendered through a canonical stub template.
+- Execution-spec headings in `docs/specs/` now mirror the filename only.
+- Planner allocation no longer reuses root ids that already appear in active or draft execution-spec filenames.
 - Context-persistence is self-hosting and currently passes doctor, alignment, inspect, verify, implement feature, and implement spec checks.
 
 ## Open Questions

@@ -236,6 +236,13 @@ YAML);
         $this->assertSame('pack', $packGroupHelp['payload']['group']['name']);
         $this->assertGreaterThan(0, (int) $packGroupHelp['payload']['group']['counts']['experimental']);
 
+        $specNewHelp = $this->runCommand($app, ['foundry', 'help', 'spec:new', '--json']);
+        $this->assertSame(0, $specNewHelp['status']);
+        $this->assertSame('spec:new', $specNewHelp['payload']['command']['signature']);
+        $this->assertSame('stable', $specNewHelp['payload']['command']['stability']);
+        $this->assertSame('App Scaffolding', $specNewHelp['payload']['command']['category']);
+        $this->assertStringContainsString('spec:new <feature> <slug>', $specNewHelp['payload']['command']['usage']);
+
         $examplesListHelp = $this->runCommand($app, ['foundry', 'help', 'examples:list', '--json']);
         $this->assertSame(0, $examplesListHelp['status']);
         $this->assertSame('examples:list', $examplesListHelp['payload']['command']['signature']);

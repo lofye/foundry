@@ -1,4 +1,4 @@
-# Execution Spec: context-persistence/012-planner-output-quality-refinement
+# Execution Spec: 012-planner-output-quality-refinement
 
 ## Feature
 - context-persistence

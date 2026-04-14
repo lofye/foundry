@@ -1,4 +1,4 @@
-# Execution Spec: context-persistence/013-planner-determinism-reproducibility-guarantees
+# Execution Spec: 013-planner-determinism-reproducibility-guarantees
 
 ## Feature
 - context-persistence

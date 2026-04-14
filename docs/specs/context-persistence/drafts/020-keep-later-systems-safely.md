@@ -1,4 +1,4 @@
-# Execution Spec: context-persistence/020-keep-later-systems-safely
+# Execution Spec: 020-keep-later-systems-safely
 
 ## Feature
 - context-persistence

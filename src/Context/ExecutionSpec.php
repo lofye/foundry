@@ -19,6 +19,9 @@ final readonly class ExecutionSpec
         public array $scope = [],
         public array $constraints = [],
         public array $requestedChanges = [],
+        public string $name = '',
+        public string $id = '',
+        public ?string $parentId = null,
     ) {}
 
     /**

@@ -52,7 +52,7 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertFileExists($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
 
         $contents = (string) file_get_contents($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
-        $this->assertStringContainsString('# Execution Spec: event-bus/001-contract-test-coverage', $contents);
+        $this->assertStringContainsString('# Execution Spec: 001-contract-test-coverage', $contents);
         $this->assertStringContainsString('## Feature', $contents);
         $this->assertStringContainsString('## Purpose', $contents);
         $this->assertStringContainsString('## Scope', $contents);
@@ -292,7 +292,7 @@ Preserve feature intent across sessions.
 
 ## Expected Behavior
 
-- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -313,7 +313,7 @@ Preserve feature intent across sessions.
 
 ## Current State
 
-- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<NNN-name>.md.
+- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.
 - Plan feature returns deterministic planned or blocked results.
 
 ## Open Questions

@@ -1,3 +1,5 @@
+# Execution Spec: 008-refuse-to-proceed-hardening-and-compliance-finalization
+
 Implement Foundry Master Spec 35D6 — Refuse-to-Proceed Hardening and Compliance Finalization
 
 Objective

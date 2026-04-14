@@ -1,4 +1,4 @@
-# Execution Spec: context-persistence/014-use-stub-templates-for-generated-specs
+# Execution Spec: 014-use-stub-templates-for-generated-specs
 
 ## Feature
 - context-persistence

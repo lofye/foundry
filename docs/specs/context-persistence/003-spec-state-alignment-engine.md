@@ -1,3 +1,5 @@
+# Execution Spec: 003-spec-state-alignment-engine
+
 Implement Foundry Master Spec 35D3 — Spec-State Alignment Engine
 
 Objective

@@ -1,3 +1,5 @@
+# Execution Spec: 002-context-init-and-doctor
+
 Implement Foundry Master Spec 35D2 — Context Init and Context Doctor
 
 Objective

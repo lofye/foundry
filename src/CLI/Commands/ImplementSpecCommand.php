@@ -150,11 +150,12 @@ final class ImplementSpecCommand extends Command
                 static fn(string $match): string => 'Use a fully qualified execution spec id: ' . preg_replace('#^docs/specs/|\.md$#', '', $match),
                 (array) ($error->details['matches'] ?? []),
             )),
-            'EXECUTION_SPEC_NOT_FOUND' => ['Create the execution spec under docs/specs/<feature>/<NNN-name>.md or use a valid existing execution spec id.'],
+            'EXECUTION_SPEC_NOT_FOUND' => ['Create the execution spec under docs/specs/<feature>/<id>-<slug>.md or use a valid existing execution spec id.'],
+            'EXECUTION_SPEC_HEADING_NON_CANONICAL' => ['Make the first line match `# Execution Spec: <id>-<slug>` for this file.'],
             'EXECUTION_SPEC_FEATURE_SECTION_MISSING' => ['Add a ## Feature section naming the canonical feature.'],
             'EXECUTION_SPEC_FEATURE_MISMATCH' => ['Make the ## Feature section match the docs/specs/<feature>/ directory for this execution spec.'],
             'EXECUTION_SPEC_FEATURE_INVALID' => ['Use a lowercase kebab-case feature name in the execution spec ## Feature section.'],
-            'EXECUTION_SPEC_PATH_NON_CANONICAL' => ['Use a canonical execution spec id in the form <feature>/<NNN-name>.'],
+            'EXECUTION_SPEC_PATH_NON_CANONICAL' => ['Use a canonical execution spec id in the form <feature>/<id>-<slug> or <id>-<slug>.'],
             default => [$error->getMessage() !== '' ? $error->getMessage() : 'Resolve the execution spec issue before rerunning implement spec.'],
         };
 

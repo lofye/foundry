@@ -1,4 +1,4 @@
-# Execution Spec: context-persistence/015-state-normalization-pass-and-canonical-ordering
+# Execution Spec: 015-state-normalization-pass-and-canonical-ordering
 
 ## Feature
 - context-persistence

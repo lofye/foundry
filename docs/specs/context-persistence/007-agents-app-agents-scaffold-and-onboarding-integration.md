@@ -1,3 +1,5 @@
+# Execution Spec: 007-agents-app-agents-scaffold-and-onboarding-integration
+
 Implement Foundry Master Spec 35D5 — AGENTS, APP-AGENTS, Scaffold, and Onboarding Integration
 
 Objective

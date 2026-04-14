@@ -1,4 +1,4 @@
-# Execution Spec: context-persistence/016-planner-generic-fallback-blocking-and-slug-hardening
+# Execution Spec: 016-planner-generic-fallback-blocking-and-slug-hardening
 
 ## Feature
 - context-persistence
@@ -110,3 +110,23 @@ Add coverage to prove:
 - `plan feature` emits either a meaningful bounded execution spec or a clean blocked result.
 - Developers no longer see misleading fallback files generated from thin planner output.
 - Planner output becomes safer to trust as the source of the next execution step.
+
+## Enforcement Requirements
+
+The planner and execution pipeline must enforce the following:
+
+- Strict section detection
+    - Only explicitly recognized sections may be parsed
+    - Unknown or malformed sections must produce an error
+
+- Strict feature validation
+    - Specs must reference valid, known features
+    - Invalid feature references must fail explicitly
+
+- No silent fallbacks
+    - The system must not guess, infer, or recover silently from invalid input
+    - All fallback behavior must be explicit and intentional
+
+- Clear and actionable error messages
+    - Errors must explain what failed and why
+    - Errors must include enough context for a developer or agent to fix the issue

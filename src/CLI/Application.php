@@ -50,6 +50,7 @@ use Foundry\CLI\Commands\QueueWorkCommand;
 use Foundry\CLI\Commands\RegressionsCommand;
 use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
+use Foundry\CLI\Commands\SpecNewCommand;
 use Foundry\CLI\Commands\TraceCommand;
 use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
@@ -95,6 +96,7 @@ final class Application
             new ImplementFeatureCommand(),
             new ImplementSpecCommand(),
             new PlanFeatureCommand(),
+            new SpecNewCommand(),
             new CacheInspectCommand(),
             new CacheClearCommand(),
             new InspectGraphCommand(),

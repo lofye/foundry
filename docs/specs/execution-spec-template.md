@@ -1,4 +1,4 @@
-# Execution Spec: <feature>/<NNN-name>
+# Execution Spec: <id>-<slug>
 
 ## Feature
 - <feature-name>

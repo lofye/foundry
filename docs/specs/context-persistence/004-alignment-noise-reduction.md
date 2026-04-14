@@ -1,3 +1,5 @@
+# Execution Spec: 004-alignment-noise-reduction
+
 Implement Foundry Master Spec 35D3A — Alignment Noise Reduction and Grounding Refinement
 
 Objective

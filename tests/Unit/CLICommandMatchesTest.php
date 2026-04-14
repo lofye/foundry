@@ -49,6 +49,7 @@ use Foundry\CLI\Commands\QueueWorkCommand;
 use Foundry\CLI\Commands\RegressionsCommand;
 use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
+use Foundry\CLI\Commands\SpecNewCommand;
 use Foundry\CLI\Commands\TraceCommand;
 use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
@@ -127,6 +128,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new ImplementFeatureCommand())->matches(['implement', 'feature', 'event-bus']));
         $this->assertTrue((new ImplementSpecCommand())->matches(['implement', 'spec', 'event-bus/001-initial']));
         $this->assertTrue((new PlanFeatureCommand())->matches(['plan', 'feature', 'event-bus']));
+        $this->assertTrue((new SpecNewCommand())->matches(['spec:new', 'execution-spec-system', 'add-cli-command']));
         $this->assertTrue((new CacheInspectCommand())->matches(['cache', 'inspect']));
         $this->assertTrue((new CacheClearCommand())->matches(['cache', 'clear']));
         $this->assertTrue((new DeepDoctorCommand())->matches(['doctor', '--deep']));
