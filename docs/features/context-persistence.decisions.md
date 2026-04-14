@@ -127,7 +127,7 @@ Timestamp: 2026-04-07T14:30:00-04:00
 
 **Decision**
 - Update framework and scaffold onboarding guidance to describe the implemented context workflow.
-- Use verify context as the primary machine-readable proceed / fail gate.
+- Use verify context as the primary machine-readable proceed/fail gate.
 
 **Reasoning**
 - Onboarding docs must reflect real command behavior once the contract exists.
@@ -135,7 +135,7 @@ Timestamp: 2026-04-07T14:30:00-04:00
 
 **Alternatives Considered**
 - Leave bootstrap-only wording in place.
-- Document different proceed / fail gates across framework and app scaffolds.
+- Document different proceed/fail gates across framework and app scaffolds.
 - Delay onboarding updates until later phases.
 
 **Impact**
@@ -201,7 +201,7 @@ Timestamp: 2026-04-07T15:30:00-04:00
 **Impact**
 - Foundry can now execute feature work from canonical context artifacts.
 - Feature execution updates state and decisions, then revalidates context before finishing.
-- CI and scripted workflows can consume deterministic blocked / repaired / completed results from the same context contract.
+- CI and scripted workflows can consume deterministic blocked, repaired, and completed results from the same context contract.
 
 **Spec Reference**
 - Constraints
@@ -232,7 +232,7 @@ Timestamp: 2026-04-10T12:00:00-04:00
 
 **Impact**
 - Foundry can now execute bounded implementation work orders without weakening canonical context authority.
-- `implement spec` remains aligned with the existing blocked / repaired / completed execution contract.
+- `implement spec` remains aligned with the existing blocked, repaired, or completed execution contract.
 
 **Spec Reference**
 - Goals

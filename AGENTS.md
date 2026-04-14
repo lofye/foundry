@@ -96,11 +96,11 @@ vendor/bin/phpunit
 ### Feature-focused loop
 
 ```bash
-php bin/foundry context doctor --feature=<feature> --json
-php bin/foundry context check-alignment --feature=<feature> --json
-php bin/foundry inspect context <feature> --json
-php bin/foundry verify context --feature=<feature> --json
-php bin/foundry inspect feature <feature> --json
+php bin/foundry context doctor --feature=<feature-name> --json
+php bin/foundry context check-alignment --feature=<feature-name> --json
+php bin/foundry inspect context <feature-name> --json
+php bin/foundry verify context --feature=<feature-name> --json
+php bin/foundry inspect feature <feature-name> --json
 php bin/foundry inspect impact --file=<path> --json
 ```
 
@@ -197,15 +197,45 @@ Never allow:
 
 ---
 
+## Spec Naming (MANDATORY)
+
+All specs must follow the canonical naming convention defined in:
+
+docs/specs/README.md
+
+Key rules:
+- Filenames are the spec identity.
+- Format: <id>-<slug>.md
+- IDs use dot-separated 3-digit segments (for example: 015.001.002)
+- IDs are immutable
+- Drafts live in docs/specs/<feature-name>/drafts/
+- Active executable specs live in docs/specs/<feature-name>/
+- The spec heading must mirror the filename only, not the feature path
+
+Agents MUST:
+- place each spec in the correct feature directory
+- treat filename and path as the only required identity/state metadata
+- infer hierarchy from the numeric ID
+- append a correctly formatted entry to docs/specs/implementation-log.md immediately after completing an active execution spec implementation
+- NOT rename existing spec IDs
+- use only padded numeric segments (3 digits per segment)
+- NOT add metadata fields like id, parent, or status inside spec files
+- NOT include <feature-name>/ in the spec heading
+- NOT append implementation-log entries for any specs that have not been implemented (especially draft specs)
+
+Violation of any rule above is considered an incorrect implementation.
+
+---
+
 # Context Anchoring
 
 Foundry uses feature-level context anchoring.
 
 Canonical files:
 
-- `docs/features/<feature>.spec.md`
-- `docs/features/<feature>.md`
-- `docs/features/<feature>.decisions.md`
+- `docs/features/<feature-name>.spec.md`
+- `docs/features/<feature-name>.md`
+- `docs/features/<feature-name>.decisions.md`
 
 Execution specs under `docs/specs/*` are:
 
@@ -241,7 +271,7 @@ Do NOT rely on chat history.
 Primary gate:
 
 ```bash
-php bin/foundry verify context --feature=<feature> --json
+php bin/foundry verify context --feature=<feature-name> --json
 ```
 
 Rules:

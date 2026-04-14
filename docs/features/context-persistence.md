@@ -1,18 +1,18 @@
 # Feature: context-persistence
 
 ## Purpose
-
 - Introduce feature-level context files for Foundry.
 - Support resumable, deterministic feature work.
 
 ## Current State
-
 - Canonical spec, state, and decision-ledger files exist for this feature.
 - Validators check canonical feature context structure and required sections.
 - `context init` and `context doctor` initialize and validate canonical feature context deterministically.
 - `context check-alignment` detects spec-state mismatches using deterministic heuristics.
 - `inspect context` aggregates doctor and alignment results into a single deterministic view.
 - `verify context` maps doctor and alignment results to deterministic pass/fail semantics.
+- `verify context` fails when doctor is `repairable` or `non_compliant`.
+- `verify context` fails when alignment status is `mismatch`.
 - `inspect context` and `verify context` reuse doctor and alignment services rather than reimplementing either path.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
 - `implement feature` executes only from canonical context artifacts and revalidates context before finishing.
@@ -24,19 +24,19 @@
 - Execution spec conflicts do not override canonical feature authority.
 - `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec when a concrete gap exists.
 - `plan feature` generates non-tautological purpose, scope, requested changes, and slug output for concrete gaps.
-- `plan feature` fails clearly when context cannot proceed or no bounded next step can be derived.
-- `plan feature` creates an execution spec that is immediately usable by `implement spec`.
+- `plan feature` fails clearly when context cannot proceed or when no bounded next step can be derived.
 - `plan feature` blocks rather than generating vague or self-referential execution specs when only abstract or non-actionable gaps remain.
-- CLI commands can initialize and validate feature context.
-- CLI commands can detect spec-state mismatches using deterministic heuristics.
-- Inspect context aggregates doctor and alignment results into a single deterministic view.
-- Verify context maps doctor and alignment results to deterministic pass/fail semantics.
+- `plan feature` creates an execution spec that is immediately usable by `implement spec`.
+- Planner input is normalized into a deterministic structure before planning.
+- Planner output is deterministic and reproducible for identical canonical inputs.
+- Blocked planning responses are deterministic.
+- Generated execution specs are rendered through a canonical stub template.
+- Context-persistence is self-hosting and currently passes doctor, alignment, inspect, verify, implement feature, and implement spec checks.
 
 ## Open Questions
-
 - How should future multi-step planning remain bounded without becoming roadmap generation?
 - How should future repair flows balance usefulness with strict non-speculative behavior?
+- How should later execution systems consume canonical feature context without weakening deterministic guarantees?
 
 ## Next Steps
-
 - Keep later execution systems safely consumable from canonical feature context files.

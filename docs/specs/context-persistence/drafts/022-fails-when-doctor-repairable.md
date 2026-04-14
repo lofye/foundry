@@ -1,13 +1,13 @@
-# Execution Spec: context-persistence/022-initial
+# Execution Spec: context-persistence/022-fails-when-doctor-repairable
 
 ## Feature
 - context-persistence
 
 ## Purpose
-- Current State does not yet reflect and validate feature context, so this is the next bounded step now.
+- Current State does not yet reflect fails when doctor is repairable or non_compliant, so this is the next bounded step now.
 
 ## Scope
-- Context validation behavior.
+- Verify context status mapping and output.
 
 ## Constraints
 - Keep canonical feature context authoritative.
@@ -16,14 +16,14 @@
 - Respect prior decisions recorded in docs/features/context-persistence.decisions.md.
 
 ## Requested Changes
-- CLI commands can initialize and validate feature context.
+- Verify context fails when doctor is repairable or non_compliant.
 
 ## Non-Goals
-- Do not broaden this step beyond Context validation behavior.
+- Do not broaden this step beyond Verify context status mapping and output.
 - Do not change canonical feature context authority.
 
 ## Completion Signals
-- CLI commands can initialize and validate feature context.
+- Verify context fails when doctor is repairable or non_compliant.
 - docs/features/context-persistence.md reflects the completed bounded step.
 - verify context --feature=context-persistence returns pass after execution.
 
