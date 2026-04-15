@@ -48,6 +48,7 @@ The root `app/*` tree is a framework-owned demo and smoke app.
 - `src/*` → framework behavior
 - `tests/*` → expected behavior
 - `docs/features/*` → feature intent, state, reasoning
+- `docs/specs/*` → execution planning (non-authoritative after implementation)
 - `README.md` → contributor + onboarding guidance
 - `APP-AGENTS.md`, `APP-README.md` → scaffold defaults
 - `stubs/*` → generator templates only when used
@@ -82,102 +83,6 @@ Do not skip:
 5. Run focused tests first.
 6. Run full verification before finishing.
 
-### Common loop
-
-```bash
-php bin/foundry compile graph --json
-php bin/foundry inspect graph --json
-php bin/foundry verify graph --json
-php bin/foundry verify pipeline --json
-php bin/foundry verify contracts --json
-vendor/bin/phpunit
-```
-
-### Feature-focused loop
-
-```bash
-php bin/foundry context doctor --feature=<feature-name> --json
-php bin/foundry context check-alignment --feature=<feature-name> --json
-php bin/foundry inspect context <feature-name> --json
-php bin/foundry verify context --feature=<feature-name> --json
-php bin/foundry inspect feature <feature-name> --json
-php bin/foundry inspect impact --file=<path> --json
-```
-
----
-
-## Change Rules
-
-- Keep changes minimal and explicit
-- Preserve deterministic output shapes
-- Update tests alongside behavior changes
-- Keep scaffold docs (`APP-*`) in sync
-- Update all onboarding docs together when workflows change
-- Do not introduce duplicate logic paths
-- Preserve git history where possible
-
----
-
-## Scaffold Doc Sync
-
-- `APP-AGENTS.md` and `APP-README.md` define app defaults
-- Generated apps must end with `AGENTS.md` and `README.md`
-- If scaffold behavior changes, update:
-    - templates
-    - promotion logic
-    - tests
-
-Never update onboarding docs in isolation.
-
----
-
-## Frozen Contracts
-
-Once implemented and aligned:
-
-- Treat contracts as stable
-- Do not casually rewrite behavior or examples
-
-Change order:
-
-1. update spec
-2. implement
-3. realign examples
-4. verify determinism
-
-Rules:
-
-- patch = bugfix only
-- minor = additive, backward compatible
-- breaking = requires major plan
-
-Outputs must remain deterministic:
-- no timestamps
-- no randomness
-- stable ordering
-
----
-
-## Testing Discipline
-
-- Every change requires PHPUnit coverage
-- Prefer narrow tests → then full suite
-- Never weaken assertions
-- Never hide regressions
-- Add regression tests for bugs
-- Above 90% test coverage MUST be maintained at all times
-
----
-
-## Ask First
-
-Stop before:
-
-- changing public commands
-- altering scaffold structure
-- changing verification semantics
-- resolving unclear conflicts between docs/tests/code
-
 ---
 
 ## SPEC DISCIPLINE RULE
@@ -206,70 +111,72 @@ docs/specs/README.md
 Key rules:
 - Filenames are the spec identity.
 - Format: <id>-<slug>.md
-- IDs use dot-separated 3-digit segments (for example: 015.001.002)
+- IDs use dot-separated 3-digit segments (e.g. 015.001.002)
 - IDs are immutable
+- IDs must be unique within a feature (NOT globally)
+- Slugs are NOT required to be unique
 - Drafts live in docs/specs/<feature-name>/drafts/
 - Active executable specs live in docs/specs/<feature-name>/
-- The spec heading must mirror the filename only, not the feature path
+- The spec heading must mirror the filename only
 
 Agents MUST:
-- place each spec in the correct feature directory
-- treat filename and path as the only required identity/state metadata
-- infer hierarchy from the numeric ID
-- append a correctly formatted entry to docs/specs/implementation-log.md immediately after completing an active execution spec implementation
-- ensure no duplicate IDs exist within a feature before creating a new draft spec.
-- use only padded numeric segments (3 digits per segment)
-- NOT rename existing spec IDs
-- NOT add metadata fields like id, parent, or status inside spec files
-- NOT include <feature-name>/ in the spec heading
-- NOT append implementation-log entries for any specs that have not been implemented (especially draft specs)
+- treat ID as the ONLY identity key
+- NOT enforce slug uniqueness
+- ensure no duplicate IDs exist within a feature
+- infer hierarchy from ID segments only
+- NOT rename existing IDs
+- NOT add metadata fields like id, parent, or status
+- append implementation logs only for completed active specs
 
 Violation of any rule above is considered an incorrect implementation.
 
 ---
 
-# Context Anchoring
+# Context Anchoring (MANDATORY)
 
 Foundry uses feature-level context anchoring.
 
 Canonical files:
 
-- `docs/features/<feature-name>.spec.md`
-- `docs/features/<feature-name>.md`
-- `docs/features/<feature-name>.decisions.md`
+- docs/features/<feature>.spec.md   (intent)
+- docs/features/<feature>.md        (state)
+- docs/features/<feature>.decisions.md (history)
 
-Execution specs under `docs/specs/*` are:
-
+Execution specs (docs/specs/*) are:
+- planning artifacts
 - optional
-- non-authoritative after implementation
+- NON-authoritative after implementation
 
 ---
 
-## Source-of-Truth Boundaries
+## Source-of-Truth Hierarchy
 
-- spec → intent
-- state → current reality
-- decisions → reasoning history
-- code/tests → behavior
+1. spec (intent)
+2. state (reality)
+3. decisions (why)
+4. code/tests (enforced behavior)
+
+Execution specs NEVER override feature specs.
 
 ---
 
 ## Read Before Acting
 
-Before meaningful work:
+Before ANY non-trivial work:
 
-1. read spec
-2. read state
-3. read decisions
+1. read feature spec
+2. read state file
+3. read decisions log
 4. run context commands
 
-Do NOT rely on chat history.
+Do NOT rely on:
+- chat history
+- assumptions
+- stale mental models
 
 ---
 
 ## Execution Gate (CRITICAL)
-
-Primary gate:
 
 ```bash
 php bin/foundry verify context --feature=<feature-name> --json
@@ -277,91 +184,57 @@ php bin/foundry verify context --feature=<feature-name> --json
 
 Rules:
 
-- `status=pass` → work may proceed
-- `status=fail` → work is blocked
+- pass → proceed
+- fail → HARD STOP
 
-Derived signals:
-
-- `can_proceed=true` → proceed allowed
-- `can_proceed=false` → HARD STOP
-- `requires_repair=true` → repair only
-
-Equivalent condition:
-
-- doctor = ok|warning
-- alignment = ok|warning
+Derived:
+- can_proceed=false → STOP
+- requires_repair=true → repair only
 
 ---
 
 ## Refuse-to-Proceed Rule
 
-You MUST stop when:
+STOP immediately if:
 
-- doctor = repairable | non_compliant
-- alignment = mismatch
+- context is invalid
+- alignment mismatch exists
 - required files missing
-- required sections missing
-- mismatch without decision support
+- spec/state/implementation diverge
 
 ---
 
 ## Allowed Actions While Blocked
 
-Only:
-
-- create missing files
-- repair malformed files
+ONLY:
+- fix context
 - update state
-- append decisions
-- update spec (with decision log)
+- log decisions
+- repair spec
 
-No implementation allowed.
+NEVER:
+- implement behavior
+- modify runtime logic
 
 ---
 
 ## Repair-First Workflow
 
-When blocked:
-
 1. stop
 2. explain issue
-2. list required actions
-3. repair
-
-After implementation:
-
-- update state
-- log decisions
-- re-run verification
+3. list fixes
+4. repair
+5. re-run verification
 
 ---
 
 ## Spec Rules
 
-Each feature:
+Per feature:
+- exactly ONE canonical spec file
+- no versioned filenames
 
-- MUST have exactly one spec file
-- MUST NOT have versioned filenames
-
-### Optional Spec Version Section
-
-Specs MAY include:
-
-## Spec Version
-
-But it is optional and must NOT be enforced by tooling.
-
----
-
-## Spec Evolution
-
-When intent changes:
-
-1. update spec
-2. log decision
-3. update state
-
-Spec always reflects current intent.
+Spec reflects CURRENT intent only.
 
 ---
 
@@ -369,11 +242,10 @@ Spec always reflects current intent.
 
 - append-only
 - never edit
-- never summarize
 - never delete
+- never summarize
 
 Each entry must include:
-
 - context
 - decision
 - reasoning
@@ -385,40 +257,34 @@ Each entry must include:
 ## State Document Rules
 
 Must include:
-
 - current state
 - open questions
 - next steps
 
-Must always reflect latest reality.
+Must always reflect reality.
 
 ---
 
 ## Alignment Rules
 
-You MUST detect and resolve:
-
+You MUST detect:
 - spec vs state mismatch
-- spec vs implementation mismatch
-- state vs implementation mismatch
+- spec vs code mismatch
+- state vs code mismatch
 
 Resolve via:
-
-- implementation change
-- spec update + decision
-- decision logging
+- implementation change OR
+- spec update + decision log
 
 ---
 
 ## Enforcement
 
 System is NON-COMPLIANT if:
-
-- required files missing
-- decisions not logged
+- context invalid
+- decisions missing
 - state outdated
-- mismatch unresolved
-- work proceeds without validation
+- mismatches unresolved
 
 ---
 
@@ -427,11 +293,8 @@ System is NON-COMPLIANT if:
 If non-compliant:
 
 - STOP
-- explain why
-- list required actions
+- explain
 - repair first
-
-Never proceed in a broken state.
 
 ---
 
@@ -439,6 +302,8 @@ Never proceed in a broken state.
 
 Intent must survive.
 
-Every decision must be recorded.
+State must reflect reality.
 
-Any agent must be able to resume work with zero prior conversation.
+Decisions must preserve continuity.
+
+Any agent must resume work with ZERO prior context.

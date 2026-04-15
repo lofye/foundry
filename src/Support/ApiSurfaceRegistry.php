@@ -164,7 +164,7 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new' => $first,
+            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new', 'spec:validate' => $first,
             'license' => match ($second) {
                 'status' => 'license status',
                 'activate' => 'license activate',
@@ -370,6 +370,7 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('implement spec', 'implement spec <feature>/<id>-<slug>|<id>-<slug> [--repair|--auto-repair]', 'stable', 'Execute deterministic feature work from an execution spec while preserving canonical feature authority and the existing context gate.'),
             $this->cliCommandEntry('plan feature', 'plan feature <feature>', 'stable', 'Generate the next bounded execution spec from canonical feature context without executing it.'),
             $this->cliCommandEntry('spec:new', 'spec:new <feature> <slug>', 'stable', 'Create a new draft execution spec with deterministic ID allocation and canonical template content.'),
+            $this->cliCommandEntry('spec:validate', 'spec:validate', 'stable', 'Validate draft and active execution specs against canonical naming, placement, heading, and metadata rules.'),
             $this->cliCommandEntry('doctor', 'doctor [--feature=<feature>] [--graph] [--strict] [--cli] [--deep] [--static] [--style] [--quality] [--tests]', 'experimental', 'Diagnose environment, install, build, architecture, and optional quality-tool issues from current Foundry state. Use --graph to focus on canonical graph health.'),
             $this->cliCommandEntry('upgrade-check', 'upgrade-check [--target=<version>]', 'stable', 'Assess whether the current app is ready for a target framework upgrade.'),
             $this->cliCommandEntry('observe:trace', 'observe:trace [<feature>] [--feature=<feature>] [--route=<METHOD PATH>]', 'experimental', 'Capture a graph-aware execution trace summary mapped to features, execution plans, guards, and interceptors.'),
@@ -706,7 +707,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['init', 'new', 'init app', 'examples:list', 'examples:load', 'preview notification', 'implement feature', 'implement spec', 'plan feature', 'spec:new'], true)
                 || str_starts_with($signature, 'generate ')
                 => 'App Scaffolding',
-            in_array($signature, ['upgrade-check', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify context', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)
+            in_array($signature, ['upgrade-check', 'spec:validate', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify context', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)
                 => 'Verification',
             in_array($signature, ['migrate definitions', 'codemod run', 'inspect extensions', 'inspect extension', 'inspect packs', 'inspect pack', 'inspect compatibility', 'inspect migrations', 'inspect definition-format', 'generate migration'], true)
                 => 'Extensions',

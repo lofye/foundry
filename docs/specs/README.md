@@ -111,6 +111,10 @@ Standard creation path:
 
 `foundry spec:new <feature> "<slug>"`
 
+Standard validation path:
+
+`foundry spec:validate`
+
 ### ID Assignment Rules
 
 - IDs must be unique within a feature.

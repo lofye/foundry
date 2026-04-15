@@ -20,6 +20,7 @@ Use this file when working inside a Foundry application repository.
 - Treat `docs/generated/*` and `docs/inspect-ui/*` as generated documentation output
 - Treat feature context documents under `docs/features/*` as the source of truth for feature intent, recorded implementation state, and reasoning history
 - Treat code and tests as the source of truth for actual implementation and runtime behavior
+- Treat execution specs under `docs/specs/*` as optional planning artifacts only and never authoritative once canonical feature context exists
 - Do not hand-edit `app/generated/*`; regenerate instead
 - Do not hand-edit installed pack files under `.foundry/packs/*`; reinstall or replace them from source instead
 
@@ -61,17 +62,28 @@ php vendor/bin/phpunit -c phpunit.xml.dist
 
 Use `foundry context init <feature> --json` when canonical feature context files are missing.
 
-## Context Anchoring
+## Context Anchoring (MANDATORY)
 
 Foundry uses feature-level context anchoring for meaningful feature work.
 
 Canonical feature context files:
 
-- `docs/features/<feature-name>.spec.md`
-- `docs/features/<feature-name>.md`
-- `docs/features/<feature-name>.decisions.md`
+- `docs/features/<feature-name>.spec.md` = intent
+- `docs/features/<feature-name>.md` = current state
+- `docs/features/<feature-name>.decisions.md` = reasoning history
 
-Execution specs may exist under `docs/specs/<feature-name>/<NNN-name>.md`, but they are optional and are never authoritative once canonical feature context exists.
+Execution specs may exist under `docs/specs/<feature-name>/`, but they are:
+- optional
+- planning artifacts only
+- never authoritative once canonical feature context exists
+
+Source-of-truth hierarchy:
+
+1. feature spec
+2. feature state
+3. feature decisions
+4. code and tests
+5. execution specs
 
 Feature naming rules:
 
@@ -79,12 +91,14 @@ Feature naming rules:
 - match the filename exactly
 - do not use spaces, underscores, repeated dashes, or alternate spec filenames
 
-Document roles:
+Spec naming rules:
 
-- spec = intended behavior
-- state = current known implementation state
-- decisions = append-only reasoning history
-- code/tests = implementation and runtime behavior
+- execution spec identity is `(feature, id)`
+- IDs are unique within a feature, not globally across the whole project
+- slugs are descriptive only and are not required to be unique
+- headings must mirror the filename only
+- drafts live in `docs/specs/<feature>/drafts/`
+- active specs live in `docs/specs/<feature>/`
 
 ## Mandatory Workflow Rules
 

@@ -54,6 +54,36 @@ Timestamp: 2026-04-14T10:04:00-04:00
 - Constraints
 - Expected Behavior
 
+### Decision: add a dedicated `spec:validate` CLI command for execution-spec rule enforcement
+Timestamp: 2026-04-14T15:19:39-04:00
+
+**Context**
+- Execution-spec naming and placement rules are now documented and draft creation is deterministic, but there was still no single command to check repository-wide spec state before planning or implementation.
+- Allocation already blocks on invalid spec state, which means developers and agents need a direct way to inspect all violations without mutating files.
+
+**Decision**
+- Add a dedicated `spec:validate` command that scans active and draft execution specs under `docs/specs/`.
+- Report canonical filename, placement, heading, duplicate-id, and forbidden-metadata violations without modifying any files.
+
+**Reasoning**
+- A read-only validator gives agents and developers one deterministic entry point for enforcing the spec naming policy.
+- Reporting every violation in one run reduces repair loops and keeps allocation failures easier to diagnose.
+- Reusing the same canonical rules across docs, planning, creation, and validation reduces drift.
+
+**Alternatives Considered**
+- Keep validation implicit inside allocation and resolver failures only.
+- Repair violations automatically during validation.
+- Validate only one feature at a time instead of scanning the whole spec tree.
+
+**Impact**
+- Execution-spec rule enforcement is now explicit and scriptable.
+- Invalid repository state can be diagnosed before `plan feature`, `spec:new`, or manual implementation work.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+
 ### Decision: reuse one catalog for planner allocation and draft creation
 Timestamp: 2026-04-14T14:05:00-04:00
 

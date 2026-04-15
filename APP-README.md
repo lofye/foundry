@@ -14,6 +14,8 @@ For meaningful feature work, maintain canonical feature context under:
 - `docs/features/<feature>.md`
 - `docs/features/<feature>.decisions.md`
 
+Execution specs under `docs/specs/*` are optional planning artifacts only. They are never authoritative once canonical feature context exists.
+
 Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If a feature does not have canonical context yet, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
 
 ## First Run
@@ -39,7 +41,6 @@ foundry generate inspect-ui --json
 foundry verify graph --json
 foundry verify pipeline --json
 foundry verify contracts --json
-foundry history --kind=generate --json
 php vendor/bin/phpunit -c phpunit.xml.dist
 php -S 127.0.0.1:8000 public/index.php
 ```
