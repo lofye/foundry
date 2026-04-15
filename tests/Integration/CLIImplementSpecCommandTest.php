@@ -83,6 +83,86 @@ final class CLIImplementSpecCommandTest extends TestCase
         $this->assertFileDoesNotExist($this->project->root . '/app/features/event-bus/feature.yaml');
     }
 
+    public function test_auto_log_execution_spec_with_negative_lead_in_fragments_is_not_falsely_blocked(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'execution-spec-system', '--json']);
+        $this->writeExecutionSpecSystemContext();
+        $this->writeRawExecutionSpec('execution-spec-system', '004-spec-auto-log-on-implementation', <<<'MD'
+# Execution Spec: 004-spec-auto-log-on-implementation
+
+## Feature
+
+- execution-spec-system
+
+## Purpose
+
+- Automatically append implementation entries to the implementation log when an active execution spec is implemented successfully.
+
+## Scope
+
+- Hook into the active execution-spec implementation flow.
+- Append entries to `docs/specs/implementation-log.md`.
+- Enforce required log-entry formatting.
+- Prevent duplicate entries for the same completed implementation event.
+
+## Constraints
+
+- Must not log draft specs.
+- Must not duplicate entries for the same implementation event.
+- Must use the required format from `docs/specs/README.md`.
+- Must be deterministic in structure and behavior.
+- Must surface log-write failures clearly and deterministically.
+
+## Requested Changes
+
+### 1. Trigger Point
+
+After successful implementation of an active execution spec, Foundry must automatically append an implementation entry to:
+
+`docs/specs/implementation-log.md`
+
+This must occur only after implementation has succeeded.
+
+Do not append log entries:
+- before implementation succeeds
+- for draft specs
+- for failed or partial implementations
+MD);
+
+        $result = $this->runCommand(['foundry', 'implement', 'spec', 'execution-spec-system/004-spec-auto-log-on-implementation', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('completed', $result['payload']['status']);
+        $this->assertContains(
+            'Applied execution spec: docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md',
+            $result['payload']['actions_taken'],
+        );
+        $this->assertSame(
+            [],
+            array_values(array_filter(
+                array_map(static fn(array $issue): string => (string) ($issue['code'] ?? ''), $result['payload']['issues']),
+                static fn(string $code): bool => $code === 'EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC',
+            )),
+        );
+    }
+
+    public function test_framework_repository_execution_spec_is_blocked_before_app_feature_scaffolding(): void
+    {
+        $frameworkRoot = dirname(__DIR__, 2);
+        chdir($frameworkRoot);
+
+        try {
+            $result = $this->runCommand(['foundry', 'implement', 'spec', 'execution-spec-system/004-spec-auto-log-on-implementation', '--json']);
+
+            $this->assertSame(1, $result['status']);
+            $this->assertSame('blocked', $result['payload']['status']);
+            $this->assertSame('EXECUTION_SPEC_FRAMEWORK_APP_SCAFFOLD_BLOCKED', $result['payload']['issues'][0]['code']);
+            $this->assertDirectoryDoesNotExist($frameworkRoot . '/app/features/execution-spec-system');
+        } finally {
+            chdir($this->project->root);
+        }
+    }
+
     public function test_repair_flag_reuses_feature_execution_pipeline(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
@@ -167,24 +247,17 @@ final class CLIImplementSpecCommandTest extends TestCase
 
         return ['status' => $status, 'payload' => $payload];
     }
-
     /**
      * @param list<string> $requestedChanges
      */
     private function writeExecutionSpec(string $feature, string $name, array $requestedChanges = ['Add deterministic event bus scaffolding.']): void
     {
-        $path = $this->project->root . '/docs/specs/' . $feature . '/' . $name . '.md';
-        $directory = dirname($path);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0777, true);
-        }
-
         $requestedChangesBody = implode("\n", array_map(
             static fn(string $item): string => '- ' . $item,
             $requestedChanges,
         ));
 
-        file_put_contents($path, <<<MD
+        $this->writeRawExecutionSpec($feature, $name, <<<MD
 # Execution Spec: {$name}
 
 ## Feature
@@ -207,6 +280,17 @@ final class CLIImplementSpecCommandTest extends TestCase
 
 {$requestedChangesBody}
 MD);
+    }
+
+    private function writeRawExecutionSpec(string $feature, string $name, string $contents): void
+    {
+        $path = $this->project->root . '/docs/specs/' . $feature . '/' . $name . '.md';
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($path, $contents);
     }
 
     private function writeMeaningfulContext(string $feature): void
@@ -262,6 +346,70 @@ Introduce event bus handling.
 
 - Event bus feature scaffolding exists in the app.
 - Event bus feature files are present.
+MD);
+    }
+
+    private function writeExecutionSpecSystemContext(): void
+    {
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.spec.md', <<<MD
+# Feature Spec: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Goals
+
+- Preserve canonical execution-spec naming and lifecycle rules.
+
+## Non-Goals
+
+- Do not rename existing execution-spec ids once assigned.
+
+## Constraints
+
+- Automatic implementation logging must not log draft specs, must prevent duplicate entries, and must surface log-write failures clearly and deterministically.
+
+## Expected Behavior
+
+- Successful implement spec runs for active execution specs append one required-format entry to docs/specs/implementation-log.md.
+- Draft execution specs are never logged as implemented, and repeated completion of the same active spec does not duplicate the log entry.
+- If the implementation log cannot be updated, implement spec must surface that failure clearly and deterministically.
+
+## Acceptance Criteria
+
+- Successful active execution-spec implementation appends exactly one correctly formatted implementation-log entry automatically.
+- Draft execution specs are not auto-logged.
+- Implementation-log write failures surface clearly and deterministically and do not appear as a clean successful completion.
+
+## Assumptions
+
+- Feature directories continue to provide execution-spec context.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.md', <<<MD
+# Feature: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Current State
+
+- Successful implement spec runs for active execution specs append one required-format entry to docs/specs/implementation-log.md.
+- Draft execution specs are never logged as implemented, and repeated completion of the same active spec does not duplicate the log entry.
+- If the implementation log cannot be updated, implement spec must surface that failure clearly and deterministically.
+- Successful active execution-spec implementation appends exactly one correctly formatted implementation-log entry automatically.
+- Draft execution specs are not auto-logged.
+- Implementation-log write failures surface clearly and deterministically and do not appear as a clean successful completion.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Preserve deterministic automatic implementation logging behavior.
 MD);
     }
 }

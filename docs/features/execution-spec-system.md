@@ -1,21 +1,22 @@
 # Feature: execution-spec-system
 
 ## Purpose
-- Define and enforce canonical execution-spec naming, identity, heading, validation, draft-creation, implementation-log, and conflict-detection rules.
+
+- Define and enforce canonical execution-spec naming, identity, heading, validation, draft-creation, implementation-log, conflict-detection, and framework-repository safety rules.
 
 ## Current State
-- Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`.
-- Draft execution specs live at `docs/specs/<feature>/drafts/<id>-<slug>.md`.
+
+- Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`, and drafts live under `docs/specs/<feature>/drafts/<id>-<slug>.md`.
 - Execution-spec ids use one or more dot-separated 3-digit numeric segments such as `001` and `015.002.001`.
+- `implement spec` resolves active execution specs with canonical hierarchical ids and may still accept a unique filename shorthand.
 - Execution spec headings use `# Execution Spec: <id>-<slug>` and match the filename only.
-- `ExecutionSpecResolver` resolves active execution specs with canonical hierarchical ids and may still accept a unique filename shorthand.
 - Resolver validation rejects noncanonical filenames and noncanonical headings.
-- `plan feature` allocates the next root id without colliding with existing active or draft spec ids, including hierarchical descendants.
 - Existing spec files in the repository use the canonical filename-only heading format.
 - Hierarchical padded execution-spec filenames are accepted and parsed deterministically.
 - Parent ids can be derived from filename segments.
 - Generated execution specs use filename-only headings.
 - Noncanonical headings and filenames fail clearly.
+- `plan feature` allocates the next root id without colliding with existing active or draft spec ids, including hierarchical descendants.
 - Planner allocation stays deterministic and avoids active or draft id collisions.
 - Framework docs and tests reflect the canonical execution-spec naming system.
 - PHPUnit coverage covers hierarchical resolution and planner allocation behavior.
@@ -28,18 +29,29 @@
 - `spec:validate` scans active and draft execution specs under `docs/specs/` without modifying files.
 - `spec:validate` reports invalid filenames, invalid placement, duplicate ids, incorrect headings, and forbidden `id`, `parent`, or `status` metadata deterministically.
 - `spec:validate` exits with status `0` when spec state is valid and non-zero when any violations exist.
-- JSON and terminal output for `spec:validate` expose all detected violations for automation and manual repair.
-- PHPUnit coverage covers the execution-spec validation service and CLI command.
+- `spec:validate` returns both terminal output and JSON payloads that include every detected violation for repair workflows and automation.
+- PHPUnit coverage covers the execution-spec validation service and CLI command behavior.
 - Successful `implement spec` runs for active execution specs append exactly one required-format entry to `docs/specs/implementation-log.md`.
 - Auto-logging skips draft execution-spec paths and does not duplicate existing implementation-log entries for the same active spec.
 - Implementation-log write failures surface as `completed_with_issues` instead of a clean successful spec-completion result.
+- Successful active execution-spec implementation appends exactly one correctly formatted implementation-log entry automatically.
+- Draft execution specs are not auto-logged.
+- Implementation-log write failures surface clearly and deterministically and do not appear as a clean successful completion.
 - Canonical conflict detection now compares positive execution-spec instructions against forbidden clauses extracted from canonical non-goals and negative constraints instead of blocking on topic-word overlap alone.
-- Aligned execution-spec instructions that share nouns with canonical negative requirements are allowed, while true forbidden-action contradictions still block deterministically.
+- Execution specs that reinforce canonical behavior without instructing a forbidden action are not blocked by canonical conflict detection.
+- True contradictions against canonical non-goals or negative constraints still return `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC` deterministically.
+- In the framework repository, `implement spec` now blocks framework-internal execution specs before the generic `app/features/*` scaffold path.
+- Framework-repository execution specs do not create `app/features/<feature>/` scaffolds for framework-internal features such as `execution-spec-system`.
+- `implement spec` returns a deterministic explicit block instead of silently generating misplaced app-feature output in the framework repository.
 
 ## Open Questions
+
 - When should Foundry support explicit child-spec allocation instead of only root allocation?
 - Should CLI or inspect tools expose execution-spec trees directly?
 - Should draft promotion validate parent existence explicitly?
+- What dedicated framework-internal implementation path should eventually replace the current explicit framework-repository block?
 
 ## Next Steps
+
 - Introduce child-spec allocation when multi-level planning becomes a concrete requirement.
+- Define a dedicated framework-internal execution path for `implement spec` so framework features can eventually be executed without routing into generic app scaffolding.

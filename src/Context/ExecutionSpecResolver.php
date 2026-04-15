@@ -106,7 +106,7 @@ final class ExecutionSpecResolver
             purpose: trim($this->sectionBody($contents, 'Purpose') ?? ''),
             scope: $this->meaningfulItems($this->sectionBody($contents, 'Scope') ?? ''),
             constraints: $this->meaningfulItems($this->sectionBody($contents, 'Constraints') ?? ''),
-            requestedChanges: $this->meaningfulItems($this->sectionBody($contents, 'Requested Changes') ?? ''),
+            requestedChanges: $this->requestedChangeItems($this->sectionBody($contents, 'Requested Changes') ?? ''),
             name: $parsedName['name'],
             id: $parsedName['id'],
             parentId: $parsedName['parent_id'],
@@ -268,6 +268,97 @@ final class ExecutionSpecResolver
         }
 
         return trim((string) ($matches[1] ?? ''));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function requestedChangeItems(string $body): array
+    {
+        return $this->meaningfulItems($this->normalizeRequestedChangesBody($body));
+    }
+
+    private function normalizeRequestedChangesBody(string $body): string
+    {
+        $lines = preg_split('/\R/', $body) ?: [];
+        $lineCount = count($lines);
+
+        for ($index = 0; $index < $lineCount; $index++) {
+            $line = (string) $lines[$index];
+            $trimmed = trim($line);
+
+            if (!$this->isNegativeLeadIn($trimmed)) {
+                continue;
+            }
+
+            $nextIndex = $index + 1;
+            while ($nextIndex < $lineCount) {
+                $nextLine = (string) $lines[$nextIndex];
+                if (trim($nextLine) === '') {
+                    break;
+                }
+
+                if (preg_match('/^(\s*)((?:[-*]|\d+\.))\s+(.+)$/', $nextLine, $matches) !== 1) {
+                    break;
+                }
+
+                $bulletItem = trim((string) $matches[3]);
+                if ($this->shouldMergeNegativeLeadInBullet($bulletItem)) {
+                    $lines[$nextIndex] = (string) $matches[1]
+                        . (string) $matches[2]
+                        . ' '
+                        . $this->mergeNegativeLeadInBullet($trimmed, $bulletItem);
+                }
+
+                $nextIndex++;
+            }
+        }
+
+        return implode(PHP_EOL, $lines);
+    }
+
+    private function isNegativeLeadIn(string $line): bool
+    {
+        $trimmed = trim($line);
+
+        return $trimmed !== ''
+            && str_ends_with($trimmed, ':')
+            && $this->containsNegativeRequirement($trimmed);
+    }
+
+    private function shouldMergeNegativeLeadInBullet(string $item): bool
+    {
+        $trimmed = ltrim($item);
+        if ($trimmed === '' || $this->containsNegativeRequirement($trimmed)) {
+            return false;
+        }
+
+        $firstCharacter = substr($trimmed, 0, 1);
+
+        return $firstCharacter !== '' && !preg_match('/[A-Z]/', $firstCharacter);
+    }
+
+    private function mergeNegativeLeadInBullet(string $leadIn, string $item): string
+    {
+        $prefix = rtrim(trim($leadIn), ':');
+        $combined = trim($prefix . ' ' . ltrim($item));
+
+        if (!preg_match('/[.!?]$/', $combined)) {
+            $combined .= '.';
+        }
+
+        return $combined;
+    }
+
+    private function containsNegativeRequirement(string $item): bool
+    {
+        $normalized = strtolower($item);
+
+        return str_contains($normalized, 'do not')
+            || str_contains($normalized, 'must not')
+            || str_contains($normalized, 'never ')
+            || str_contains($normalized, 'cannot ')
+            || str_contains($normalized, "can't ");
     }
 
     /**

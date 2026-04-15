@@ -54,6 +54,38 @@ Timestamp: 2026-04-14T10:04:00-04:00
 - Constraints
 - Expected Behavior
 
+### Decision: block framework-repository execution specs before app-feature scaffolding
+Timestamp: 2026-04-15T09:16:09-04:00
+
+**Context**
+- `implement spec execution-spec-system/004-spec-auto-log-on-implementation` in the framework repository routed through `ContextExecutionService::execute()` and the generic `FeatureGenerator`, which created accidental files under `app/features/execution-spec-system/`.
+- Those files are application scaffold output, not valid framework-feature implementation artifacts.
+- The framework repository needs an explicit safe failure mode until a dedicated framework-internal implementation path exists.
+
+**Decision**
+- When `implement spec` runs inside the framework repository, block execution specs before the generic `app/features/*` scaffold path.
+- Return an explicit deterministic blocked result instead of creating or modifying application feature scaffolds for framework-internal work.
+
+**Reasoning**
+- The generic app-feature generator writes source-of-truth files that the framework compiler and runtime immediately treat as real application features.
+- Blocking early prevents misplaced output from becoming live accidental input.
+- An explicit block is safer than pretending framework execution succeeded through the wrong destination.
+
+**Alternatives Considered**
+- Keep routing framework execution specs through the generic app scaffold flow.
+- Add a full dedicated framework-internal implementation path in the same change.
+- Allow scaffold generation and clean it up later.
+
+**Impact**
+- Framework-repository execution specs no longer create `app/features/<feature>/` scaffolds.
+- `implement spec` now fails honestly for framework-internal work until a dedicated framework execution path exists.
+- Existing application-project behavior remains unchanged because the block applies only inside the framework repository.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+
 ### Decision: narrow canonical conflict detection to forbidden-action evidence
 Timestamp: 2026-04-15T00:53:58-04:00
 
@@ -239,3 +271,37 @@ Timestamp: 2026-04-15T14:05:00-04:00
 - Goals
 - Constraints
 - Expected Behavior
+
+### Decision: context-driven execution for execution-spec-system
+
+Timestamp: <ISO-8601>
+
+**Context**
+
+- Foundry executed feature work for `execution-spec-system` from canonical context artifacts.
+
+**Decision**
+
+- Use the canonical spec, state, and decision ledger as the deterministic execution input.
+- Update feature context after execution and revalidate before finishing.
+
+**Reasoning**
+
+- This keeps feature execution traceable to the canonical context contract.
+- This preserves fail-closed behavior when repair is still required.
+
+**Alternatives Considered**
+
+- Execute from ad hoc prompts only.
+- Skip post-execution context updates.
+- Repair context only after implementation.
+
+**Impact**
+
+- Feature execution now leaves an explicit context trail.
+- Later runs can resume from updated state instead of relying on chat history.
+
+**Spec Reference**
+
+- Expected Behavior
+- Acceptance Criteria

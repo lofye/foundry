@@ -7,6 +7,7 @@ namespace Foundry\Tests\Unit;
 use Foundry\Context\ContextExecutionService;
 use Foundry\Context\ContextInitService;
 use Foundry\Context\ExecutionSpec;
+use Foundry\Context\ExecutionSpecResolver;
 use Foundry\Support\Paths;
 use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
@@ -133,29 +134,10 @@ final class ContextExecutionServiceTest extends TestCase
     public function test_auto_log_execution_spec_regression_is_not_treated_as_canonical_conflict(): void
     {
         $this->writeExecutionSpecSystemContext();
+        $this->writeExecutionSpecSystemExecutionSpec();
 
         $conflict = $this->canonicalConflictFor(
-            new ExecutionSpec(
-                specId: 'execution-spec-system/004-spec-auto-log-on-implementation',
-                feature: 'execution-spec-system',
-                path: 'docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md',
-                scope: [
-                    'Hook into the active execution-spec implementation flow.',
-                    'Append entries to docs/specs/implementation-log.md.',
-                    'Enforce required log-entry formatting.',
-                    'Prevent duplicate entries for the same completed implementation event.',
-                ],
-                constraints: [
-                    'Must not log draft specs.',
-                    'Must not duplicate entries for the same implementation event.',
-                    'Must use the required format from docs/specs/README.md.',
-                    'Must be deterministic in structure and behavior.',
-                    'Must surface log-write failures clearly and deterministically.',
-                ],
-                requestedChanges: [
-                    'After successful implementation of an active execution spec, Foundry must automatically append an implementation entry to docs/specs/implementation-log.md.',
-                ],
-            ),
+            $this->resolver()->resolve('execution-spec-system/004-spec-auto-log-on-implementation'),
         );
 
         $this->assertNull($conflict);
@@ -241,6 +223,22 @@ MD);
 
         $this->assertSame($first, $second);
         $this->assertNull($first);
+    }
+
+    public function test_framework_repository_execution_spec_is_blocked_before_app_scaffolding(): void
+    {
+        $this->writeExecutionSpecSystemContext();
+        $this->writeExecutionSpecSystemExecutionSpec();
+
+        $result = $this->frameworkService()->executeSpec(
+            $this->frameworkResolver()->resolve('execution-spec-system/004-spec-auto-log-on-implementation'),
+        );
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('EXECUTION_SPEC_FRAMEWORK_APP_SCAFFOLD_BLOCKED', $result['issues'][0]['code']);
+        $this->assertDirectoryDoesNotExist($this->project->root . '/app/features/execution-spec-system');
     }
 
     public function test_execution_spec_repair_mode_reuses_feature_execution_pipeline(): void
@@ -366,6 +364,21 @@ MD);
     private function initService(): ContextInitService
     {
         return new ContextInitService(new Paths($this->project->root));
+    }
+
+    private function resolver(): ExecutionSpecResolver
+    {
+        return new ExecutionSpecResolver(new Paths($this->project->root));
+    }
+
+    private function frameworkResolver(): ExecutionSpecResolver
+    {
+        return new ExecutionSpecResolver(new Paths($this->project->root, $this->project->root));
+    }
+
+    private function frameworkService(): ContextExecutionService
+    {
+        return new ContextExecutionService(new Paths($this->project->root, $this->project->root));
     }
 
     /**
@@ -498,6 +511,57 @@ Keep execution-spec implementation logging deterministic.
 ## Next Steps
 
 - Finalize deterministic implementation logging.
+MD);
+    }
+
+    private function writeExecutionSpecSystemExecutionSpec(): void
+    {
+        $path = $this->project->root . '/docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md';
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($path, <<<'MD'
+# Execution Spec: 004-spec-auto-log-on-implementation
+
+## Feature
+
+- execution-spec-system
+
+## Purpose
+
+- Automatically append implementation entries to the implementation log when an active execution spec is implemented successfully.
+
+## Scope
+
+- Hook into the active execution-spec implementation flow.
+- Append entries to `docs/specs/implementation-log.md`.
+- Enforce required log-entry formatting.
+- Prevent duplicate entries for the same completed implementation event.
+
+## Constraints
+
+- Must not log draft specs.
+- Must not duplicate entries for the same implementation event.
+- Must use the required format from `docs/specs/README.md`.
+- Must be deterministic in structure and behavior.
+- Must surface log-write failures clearly and deterministically.
+
+## Requested Changes
+
+### 1. Trigger Point
+
+After successful implementation of an active execution spec, Foundry must automatically append an implementation entry to:
+
+`docs/specs/implementation-log.md`
+
+This must occur only after implementation has succeeded.
+
+Do not append log entries:
+- before implementation succeeds
+- for draft specs
+- for failed or partial implementations
 MD);
     }
 }

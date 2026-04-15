@@ -14,6 +14,7 @@
 - Provide a deterministic CLI command for validating active and draft execution specs against canonical rules.
 - Provide deterministic automatic implementation-log appends for successful active execution-spec completion.
 - Block only real execution-spec contradictions against canonical non-goals and negative constraints.
+- Prevent framework-repository execution specs from routing into the generic `app/features/*` scaffold pipeline.
 
 ## Non-Goals
 - Do not introduce filesystem-specific natural-sort dependencies.
@@ -33,6 +34,7 @@
 - Validation must not modify files and must report all detected violations deterministically.
 - Automatic implementation logging must not log draft specs, must prevent duplicate entries, and must surface log-write failures clearly and deterministically.
 - Canonical conflict detection must require stronger evidence than topic-word overlap alone before blocking `implement spec`.
+- Framework-repository execution specs must not create or modify `app/features/*` scaffolds for framework-internal work.
 
 ## Expected Behavior
 - Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`; drafts live under `docs/specs/<feature>/drafts/<id>-<slug>.md`.
@@ -51,6 +53,7 @@
 - Draft execution specs are never logged as implemented, and repeated completion of the same active spec does not duplicate the log entry.
 - If the implementation log cannot be updated, `implement spec` must surface that failure clearly and deterministically. It must not report a clean successful completion, and it may return a partial-success status such as `completed_with_issues` when the implementation itself succeeded but required logging could not be completed.
 - Canonical conflict detection evaluates positive execution-spec instructions against forbidden clauses extracted from canonical non-goals and negative constraints, and aligned instructions that merely share topic nouns do not trigger `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC`.
+- In the framework repository, `implement spec` blocks framework-internal execution specs before the generic `app/features/*` scaffold path and fails explicitly until a dedicated framework-internal implementation path exists.
 
 ## Acceptance Criteria
 - Hierarchical padded execution-spec filenames are accepted and parsed deterministically.
@@ -70,6 +73,8 @@
 - Implementation-log write failures surface clearly and deterministically and do not appear as a clean successful completion.
 - Execution specs that reinforce canonical behavior without instructing a forbidden action are not blocked by canonical conflict detection.
 - True contradictions against canonical non-goals or negative constraints still return `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC` deterministically.
+- Framework-repository execution specs do not create `app/features/<feature>/` scaffolds for framework-internal features such as `execution-spec-system`.
+- `implement spec` returns a deterministic explicit block instead of silently generating misplaced app-feature output in the framework repository.
 
 ## Assumptions
 - Feature directories continue to provide context and execution state.

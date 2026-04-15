@@ -242,6 +242,22 @@ final class ContextExecutionService
      */
     public function executeSpec(ExecutionSpec $executionSpec, bool $repair = false, bool $autoRepair = false): array
     {
+        $frameworkRepoBlock = $this->frameworkRepositoryExecutionSpecBlock($executionSpec);
+        if ($frameworkRepoBlock !== null) {
+            return [
+                'spec_id' => $executionSpec->specId,
+                'feature' => $executionSpec->feature,
+                'status' => 'blocked',
+                'can_proceed' => false,
+                'requires_repair' => true,
+                'repair_attempted' => false,
+                'repair_successful' => false,
+                'actions_taken' => [],
+                'issues' => [$frameworkRepoBlock['issue']],
+                'required_actions' => $frameworkRepoBlock['required_actions'],
+            ];
+        }
+
         $conflict = $this->canonicalConflictForExecutionSpec($executionSpec);
         if ($conflict !== null) {
             return [
@@ -294,6 +310,28 @@ final class ContextExecutionService
             'actions_taken' => array_values(array_map('strval', (array) $payload['actions_taken'])),
             'issues' => array_values((array) $payload['issues']),
             'required_actions' => array_values(array_map('strval', (array) $payload['required_actions'])),
+        ];
+    }
+
+    /**
+     * @return array{issue:array<string,mixed>,required_actions:list<string>}|null
+     */
+    private function frameworkRepositoryExecutionSpecBlock(ExecutionSpec $executionSpec): ?array
+    {
+        if ($this->paths->root() !== $this->paths->frameworkRoot()) {
+            return null;
+        }
+
+        return [
+            'issue' => [
+                'code' => 'EXECUTION_SPEC_FRAMEWORK_APP_SCAFFOLD_BLOCKED',
+                'message' => 'Framework-repository execution specs must not scaffold files into app/features/*.',
+                'file_path' => $executionSpec->path,
+            ],
+            'required_actions' => [
+                'Implement framework-internal changes directly in src/, tests/, docs/, or stubs/ instead of app/features/*.',
+                'Remove any misplaced app/features/' . $executionSpec->feature . '/ output before rerunning verification.',
+            ],
         ];
     }
 

@@ -104,6 +104,53 @@ final class ExecutionSpecResolverTest extends TestCase
         $this->assertSame('EXECUTION_SPEC_HEADING_NON_CANONICAL', $error->errorCode);
     }
 
+    public function test_requested_changes_preserve_negative_parent_context_for_fragment_bullets(): void
+    {
+        $this->writeRawExecutionSpec('execution-spec-system', '004-spec-auto-log-on-implementation', <<<MD
+# Execution Spec: 004-spec-auto-log-on-implementation
+
+## Feature
+
+- execution-spec-system
+
+## Purpose
+
+- Keep auto-log execution deterministic.
+
+## Scope
+
+- Hook into implement spec.
+
+## Constraints
+
+- Keep execution deterministic.
+
+## Requested Changes
+
+### 1. Trigger Point
+
+After successful implementation of an active execution spec, Foundry must automatically append an implementation entry to:
+
+`docs/specs/implementation-log.md`
+
+This must occur only after implementation has succeeded.
+
+Do not append log entries:
+- before implementation succeeds
+- for draft specs
+- for failed or partial implementations
+MD);
+
+        $spec = $this->resolver()->resolve('execution-spec-system/004-spec-auto-log-on-implementation');
+
+        $this->assertContains('Do not append log entries before implementation succeeds.', $spec->requestedChanges);
+        $this->assertContains('Do not append log entries for draft specs.', $spec->requestedChanges);
+        $this->assertContains('Do not append log entries for failed or partial implementations.', $spec->requestedChanges);
+        $this->assertNotContains('before implementation succeeds', $spec->requestedChanges);
+        $this->assertNotContains('for draft specs', $spec->requestedChanges);
+        $this->assertNotContains('for failed or partial implementations', $spec->requestedChanges);
+    }
+
     private function resolver(): ExecutionSpecResolver
     {
         return new ExecutionSpecResolver(new Paths($this->project->root));
@@ -111,15 +158,9 @@ final class ExecutionSpecResolverTest extends TestCase
 
     private function writeExecutionSpec(string $feature, string $name, string $declaredFeature, ?string $heading = null): void
     {
-        $path = $this->project->root . '/docs/specs/' . $feature . '/' . $name . '.md';
-        $directory = dirname($path);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0777, true);
-        }
-
         $heading ??= '# Execution Spec: ' . $name;
 
-        file_put_contents($path, <<<MD
+        $this->writeRawExecutionSpec($feature, $name, <<<MD
 {$heading}
 
 ## Feature
@@ -142,6 +183,17 @@ final class ExecutionSpecResolverTest extends TestCase
 
 - Add initial blog scaffolding.
 MD);
+    }
+
+    private function writeRawExecutionSpec(string $feature, string $name, string $contents): void
+    {
+        $path = $this->project->root . '/docs/specs/' . $feature . '/' . $name . '.md';
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($path, $contents);
     }
 
     /**
