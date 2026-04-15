@@ -29,3 +29,7 @@
 ## 2026-04-15 10:13:23 -0400
 - spec: context-persistence/015.002-context-doctor-diagnostic-rule-structure.md
 - note: Introduced a normalized internal doctor-rule model and centralized doctor-to-verify flattening while preserving existing output contracts.
+
+## 2026-04-15 13:31:49 -0400
+- spec: context-persistence/015.003-generalize-state-normalization-rules.md
+- note: Added a reusable state-document normalizer and integrated it into the framework-owned state update path for deterministic section ordering and conservative stale-bullet cleanup.

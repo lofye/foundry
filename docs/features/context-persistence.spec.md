@@ -46,6 +46,7 @@
 - Verify context fails when doctor is `repairable` or `non_compliant`.
 - Verify context fails when alignment status is `mismatch`.
 - Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
+- Feature state documents normalize through one reusable deterministic normalization path before framework-owned state updates are persisted.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
 - Implement feature consumes canonical feature context as authoritative execution input.
 - Implement feature blocks execution when `can_proceed` is false unless explicit repair mode succeeds.
@@ -76,6 +77,7 @@
 - Feature-scoped doctor diagnostics use a normalized internal rule result that can be rendered into doctor file buckets and verify-context flattened issues deterministically.
 - `context doctor` emits `EXECUTION_SPEC_DRIFT` deterministically when execution specs exist but canonical feature context files are missing.
 - CLI can detect spec-state alignment issues deterministically.
+- Feature state normalization keeps canonical section order and conservatively removes duplicate or obviously stale bullets without inventing content.
 - Inspect context returns a deterministic combined context view.
 - Verify context returns deterministic pass/fail status for feature context.
 - Verify context surfaces `EXECUTION_SPEC_DRIFT` as a doctor-sourced issue without changing its output contract.

@@ -5,12 +5,6 @@
 - Improve CLI ergonomics while preserving a single source of truth for identifiers.
 
 ## Current State
-- Feature spec created.
-- Feature state document created.
-- Decision ledger created.
-- Canonical identifiers are intended to remain authoritative.
-- Some CLI flows already normalize certain inputs opportunistically.
-- The framework does not yet have a clearly documented, feature-owned canonical identifier policy.
 
 ## Open Questions
 - Which CLI entry points should support safe normalization in the first implementation pass?
@@ -18,7 +12,7 @@
 - What is the best visible output shape for reporting normalization in text and JSON responses?
 
 ## Next Steps
-- Implement safe normalized input acceptance for the initial target CLI flows.
-- Canonicalize accepted input immediately and use only canonical identifiers downstream.
-- Make normalization visible in command output.
-- Add automated coverage for accepted normalization, canonicalized output, and invalid input rejection.
+- Implement safe normalized input forms such as snake_case for the initial relevant Foundry CLI commands where supported.
+- Canonicalize accepted input immediately, use canonical identifiers internally after normalization, and use only the canonicalized identifier for internal resolution downstream.
+- Ensure JSON and text output always show canonical identifiers, and make normalization visible in output rather than silent when it occurs.
+- Cover the behavior with automated tests for accepted normalization, canonicalized output, and invalid identifiers that still fail clearly and deterministically.

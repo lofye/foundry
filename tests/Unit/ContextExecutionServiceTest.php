@@ -356,6 +356,78 @@ MD);
         );
     }
 
+    public function test_execution_state_write_path_normalizes_existing_state_document_noise(): void
+    {
+        $this->initService()->init('event-bus');
+
+        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<MD
+# Feature Spec: event-bus
+
+## Purpose
+
+Introduce event bus handling.
+
+## Goals
+
+- Add deterministic event bus feature scaffolding.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Constraints
+
+- Keep output deterministic.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Event bus feature files are present.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<MD
+# Feature: event-bus
+
+## Purpose
+
+Introduce event bus handling.
+
+## Next Steps
+
+- Event bus feature scaffolding exists in the app.
+- 35D7B implementation completed.
+- Add contract coverage.
+
+## Current State
+
+- Feature spec created.
+- Event bus feature implementation is pending.
+- Event bus feature implementation is pending.
+
+## Open Questions
+
+- TBD.
+MD);
+
+        $result = $this->service()->execute('event-bus')->toArray();
+        $state = (string) file_get_contents($this->project->root . '/docs/features/event-bus.md');
+
+        $this->assertSame('completed', $result['status']);
+        $this->assertStringContainsString("## Current State\n\n- Event bus feature implementation is pending.\n- Implemented Event bus feature scaffolding exists in the app.\n", $state);
+        $this->assertStringContainsString("## Open Questions\n\n- TBD.\n", $state);
+        $this->assertStringContainsString("## Next Steps\n\n- Add contract coverage.\n- Event bus feature files are present.\n", $state);
+        $this->assertStringNotContainsString('Feature spec created.', $state);
+        $this->assertStringNotContainsString('35D7B implementation completed.', $state);
+        $this->assertStringNotContainsString("- Event bus feature scaffolding exists in the app.\n", $state);
+    }
+
     private function service(): ContextExecutionService
     {
         return new ContextExecutionService(new Paths($this->project->root));

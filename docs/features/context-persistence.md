@@ -11,6 +11,7 @@
 - Feature-scoped doctor diagnostics now evaluate through a normalized internal rule model that feeds the existing doctor file buckets and verify-context flattened issues.
 - `context doctor` detects execution-spec drift when active or draft execution specs exist without complete canonical feature context and reports it through the existing missing-file issue buckets.
 - `context check-alignment` detects spec-state mismatches using deterministic heuristics.
+- Feature state documents now normalize through a reusable deterministic normalizer before framework-owned state updates are persisted.
 - `inspect context` aggregates doctor and alignment results into a single deterministic view.
 - `verify context` maps doctor and alignment results to deterministic pass/fail semantics.
 - `verify context` surfaces doctor execution-spec drift issues through its existing flattened issue list.
@@ -37,6 +38,7 @@
 - Generated execution specs are rendered through a canonical stub template.
 - Execution-spec headings in `docs/specs/` now mirror the filename only.
 - Planner allocation no longer reuses root ids that already appear in active or draft execution-spec filenames.
+- State normalization enforces canonical `Current State`, `Open Questions`, and `Next Steps` ordering when those sections are present and removes duplicate or obviously stale bullets conservatively.
 - Context-persistence is self-hosting and currently passes doctor, alignment, inspect, verify, implement feature, and implement spec checks.
 
 ## Open Questions

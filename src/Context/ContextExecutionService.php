@@ -19,6 +19,7 @@ final class ContextExecutionService
     private readonly FeatureGenerator $featureGenerator;
     private readonly ContextManifestGenerator $contextManifestGenerator;
     private readonly ExecutionSpecImplementationLogService $executionSpecImplementationLogService;
+    private readonly StateDocumentNormalizer $stateDocumentNormalizer;
 
     public function __construct(
         private readonly Paths $paths,
@@ -29,12 +30,14 @@ final class ContextExecutionService
         ?FeatureGenerator $featureGenerator = null,
         ?ContextManifestGenerator $contextManifestGenerator = null,
         ?ExecutionSpecImplementationLogService $executionSpecImplementationLogService = null,
+        ?StateDocumentNormalizer $stateDocumentNormalizer = null,
     ) {
         $this->inspectionService = $inspectionService ?? new ContextInspectionService($paths);
         $this->initService = $initService ?? new ContextInitService($paths);
         $this->featureGenerator = $featureGenerator ?? new FeatureGenerator($paths);
         $this->contextManifestGenerator = $contextManifestGenerator ?? new ContextManifestGenerator($paths);
         $this->executionSpecImplementationLogService = $executionSpecImplementationLogService ?? new ExecutionSpecImplementationLogService($paths);
+        $this->stateDocumentNormalizer = $stateDocumentNormalizer ?? new StateDocumentNormalizer();
     }
 
     /**
@@ -731,7 +734,7 @@ final class ContextExecutionService
         $nextStepItems = $this->uniqueSortedPreservingOrder($nextStepItems);
         $openQuestions = $this->meaningfulSectionItems($input['state']['Open Questions'] ?? '');
 
-        return implode("\n", [
+        $document = implode("\n", [
             '# Feature: ' . $input['feature'],
             '',
             '## Purpose',
@@ -751,6 +754,8 @@ final class ContextExecutionService
             $this->bulletBody($nextStepItems),
             '',
         ]);
+
+        return $this->stateDocumentNormalizer->normalize($document);
     }
 
     /**

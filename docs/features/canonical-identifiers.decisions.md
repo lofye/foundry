@@ -21,3 +21,8 @@ Timestamp: 2026-04-10T16:00:00-04:00
 **Impact**
 - Identifier normalization and canonicalization can evolve as a coherent feature with its own spec, state, and decision history.
 - Future CLI normalization work now has a clear canonical home.
+
+**Spec Reference**
+- Purpose
+- Goals
+- Non-Goals

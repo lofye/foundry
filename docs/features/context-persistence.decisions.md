@@ -176,6 +176,38 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: generalize feature state normalization into a reusable path
+Timestamp: 2026-04-15T13:31:49-04:00
+
+**Context**
+- The `context-persistence` state document had already been cleaned up manually, but the framework still lacked a reusable way to normalize other feature state documents.
+- Without a shared normalization path, future state updates could reintroduce ordering noise, duplicate bullets, and stale completed leftovers that were unrelated to real feature drift.
+
+**Decision**
+- Introduce a reusable deterministic state-document normalizer for feature state files.
+- Normalize `Current State`, `Open Questions`, and `Next Steps` into canonical section order when present.
+- Integrate the normalizer into the framework-owned state write path used by context execution updates.
+
+**Reasoning**
+- A dedicated normalizer keeps state cleanup explicit and reusable without turning the framework into a broad markdown formatter.
+- Canonical state ordering and conservative stale-item cleanup reduce noisy diffs while preserving current meaning.
+- Integrating at the existing state write path makes the behavior real immediately and keeps future reuse cheap.
+
+**Alternatives Considered**
+- Keep state normalization as one-off manual cleanup only.
+- Add a repository-wide markdown formatter for context files.
+- Normalize feature specs and decision ledgers in the same pass.
+
+**Impact**
+- Framework-owned state updates now persist normalized feature state documents deterministically.
+- Duplicate bullets and obvious stale completed leftovers are removed more consistently.
+- Later drift-detection and planning work can rely on cleaner canonical state inputs.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: normalize internal context-doctor rule evaluation
 Timestamp: 2026-04-15T10:12:54-04:00
 
