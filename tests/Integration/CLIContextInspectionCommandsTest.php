@@ -157,6 +157,36 @@ final class CLIContextInspectionCommandsTest extends TestCase
         $this->assertStringContainsString('Create missing spec file: docs/features/event-bus.spec.md', $text['output']);
     }
 
+    public function test_verify_context_surfaces_execution_spec_drift_from_doctor(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        unlink($this->project->root . '/docs/features/event-bus.md');
+        $this->writeExecutionSpec('event-bus', '001-initial', draft: true);
+
+        $result = $this->runCommand(['foundry', 'verify', 'context', '--feature=event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('fail', $result['payload']['status']);
+        $this->assertSame('repairable', $result['payload']['doctor_status']);
+        $this->assertSame('mismatch', $result['payload']['alignment_status']);
+        $this->assertSame([
+            [
+                'source' => 'doctor',
+                'code' => 'CONTEXT_FILE_MISSING',
+                'message' => 'Context state file is missing.',
+                'file_path' => 'docs/features/event-bus.md',
+            ],
+            [
+                'source' => 'doctor',
+                'code' => 'EXECUTION_SPEC_DRIFT',
+                'message' => 'Execution specs exist for this feature, but canonical feature context is missing or incomplete.',
+                'file_path' => 'docs/features/event-bus.md',
+            ],
+        ], array_slice($result['payload']['issues'], 0, 2));
+        $this->assertContains('Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.', $result['payload']['required_actions']);
+        $this->assertContains('Do not rely on execution specs as the source of truth for event-bus.', $result['payload']['required_actions']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
@@ -184,5 +214,20 @@ final class CLIContextInspectionCommandsTest extends TestCase
         $output = ob_get_clean() ?: '';
 
         return ['status' => $status, 'output' => $output];
+    }
+
+    private function writeExecutionSpec(string $feature, string $name, bool $draft = false): void
+    {
+        $directory = $this->project->root . '/docs/specs/' . $feature . ($draft ? '/drafts' : '');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($directory . '/' . $name . '.md', <<<MD
+# Execution Spec: {$name}
+
+## Feature
+- {$feature}
+MD);
     }
 }

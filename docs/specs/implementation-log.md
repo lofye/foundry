@@ -21,3 +21,7 @@
 ## 2026-04-15 09:19:45 -0400
 - spec: execution-spec-system/006-prevent-framework-spec-implementation-from-scaffolding-app-features.md
 - note: Blocked framework-repository execution specs before generic app-feature scaffolding and removed the accidental execution-spec-system app scaffold output.
+
+## 2026-04-15 09:58:40 -0400
+- spec: context-persistence/015.001-context-doctor-execution-spec-drift.md
+- note: Added execution-spec drift detection to context doctor and verify context without changing their existing issue contracts.

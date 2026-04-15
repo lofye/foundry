@@ -11,6 +11,9 @@ use Foundry\Support\Paths;
 
 final class ContextDoctorService
 {
+    private const string EXECUTION_SPEC_DRIFT_CODE = 'EXECUTION_SPEC_DRIFT';
+    private const string EXECUTION_SPEC_DRIFT_MESSAGE = 'Execution specs exist for this feature, but canonical feature context is missing or incomplete.';
+
     /**
      * @var array<string,int>
      */
@@ -61,6 +64,7 @@ final class ContextDoctorService
             'state' => $this->filePayload($relativePaths['state'], $state, true),
             'decisions' => $this->filePayload($relativePaths['decisions'], $decisions, false),
         ];
+        $files = $this->attachExecutionSpecDriftIssues($featureName, $files);
 
         $status = $this->statusForResults([$spec, $state, $decisions]);
         $readiness = ContextExecutionReadiness::fromDoctorStatus($status);
@@ -123,6 +127,21 @@ final class ContextDoctorService
      */
     private function discoverFeatures(): array
     {
+        $features = array_values(array_unique(array_merge(
+            $this->discoverContextFeatures(),
+            $this->discoverExecutionSpecFeatures(),
+        )));
+
+        sort($features);
+
+        return $features;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function discoverContextFeatures(): array
+    {
         $directory = $this->paths->join('docs/features');
         if (!is_dir($directory)) {
             return [];
@@ -152,8 +171,41 @@ final class ContextDoctorService
             $features[] = $featureName;
         }
 
-        $features = array_values(array_unique($features));
-        sort($features);
+        return $features;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function discoverExecutionSpecFeatures(): array
+    {
+        $directory = $this->paths->join('docs/specs');
+        if (!is_dir($directory)) {
+            return [];
+        }
+
+        $items = scandir($directory);
+        if ($items === false) {
+            return [];
+        }
+
+        $features = [];
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $directory . '/' . $item;
+            if (!is_dir($path) || !$this->isCanonicalFeatureDirectory($item)) {
+                continue;
+            }
+
+            if (!$this->featureHasExecutionSpecs($item)) {
+                continue;
+            }
+
+            $features[] = $item;
+        }
 
         return $features;
     }
@@ -269,11 +321,22 @@ final class ContextDoctorService
     private function requiredActionsForFiles(array $files): array
     {
         $actions = [];
+        $driftFeatures = [];
+
         foreach (['spec', 'state', 'decisions'] as $kind) {
             $file = (array) ($files[$kind] ?? []);
             $path = (string) ($file['path'] ?? '');
             foreach ((array) ($file['issues'] ?? []) as $issue) {
                 if (!is_array($issue)) {
+                    continue;
+                }
+
+                if ((string) ($issue['code'] ?? '') === self::EXECUTION_SPEC_DRIFT_CODE) {
+                    $featureName = $this->featureNameFromCanonicalFilename(basename($path));
+                    if ($featureName !== null) {
+                        $driftFeatures[$featureName] = true;
+                    }
+
                     continue;
                 }
 
@@ -284,6 +347,12 @@ final class ContextDoctorService
 
                 $actions[] = $action;
             }
+        }
+
+        $driftFeatureNames = array_keys($driftFeatures);
+        sort($driftFeatureNames);
+        foreach ($driftFeatureNames as $featureName) {
+            $actions = array_merge($actions, $this->executionSpecDriftRequiredActions($featureName));
         }
 
         return array_values(array_unique($actions));
@@ -359,5 +428,88 @@ final class ContextDoctorService
         $candidatePriority = self::STATUS_PRIORITY[$candidate] ?? 0;
 
         return $candidatePriority > $currentPriority ? $candidate : $current;
+    }
+
+    /**
+     * @param array<string,array<string,mixed>> $files
+     * @return array<string,array<string,mixed>>
+     */
+    private function attachExecutionSpecDriftIssues(string $featureName, array $files): array
+    {
+        if (!$this->featureHasExecutionSpecs($featureName)) {
+            return $files;
+        }
+
+        foreach (['spec', 'state', 'decisions'] as $kind) {
+            $file = (array) ($files[$kind] ?? []);
+            if ((bool) ($file['exists'] ?? false)) {
+                continue;
+            }
+
+            $issues = array_values((array) ($file['issues'] ?? []));
+            $issues[] = [
+                'code' => self::EXECUTION_SPEC_DRIFT_CODE,
+                'message' => self::EXECUTION_SPEC_DRIFT_MESSAGE,
+                'file_path' => (string) ($file['path'] ?? ''),
+            ];
+            $file['issues'] = $issues;
+            $files[$kind] = $file;
+        }
+
+        return $files;
+    }
+
+    private function featureHasExecutionSpecs(string $featureName): bool
+    {
+        $featureName = FeatureNaming::canonical($featureName);
+
+        return $this->directoryContainsMarkdownFiles('docs/specs/' . $featureName)
+            || $this->directoryContainsMarkdownFiles('docs/specs/' . $featureName . '/drafts');
+    }
+
+    private function directoryContainsMarkdownFiles(string $relativePath): bool
+    {
+        $directory = $this->paths->join($relativePath);
+        if (!is_dir($directory)) {
+            return false;
+        }
+
+        $items = scandir($directory);
+        if ($items === false) {
+            return false;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            if (!str_ends_with($item, '.md')) {
+                continue;
+            }
+
+            if (is_file($directory . '/' . $item)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isCanonicalFeatureDirectory(string $name): bool
+    {
+        return preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $name) === 1;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function executionSpecDriftRequiredActions(string $featureName): array
+    {
+        return [
+            'Create or initialize the missing canonical feature context files for ' . $featureName . '.',
+            'Run foundry context init ' . $featureName . ' --json when appropriate to initialize missing canonical context files.',
+            'Do not rely on execution specs as the source of truth for ' . $featureName . '.',
+        ];
     }
 }

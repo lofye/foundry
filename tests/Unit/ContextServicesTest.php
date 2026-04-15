@@ -119,6 +119,75 @@ final class ContextServicesTest extends TestCase
         $this->assertContains('Add missing required section "## Goals" to docs/features/event-bus.spec.md.', $result['required_actions']);
     }
 
+    public function test_doctor_service_does_not_emit_execution_spec_drift_without_execution_specs(): void
+    {
+        $result = $this->doctorService()->checkFeature('event-bus');
+
+        $this->assertSame(['CONTEXT_FILE_MISSING'], $this->doctorIssueCodes($result, 'spec'));
+        $this->assertSame(['CONTEXT_FILE_MISSING'], $this->doctorIssueCodes($result, 'state'));
+        $this->assertSame(['CONTEXT_FILE_MISSING'], $this->doctorIssueCodes($result, 'decisions'));
+        $this->assertNotContains(
+            'Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.',
+            $result['required_actions'],
+        );
+    }
+
+    public function test_doctor_service_does_not_emit_execution_spec_drift_when_canonical_context_exists(): void
+    {
+        $this->initService()->init('event-bus');
+        $this->writeExecutionSpec('event-bus', '001-initial');
+
+        $result = $this->doctorService()->checkFeature('event-bus');
+
+        $this->assertSame('ok', $result['status']);
+        $this->assertSame([], $this->doctorIssueCodes($result, 'spec'));
+        $this->assertSame([], $this->doctorIssueCodes($result, 'state'));
+        $this->assertSame([], $this->doctorIssueCodes($result, 'decisions'));
+        $this->assertSame([], $result['required_actions']);
+    }
+
+    public function test_doctor_service_emits_execution_spec_drift_for_active_specs_when_canonical_context_is_missing(): void
+    {
+        $this->writeExecutionSpec('event-bus', '001-initial');
+
+        $result = $this->doctorService()->checkFeature('event-bus');
+
+        $this->assertSame('repairable', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->doctorIssueCodes($result, 'spec'));
+        $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->doctorIssueCodes($result, 'state'));
+        $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->doctorIssueCodes($result, 'decisions'));
+        $this->assertSame([
+            'Create missing spec file: docs/features/event-bus.spec.md',
+            'Create missing state file: docs/features/event-bus.md',
+            'Create missing decision ledger: docs/features/event-bus.decisions.md',
+            'Create or initialize the missing canonical feature context files for event-bus.',
+            'Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.',
+            'Do not rely on execution specs as the source of truth for event-bus.',
+        ], $result['required_actions']);
+    }
+
+    public function test_doctor_service_emits_execution_spec_drift_for_draft_specs_when_context_is_incomplete(): void
+    {
+        $this->initService()->init('event-bus');
+        $this->writeExecutionSpec('event-bus', '001-initial', draft: true);
+        unlink($this->project->root . '/docs/features/event-bus.md');
+
+        $result = $this->doctorService()->checkFeature('event-bus');
+
+        $this->assertSame('repairable', $result['status']);
+        $this->assertSame([], $this->doctorIssueCodes($result, 'spec'));
+        $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->doctorIssueCodes($result, 'state'));
+        $this->assertSame([], $this->doctorIssueCodes($result, 'decisions'));
+        $this->assertSame([
+            'Create missing state file: docs/features/event-bus.md',
+            'Create or initialize the missing canonical feature context files for event-bus.',
+            'Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.',
+            'Do not rely on execution specs as the source of truth for event-bus.',
+        ], $result['required_actions']);
+    }
+
     private function initService(): ContextInitService
     {
         return new ContextInitService(new Paths($this->project->root));
@@ -137,5 +206,33 @@ final class ContextServicesTest extends TestCase
         }
 
         file_put_contents($path, $contents);
+    }
+
+    private function writeExecutionSpec(string $feature, string $name, bool $draft = false): void
+    {
+        $directory = $this->project->root . '/docs/specs/' . $feature . ($draft ? '/drafts' : '');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        $path = $directory . '/' . $name . '.md';
+        file_put_contents($path, <<<MD
+# Execution Spec: {$name}
+
+## Feature
+- {$feature}
+MD);
+    }
+
+    /**
+     * @param array<string,mixed> $result
+     * @return list<string>
+     */
+    private function doctorIssueCodes(array $result, string $kind): array
+    {
+        return array_values(array_map(
+            static fn(array $issue): string => (string) ($issue['code'] ?? ''),
+            (array) (($result['files'][$kind] ?? [])['issues'] ?? []),
+        ));
     }
 }

@@ -36,9 +36,12 @@
 - Each feature has one canonical spec, one state document, and one decision ledger.
 - Validators can check structure and required sections.
 - CLI commands can initialize and validate feature context.
+- `context doctor` detects when execution specs exist for a feature but one or more canonical feature context files are missing.
+- `context doctor` reports execution-spec drift through the existing per-file issue buckets and required-actions model.
 - CLI commands can detect spec-state mismatches using deterministic heuristics.
 - Inspect context aggregates doctor and alignment results into a single deterministic view.
 - Verify context maps doctor and alignment results to deterministic pass/fail semantics.
+- Verify context surfaces doctor execution-spec drift issues through its existing flattened issue list.
 - Verify context fails when doctor is `repairable` or `non_compliant`.
 - Verify context fails when alignment status is `mismatch`.
 - Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
@@ -69,9 +72,11 @@
 - Validation passes.
 - CLI can initialize missing context files deterministically.
 - CLI can validate context and produce actionable repair guidance.
+- `context doctor` emits `EXECUTION_SPEC_DRIFT` deterministically when execution specs exist but canonical feature context files are missing.
 - CLI can detect spec-state alignment issues deterministically.
 - Inspect context returns a deterministic combined context view.
 - Verify context returns deterministic pass/fail status for feature context.
+- Verify context surfaces `EXECUTION_SPEC_DRIFT` as a doctor-sourced issue without changing its output contract.
 - Alignment results include actionable repair guidance.
 - Implement feature executes only from canonical context artifacts.
 - Implement feature returns deterministic blocked, repaired, completed, or completed_with_issues results.

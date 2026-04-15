@@ -176,6 +176,38 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: diagnose execution-spec drift through existing doctor and verify pipelines
+Timestamp: 2026-04-15T09:57:48-04:00
+
+**Context**
+- Execution specs can now accumulate under `docs/specs/<feature>/` and `docs/specs/<feature>/drafts/`, but canonical feature context files may still be missing for a target feature.
+- Without an explicit diagnostic, agents and developers could mistake execution specs for authoritative context when running doctor or verify workflows.
+
+**Decision**
+- Detect execution-spec drift in `context doctor` whenever execution specs exist for a feature and one or more canonical feature context files are missing.
+- Attach `EXECUTION_SPEC_DRIFT` to the missing canonical file buckets and reuse existing required-actions guidance.
+- Surface the same doctor issue through `verify context` without changing the flattened verification contract.
+
+**Reasoning**
+- Canonical feature context must remain the only authoritative source of intent and state.
+- Reusing existing doctor and verify issue shapes keeps diagnostics deterministic and machine-readable for automation.
+- Repair guidance should steer users toward initializing canonical context rather than treating execution specs as substitutes.
+
+**Alternatives Considered**
+- Add a new top-level doctor diagnostics collection just for execution-spec drift.
+- Ignore execution-spec presence until later execution-spec validation phases.
+- Infer missing canonical context from execution specs automatically.
+
+**Impact**
+- Doctor and verify now fail closed when execution specs exist without complete canonical feature context.
+- Missing canonical files are surfaced alongside explicit warnings not to rely on execution specs as source of truth.
+- Feature discovery for all-feature doctor and verify runs now includes execution-spec directories when they contain planning artifacts.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: adopt hierarchical padded execution-spec filenames and filename-only headings
 Timestamp: 2026-04-14T10:05:00-04:00
 

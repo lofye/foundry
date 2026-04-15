@@ -171,6 +171,35 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertContains('Create missing decision ledger: docs/features/event-bus.decisions.md', $result['payload']['required_actions']);
     }
 
+    public function test_context_doctor_reports_execution_spec_drift_using_existing_json_shape(): void
+    {
+        $this->writeExecutionSpec('event-bus', '001-initial');
+
+        $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame([
+            'status',
+            'feature',
+            'can_proceed',
+            'requires_repair',
+            'files',
+            'required_actions',
+        ], array_keys($result['payload']));
+        $this->assertSame('repairable', $result['payload']['status']);
+        $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->issueCodes($result['payload']['files']['spec']['issues']));
+        $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->issueCodes($result['payload']['files']['state']['issues']));
+        $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->issueCodes($result['payload']['files']['decisions']['issues']));
+        $this->assertSame([
+            'Create missing spec file: docs/features/event-bus.spec.md',
+            'Create missing state file: docs/features/event-bus.md',
+            'Create missing decision ledger: docs/features/event-bus.decisions.md',
+            'Create or initialize the missing canonical feature context files for event-bus.',
+            'Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.',
+            'Do not rely on execution specs as the source of truth for event-bus.',
+        ], $result['payload']['required_actions']);
+    }
+
     public function test_context_doctor_feature_and_all_conflict_fails_deterministically(): void
     {
         $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--all', '--json']);
@@ -194,5 +223,32 @@ final class CLIContextCommandsTest extends TestCase
         $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
         return ['status' => $status, 'payload' => $payload];
+    }
+
+    private function writeExecutionSpec(string $feature, string $name, bool $draft = false): void
+    {
+        $directory = $this->project->root . '/docs/specs/' . $feature . ($draft ? '/drafts' : '');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($directory . '/' . $name . '.md', <<<MD
+# Execution Spec: {$name}
+
+## Feature
+- {$feature}
+MD);
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $issues
+     * @return list<string>
+     */
+    private function issueCodes(array $issues): array
+    {
+        return array_values(array_map(
+            static fn(array $issue): string => (string) ($issue['code'] ?? ''),
+            $issues,
+        ));
     }
 }
