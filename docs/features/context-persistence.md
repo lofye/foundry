@@ -8,6 +8,7 @@
 - Canonical spec, state, and decision-ledger files exist for this feature.
 - Validators check canonical feature context structure and required sections.
 - `context init` and `context doctor` initialize and validate canonical feature context deterministically.
+- Feature-scoped doctor diagnostics now evaluate through a normalized internal rule model that feeds the existing doctor file buckets and verify-context flattened issues.
 - `context doctor` detects execution-spec drift when active or draft execution specs exist without complete canonical feature context and reports it through the existing missing-file issue buckets.
 - `context check-alignment` detects spec-state mismatches using deterministic heuristics.
 - `inspect context` aggregates doctor and alignment results into a single deterministic view.

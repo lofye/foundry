@@ -36,6 +36,7 @@
 - Each feature has one canonical spec, one state document, and one decision ledger.
 - Validators can check structure and required sections.
 - CLI commands can initialize and validate feature context.
+- Feature-scoped doctor diagnostics evaluate through one normalized internal rule model that maps to the existing doctor and verify-context contracts.
 - `context doctor` detects when execution specs exist for a feature but one or more canonical feature context files are missing.
 - `context doctor` reports execution-spec drift through the existing per-file issue buckets and required-actions model.
 - CLI commands can detect spec-state mismatches using deterministic heuristics.
@@ -72,6 +73,7 @@
 - Validation passes.
 - CLI can initialize missing context files deterministically.
 - CLI can validate context and produce actionable repair guidance.
+- Feature-scoped doctor diagnostics use a normalized internal rule result that can be rendered into doctor file buckets and verify-context flattened issues deterministically.
 - `context doctor` emits `EXECUTION_SPEC_DRIFT` deterministically when execution specs exist but canonical feature context files are missing.
 - CLI can detect spec-state alignment issues deterministically.
 - Inspect context returns a deterministic combined context view.

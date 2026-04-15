@@ -176,6 +176,38 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: normalize internal context-doctor rule evaluation
+Timestamp: 2026-04-15T10:12:54-04:00
+
+**Context**
+- `EXECUTION_SPEC_DRIFT` had been added successfully, but its logic lived directly inside `ContextDoctorService`.
+- Future feature-scoped doctor diagnostics would become harder to add consistently if rule evaluation, file-bucket attachment, required-action contribution, and verify flattening stayed ad hoc.
+
+**Decision**
+- Introduce a normalized internal rule model for feature-scoped context-doctor diagnostics.
+- Represent doctor rules through stable normalized results that carry code, message, targets, repair semantics, and required actions.
+- Use that rule model to drive `EXECUTION_SPEC_DRIFT`, doctor file-bucket rendering, and centralized doctor-to-verify issue flattening.
+
+**Reasoning**
+- A normalized rule model makes future doctor checks cheaper to add without changing external command contracts.
+- Centralized mapping keeps doctor and verify deterministic and avoids rule-specific branching in verify-context.
+- Keeping the external JSON unchanged preserves compatibility for users and automation while improving the internal structure.
+
+**Alternatives Considered**
+- Keep adding rule-specific conditionals inside `ContextDoctorService` and `ContextInspectionService`.
+- Expose a new public diagnostics schema just for doctor rules.
+- Delay internal cleanup until several more doctor rules existed.
+
+**Impact**
+- `context doctor` and `verify context` keep their current external output shapes.
+- `EXECUTION_SPEC_DRIFT` now serves as the reference implementation for future doctor rules.
+- Future feature-scoped diagnostics can be added with less duplication and lower regression risk.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: diagnose execution-spec drift through existing doctor and verify pipelines
 Timestamp: 2026-04-15T09:57:48-04:00
 

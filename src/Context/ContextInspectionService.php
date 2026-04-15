@@ -257,29 +257,7 @@ final class ContextInspectionService
      */
     private function verificationIssues(array $doctor, array $alignment): array
     {
-        $issues = [];
-
-        foreach (['spec', 'state', 'decisions'] as $kind) {
-            $file = (array) (($doctor['files'] ?? [])[$kind] ?? []);
-            foreach ((array) ($file['issues'] ?? []) as $issue) {
-                if (!is_array($issue)) {
-                    continue;
-                }
-
-                $row = [
-                    'source' => 'doctor',
-                    'code' => (string) ($issue['code'] ?? ''),
-                    'message' => (string) ($issue['message'] ?? ''),
-                    'file_path' => (string) ($issue['file_path'] ?? ($file['path'] ?? '')),
-                ];
-
-                if (array_key_exists('section', $issue)) {
-                    $row['section'] = $issue['section'];
-                }
-
-                $issues[] = $row;
-            }
-        }
+        $issues = $this->doctorService->flattenIssues($doctor);
 
         foreach ((array) ($alignment['issues'] ?? []) as $issue) {
             if (!is_array($issue)) {

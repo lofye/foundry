@@ -25,3 +25,7 @@
 ## 2026-04-15 09:58:40 -0400
 - spec: context-persistence/015.001-context-doctor-execution-spec-drift.md
 - note: Added execution-spec drift detection to context doctor and verify context without changing their existing issue contracts.
+
+## 2026-04-15 10:13:23 -0400
+- spec: context-persistence/015.002-context-doctor-diagnostic-rule-structure.md
+- note: Introduced a normalized internal doctor-rule model and centralized doctor-to-verify flattening while preserving existing output contracts.

@@ -11,9 +11,6 @@ use Foundry\Support\Paths;
 
 final class ContextDoctorService
 {
-    private const string EXECUTION_SPEC_DRIFT_CODE = 'EXECUTION_SPEC_DRIFT';
-    private const string EXECUTION_SPEC_DRIFT_MESSAGE = 'Execution specs exist for this feature, but canonical feature context is missing or incomplete.';
-
     /**
      * @var array<string,int>
      */
@@ -24,6 +21,14 @@ final class ContextDoctorService
         'non_compliant' => 3,
     ];
 
+    /**
+     * @var list<ContextDoctorDiagnosticRule>
+     */
+    private readonly array $diagnosticRules;
+
+    /**
+     * @param list<ContextDoctorDiagnosticRule>|null $diagnosticRules
+     */
     public function __construct(
         private readonly Paths $paths,
         private readonly FeatureNameValidator $featureNameValidator = new FeatureNameValidator(),
@@ -31,7 +36,12 @@ final class ContextDoctorService
         private readonly SpecValidator $specValidator = new SpecValidator(),
         private readonly StateValidator $stateValidator = new StateValidator(),
         private readonly DecisionLedgerValidator $decisionLedgerValidator = new DecisionLedgerValidator(),
-    ) {}
+        ?array $diagnosticRules = null,
+    ) {
+        $this->diagnosticRules = $diagnosticRules ?? [
+            new ExecutionSpecDriftContextDoctorRule(),
+        ];
+    }
 
     /**
      * @return array{status:string,feature:string,can_proceed:bool,requires_repair:bool,files:array<string,array<string,mixed>>,required_actions:list<string>}
@@ -64,9 +74,15 @@ final class ContextDoctorService
             'state' => $this->filePayload($relativePaths['state'], $state, true),
             'decisions' => $this->filePayload($relativePaths['decisions'], $decisions, false),
         ];
-        $files = $this->attachExecutionSpecDriftIssues($featureName, $files);
+        $baseRequiredActions = $this->requiredActionsForFiles($files);
+        $diagnosticResults = $this->evaluateDiagnosticRules(new ContextDoctorDiagnosticRuleContext(
+            feature: $featureName,
+            files: $files,
+            featureHasExecutionSpecs: $this->featureHasExecutionSpecs($featureName),
+        ));
+        $files = $this->applyDiagnosticResults($files, $diagnosticResults);
 
-        $status = $this->statusForResults([$spec, $state, $decisions]);
+        $status = $this->statusForResults([$spec, $state, $decisions], $diagnosticResults);
         $readiness = ContextExecutionReadiness::fromDoctorStatus($status);
 
         return [
@@ -75,7 +91,10 @@ final class ContextDoctorService
             'can_proceed' => $readiness['can_proceed'],
             'requires_repair' => $readiness['requires_repair'],
             'files' => $files,
-            'required_actions' => $this->requiredActionsForFiles($files),
+            'required_actions' => $this->mergeRequiredActions(
+                $baseRequiredActions,
+                $this->requiredActionsForDiagnosticResults($diagnosticResults),
+            ),
         ];
     }
 
@@ -284,8 +303,9 @@ final class ContextDoctorService
 
     /**
      * @param array<int,ValidationResult> $results
+     * @param list<ContextDoctorDiagnosticRuleResult> $diagnosticResults
      */
-    private function statusForResults(array $results): string
+    private function statusForResults(array $results, array $diagnosticResults = []): string
     {
         foreach ($results as $result) {
             foreach ($result->issues as $issue) {
@@ -295,6 +315,12 @@ final class ContextDoctorService
             }
 
             if (!$result->valid) {
+                return 'repairable';
+            }
+        }
+
+        foreach ($diagnosticResults as $result) {
+            if ($result->requiresRepair) {
                 return 'repairable';
             }
         }
@@ -321,22 +347,12 @@ final class ContextDoctorService
     private function requiredActionsForFiles(array $files): array
     {
         $actions = [];
-        $driftFeatures = [];
 
         foreach (['spec', 'state', 'decisions'] as $kind) {
             $file = (array) ($files[$kind] ?? []);
             $path = (string) ($file['path'] ?? '');
             foreach ((array) ($file['issues'] ?? []) as $issue) {
                 if (!is_array($issue)) {
-                    continue;
-                }
-
-                if ((string) ($issue['code'] ?? '') === self::EXECUTION_SPEC_DRIFT_CODE) {
-                    $featureName = $this->featureNameFromCanonicalFilename(basename($path));
-                    if ($featureName !== null) {
-                        $driftFeatures[$featureName] = true;
-                    }
-
                     continue;
                 }
 
@@ -347,12 +363,6 @@ final class ContextDoctorService
 
                 $actions[] = $action;
             }
-        }
-
-        $driftFeatureNames = array_keys($driftFeatures);
-        sort($driftFeatureNames);
-        foreach ($driftFeatureNames as $featureName) {
-            $actions = array_merge($actions, $this->executionSpecDriftRequiredActions($featureName));
         }
 
         return array_values(array_unique($actions));
@@ -431,32 +441,101 @@ final class ContextDoctorService
     }
 
     /**
-     * @param array<string,array<string,mixed>> $files
-     * @return array<string,array<string,mixed>>
+     * @param list<ContextDoctorDiagnosticRuleResult> $diagnosticResults
+     * @return list<ContextDoctorDiagnosticRuleResult>
      */
-    private function attachExecutionSpecDriftIssues(string $featureName, array $files): array
+    private function evaluateDiagnosticRules(ContextDoctorDiagnosticRuleContext $context): array
     {
-        if (!$this->featureHasExecutionSpecs($featureName)) {
-            return $files;
-        }
+        $results = [];
 
-        foreach (['spec', 'state', 'decisions'] as $kind) {
-            $file = (array) ($files[$kind] ?? []);
-            if ((bool) ($file['exists'] ?? false)) {
+        foreach ($this->diagnosticRules as $rule) {
+            $result = $rule->evaluate($context);
+            if ($result === null) {
                 continue;
             }
 
+            $results[] = $result;
+        }
+
+        usort($results, function (ContextDoctorDiagnosticRuleResult $left, ContextDoctorDiagnosticRuleResult $right): int {
+            $leftTarget = $this->diagnosticTargetSortKey($left->targets[0] ?? null);
+            $rightTarget = $this->diagnosticTargetSortKey($right->targets[0] ?? null);
+
+            return [$leftTarget, $left->code, $left->message] <=> [$rightTarget, $right->code, $right->message];
+        });
+
+        return array_values($results);
+    }
+
+    /**
+     * @param array<string,array<string,mixed>> $files
+     * @param list<ContextDoctorDiagnosticRuleResult> $diagnosticResults
+     * @return array<string,array<string,mixed>>
+     */
+    private function applyDiagnosticResults(array $files, array $diagnosticResults): array
+    {
+        foreach ($diagnosticResults as $result) {
+            foreach ($result->targets as $target) {
+                $file = (array) ($files[$target->bucket] ?? []);
+                $issues = array_values((array) ($file['issues'] ?? []));
+                $issues[] = [
+                    'code' => $result->code,
+                    'message' => $result->message,
+                    'file_path' => $target->filePath,
+                ];
+                $file['issues'] = $issues;
+                $files[$target->bucket] = $file;
+            }
+        }
+
+        foreach (['spec', 'state', 'decisions'] as $bucket) {
+            $file = (array) ($files[$bucket] ?? []);
             $issues = array_values((array) ($file['issues'] ?? []));
-            $issues[] = [
-                'code' => self::EXECUTION_SPEC_DRIFT_CODE,
-                'message' => self::EXECUTION_SPEC_DRIFT_MESSAGE,
-                'file_path' => (string) ($file['path'] ?? ''),
-            ];
+            usort($issues, function (array $left, array $right): int {
+                return [
+                    (string) ($left['code'] ?? ''),
+                    (string) ($left['message'] ?? ''),
+                    (string) ($left['file_path'] ?? ''),
+                    (string) ($left['section'] ?? ''),
+                ] <=> [
+                    (string) ($right['code'] ?? ''),
+                    (string) ($right['message'] ?? ''),
+                    (string) ($right['file_path'] ?? ''),
+                    (string) ($right['section'] ?? ''),
+                ];
+            });
             $file['issues'] = $issues;
-            $files[$kind] = $file;
+            $files[$bucket] = $file;
         }
 
         return $files;
+    }
+
+    /**
+     * @param list<ContextDoctorDiagnosticRuleResult> $diagnosticResults
+     * @return list<string>
+     */
+    private function requiredActionsForDiagnosticResults(array $diagnosticResults): array
+    {
+        $actions = [];
+
+        foreach ($diagnosticResults as $result) {
+            foreach ($result->requiredActions as $action) {
+                $actions[] = $action;
+            }
+        }
+
+        return array_values(array_unique($actions));
+    }
+
+    /**
+     * @param list<string> $base
+     * @param list<string> $extra
+     * @return list<string>
+     */
+    private function mergeRequiredActions(array $base, array $extra): array
+    {
+        return array_values(array_unique(array_merge($base, $extra)));
     }
 
     private function featureHasExecutionSpecs(string $featureName): bool
@@ -502,14 +581,51 @@ final class ContextDoctorService
     }
 
     /**
-     * @return list<string>
+     * @param array<string,mixed> $doctor
+     * @return list<array<string,mixed>>
      */
-    private function executionSpecDriftRequiredActions(string $featureName): array
+    public function flattenIssues(array $doctor): array
     {
-        return [
-            'Create or initialize the missing canonical feature context files for ' . $featureName . '.',
-            'Run foundry context init ' . $featureName . ' --json when appropriate to initialize missing canonical context files.',
-            'Do not rely on execution specs as the source of truth for ' . $featureName . '.',
-        ];
+        $issues = [];
+
+        foreach (['spec', 'state', 'decisions'] as $kind) {
+            $file = (array) (($doctor['files'] ?? [])[$kind] ?? []);
+            foreach ((array) ($file['issues'] ?? []) as $issue) {
+                if (!is_array($issue)) {
+                    continue;
+                }
+
+                $row = [
+                    'source' => 'doctor',
+                    'code' => (string) ($issue['code'] ?? ''),
+                    'message' => (string) ($issue['message'] ?? ''),
+                    'file_path' => (string) ($issue['file_path'] ?? ($file['path'] ?? '')),
+                ];
+
+                if (array_key_exists('section', $issue)) {
+                    $row['section'] = $issue['section'];
+                }
+
+                $issues[] = $row;
+            }
+        }
+
+        return $issues;
+    }
+
+    private function diagnosticTargetSortKey(?ContextDoctorDiagnosticTarget $target): string
+    {
+        if ($target === null) {
+            return '9:';
+        }
+
+        $bucketOrder = match ($target->bucket) {
+            'spec' => '0',
+            'state' => '1',
+            'decisions' => '2',
+            default => '9',
+        };
+
+        return $bucketOrder . ':' . $target->filePath;
     }
 }
