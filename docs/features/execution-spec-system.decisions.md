@@ -54,6 +54,37 @@ Timestamp: 2026-04-14T10:04:00-04:00
 - Constraints
 - Expected Behavior
 
+### Decision: auto-log successful active execution-spec completion
+Timestamp: 2026-04-14T23:35:32-04:00
+
+**Context**
+- The implementation-log format is already part of the execution-spec naming policy, but recording entries still depended on a manual follow-up after successful `implement spec` runs.
+- Missing manual log updates weaken chronology and make the policy easy to skip even when active execution-spec implementation succeeded.
+
+**Decision**
+- Automatically append implementation-log entries when an active execution spec completes successfully through `implement spec`.
+- Skip draft paths, prevent duplicate entries for the same active spec, and surface log-write failures as explicit implementation issues.
+
+**Reasoning**
+- Logging belongs in the execution-spec lifecycle contract, not as a separate human reminder.
+- Idempotent append behavior prevents accidental duplicate chronology while keeping successful completion scriptable.
+- Surfacing write failures inside the spec-execution result avoids silently claiming a clean success when the required log entry is missing.
+
+**Alternatives Considered**
+- Keep implementation-log updates manual.
+- Append log entries from the CLI wrapper instead of the execution service.
+- Ignore log-write failures and leave the implementation result as completed.
+
+**Impact**
+- Active execution-spec completion now keeps project chronology current automatically.
+- Draft specs remain non-executable planning artifacts and are not recorded as implemented.
+- Implement-spec callers now get a deterministic error path when the required implementation log cannot be written.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+
 ### Decision: add a dedicated `spec:validate` CLI command for execution-spec rule enforcement
 Timestamp: 2026-04-14T15:19:39-04:00
 

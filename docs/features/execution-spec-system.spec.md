@@ -12,6 +12,7 @@
 - Keep resolver and planner behavior deterministic for hierarchical execution-spec ids.
 - Provide a deterministic CLI command for creating new draft execution specs.
 - Provide a deterministic CLI command for validating active and draft execution specs against canonical rules.
+- Provide deterministic automatic implementation-log appends for successful active execution-spec completion.
 
 ## Non-Goals
 - Do not introduce filesystem-specific natural-sort dependencies.
@@ -29,6 +30,7 @@
 - Draft creation must not overwrite existing files.
 - Slug normalization must be deterministic and reject low-information placeholders.
 - Validation must not modify files and must report all detected violations deterministically.
+- Automatic implementation logging must not log draft specs, must prevent duplicate entries, and must surface log-write failures clearly and deterministically.
 
 ## Expected Behavior
 - Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`; drafts live under `docs/specs/<feature>/drafts/<id>-<slug>.md`.
@@ -43,6 +45,9 @@
 - `spec:new` fails clearly when feature input is invalid, the target path already exists, or allocation cannot proceed deterministically.
 - `spec:validate` scans active and draft execution specs, reports filename, placement, heading, duplicate-id, and forbidden-metadata violations, and exits non-zero when violations exist.
 - `spec:validate` returns both terminal output and JSON payloads that include every detected violation for repair workflows and automation.
+- Successful `implement spec` runs for active execution specs append one required-format entry to `docs/specs/implementation-log.md`.
+- Draft execution specs are never logged as implemented, and repeated completion of the same active spec does not duplicate the log entry.
+- If the implementation log cannot be updated, `implement spec` must surface that failure clearly and deterministically. It must not report a clean successful completion, and it may return a partial-success status such as `completed_with_issues` when the implementation itself succeeded but required logging could not be completed.
 
 ## Acceptance Criteria
 - Hierarchical padded execution-spec filenames are accepted and parsed deterministically.
@@ -57,6 +62,9 @@
 - Draft creation writes one file on success and no files on failure.
 - `spec:validate` detects invalid filenames, misplaced specs, duplicate ids, incorrect headings, and forbidden metadata without modifying files.
 - PHPUnit coverage covers the execution-spec validation service and CLI command behavior.
+- Successful active execution-spec implementation appends exactly one correctly formatted implementation-log entry automatically.
+- Draft execution specs are not auto-logged.
+- Implementation-log write failures surface clearly and deterministically and do not appear as a clean successful completion.
 
 ## Assumptions
 - Feature directories continue to provide context and execution state.

@@ -1,7 +1,7 @@
 # Feature: execution-spec-system
 
 ## Purpose
-- Define and enforce canonical execution-spec naming, identity, heading, validation, and draft-creation rules.
+- Define and enforce canonical execution-spec naming, identity, heading, validation, draft-creation, and implementation-log rules.
 
 ## Current State
 - Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`.
@@ -30,6 +30,9 @@
 - `spec:validate` exits with status `0` when spec state is valid and non-zero when any violations exist.
 - JSON and terminal output for `spec:validate` expose all detected violations for automation and manual repair.
 - PHPUnit coverage covers the execution-spec validation service and CLI command.
+- Successful `implement spec` runs for active execution specs append exactly one required-format entry to `docs/specs/implementation-log.md`.
+- Auto-logging skips draft execution-spec paths and does not duplicate existing implementation-log entries for the same active spec.
+- Implementation-log write failures surface as `completed_with_issues` instead of a clean successful spec-completion result.
 
 ## Open Questions
 - When should Foundry support explicit child-spec allocation instead of only root allocation?
@@ -37,5 +40,4 @@
 - Should draft promotion validate parent existence explicitly?
 
 ## Next Steps
-- Add automatic implementation-log support after the draft-creation and validation flows are stable.
 - Introduce child-spec allocation when multi-level planning becomes a concrete requirement.

@@ -6,6 +6,7 @@ namespace Foundry\Context;
 
 use Foundry\Generation\ContextManifestGenerator;
 use Foundry\Generation\FeatureGenerator;
+use Foundry\Support\FoundryError;
 use Foundry\Support\FeatureNaming;
 use Foundry\Support\Paths;
 use Foundry\Support\Str;
@@ -17,6 +18,7 @@ final class ContextExecutionService
     private readonly ContextInitService $initService;
     private readonly FeatureGenerator $featureGenerator;
     private readonly ContextManifestGenerator $contextManifestGenerator;
+    private readonly ExecutionSpecImplementationLogService $executionSpecImplementationLogService;
 
     public function __construct(
         private readonly Paths $paths,
@@ -26,11 +28,13 @@ final class ContextExecutionService
         ?ContextInitService $initService = null,
         ?FeatureGenerator $featureGenerator = null,
         ?ContextManifestGenerator $contextManifestGenerator = null,
+        ?ExecutionSpecImplementationLogService $executionSpecImplementationLogService = null,
     ) {
         $this->inspectionService = $inspectionService ?? new ContextInspectionService($paths);
         $this->initService = $initService ?? new ContextInitService($paths);
         $this->featureGenerator = $featureGenerator ?? new FeatureGenerator($paths);
         $this->contextManifestGenerator = $contextManifestGenerator ?? new ContextManifestGenerator($paths);
+        $this->executionSpecImplementationLogService = $executionSpecImplementationLogService ?? new ExecutionSpecImplementationLogService($paths);
     }
 
     /**
@@ -255,6 +259,26 @@ final class ContextExecutionService
         }
 
         $payload = $this->execute($executionSpec->feature, repair: $repair, autoRepair: $autoRepair)->toArray();
+        if (in_array($payload['status'], ['completed', 'repaired'], true)) {
+            try {
+                $logAction = $this->executionSpecImplementationLogService->recordIfEligible($executionSpec);
+                if (is_string($logAction) && $logAction !== '') {
+                    $payload['actions_taken'][] = $logAction;
+                }
+            } catch (FoundryError $error) {
+                $payload['status'] = 'completed_with_issues';
+                $payload['issues'][] = [
+                    'code' => $error->errorCode,
+                    'message' => $error->getMessage(),
+                    'file_path' => (string) ($error->details['path'] ?? ''),
+                ];
+                $payload['required_actions'] = array_values(array_unique(array_merge(
+                    array_map('strval', (array) $payload['required_actions']),
+                    ['Restore write access to docs/specs/implementation-log.md and record the missing implementation entry.'],
+                )));
+            }
+        }
+
         if (in_array($payload['status'], ['completed', 'repaired', 'completed_with_issues'], true)) {
             $payload['actions_taken'][] = 'Applied execution spec: ' . $executionSpec->path;
         }

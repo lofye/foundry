@@ -171,6 +171,45 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertTrue($result['repair_successful']);
     }
 
+    public function test_execution_spec_skips_implementation_log_for_draft_paths(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+
+        $result = $this->service()->executeSpec(
+            new ExecutionSpec(
+                specId: 'event-bus/001-initial',
+                feature: 'event-bus',
+                path: 'docs/specs/event-bus/drafts/001-initial.md',
+                requestedChanges: ['Add deterministic event bus scaffolding.'],
+            ),
+        );
+
+        $this->assertSame('completed', $result['status']);
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/implementation-log.md');
+    }
+
+    public function test_execution_spec_log_write_failure_returns_completed_with_issues(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        mkdir($this->project->root . '/docs/specs/implementation-log.md', 0777, true);
+
+        $result = $this->service()->executeSpec(
+            new ExecutionSpec(
+                specId: 'event-bus/001-initial',
+                feature: 'event-bus',
+                path: 'docs/specs/event-bus/001-initial.md',
+                requestedChanges: ['Add deterministic event bus scaffolding.'],
+            ),
+        );
+
+        $this->assertSame('completed_with_issues', $result['status']);
+        $this->assertSame('EXECUTION_SPEC_IMPLEMENTATION_LOG_WRITE_FAILED', $result['issues'][0]['code']);
+        $this->assertContains(
+            'Restore write access to docs/specs/implementation-log.md and record the missing implementation entry.',
+            $result['required_actions'],
+        );
+    }
+
     public function test_result_shape_is_stable(): void
     {
         $this->writeMeaningfulContext('event-bus');
