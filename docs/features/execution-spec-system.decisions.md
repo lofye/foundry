@@ -54,6 +54,39 @@ Timestamp: 2026-04-14T10:04:00-04:00
 - Constraints
 - Expected Behavior
 
+### Decision: narrow canonical conflict detection to forbidden-action evidence
+Timestamp: 2026-04-15T00:53:58-04:00
+
+**Context**
+- `implement spec` was raising `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC` for execution specs that were aligned with the canonical feature spec but happened to share several topic words with canonical negative constraints.
+- The known false positive was the auto-log execution spec, where an instruction to append implementation-log entries overlapped lexically with the canonical logging constraint without contradicting it.
+- Canonical feature authority still needed to be preserved for real conflicts such as renaming immutable ids or instructing forbidden draft execution.
+
+**Decision**
+- Narrow canonical conflict detection so that lexical topic overlap alone is no longer sufficient evidence of contradiction.
+- Compare only positive execution-spec instruction items against forbidden clauses extracted from canonical non-goals and negative constraints.
+- Keep the existing blocked result contract unchanged for true conflicts.
+
+**Reasoning**
+- Shared nouns show subject matter, not contradiction.
+- Restricting comparison to positive execution instructions avoids treating aligned negative guardrails in execution specs as if they were conflicting with canonical guardrails.
+- A deterministic forbidden-clause comparison keeps canonical protection in place without introducing probabilistic semantic inference.
+
+**Alternatives Considered**
+- Keep the raw token-overlap heuristic and reword execution specs to avoid overlapping nouns.
+- Remove canonical conflict detection entirely.
+- Replace the heuristic with an LLM-backed contradiction detector.
+
+**Impact**
+- Aligned execution specs that reinforce canonical behavior are no longer blocked falsely during `implement spec`.
+- True contradictions against canonical non-goals or negative constraints still raise `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC`.
+- Conflict detection remains deterministic, testable, and conservative without relying on brittle topic overlap.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+
 ### Decision: auto-log successful active execution-spec completion
 Timestamp: 2026-04-14T23:35:32-04:00
 
@@ -168,6 +201,39 @@ Timestamp: 2026-04-14T13:34:01-04:00
 **Impact**
 - Execution-spec creation becomes a first-class deterministic workflow instead of an undocumented manual step.
 - Later validation and lifecycle tooling can build on the same shared draft-creation rules.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+
+### Decision: clarify auto-log failure semantics as partial success, not clean success
+Timestamp: 2026-04-15T14:05:00-04:00
+
+**Context**
+- Automatic implementation-log append is now part of active execution-spec completion.
+- In the implemented behavior, log-write failures do not erase the already-completed implementation work, but they also must not be reported as a clean success.
+- The canonical feature spec and the execution spec needed an explicit decision clarifying how this outcome should be represented.
+
+**Decision**
+- When active execution-spec implementation succeeds but the required implementation-log append fails, the result must surface clearly and deterministically as a partial-success outcome such as `completed_with_issues`.
+- This outcome must not be reported as a clean successful completion.
+- Draft specs still remain ineligible for implementation logging.
+
+**Reasoning**
+- A hard clean-failure result would overstate what went wrong by implying the implementation itself did not complete.
+- A clean success would understate what went wrong by hiding the missing required log entry.
+- A partial-success result preserves both truths: implementation completed, but required post-completion logging did not.
+
+**Alternatives Considered**
+- Treat log-write failure as a hard failure of the entire implementation.
+- Ignore log-write failure and report a clean success.
+- Keep log updates manual.
+
+**Impact**
+- The canonical execution-spec-system contract now explicitly allows `completed_with_issues`-style results for implementation-log append failures.
+- `implement spec` remains truthful about execution outcomes without silently skipping required chronology updates.
+- Execution specs and canonical feature docs can align on one clear partial-success model.
 
 **Spec Reference**
 - Goals

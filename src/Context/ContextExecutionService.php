@@ -1039,17 +1039,28 @@ final class ContextExecutionService
         }
 
         $sections = $this->parseSections($contents, ['Non-Goals', 'Constraints']);
-        $negativeItems = array_values(array_merge(
+        $forbiddenItems = array_values(array_merge(
             $this->meaningfulSectionItems($sections['Non-Goals'] ?? ''),
             array_values(array_filter(
                 $this->meaningfulSectionItems($sections['Constraints'] ?? ''),
                 fn(string $item): bool => $this->isNegativeRequirement($item),
             )),
         ));
+        $forbiddenClauses = [];
+
+        foreach ($forbiddenItems as $forbiddenItem) {
+            foreach ($this->forbiddenClauses($forbiddenItem) as $forbiddenClause) {
+                $forbiddenClauses[] = $forbiddenClause;
+            }
+        }
 
         foreach ($executionSpec->instructionItems() as $item) {
-            foreach ($negativeItems as $negativeItem) {
-                if (!$this->itemsConflict($item, $negativeItem)) {
+            if ($this->isNegativeRequirement($item)) {
+                continue;
+            }
+
+            foreach ($forbiddenClauses as $forbiddenClause) {
+                if (!$this->itemsConflict($item, $forbiddenClause)) {
                     continue;
                 }
 
@@ -1081,13 +1092,84 @@ final class ContextExecutionService
             || str_contains($normalized, "can't ");
     }
 
+    /**
+     * @return list<string>
+     */
+    private function forbiddenClauses(string $item): array
+    {
+        $remainder = $this->negativeRequirementRemainder($item);
+        if ($remainder === null) {
+            return [];
+        }
+
+        $head = trim((string) (preg_split('/[;,]/', $remainder, 2)[0] ?? ''));
+        if ($head === '') {
+            return [];
+        }
+
+        $clauses = [];
+        $previousSubject = '';
+
+        foreach (preg_split('/\s+or\s+/i', $head) ?: [] as $candidate) {
+            $clause = trim($candidate, " \t\n\r\0\x0B.");
+            if ($clause === '') {
+                continue;
+            }
+
+            if ($previousSubject !== '') {
+                $clause = preg_replace('/\bthem\b/i', $previousSubject, $clause) ?? $clause;
+            }
+
+            $clauses[] = $clause;
+            $previousSubject = $this->forbiddenClauseSubject($clause);
+        }
+
+        return $clauses === [] ? [$head] : $clauses;
+    }
+
+    private function negativeRequirementRemainder(string $item): ?string
+    {
+        foreach (['do not ', 'must not ', 'never ', 'cannot ', "can't "] as $marker) {
+            $position = stripos($item, $marker);
+            if ($position === false) {
+                continue;
+            }
+
+            return trim(substr($item, $position + strlen($marker)));
+        }
+
+        return null;
+    }
+
+    private function forbiddenClauseSubject(string $clause): string
+    {
+        $matches = [];
+        preg_match_all('/[A-Za-z0-9-]+/', $clause, $matches);
+        $parts = array_values(array_filter(
+            array_map('strval', $matches[0] ?? []),
+            static fn(string $part): bool => $part !== '',
+        ));
+
+        return (string) ($parts[count($parts) - 1] ?? '');
+    }
+
     private function itemsConflict(string $executionItem, string $canonicalItem): bool
     {
         $executionTokens = $this->significantTokens($executionItem);
         $canonicalTokens = $this->significantTokens($canonicalItem);
-        $overlap = array_values(array_intersect($executionTokens, $canonicalTokens));
+        if ($executionTokens === [] || $canonicalTokens === []) {
+            return false;
+        }
 
-        return count($overlap) >= 3;
+        $overlap = array_values(array_intersect($executionTokens, $canonicalTokens));
+        if (count($overlap) < 2) {
+            return false;
+        }
+
+        $executionLeadingTokens = array_slice($executionTokens, 0, min(2, count($executionTokens)));
+        $canonicalLeadingTokens = array_slice($canonicalTokens, 0, min(2, count($canonicalTokens)));
+
+        return array_values(array_intersect($executionLeadingTokens, $canonicalLeadingTokens)) !== [];
     }
 
     /**
@@ -1129,9 +1211,30 @@ final class ContextExecutionService
         ];
 
         return array_values(array_unique(array_filter(
-            array_map('strval', $parts),
+            array_map(fn(string $part): string => $this->normalizeSignificantToken((string) $part), array_map('strval', $parts)),
             static fn(string $part): bool => $part !== '' && !in_array($part, $stopWords, true),
         )));
+    }
+
+    private function normalizeSignificantToken(string $part): string
+    {
+        if (strlen($part) <= 4) {
+            return $part;
+        }
+
+        if (str_ends_with($part, 'ies')) {
+            return substr($part, 0, -3) . 'y';
+        }
+
+        if (str_ends_with($part, 'sses')) {
+            return substr($part, 0, -2);
+        }
+
+        if (str_ends_with($part, 's') && !str_ends_with($part, 'ss') && !str_ends_with($part, 'us')) {
+            return substr($part, 0, -1);
+        }
+
+        return $part;
     }
 
     private function readFile(string $relativePath): string

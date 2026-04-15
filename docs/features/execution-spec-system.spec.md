@@ -13,6 +13,7 @@
 - Provide a deterministic CLI command for creating new draft execution specs.
 - Provide a deterministic CLI command for validating active and draft execution specs against canonical rules.
 - Provide deterministic automatic implementation-log appends for successful active execution-spec completion.
+- Block only real execution-spec contradictions against canonical non-goals and negative constraints.
 
 ## Non-Goals
 - Do not introduce filesystem-specific natural-sort dependencies.
@@ -31,6 +32,7 @@
 - Slug normalization must be deterministic and reject low-information placeholders.
 - Validation must not modify files and must report all detected violations deterministically.
 - Automatic implementation logging must not log draft specs, must prevent duplicate entries, and must surface log-write failures clearly and deterministically.
+- Canonical conflict detection must require stronger evidence than topic-word overlap alone before blocking `implement spec`.
 
 ## Expected Behavior
 - Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`; drafts live under `docs/specs/<feature>/drafts/<id>-<slug>.md`.
@@ -48,6 +50,7 @@
 - Successful `implement spec` runs for active execution specs append one required-format entry to `docs/specs/implementation-log.md`.
 - Draft execution specs are never logged as implemented, and repeated completion of the same active spec does not duplicate the log entry.
 - If the implementation log cannot be updated, `implement spec` must surface that failure clearly and deterministically. It must not report a clean successful completion, and it may return a partial-success status such as `completed_with_issues` when the implementation itself succeeded but required logging could not be completed.
+- Canonical conflict detection evaluates positive execution-spec instructions against forbidden clauses extracted from canonical non-goals and negative constraints, and aligned instructions that merely share topic nouns do not trigger `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC`.
 
 ## Acceptance Criteria
 - Hierarchical padded execution-spec filenames are accepted and parsed deterministically.
@@ -65,6 +68,8 @@
 - Successful active execution-spec implementation appends exactly one correctly formatted implementation-log entry automatically.
 - Draft execution specs are not auto-logged.
 - Implementation-log write failures surface clearly and deterministically and do not appear as a clean successful completion.
+- Execution specs that reinforce canonical behavior without instructing a forbidden action are not blocked by canonical conflict detection.
+- True contradictions against canonical non-goals or negative constraints still return `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC` deterministically.
 
 ## Assumptions
 - Feature directories continue to provide context and execution state.

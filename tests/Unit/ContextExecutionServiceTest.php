@@ -130,6 +130,119 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertSame('EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC', $result['issues'][0]['code']);
     }
 
+    public function test_auto_log_execution_spec_regression_is_not_treated_as_canonical_conflict(): void
+    {
+        $this->writeExecutionSpecSystemContext();
+
+        $conflict = $this->canonicalConflictFor(
+            new ExecutionSpec(
+                specId: 'execution-spec-system/004-spec-auto-log-on-implementation',
+                feature: 'execution-spec-system',
+                path: 'docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md',
+                scope: [
+                    'Hook into the active execution-spec implementation flow.',
+                    'Append entries to docs/specs/implementation-log.md.',
+                    'Enforce required log-entry formatting.',
+                    'Prevent duplicate entries for the same completed implementation event.',
+                ],
+                constraints: [
+                    'Must not log draft specs.',
+                    'Must not duplicate entries for the same implementation event.',
+                    'Must use the required format from docs/specs/README.md.',
+                    'Must be deterministic in structure and behavior.',
+                    'Must surface log-write failures clearly and deterministically.',
+                ],
+                requestedChanges: [
+                    'After successful implementation of an active execution spec, Foundry must automatically append an implementation entry to docs/specs/implementation-log.md.',
+                ],
+            ),
+        );
+
+        $this->assertNull($conflict);
+    }
+
+    public function test_true_canonical_conflict_still_detects_renaming_forbidden_ids(): void
+    {
+        $this->writeMeaningfulContext('execution-spec-system');
+        $specPath = $this->project->root . '/docs/features/execution-spec-system.spec.md';
+        file_put_contents($specPath, <<<MD
+# Feature Spec: execution-spec-system
+
+## Purpose
+
+Keep execution-spec identity deterministic.
+
+## Goals
+
+- Preserve canonical execution-spec ids.
+
+## Non-Goals
+
+- Do not rename existing execution-spec ids once assigned.
+
+## Constraints
+
+- Keep conflict detection deterministic.
+
+## Expected Behavior
+
+- Existing ids remain unchanged.
+
+## Acceptance Criteria
+
+- Renaming existing ids is rejected.
+
+## Assumptions
+
+- Execution specs remain feature-scoped.
+MD);
+
+        $conflict = $this->canonicalConflictFor(
+            new ExecutionSpec(
+                specId: 'execution-spec-system/005-fix-canonical-conflict-detection',
+                feature: 'execution-spec-system',
+                path: 'docs/specs/execution-spec-system/005-fix-canonical-conflict-detection.md',
+                requestedChanges: ['Rename existing execution-spec ids to new padded values.'],
+            ),
+        );
+
+        $this->assertIsArray($conflict);
+        $this->assertSame('EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC', $conflict['issue']['code']);
+    }
+
+    public function test_canonical_conflict_detection_is_deterministic_for_repeated_runs(): void
+    {
+        $this->writeExecutionSpecSystemContext();
+
+        $executionSpec = new ExecutionSpec(
+            specId: 'execution-spec-system/004-spec-auto-log-on-implementation',
+            feature: 'execution-spec-system',
+            path: 'docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md',
+            scope: [
+                'Hook into the active execution-spec implementation flow.',
+                'Append entries to docs/specs/implementation-log.md.',
+                'Enforce required log-entry formatting.',
+                'Prevent duplicate entries for the same completed implementation event.',
+            ],
+            constraints: [
+                'Must not log draft specs.',
+                'Must not duplicate entries for the same implementation event.',
+                'Must use the required format from docs/specs/README.md.',
+                'Must be deterministic in structure and behavior.',
+                'Must surface log-write failures clearly and deterministically.',
+            ],
+            requestedChanges: [
+                'After successful implementation of an active execution spec, Foundry must automatically append an implementation entry to docs/specs/implementation-log.md.',
+            ],
+        );
+
+        $first = $this->canonicalConflictFor($executionSpec);
+        $second = $this->canonicalConflictFor($executionSpec);
+
+        $this->assertSame($first, $second);
+        $this->assertNull($first);
+    }
+
     public function test_execution_spec_repair_mode_reuses_feature_execution_pipeline(): void
     {
         $this->writeMeaningfulContext('event-bus');
@@ -255,6 +368,20 @@ final class ContextExecutionServiceTest extends TestCase
         return new ContextInitService(new Paths($this->project->root));
     }
 
+    /**
+     * @return array{issue:array<string,mixed>,required_actions:list<string>}|null
+     */
+    private function canonicalConflictFor(ExecutionSpec $executionSpec): ?array
+    {
+        $method = new \ReflectionMethod(ContextExecutionService::class, 'canonicalConflictForExecutionSpec');
+        $method->setAccessible(true);
+
+        /** @var array{issue:array<string,mixed>,required_actions:list<string>}|null $result */
+        $result = $method->invoke($this->service(), $executionSpec);
+
+        return $result;
+    }
+
     private function writeMeaningfulContext(string $feature): void
     {
         $this->initService()->init($feature);
@@ -310,6 +437,67 @@ Introduce event bus handling.
 
 - Event bus feature scaffolding exists in the app.
 - Event bus feature files are present.
+MD);
+    }
+
+    private function writeExecutionSpecSystemContext(): void
+    {
+        $this->initService()->init('execution-spec-system');
+
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.spec.md', <<<MD
+# Feature Spec: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Goals
+
+- Preserve canonical execution-spec naming and lifecycle rules.
+
+## Non-Goals
+
+- Do not rename existing execution-spec ids once assigned.
+
+## Constraints
+
+- Automatic implementation logging must not log draft specs, must prevent duplicate entries, and must surface log-write failures clearly and deterministically.
+
+## Expected Behavior
+
+- Successful implement spec runs for active execution specs append one required-format entry to docs/specs/implementation-log.md.
+- Draft execution specs are never logged as implemented, and repeated completion of the same active spec does not duplicate the log entry.
+- If the implementation log cannot be updated, implement spec must surface that failure clearly and deterministically.
+
+## Acceptance Criteria
+
+- Successful active execution-spec implementation appends exactly one correctly formatted implementation-log entry automatically.
+- Draft execution specs are not auto-logged.
+- Implementation-log write failures surface clearly and deterministically and do not appear as a clean successful completion.
+
+## Assumptions
+
+- Feature directories continue to provide execution-spec context.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.md', <<<MD
+# Feature: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Current State
+
+- Implementation-log behavior is under active development.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Finalize deterministic implementation logging.
 MD);
     }
 }

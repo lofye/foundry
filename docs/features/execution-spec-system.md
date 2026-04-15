@@ -1,7 +1,7 @@
 # Feature: execution-spec-system
 
 ## Purpose
-- Define and enforce canonical execution-spec naming, identity, heading, validation, draft-creation, and implementation-log rules.
+- Define and enforce canonical execution-spec naming, identity, heading, validation, draft-creation, implementation-log, and conflict-detection rules.
 
 ## Current State
 - Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`.
@@ -33,6 +33,8 @@
 - Successful `implement spec` runs for active execution specs append exactly one required-format entry to `docs/specs/implementation-log.md`.
 - Auto-logging skips draft execution-spec paths and does not duplicate existing implementation-log entries for the same active spec.
 - Implementation-log write failures surface as `completed_with_issues` instead of a clean successful spec-completion result.
+- Canonical conflict detection now compares positive execution-spec instructions against forbidden clauses extracted from canonical non-goals and negative constraints instead of blocking on topic-word overlap alone.
+- Aligned execution-spec instructions that share nouns with canonical negative requirements are allowed, while true forbidden-action contradictions still block deterministically.
 
 ## Open Questions
 - When should Foundry support explicit child-spec allocation instead of only root allocation?

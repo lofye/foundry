@@ -20,7 +20,7 @@
 - Must not duplicate entries for the same implementation event.
 - Must use the required format from `docs/specs/README.md`.
 - Must be deterministic in structure and behavior.
-- Must fail clearly if logging cannot be completed.
+- Must surface log-write failures clearly and deterministically.
 - Must not silently skip a required log append.
 - Must integrate with the current implementation flow without introducing ambiguous partial-success behavior.
 
@@ -100,9 +100,10 @@ The implementation may choose the most reliable internal strategy, but the user-
 ### 6. Failure Behavior
 
 If the log file cannot be written:
-- fail clearly
+- surface the failure clearly
 - do not silently continue
-- surface a deterministic error
+- do not report a clean successful completion
+- allow a deterministic partial-success result such as `completed_with_issues` when the implementation itself succeeded but the required log append did not
 
 Avoid ambiguous states where implementation appears fully complete but the required implementation log entry was skipped without notice.
 
@@ -120,7 +121,8 @@ Add focused coverage proving:
 - draft specs do not produce log entries
 - duplicate appends do not occur for one implementation event
 - required timestamp format is used
-- write failures fail clearly
+- write failures surface clearly and deterministically
+- write failures do not appear as a clean successful completion
 - log format matches `docs/specs/README.md`
 - all existing related implementation-flow tests still pass
 
@@ -140,7 +142,8 @@ Add focused coverage proving:
 - Successful implementation of an active execution spec appends a correctly formatted implementation-log entry automatically.
 - Draft specs are never logged as implemented.
 - One completed implementation event produces one log entry.
-- Write failures are surfaced clearly.
+- Write failures are surfaced clearly and deterministically.
+- Write failures do not appear as a clean successful completion.
 - Manual log editing is no longer required for normal execution-spec completion.
 - All tests pass.
 

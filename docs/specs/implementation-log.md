@@ -13,3 +13,7 @@
 ## 2026-04-14 23:36:55 -0400
 - spec: execution-spec-system/004-spec-auto-log-on-implementation.md
 - note: Added automatic active-spec implementation logging with idempotent append behavior and clear write-failure reporting.
+
+## 2026-04-15 00:56:26 -0400
+- spec: execution-spec-system/005-fix-canonical-conflict-detection.md
+- note: Narrowed canonical conflict detection so aligned execution specs are not blocked by topic-word overlap while true forbidden-action contradictions still fail deterministically.
