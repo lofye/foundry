@@ -131,8 +131,7 @@ final class ExecutionSpecPlannerTest extends TestCase
             ],
             'completion_signals' => [
                 'Add contract test coverage for the event bus feature.',
-                'docs/features/event-bus.md reflects the completed bounded step.',
-                'verify context --feature=event-bus returns pass after execution.',
+                'docs/features/event-bus.md reflects contract test coverage for the event bus feature.',
             ],
             'post_execution_expectations' => [
                 'Current State reflects the completed bounded work.',
@@ -157,6 +156,68 @@ final class ExecutionSpecPlannerTest extends TestCase
         $plan = $planner->plan('context-persistence', $input);
 
         $this->assertNull($plan);
+    }
+
+    public function test_generic_fallback_candidate_is_rejected_instead_of_emitting_initial_slug(): void
+    {
+        $planner = new ExecutionSpecPlanner();
+        $input = $this->executionInput(
+            currentState: ['Blog feature scaffolding exists in the app.'],
+            nextSteps: ['Add support.'],
+            specTrackingItems: [
+                'Blog feature scaffolding exists in the app.',
+                'Add support.',
+            ],
+        );
+
+        $this->assertNull($planner->plan('blog', $input));
+    }
+
+    public function test_generic_fallback_candidate_is_skipped_when_later_concrete_gap_exists(): void
+    {
+        $planner = new ExecutionSpecPlanner();
+        $input = $this->executionInput(
+            currentState: ['Blog feature scaffolding exists in the app.'],
+            nextSteps: [
+                'Add support.',
+                'Add RSS feed support for published posts.',
+            ],
+            specTrackingItems: [
+                'Blog feature scaffolding exists in the app.',
+                'Add support.',
+                'Add RSS feed support for published posts.',
+            ],
+        );
+
+        $plan = $planner->plan('blog', $input);
+
+        $this->assertIsArray($plan);
+        $this->assertSame('rss-feed-published-posts', $plan['slug']);
+        $this->assertSame(
+            ['Add RSS feed support for published posts.'],
+            $plan['requested_changes'],
+        );
+    }
+
+    public function test_completion_signals_stay_bounded_to_the_planned_step(): void
+    {
+        $planner = new ExecutionSpecPlanner();
+        $input = $this->executionInput(
+            currentState: ['Event bus feature scaffolding exists in the app.'],
+            nextSteps: ['Add contract test coverage for the event bus feature.'],
+            specTrackingItems: [
+                'Event bus feature scaffolding exists in the app.',
+                'Add contract test coverage for the event bus feature.',
+            ],
+        );
+
+        $plan = $planner->plan('event-bus', $input);
+
+        $this->assertIsArray($plan);
+        $this->assertSame([
+            'Add contract test coverage for the event bus feature.',
+            'docs/features/event-bus.md reflects contract test coverage for the event bus feature.',
+        ], $plan['completion_signals']);
     }
 
     /**

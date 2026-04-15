@@ -176,6 +176,37 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: fail closed on generic planner fallback output
+Timestamp: 2026-04-15T15:10:00-04:00
+
+**Context**
+- `plan feature` already blocked abstract planning gaps, but weak candidates could still collapse into low-information fallback slugs such as `initial`.
+- Planner-generated completion signals also still included broad project-health checks that did not verify the bounded step itself.
+
+**Decision**
+- Fail closed when planner output collapses into a generic fallback slug or other low-information execution-spec content.
+- Accept planner candidates only when slug, purpose, scope, requested changes, and completion signals all remain concrete and bounded to the step itself.
+
+**Reasoning**
+- A blocked planning result is safer than writing an execution spec that looks valid but carries almost no actionable information.
+- Slugs and completion signals should reflect the bounded work order itself so generated specs stay trustworthy as the next execution input.
+- Quality-gating planner output keeps determinism intact without introducing speculative or model-driven refinement.
+
+**Alternatives Considered**
+- Keep allowing fallback slugs such as `initial` when no better slug can be derived.
+- Accept broad project-health completion signals as sufficient planner output.
+- Solve weak plans by rewriting canonical context automatically.
+
+**Impact**
+- `plan feature` now blocks low-information fallback specs instead of writing misleading files.
+- Generated execution specs now use completion signals that verify the bounded step itself rather than broad repository health.
+- Concrete bounded plans still generate deterministically when canonical context contains a meaningful next step.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: generalize feature state normalization into a reusable path
 Timestamp: 2026-04-15T13:31:49-04:00
 

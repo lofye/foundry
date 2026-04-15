@@ -29,6 +29,8 @@
 - Execution spec conflicts do not override canonical feature authority.
 - `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec when a concrete gap exists.
 - `plan feature` generates non-tautological purpose, scope, requested changes, and slug output for concrete gaps.
+- `plan feature` blocks generic fallback specs and weak slug candidates instead of writing low-information execution specs.
+- `plan feature` now uses bounded completion signals and rejects low-information purpose, scope, requested changes, or completion signals before rendering an execution spec.
 - `plan feature` fails clearly when context cannot proceed or when no bounded next step can be derived.
 - `plan feature` blocks rather than generating vague or self-referential execution specs when only abstract or non-actionable gaps remain.
 - `plan feature` creates an execution spec that is immediately usable by `implement spec`.

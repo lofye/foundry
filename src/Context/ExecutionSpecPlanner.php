@@ -6,6 +6,14 @@ namespace Foundry\Context;
 
 final class ExecutionSpecPlanner
 {
+    private const array GENERIC_FALLBACK_SLUGS = [
+        'ensure',
+        'improve',
+        'initial',
+        'support',
+        'update',
+    ];
+
     private const array ACTIONABLE_LEADING_VERBS = [
         'add',
         'append',
@@ -39,6 +47,28 @@ final class ExecutionSpecPlanner
         'preserve',
         'remain',
         'support',
+    ];
+
+    private const array LOW_INFORMATION_TOKENS = [
+        'behavior',
+        'canonical',
+        'change',
+        'changes',
+        'feature',
+        'handling',
+        'improve',
+        'initial',
+        'logic',
+        'output',
+        'planner',
+        'planning',
+        'step',
+        'steps',
+        'support',
+        'system',
+        'systems',
+        'update',
+        'work',
     ];
 
     private const array STOP_WORDS = [
@@ -145,49 +175,23 @@ final class ExecutionSpecPlanner
             $unimplementedSpecItems[] = $item;
         }
 
-        $candidate = $this->firstMeaningfulSpecGap($unimplementedSpecItems, $nextStepItems, $ignoredTokens);
-
-        if ($candidate === null) {
-            return null;
+        foreach ($this->candidateGaps($unimplementedSpecItems, $nextStepItems, $ignoredTokens) as $candidate) {
+            $plan = $this->planFromCandidate($featureName, $candidate);
+            if ($plan !== null) {
+                return $plan;
+            }
         }
 
-        $requestedChange = $this->requestedChangeFromCandidate($candidate);
-        if ($requestedChange === null) {
-            return null;
-        }
-
-        $focus = $this->focusFromText($requestedChange);
-        $scope = $this->scopeFromCandidate($featureName, $candidate, $focus);
-        $purpose = $this->purposeFromFocus($focus);
-        $slug = $this->slugFromText($focus === '' ? $requestedChange : $focus, $featureName);
-
-        if ($this->isTautologicalOutput($purpose, $scope, $requestedChange)) {
-            return null;
-        }
-
-        return [
-            'slug' => $slug,
-            'purpose' => $purpose,
-            'scope' => [$scope],
-            'constraints' => [
-                'Keep canonical feature context authoritative.',
-                'Keep generated execution specs secondary to canonical feature truth.',
-                'Keep this work deterministic and bounded to one coherent step.',
-                'Respect prior decisions recorded in docs/features/' . $featureName . '.decisions.md.',
-            ],
-            'requested_changes' => [$requestedChange],
-            'non_goals' => $this->nonGoals($scope),
-            'completion_signals' => $this->completionSignals($featureName, $requestedChange),
-            'post_execution_expectations' => $this->postExecutionExpectations($featureName),
-        ];
+        return null;
     }
 
     /**
      * @param list<string> $specItems
      * @param list<string> $nextStepItems
      * @param list<string> $ignoredTokens
+     * @return list<string>
      */
-    private function firstMeaningfulSpecGap(array $specItems, array $nextStepItems, array $ignoredTokens): ?string
+    private function candidateGaps(array $specItems, array $nextStepItems, array $ignoredTokens): array
     {
         $preferred = [];
         $fallback = [];
@@ -204,13 +208,62 @@ final class ExecutionSpecPlanner
             }
         }
 
-        foreach (array_merge($preferred, $fallback) as $item) {
-            if ($this->requestedChangeFromCandidate($item) !== null) {
-                return $item;
-            }
+        return array_values(array_merge($preferred, $fallback));
+    }
+
+    /**
+     * @return array{
+     *     slug:string,
+     *     purpose:string,
+     *     scope:list<string>,
+     *     constraints:list<string>,
+     *     requested_changes:list<string>,
+     *     non_goals:list<string>,
+     *     completion_signals:list<string>,
+     *     post_execution_expectations:list<string>
+     * }|null
+     */
+    private function planFromCandidate(string $featureName, string $candidate): ?array
+    {
+        $requestedChange = $this->requestedChangeFromCandidate($candidate);
+        if ($requestedChange === null) {
+            return null;
         }
 
-        return null;
+        $focus = $this->focusFromText($requestedChange);
+        if (!$this->hasConcreteContent($focus, $featureName)) {
+            return null;
+        }
+
+        $scope = $this->scopeFromCandidate($featureName, $candidate, $focus);
+        $purpose = $this->purposeFromFocus($focus);
+        $slug = $this->slugFromText($focus === '' ? $requestedChange : $focus, $featureName);
+        $completionSignals = $this->completionSignals($featureName, $requestedChange, $focus);
+
+        if ($slug === null
+            || $this->isTautologicalOutput($purpose, $scope, $requestedChange)
+            || !$this->hasConcreteContent($purpose, $featureName)
+            || !$this->hasConcreteContent($scope, $featureName)
+            || $this->completionSignalsAreTooGeneric($completionSignals, $featureName)
+        ) {
+            return null;
+        }
+
+        return [
+            'slug' => $slug,
+            'purpose' => $purpose,
+            'scope' => [$scope],
+            'constraints' => [
+                'Keep canonical feature context authoritative.',
+                'Keep generated execution specs secondary to canonical feature truth.',
+                'Keep this work deterministic and bounded to one coherent step.',
+                'Respect prior decisions recorded in docs/features/' . $featureName . '.decisions.md.',
+            ],
+            'requested_changes' => [$requestedChange],
+            'non_goals' => $this->nonGoals($scope),
+            'completion_signals' => $completionSignals,
+            'post_execution_expectations' => $this->postExecutionExpectations($featureName),
+        ];
     }
 
     /**
@@ -227,13 +280,18 @@ final class ExecutionSpecPlanner
     /**
      * @return list<string>
      */
-    private function completionSignals(string $featureName, string $requestedChange): array
+    private function completionSignals(string $featureName, string $requestedChange, string $focus): array
     {
-        return [
+        $signals = [
             $requestedChange,
-            'docs/features/' . $featureName . '.md reflects the completed bounded step.',
-            'verify context --feature=' . $featureName . ' returns pass after execution.',
         ];
+
+        $focus = trim(rtrim($focus, '.'));
+        if ($focus !== '') {
+            $signals[] = 'docs/features/' . $featureName . '.md reflects ' . $focus . '.';
+        }
+
+        return $signals;
     }
 
     /**
@@ -373,10 +431,6 @@ final class ExecutionSpecPlanner
     {
         $focus = trim($focus);
 
-        if ($focus === '') {
-            return 'Current State does not yet reflect this canonical requirement, so this is the next bounded step now.';
-        }
-
         return 'Current State does not yet reflect ' . $focus . ', so this is the next bounded step now.';
     }
 
@@ -468,7 +522,7 @@ final class ExecutionSpecPlanner
         return ucfirst(str_replace('-', ' ', $featureName));
     }
 
-    private function slugFromText(string $text, string $featureName): string
+    private function slugFromText(string $text, string $featureName): ?string
     {
         $featureTokens = array_values(array_filter(explode('-', $featureName)));
         $ignored = array_values(array_unique(array_merge(
@@ -476,6 +530,7 @@ final class ExecutionSpecPlanner
             self::SLUG_NOISE,
             self::GENERIC_LEADING_WORDS,
             self::ACTIONABLE_LEADING_VERBS,
+            self::LOW_INFORMATION_TOKENS,
             $featureTokens,
         )));
 
@@ -485,8 +540,61 @@ final class ExecutionSpecPlanner
         ));
 
         $tokens = array_slice($tokens, 0, 4);
+        if ($tokens === []) {
+            return null;
+        }
 
-        return $tokens === [] ? 'initial' : implode('-', $tokens);
+        $slug = implode('-', $tokens);
+
+        return in_array($slug, self::GENERIC_FALLBACK_SLUGS, true) ? null : $slug;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function meaningfulContentTokens(string $text, string $featureName): array
+    {
+        $featureTokens = array_values(array_filter(explode('-', $featureName)));
+        $ignored = array_values(array_unique(array_merge(
+            self::STOP_WORDS,
+            self::GENERIC_LEADING_WORDS,
+            self::ACTIONABLE_LEADING_VERBS,
+            $featureTokens,
+        )));
+
+        return array_values(array_filter(
+            $this->tokens($this->normalizedText($text), $ignored),
+            static fn(string $token): bool => $token !== '',
+        ));
+    }
+
+    private function hasConcreteContent(string $text, string $featureName): bool
+    {
+        $tokens = $this->meaningfulContentTokens($text, $featureName);
+        if ($tokens === []) {
+            return false;
+        }
+
+        return array_diff($tokens, self::LOW_INFORMATION_TOKENS) !== [];
+    }
+
+    /**
+     * @param list<string> $completionSignals
+     */
+    private function completionSignalsAreTooGeneric(array $completionSignals, string $featureName): bool
+    {
+        foreach ($completionSignals as $signal) {
+            $normalized = $this->normalizedText($signal);
+            if ($normalized === '' || str_contains($normalized, 'verify context ')) {
+                return true;
+            }
+
+            if (!$this->hasConcreteContent($signal, $featureName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

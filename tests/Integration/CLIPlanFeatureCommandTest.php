@@ -127,6 +127,19 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertSame('PLANNING_NO_BOUNDED_STEP', $result['payload']['issues'][0]['code']);
     }
 
+    public function test_plan_feature_blocks_generic_fallback_spec_instead_of_writing_it(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeGenericFallbackPlanningContext('event-bus');
+
+        $result = $this->runCommand(['foundry', 'plan', 'feature', 'event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertSame('PLANNING_NO_BOUNDED_STEP', $result['payload']['issues'][0]['code']);
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/001-support.md');
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
@@ -323,6 +336,61 @@ Preserve feature intent across sessions.
 ## Next Steps
 
 - Keep later execution systems safely consumable from canonical feature context files.
+MD);
+    }
+
+    private function writeGenericFallbackPlanningContext(string $feature): void
+    {
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+# Feature Spec: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Goals
+
+- Add deterministic event bus feature scaffolding.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Constraints
+
+- Keep output deterministic.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Add support.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+# Feature: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Current State
+
+- Event bus feature scaffolding exists in the app.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Add support.
 MD);
     }
 }

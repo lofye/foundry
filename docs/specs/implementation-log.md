@@ -33,3 +33,7 @@
 ## 2026-04-15 13:31:49 -0400
 - spec: context-persistence/015.003-generalize-state-normalization-rules.md
 - note: Added a reusable state-document normalizer and integrated it into the framework-owned state update path for deterministic section ordering and conservative stale-bullet cleanup.
+
+## 2026-04-15 15:10:00 -0400
+- spec: context-persistence/016-planner-generic-fallback-blocking-and-slug-hardening.md
+- note: Blocked generic fallback planner output, removed the `initial` slug fallback, and tightened bounded completion-signal and content-quality gates before execution specs are written.

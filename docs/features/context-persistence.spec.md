@@ -61,6 +61,10 @@
 - Plan feature uses canonical feature context as authoritative planning input.
 - Plan feature derives concrete planning gaps from Expected Behavior versus Current State.
 - Plan feature generates non-tautological purpose, scope, requested changes, and slug output for concrete gaps.
+- Plan feature blocks when the next candidate collapses into a generic fallback slug or title rather than bounded work.
+- Plan feature derives slugs only from concrete bounded work and fails closed when no meaningful slug can be derived.
+- Plan feature rejects low-information purpose, scope, requested changes, or completion signals rather than writing a weak execution spec.
+- Plan feature uses completion signals that describe the bounded step itself rather than broad project-health signals.
 - Plan feature fails clearly when context cannot proceed or when no bounded next step can be derived.
 - Plan feature blocks when only abstract or non-actionable gaps remain.
 - Planner output is deterministic and reproducible for identical canonical inputs.
@@ -92,6 +96,8 @@
 - Plan feature returns deterministic planned or blocked results.
 - Plan feature creates an execution spec that is immediately usable by implement spec.
 - Plan feature blocks rather than generating vague or self-referential execution specs.
+- Plan feature blocks generic fallback slugs and low-information execution-spec candidates instead of writing them.
+- Planned completion signals remain bounded to the requested step rather than broad project-health checks.
 - Identical canonical planning inputs produce identical planning outputs.
 - Generated execution specs match the canonical stub structure exactly.
 - Implement spec rejects noncanonical execution-spec headings.

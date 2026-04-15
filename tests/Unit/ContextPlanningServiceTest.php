@@ -84,8 +84,7 @@ final class ContextPlanningServiceTest extends TestCase
 
 ## Completion Signals
 - Add contract test coverage for the event bus feature.
-- docs/features/event-bus.md reflects the completed bounded step.
-- verify context --feature=event-bus returns pass after execution.
+- docs/features/event-bus.md reflects contract test coverage for the event bus feature.
 
 ## Post-Execution Expectations
 - Current State reflects the completed bounded work.
@@ -188,6 +187,19 @@ MD);
             'Update docs/features/context-persistence.spec.md or docs/features/context-persistence.md so there is a concrete actionable gap between Expected Behavior and Current State.',
             $result['required_actions'],
         );
+    }
+
+    public function test_planning_blocks_generic_fallback_slug_and_does_not_write_execution_spec(): void
+    {
+        $this->writeGenericFallbackPlanningContext('event-bus');
+
+        $result = $this->service()->plan('event-bus')->toArray();
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('PLANNING_NO_BOUNDED_STEP', $result['issues'][0]['code']);
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/001-support.md');
     }
 
     public function test_blocked_planning_response_is_identical_across_repeated_runs(): void
@@ -427,6 +439,63 @@ Preserve feature intent across sessions.
 ## Next Steps
 
 - Keep later execution systems safely consumable from canonical feature context files.
+MD);
+    }
+
+    private function writeGenericFallbackPlanningContext(string $feature): void
+    {
+        $this->initService()->init($feature);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+# Feature Spec: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Goals
+
+- Add deterministic event bus feature scaffolding.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Constraints
+
+- Keep output deterministic.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Add support.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+# Feature: {$feature}
+
+## Purpose
+
+Introduce event bus handling.
+
+## Current State
+
+- Event bus feature scaffolding exists in the app.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Add support.
 MD);
     }
 }
