@@ -37,3 +37,7 @@
 ## 2026-04-15 15:10:00 -0400
 - spec: context-persistence/016-planner-generic-fallback-blocking-and-slug-hardening.md
 - note: Blocked generic fallback planner output, removed the `initial` slug fallback, and tightened bounded completion-signal and content-quality gates before execution specs are written.
+
+## 2026-04-15 16:05:00 -0400
+- spec: context-persistence/017-conflict-detection-prohibition-awareness.md
+- note: Made canonical execution-spec conflict detection polarity-aware, preserved nested negative lead-in context, and tightened blocking to true opposing-polarity contradictions with substantially similar target actions.

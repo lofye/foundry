@@ -25,6 +25,8 @@
 - `implement feature` returns deterministic blocked, repaired, completed, or `completed_with_issues` results.
 - `implement spec` resolves execution specs from `docs/specs/<feature>/<id>-<slug>.md` and reuses the existing feature execution pipeline.
 - `implement spec` now validates filename-only execution-spec headings and accepts padded hierarchical ids.
+- `implement spec` canonical conflict detection now compares instruction clauses with polarity awareness, requires opposing polarity plus a substantially similar target action before blocking, and no longer treats shared topic words alone as contradiction evidence.
+- Nested execution-spec prohibition bullets preserve full negative context through conflict detection, so aligned prohibitions stay unblocked while true opposing-polarity contradictions still fail.
 - `implement spec` records that execution was driven by a specific execution spec without changing canonical authority.
 - Execution spec conflicts do not override canonical feature authority.
 - `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec when a concrete gap exists.

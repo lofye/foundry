@@ -1081,98 +1081,106 @@ final class ContextExecutionService
             return null;
         }
 
-        $sections = $this->parseSections($contents, ['Non-Goals', 'Constraints']);
-        $forbiddenItems = array_values(array_merge(
+        $sections = $this->parseSections($contents, ['Non-Goals', 'Constraints', 'Expected Behavior', 'Acceptance Criteria']);
+        $canonicalItems = array_values(array_merge(
             $this->meaningfulSectionItems($sections['Non-Goals'] ?? ''),
-            array_values(array_filter(
-                $this->meaningfulSectionItems($sections['Constraints'] ?? ''),
-                fn(string $item): bool => $this->isNegativeRequirement($item),
-            )),
+            $this->meaningfulSectionItems($sections['Constraints'] ?? ''),
+            $this->meaningfulSectionItems($sections['Expected Behavior'] ?? ''),
+            $this->meaningfulSectionItems($sections['Acceptance Criteria'] ?? ''),
         ));
-        $forbiddenClauses = [];
+        $canonicalClauses = [];
 
-        foreach ($forbiddenItems as $forbiddenItem) {
-            foreach ($this->forbiddenClauses($forbiddenItem) as $forbiddenClause) {
-                $forbiddenClauses[] = $forbiddenClause;
+        foreach ($canonicalItems as $canonicalItem) {
+            foreach ($this->instructionClauses($canonicalItem) as $clause) {
+                $canonicalClauses[] = $clause;
             }
         }
 
         foreach ($executionSpec->instructionItems() as $item) {
-            if ($this->isNegativeRequirement($item)) {
-                continue;
-            }
+            foreach ($this->instructionClauses($item) as $executionClause) {
+                foreach ($canonicalClauses as $canonicalClause) {
+                    if (!$this->itemsConflict($executionClause, $canonicalClause)) {
+                        continue;
+                    }
 
-            foreach ($forbiddenClauses as $forbiddenClause) {
-                if (!$this->itemsConflict($item, $forbiddenClause)) {
-                    continue;
+                    return [
+                        'issue' => [
+                            'code' => 'EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC',
+                            'message' => 'Execution spec instructions conflict with the canonical feature spec.',
+                            'file_path' => $executionSpec->path,
+                        ],
+                        'required_actions' => [
+                            'Update the execution spec so it no longer conflicts with docs/features/' . $executionSpec->feature . '.spec.md.',
+                            'If intended behavior changed, update the canonical feature spec and log a decision before rerunning implement spec.',
+                        ],
+                    ];
                 }
-
-                return [
-                    'issue' => [
-                        'code' => 'EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC',
-                        'message' => 'Execution spec instructions conflict with the canonical feature spec.',
-                        'file_path' => $executionSpec->path,
-                    ],
-                    'required_actions' => [
-                        'Update the execution spec so it no longer conflicts with docs/features/' . $executionSpec->feature . '.spec.md.',
-                        'If intended behavior changed, update the canonical feature spec and log a decision before rerunning implement spec.',
-                    ],
-                ];
             }
         }
 
         return null;
     }
 
+    private function instructionPolarity(string $item): string
+    {
+        $normalized = ' ' . strtolower(str_replace('-', ' ', $item)) . ' ';
+
+        if (
+            str_contains($normalized, ' do not ')
+            || str_contains($normalized, ' does not ')
+            || str_contains($normalized, ' did not ')
+            || str_contains($normalized, ' must not ')
+            || str_contains($normalized, ' never ')
+            || str_contains($normalized, ' cannot ')
+            || str_contains($normalized, " can't ")
+            || preg_match('/\b(?:is|are|remain|remains|stay|stays)\s+not\b/', $normalized) === 1
+            || preg_match('/\b(?:is|are|remain|remains|stay|stays)\s+non\b/', $normalized) === 1
+        ) {
+            return 'negative';
+        }
+
+        if (
+            preg_match('/\bmay\b/', $normalized) === 1
+            || preg_match('/\bcan\b/', $normalized) === 1
+        ) {
+            return 'neutral';
+        }
+
+        return 'positive';
+    }
+
     private function isNegativeRequirement(string $item): bool
     {
-        $normalized = strtolower($item);
-
-        return str_contains($normalized, 'do not')
-            || str_contains($normalized, 'must not')
-            || str_contains($normalized, 'never ')
-            || str_contains($normalized, 'cannot ')
-            || str_contains($normalized, "can't ");
+        return $this->instructionPolarity($item) === 'negative';
     }
 
     /**
      * @return list<string>
      */
-    private function forbiddenClauses(string $item): array
+    private function instructionClauses(string $item): array
     {
-        $remainder = $this->negativeRequirementRemainder($item);
-        if ($remainder === null) {
-            return [];
-        }
-
-        $head = trim((string) (preg_split('/[;,]/', $remainder, 2)[0] ?? ''));
-        if ($head === '') {
-            return [];
-        }
-
         $clauses = [];
-        $previousSubject = '';
-
-        foreach (preg_split('/\s+or\s+/i', $head) ?: [] as $candidate) {
-            $clause = trim($candidate, " \t\n\r\0\x0B.");
-            if ($clause === '') {
+        foreach (preg_split('/[;,]/', $item) ?: [] as $segment) {
+            $segment = trim($segment, " \t\n\r\0\x0B.");
+            $segment = preg_replace('/^(?:and|or)\s+/i', '', $segment) ?? $segment;
+            if ($segment === '') {
                 continue;
             }
 
-            if ($previousSubject !== '') {
-                $clause = preg_replace('/\bthem\b/i', $previousSubject, $clause) ?? $clause;
-            }
-
-            $clauses[] = $clause;
-            $previousSubject = $this->forbiddenClauseSubject($clause);
+            $clauses[] = $segment;
         }
 
-        return $clauses === [] ? [$head] : $clauses;
+        if ($clauses === []) {
+            $trimmed = trim($item, " \t\n\r\0\x0B.");
+            return $trimmed === '' ? [] : [$trimmed];
+        }
+
+        return $clauses;
     }
 
-    private function negativeRequirementRemainder(string $item): ?string
+    private function instructionCoreText(string $item): string
     {
-        foreach (['do not ', 'must not ', 'never ', 'cannot ', "can't "] as $marker) {
+        foreach (['do not ', 'must not ', 'never ', 'cannot ', "can't ", 'must '] as $marker) {
             $position = stripos($item, $marker);
             if ($position === false) {
                 continue;
@@ -1181,38 +1189,164 @@ final class ContextExecutionService
             return trim(substr($item, $position + strlen($marker)));
         }
 
-        return null;
-    }
+        if (preg_match('/\b(?:is|are|remain|remains|stay|stays)\s+(.+)$/i', $item, $matches) === 1) {
+            return trim((string) ($matches[1] ?? ''));
+        }
 
-    private function forbiddenClauseSubject(string $clause): string
-    {
-        $matches = [];
-        preg_match_all('/[A-Za-z0-9-]+/', $clause, $matches);
-        $parts = array_values(array_filter(
-            array_map('strval', $matches[0] ?? []),
-            static fn(string $part): bool => $part !== '',
-        ));
-
-        return (string) ($parts[count($parts) - 1] ?? '');
+        return trim($item);
     }
 
     private function itemsConflict(string $executionItem, string $canonicalItem): bool
     {
-        $executionTokens = $this->significantTokens($executionItem);
-        $canonicalTokens = $this->significantTokens($canonicalItem);
-        if ($executionTokens === [] || $canonicalTokens === []) {
+        $executionPolarity = $this->instructionPolarity($executionItem);
+        $canonicalPolarity = $this->instructionPolarity($canonicalItem);
+
+        if (
+            $executionPolarity === 'neutral'
+            || $canonicalPolarity === 'neutral'
+            || $executionPolarity === $canonicalPolarity
+        ) {
             return false;
         }
 
-        $overlap = array_values(array_intersect($executionTokens, $canonicalTokens));
-        if (count($overlap) < 2) {
+        $executionActionTokens = $this->instructionActionTokens($executionItem);
+        $canonicalActionTokens = $this->instructionActionTokens($canonicalItem);
+        if (
+            $executionActionTokens === []
+            || $canonicalActionTokens === []
+            || array_values(array_intersect($executionActionTokens, $canonicalActionTokens)) === []
+        ) {
             return false;
         }
 
-        $executionLeadingTokens = array_slice($executionTokens, 0, min(2, count($executionTokens)));
-        $canonicalLeadingTokens = array_slice($canonicalTokens, 0, min(2, count($canonicalTokens)));
+        $executionTargetTokens = $this->instructionTargetTokens($executionItem);
+        $canonicalTargetTokens = $this->instructionTargetTokens($canonicalItem);
+        $executionQualifiers = $this->instructionQualifierTokens($executionTargetTokens);
+        $canonicalQualifiers = $this->instructionQualifierTokens($canonicalTargetTokens);
+        if (
+            $executionQualifiers !== []
+            && $canonicalQualifiers !== []
+            && array_values(array_intersect($executionQualifiers, $canonicalQualifiers)) === []
+        ) {
+            return false;
+        }
 
-        return array_values(array_intersect($executionLeadingTokens, $canonicalLeadingTokens)) !== [];
+        $targetOverlap = array_values(array_intersect($executionTargetTokens, $canonicalTargetTokens));
+
+        return count($targetOverlap) >= 2;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function instructionActionTokens(string $item): array
+    {
+        $coreTokens = $this->significantTokens($this->instructionCoreText($item));
+        $keywords = [
+            'accept',
+            'add',
+            'append',
+            'authority',
+            'block',
+            'create',
+            'delete',
+            'detect',
+            'duplicate',
+            'execute',
+            'fail',
+            'generate',
+            'initialize',
+            'log',
+            'prevent',
+            'record',
+            'reject',
+            'rename',
+            'render',
+            'resolve',
+            'return',
+            'reuse',
+            'scaffold',
+            'surface',
+            'update',
+            'validate',
+            'verify',
+            'write',
+            'override',
+        ];
+
+        $actionTokens = [];
+        foreach ($coreTokens as $token) {
+            if (!in_array($token, $keywords, true)) {
+                continue;
+            }
+
+            $actionTokens[] = $token;
+            break;
+        }
+
+        $allTokens = $this->significantTokens($item);
+        if (in_array('append', $actionTokens, true) && array_values(array_intersect($allTokens, ['entry', 'log'])) !== []) {
+            $actionTokens[] = 'log';
+        }
+
+        if ($actionTokens === [] && $coreTokens !== []) {
+            $actionTokens[] = (string) $coreTokens[0];
+        }
+
+        return array_values(array_unique($actionTokens));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function instructionTargetTokens(string $item): array
+    {
+        $tokens = $this->significantTokens($item);
+        $actionTokens = $this->instructionActionTokens($item);
+        $noise = [
+            'artifact',
+            'automatic',
+            'canonical',
+            'clearly',
+            'current',
+            'deterministic',
+            'deterministically',
+            'docs',
+            'feature',
+            'framework',
+            'implementation',
+            'md',
+            'meaningful',
+            'planning',
+            'required',
+            'state',
+            'step',
+            'steps',
+        ];
+
+        return array_values(array_filter(
+            $tokens,
+            static fn(string $token): bool => !in_array($token, $actionTokens, true)
+                && !in_array($token, $noise, true),
+        ));
+    }
+
+    /**
+     * @param list<string> $tokens
+     * @return list<string>
+     */
+    private function instructionQualifierTokens(array $tokens): array
+    {
+        return array_values(array_intersect($tokens, [
+            'active',
+            'after',
+            'before',
+            'draft',
+            'failed',
+            'partial',
+            'same',
+            'successful',
+        ]));
     }
 
     /**
@@ -1230,6 +1364,9 @@ final class ContextExecutionService
             'as',
             'be',
             'by',
+            'did',
+            'do',
+            'does',
             'for',
             'from',
             'if',
@@ -1239,6 +1376,7 @@ final class ContextExecutionService
             'it',
             'may',
             'must',
+            'non',
             'not',
             'of',
             'on',
@@ -1260,6 +1398,23 @@ final class ContextExecutionService
     }
 
     private function normalizeSignificantToken(string $part): string
+    {
+        return match ($part) {
+            'appended', 'appending' => 'append',
+            'authority', 'authoritative' => 'authority',
+            'executed', 'executing', 'executable' => 'execute',
+            'ids' => 'id',
+            'logged', 'logging' => 'log',
+            'renamed', 'renaming' => 'rename',
+            'returned', 'returning' => 'return',
+            'validated', 'validating', 'validation', 'validator', 'validators' => 'validate',
+            'verified', 'verifying', 'verification' => 'verify',
+            'written', 'writing' => 'write',
+            default => $this->normalizePluralSignificantToken($part),
+        };
+    }
+
+    private function normalizePluralSignificantToken(string $part): string
     {
         if (strlen($part) <= 4) {
             return $part;

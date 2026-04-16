@@ -56,6 +56,9 @@
 - Execution spec headings mirror the filename only using `# Execution Spec: <id>-<slug>`.
 - Implement spec reuses the existing feature execution pipeline rather than creating a second execution policy path.
 - Implement spec blocks when execution-spec instructions conflict with canonical feature truth.
+- Implement spec conflict detection is polarity-aware and does not treat equivalent prohibitions as contradictions.
+- Implement spec conflict detection requires opposing polarity plus a substantially similar target action before blocking.
+- Parsed execution-spec prohibition bullets preserve their negative parent context when conflict checks evaluate nested instruction items.
 - Implement spec records that execution was driven by a specific execution spec without changing canonical authority.
 - Plan feature generates the next bounded execution spec deterministically under `docs/specs/<feature>/<id>-<slug>.md`, where `<id>` uses one or more dot-separated 3-digit segments.
 - Plan feature uses canonical feature context as authoritative planning input.
@@ -93,6 +96,8 @@
 - Implement spec executes a discrete implementation spec without bypassing canonical context validation.
 - Implement spec returns deterministic blocked, repaired, completed, or completed_with_issues results aligned with implement feature.
 - Execution spec conflicts do not override canonical feature authority.
+- Equivalent prohibition wording is not blocked as a canonical conflict.
+- True instruction contradictions with opposing polarity still block deterministically.
 - Plan feature returns deterministic planned or blocked results.
 - Plan feature creates an execution spec that is immediately usable by implement spec.
 - Plan feature blocks rather than generating vague or self-referential execution specs.

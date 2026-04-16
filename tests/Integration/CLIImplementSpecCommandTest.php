@@ -146,6 +146,78 @@ MD);
         );
     }
 
+    public function test_negative_execution_spec_instruction_that_opposes_canonical_requirement_is_blocked(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'execution-spec-system', '--json']);
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.spec.md', <<<'MD'
+# Feature Spec: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Goals
+
+- Preserve canonical execution-spec lifecycle rules.
+
+## Non-Goals
+
+- Do not rename existing execution-spec ids once assigned.
+
+## Constraints
+
+- Keep conflict detection deterministic.
+
+## Expected Behavior
+
+- Active execution specs append one implementation-log entry after successful implementation.
+
+## Acceptance Criteria
+
+- Successful active execution-spec implementation appends exactly one implementation-log entry automatically.
+
+## Assumptions
+
+- Feature directories continue to provide execution-spec context.
+MD);
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.md', <<<'MD'
+# Feature: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Current State
+
+- Implementation-log behavior is under active development.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Finalize deterministic implementation logging.
+MD);
+        $this->writeExecutionSpec(
+            'execution-spec-system',
+            '017-conflict-detection-prohibition-awareness',
+            requestedChanges: ['Do not append implementation-log entries for active execution specs.'],
+        );
+
+        $result = $this->runCommand([
+            'foundry',
+            'implement',
+            'spec',
+            'execution-spec-system/017-conflict-detection-prohibition-awareness',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertSame('EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC', $result['payload']['issues'][0]['code']);
+    }
+
     public function test_framework_repository_execution_spec_is_blocked_before_app_feature_scaffolding(): void
     {
         $frameworkRoot = dirname(__DIR__, 2);

@@ -176,6 +176,37 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: make canonical conflict detection prohibition-aware
+Timestamp: 2026-04-15T16:05:00-04:00
+
+**Context**
+- Canonical conflict detection already blocked obvious execution-spec contradictions, but it still relied too heavily on shared topic words when prohibition language was involved.
+- Equivalent negative formulations such as `Do not append log entries for draft specs.` and `must not log draft specs` could still look contradictory if the detector ignored polarity and narrowed clauses down to overlapping nouns.
+
+**Decision**
+- Compare canonical and execution-spec instruction clauses with explicit polarity awareness.
+- Treat aligned prohibitions as non-conflicting, require opposing polarity before blocking, and preserve nested negative lead-in context in parsed execution-spec instruction items.
+
+**Reasoning**
+- Shared nouns such as `log`, `entries`, or `draft specs` are not enough to prove a contradiction without polarity and target alignment.
+- Preserving full negative clause context keeps conflict checks deterministic while avoiding false positives from orphaned bullet fragments.
+- Tightening the matcher is safer than weakening the blocked-result contract around real canonical conflicts.
+
+**Alternatives Considered**
+- Keep relying on shared lexical overlap plus stripped forbidden clauses.
+- Add broader semantic or LLM-based contradiction detection.
+- Suppress conflict checks for all negative execution-spec instructions.
+
+**Impact**
+- Equivalent prohibitions are no longer blocked as canonical conflicts.
+- True contradictions with opposing polarity and substantially similar target actions still fail deterministically.
+- Execution-spec workflows are less noisy and more trustworthy when canonical rules use prohibition language.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: fail closed on generic planner fallback output
 Timestamp: 2026-04-15T15:10:00-04:00
 

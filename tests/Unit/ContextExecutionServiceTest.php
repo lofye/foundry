@@ -143,6 +143,149 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertNull($conflict);
     }
 
+    public function test_equivalent_prohibitions_are_treated_as_aligned_not_conflicting(): void
+    {
+        $this->writeMeaningfulContext('execution-spec-system');
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.spec.md', <<<MD
+# Feature Spec: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Goals
+
+- Preserve canonical execution-spec lifecycle rules.
+
+## Non-Goals
+
+- Do not log draft specs as implemented.
+
+## Constraints
+
+- Keep conflict detection deterministic.
+
+## Expected Behavior
+
+- Active execution specs are logged after successful implementation.
+
+## Acceptance Criteria
+
+- Draft specs are not auto-logged.
+
+## Assumptions
+
+- Feature directories continue to provide execution-spec context.
+MD);
+
+        $conflict = $this->canonicalConflictFor(
+            new ExecutionSpec(
+                specId: 'execution-spec-system/017-conflict-detection-prohibition-awareness',
+                feature: 'execution-spec-system',
+                path: 'docs/specs/execution-spec-system/017-conflict-detection-prohibition-awareness.md',
+                requestedChanges: ['Do not append log entries for draft specs.'],
+            ),
+        );
+
+        $this->assertNull($conflict);
+    }
+
+    public function test_positive_execution_instruction_conflicts_with_canonical_prohibition(): void
+    {
+        $this->writeMeaningfulContext('execution-spec-system');
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.spec.md', <<<MD
+# Feature Spec: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Goals
+
+- Preserve canonical execution-spec lifecycle rules.
+
+## Non-Goals
+
+- Do not log draft specs as implemented.
+
+## Constraints
+
+- Keep conflict detection deterministic.
+
+## Expected Behavior
+
+- Active execution specs are logged after successful implementation.
+
+## Acceptance Criteria
+
+- Draft specs are not auto-logged.
+
+## Assumptions
+
+- Feature directories continue to provide execution-spec context.
+MD);
+
+        $conflict = $this->canonicalConflictFor(
+            new ExecutionSpec(
+                specId: 'execution-spec-system/017-conflict-detection-prohibition-awareness',
+                feature: 'execution-spec-system',
+                path: 'docs/specs/execution-spec-system/017-conflict-detection-prohibition-awareness.md',
+                requestedChanges: ['Append log entries for draft specs after implementation.'],
+            ),
+        );
+
+        $this->assertIsArray($conflict);
+        $this->assertSame('EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC', $conflict['issue']['code']);
+    }
+
+    public function test_negative_execution_instruction_conflicts_with_positive_canonical_requirement(): void
+    {
+        $this->writeMeaningfulContext('execution-spec-system');
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.spec.md', <<<MD
+# Feature Spec: execution-spec-system
+
+## Purpose
+
+Keep execution-spec implementation logging deterministic.
+
+## Goals
+
+- Preserve canonical execution-spec lifecycle rules.
+
+## Non-Goals
+
+- Do not rename existing execution-spec ids once assigned.
+
+## Constraints
+
+- Keep conflict detection deterministic.
+
+## Expected Behavior
+
+- Active execution specs append one implementation-log entry after successful implementation.
+
+## Acceptance Criteria
+
+- Successful active execution-spec implementation appends exactly one implementation-log entry automatically.
+
+## Assumptions
+
+- Feature directories continue to provide execution-spec context.
+MD);
+
+        $conflict = $this->canonicalConflictFor(
+            new ExecutionSpec(
+                specId: 'execution-spec-system/017-conflict-detection-prohibition-awareness',
+                feature: 'execution-spec-system',
+                path: 'docs/specs/execution-spec-system/017-conflict-detection-prohibition-awareness.md',
+                requestedChanges: ['Do not append implementation-log entries for active execution specs.'],
+            ),
+        );
+
+        $this->assertIsArray($conflict);
+        $this->assertSame('EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC', $conflict['issue']['code']);
+    }
+
     public function test_true_canonical_conflict_still_detects_renaming_forbidden_ids(): void
     {
         $this->writeMeaningfulContext('execution-spec-system');
@@ -185,6 +328,54 @@ MD);
                 feature: 'execution-spec-system',
                 path: 'docs/specs/execution-spec-system/005-fix-canonical-conflict-detection.md',
                 requestedChanges: ['Rename existing execution-spec ids to new padded values.'],
+            ),
+        );
+
+        $this->assertIsArray($conflict);
+        $this->assertSame('EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC', $conflict['issue']['code']);
+    }
+
+    public function test_non_executable_canonical_requirement_still_blocks_execute_draft_specs_instruction(): void
+    {
+        $this->writeMeaningfulContext('execution-spec-system');
+        file_put_contents($this->project->root . '/docs/features/execution-spec-system.spec.md', <<<MD
+# Feature Spec: execution-spec-system
+
+## Purpose
+
+Keep draft execution specs non-executable.
+
+## Goals
+
+- Preserve canonical execution-spec lifecycle rules.
+
+## Non-Goals
+
+- Do not rename existing execution-spec ids once assigned.
+
+## Constraints
+
+- Keep conflict detection deterministic.
+
+## Expected Behavior
+
+- Draft specs remain non-executable planning artifacts.
+
+## Acceptance Criteria
+
+- Implement spec rejects draft execution specs.
+
+## Assumptions
+
+- Feature directories continue to provide execution-spec context.
+MD);
+
+        $conflict = $this->canonicalConflictFor(
+            new ExecutionSpec(
+                specId: 'execution-spec-system/017-conflict-detection-prohibition-awareness',
+                feature: 'execution-spec-system',
+                path: 'docs/specs/execution-spec-system/017-conflict-detection-prohibition-awareness.md',
+                requestedChanges: ['Execute draft specs during implementation.'],
             ),
         );
 
