@@ -13,7 +13,6 @@ final class ExecutionSpecValidationService
      */
     private const IGNORED_ROOT_FILES = [
         'docs/specs/README.md',
-        'docs/specs/execution-spec-template.md',
         'docs/specs/implementation-log.md',
     ];
 
