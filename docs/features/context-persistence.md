@@ -23,13 +23,14 @@
 - `implement feature` blocks execution when `can_proceed` is false unless explicit repair mode succeeds.
 - `implement feature` updates feature state and decision history after meaningful execution.
 - `implement feature` returns deterministic blocked, repaired, completed, or `completed_with_issues` results.
-- `implement spec` resolves execution specs from `docs/specs/<feature>/<id>-<slug>.md` and reuses the existing feature execution pipeline.
-- `implement spec` now validates filename-only execution-spec headings and accepts padded hierarchical ids.
+- `implement spec` resolves active execution specs deterministically from canonical full refs, exact `<feature> <id>` shorthand within a feature, and unique active filename shorthand.
+- `<feature> <id>` resolution matches canonical hierarchical ids exactly, resolves active specs only, rejects malformed ids, unknown features, unknown active ids, and ambiguous duplicates, and blocks draft-only matches until the spec is promoted.
+- `implement spec` now validates filename-only execution-spec headings, accepts padded hierarchical ids, and reuses the existing feature execution pipeline.
 - `implement spec` canonical conflict detection now compares instruction clauses with polarity awareness, requires opposing polarity plus a substantially similar target action before blocking, and no longer treats shared topic words alone as contradiction evidence.
 - Nested execution-spec prohibition bullets preserve full negative context through conflict detection, so aligned prohibitions stay unblocked while true opposing-polarity contradictions still fail.
 - `implement spec` records that execution was driven by a specific execution spec without changing canonical authority.
 - Execution spec conflicts do not override canonical feature authority.
-- `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec when a concrete gap exists.
+- `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec deterministically under `docs/specs/<feature>/<id>-<slug>.md` when a concrete gap exists.
 - `plan feature` generates non-tautological purpose, scope, requested changes, and slug output for concrete gaps.
 - `plan feature` blocks generic fallback specs and weak slug candidates instead of writing low-information execution specs.
 - `plan feature` now uses bounded completion signals and rejects low-information purpose, scope, requested changes, or completion signals before rendering an execution spec.

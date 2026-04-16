@@ -61,6 +61,28 @@ final class ExecutionSpecResolverTest extends TestCase
         $this->assertSame('015.002', $spec->parentId);
     }
 
+    public function test_feature_and_id_shorthand_resolves_the_correct_active_execution_spec(): void
+    {
+        $this->writeExecutionSpec('blog', '001-initial', 'blog');
+
+        $spec = $this->resolver()->resolveWithinFeature('blog', '001');
+
+        $this->assertSame('blog/001-initial', $spec->specId);
+        $this->assertSame('blog', $spec->feature);
+        $this->assertSame('001', $spec->id);
+    }
+
+    public function test_feature_and_hierarchical_id_shorthand_resolves_correctly(): void
+    {
+        $this->writeExecutionSpec('blog', '015.001-nested-work', 'blog');
+
+        $spec = $this->resolver()->resolveWithinFeature('blog', '015.001');
+
+        $this->assertSame('blog/015.001-nested-work', $spec->specId);
+        $this->assertSame('015.001', $spec->id);
+        $this->assertSame('015', $spec->parentId);
+    }
+
     public function test_file_path_and_feature_section_disagreement_fails_clearly(): void
     {
         $this->writeExecutionSpec('blog', '001-initial', 'news');
@@ -78,6 +100,63 @@ final class ExecutionSpecResolverTest extends TestCase
         $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('001-initial'));
 
         $this->assertSame('EXECUTION_SPEC_AMBIGUOUS', $error->errorCode);
+    }
+
+    public function test_feature_and_id_shorthand_rejects_duplicate_active_ids_within_feature(): void
+    {
+        $this->writeExecutionSpec('blog', '001-first', 'blog');
+        $this->writeExecutionSpec('blog', '001-second', 'blog');
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolveWithinFeature('blog', '001'));
+
+        $this->assertSame('EXECUTION_SPEC_AMBIGUOUS', $error->errorCode);
+    }
+
+    public function test_feature_and_id_shorthand_rejects_draft_only_matches(): void
+    {
+        $this->writeRawDraftExecutionSpec('blog', '001-initial', <<<MD
+# Execution Spec: 001-initial
+
+## Feature
+
+- blog
+
+## Purpose
+
+- Execute a bounded implementation step.
+
+## Scope
+
+- Add initial blog scaffolding.
+
+## Constraints
+
+- Keep execution deterministic.
+
+## Requested Changes
+
+- Add initial blog scaffolding.
+MD);
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolveWithinFeature('blog', '001'));
+
+        $this->assertSame('EXECUTION_SPEC_DRAFT_ONLY', $error->errorCode);
+    }
+
+    public function test_feature_and_id_shorthand_rejects_unknown_feature(): void
+    {
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolveWithinFeature('unknown-feature', '001'));
+
+        $this->assertSame('EXECUTION_SPEC_FEATURE_NOT_FOUND', $error->errorCode);
+    }
+
+    public function test_feature_and_id_shorthand_rejects_malformed_id(): void
+    {
+        $this->writeExecutionSpec('blog', '001-initial', 'blog');
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolveWithinFeature('blog', '18'));
+
+        $this->assertSame('EXECUTION_SPEC_ID_INVALID', $error->errorCode);
     }
 
     public function test_non_canonical_flat_execution_spec_path_is_rejected(): void
@@ -188,6 +267,17 @@ MD);
     private function writeRawExecutionSpec(string $feature, string $name, string $contents): void
     {
         $path = $this->project->root . '/docs/specs/' . $feature . '/' . $name . '.md';
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($path, $contents);
+    }
+
+    private function writeRawDraftExecutionSpec(string $feature, string $name, string $contents): void
+    {
+        $path = $this->project->root . '/docs/specs/' . $feature . '/drafts/' . $name . '.md';
         $directory = dirname($path);
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);

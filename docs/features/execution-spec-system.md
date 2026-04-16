@@ -8,7 +8,8 @@
 
 - Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`, and drafts live under `docs/specs/<feature>/drafts/<id>-<slug>.md`.
 - Execution-spec ids use one or more dot-separated 3-digit numeric segments such as `001` and `015.002.001`.
-- `implement spec` resolves active execution specs with canonical hierarchical ids and may still accept a unique filename shorthand.
+- `implement spec` resolves active execution specs deterministically from canonical full refs, exact `<feature> <id>` shorthand within a feature, and unique active filename shorthand.
+- `<feature> <id>` resolution matches canonical hierarchical ids exactly and fails clearly for malformed, draft-only, ambiguous, or unknown shorthand targets.
 - Execution spec headings use `# Execution Spec: <id>-<slug>` and match the filename only.
 - Resolver validation rejects noncanonical filenames and noncanonical headings.
 - Existing spec files in the repository use the canonical filename-only heading format.

@@ -52,7 +52,8 @@
 - Implement feature blocks execution when `can_proceed` is false unless explicit repair mode succeeds.
 - Implement feature updates feature state and decision history after meaningful execution.
 - Implement feature revalidates context after execution.
-- Implement spec resolves execution specs deterministically from `docs/specs/<feature>/<id>-<slug>.md`, where `<id>` uses one or more dot-separated 3-digit segments.
+- Implement spec resolves active execution specs deterministically from canonical `<feature>/<id>-<slug>` refs, from exact `<feature> <id>` shorthand within a feature, and from a unique active `<id>-<slug>` shorthand, where `<id>` uses one or more dot-separated 3-digit segments.
+- Implement spec `<feature> <id>` resolution matches the canonical hierarchical id exactly, resolves active specs only, and fails clearly for malformed ids, unknown features, unknown active ids, draft-only matches, or ambiguous duplicates.
 - Execution spec headings mirror the filename only using `# Execution Spec: <id>-<slug>`.
 - Implement spec reuses the existing feature execution pipeline rather than creating a second execution policy path.
 - Implement spec blocks when execution-spec instructions conflict with canonical feature truth.
@@ -95,6 +96,7 @@
 - Implement feature revalidates context before finishing.
 - Implement spec executes a discrete implementation spec without bypassing canonical context validation.
 - Implement spec returns deterministic blocked, repaired, completed, or completed_with_issues results aligned with implement feature.
+- Implement spec resolves active execution specs deterministically from `<feature> <id>` without accepting draft-only or malformed shorthand targets.
 - Execution spec conflicts do not override canonical feature authority.
 - Equivalent prohibition wording is not blocked as a canonical conflict.
 - True instruction contradictions with opposing polarity still block deterministically.

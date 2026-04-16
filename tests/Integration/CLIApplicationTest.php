@@ -250,6 +250,11 @@ YAML);
         $this->assertSame('Verification', $specValidateHelp['payload']['command']['category']);
         $this->assertSame('spec:validate', $specValidateHelp['payload']['command']['usage']);
 
+        $implementSpecHelp = $this->runCommand($app, ['foundry', 'help', 'implement', 'spec', '--json']);
+        $this->assertSame(0, $implementSpecHelp['status']);
+        $this->assertSame('implement spec', $implementSpecHelp['payload']['command']['signature']);
+        $this->assertStringContainsString('<feature> <id>', $implementSpecHelp['payload']['command']['usage']);
+
         $examplesListHelp = $this->runCommand($app, ['foundry', 'help', 'examples:list', '--json']);
         $this->assertSame(0, $examplesListHelp['status']);
         $this->assertSame('examples:list', $examplesListHelp['payload']['command']['signature']);

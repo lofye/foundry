@@ -113,6 +113,71 @@ final class ExecutionSpecResolver
         );
     }
 
+    public function resolveWithinFeature(string $feature, string $id): ExecutionSpec
+    {
+        $feature = FeatureNaming::canonical(trim($feature));
+        $id = trim($id);
+
+        $validation = $this->featureNameValidator->validate($feature);
+        if (!$validation->valid) {
+            throw new FoundryError(
+                'EXECUTION_SPEC_FEATURE_INVALID',
+                'validation',
+                ['feature' => $feature, 'id' => $id],
+                'Execution spec feature must be lowercase kebab-case.',
+            );
+        }
+
+        if (preg_match('/^' . ExecutionSpecFilename::ID_PATTERN . '$/', $id) !== 1) {
+            throw new FoundryError(
+                'EXECUTION_SPEC_ID_INVALID',
+                'validation',
+                ['feature' => $feature, 'id' => $id],
+                'Execution spec id must use one or more dot-separated 3-digit segments.',
+            );
+        }
+
+        if (!$this->featureExists($feature)) {
+            throw new FoundryError(
+                'EXECUTION_SPEC_FEATURE_NOT_FOUND',
+                'filesystem',
+                ['feature' => $feature, 'id' => $id],
+                'Execution spec feature not found.',
+            );
+        }
+
+        $activeMatches = $this->matchesById($feature, $id, includeDrafts: false);
+        if (count($activeMatches) > 1) {
+            throw new FoundryError(
+                'EXECUTION_SPEC_AMBIGUOUS',
+                'validation',
+                ['feature' => $feature, 'id' => $id, 'matches' => $activeMatches],
+                'Execution spec id is ambiguous within the feature.',
+            );
+        }
+
+        if ($activeMatches !== []) {
+            return $this->resolve($activeMatches[0]);
+        }
+
+        $draftMatches = $this->matchesById($feature, $id, includeDrafts: true);
+        if ($draftMatches !== []) {
+            throw new FoundryError(
+                'EXECUTION_SPEC_DRAFT_ONLY',
+                'validation',
+                ['feature' => $feature, 'id' => $id, 'matches' => $draftMatches],
+                'Execution spec id exists only in drafts and must be promoted before implementation.',
+            );
+        }
+
+        throw new FoundryError(
+            'EXECUTION_SPEC_NOT_FOUND',
+            'filesystem',
+            ['feature' => $feature, 'id' => $id],
+            'Active execution spec id not found for feature.',
+        );
+    }
+
     /**
      * @return array{0:string,1:string,2:string}
      */
@@ -237,6 +302,59 @@ final class ExecutionSpecResolver
         }
 
         return substr($absolutePath, strlen($root) + 1);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function matchesById(string $feature, string $id, bool $includeDrafts): array
+    {
+        $patterns = ['docs/specs/' . $feature . '/*.md'];
+        if ($includeDrafts) {
+            $patterns[] = 'docs/specs/' . $feature . '/drafts/*.md';
+        }
+
+        $matches = [];
+
+        foreach ($patterns as $pattern) {
+            foreach (glob($this->paths->join($pattern)) ?: [] as $path) {
+                $relative = $this->relativePath($path);
+                if ($relative === null) {
+                    continue;
+                }
+
+                $parsed = ExecutionSpecFilename::parseActivePath($relative)
+                    ?? ExecutionSpecFilename::parseDraftPath($relative);
+                if ($parsed === null || $parsed['feature'] !== $feature || $parsed['id'] !== $id) {
+                    continue;
+                }
+
+                $matches[] = $relative;
+            }
+        }
+
+        sort($matches);
+
+        return array_values(array_unique($matches));
+    }
+
+    private function featureExists(string $feature): bool
+    {
+        $paths = [
+            'docs/specs/' . $feature,
+            'docs/specs/' . $feature . '/drafts',
+            'docs/features/' . $feature . '.spec.md',
+            'docs/features/' . $feature . '.md',
+            'docs/features/' . $feature . '.decisions.md',
+        ];
+
+        foreach ($paths as $path) {
+            if (is_dir($this->paths->join($path)) || is_file($this->paths->join($path))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function featureFromContents(string $contents): ?string

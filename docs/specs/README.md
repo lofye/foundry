@@ -276,7 +276,7 @@ Project-wide implementation chronology is recorded in:
 
 Agents must append a new entry immediately after completing an active execution spec implementation.
 
-Normal `foundry implement spec <feature>/<id>-<slug>` completion appends this entry automatically for active specs.
+Normal `foundry implement spec <feature>/<id>-<slug>` or `foundry implement spec <feature> <id>` completion appends this entry automatically for active specs.
 
 The implementation log is chronological and append-only.
 

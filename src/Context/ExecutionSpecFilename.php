@@ -10,6 +10,7 @@ final class ExecutionSpecFilename
     public const SLUG_PATTERN = '[a-z0-9]+(?:-[a-z0-9]+)*';
     public const NAME_PATTERN = '(?<name>(?<id>' . self::ID_PATTERN . ')-(?<slug>' . self::SLUG_PATTERN . '))';
     public const ACTIVE_PATH_PATTERN = '#^docs/specs/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/' . self::NAME_PATTERN . '\.md$#';
+    public const DRAFT_PATH_PATTERN = '#^docs/specs/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/drafts/' . self::NAME_PATTERN . '\.md$#';
 
     /**
      * @return array{
@@ -67,7 +68,37 @@ final class ExecutionSpecFilename
      */
     public static function parseActivePath(string $relativePath): ?array
     {
-        if (preg_match(self::ACTIVE_PATH_PATTERN, $relativePath, $matches) !== 1) {
+        return self::parsePath($relativePath, self::ACTIVE_PATH_PATTERN);
+    }
+
+    /**
+     * @return array{
+     *     feature:string,
+     *     name:string,
+     *     id:string,
+     *     slug:string,
+     *     segments:list<int>,
+     *     parent_id:?string
+     * }|null
+     */
+    public static function parseDraftPath(string $relativePath): ?array
+    {
+        return self::parsePath($relativePath, self::DRAFT_PATH_PATTERN);
+    }
+
+    /**
+     * @return array{
+     *     feature:string,
+     *     name:string,
+     *     id:string,
+     *     slug:string,
+     *     segments:list<int>,
+     *     parent_id:?string
+     * }|null
+     */
+    private static function parsePath(string $relativePath, string $pattern): ?array
+    {
+        if (preg_match($pattern, $relativePath, $matches) !== 1) {
             return null;
         }
 

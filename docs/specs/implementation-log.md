@@ -41,3 +41,7 @@
 ## 2026-04-15 16:05:00 -0400
 - spec: context-persistence/017-conflict-detection-prohibition-awareness.md
 - note: Made canonical execution-spec conflict detection polarity-aware, preserved nested negative lead-in context, and tightened blocking to true opposing-polarity contradictions with substantially similar target actions.
+
+## 2026-04-16 09:48:21 -0400
+- spec: context-persistence/018-cli-spec-invocation-improvements.md
+- note: Added deterministic `implement spec <feature> <id>` resolution for active specs, kept existing full-ref and unique filename shorthand behavior, and surfaced clear shorthand failure modes for malformed, draft-only, ambiguous, unknown-id, and unknown-feature targets.

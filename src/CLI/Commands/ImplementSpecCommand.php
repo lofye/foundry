@@ -7,7 +7,10 @@ namespace Foundry\CLI\Commands;
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
 use Foundry\Context\ContextExecutionService;
+use Foundry\Context\ExecutionSpec;
+use Foundry\Context\ExecutionSpecFilename;
 use Foundry\Context\ExecutionSpecResolver;
+use Foundry\Context\FeatureNameValidator;
 use Foundry\Support\FeatureNaming;
 use Foundry\Support\FoundryError;
 
@@ -28,16 +31,6 @@ final class ImplementSpecCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $specId = (string) ($args[2] ?? '');
-        if ($specId === '') {
-            throw new FoundryError(
-                'CLI_IMPLEMENT_SPEC_REQUIRED',
-                'validation',
-                [],
-                'Implement spec id required.',
-            );
-        }
-
         $repair = in_array('--repair', $args, true);
         $autoRepair = in_array('--auto-repair', $args, true);
         if ($repair && $autoRepair) {
@@ -49,8 +42,10 @@ final class ImplementSpecCommand extends Command
             );
         }
 
+        $specId = $this->requestedSpecId($args);
+
         try {
-            $executionSpec = (new ExecutionSpecResolver($context->paths()))->resolve($specId);
+            $executionSpec = $this->resolveExecutionSpec($args, $context);
             $payload = (new ContextExecutionService($context->paths()))
                 ->executeSpec($executionSpec, repair: $repair, autoRepair: $autoRepair);
         } catch (FoundryError $error) {
@@ -64,6 +59,87 @@ final class ImplementSpecCommand extends Command
             'message' => $context->expectsJson() ? null : $this->renderMessage($payload),
             'payload' => $context->expectsJson() ? $payload : null,
         ];
+    }
+
+    /**
+     * @param array<int,string> $args
+     */
+    private function resolveExecutionSpec(array $args, CommandContext $context): ExecutionSpec
+    {
+        $positionals = $this->positionalArguments($args);
+        $resolver = new ExecutionSpecResolver($context->paths());
+
+        return match (count($positionals)) {
+            0 => throw new FoundryError(
+                'CLI_IMPLEMENT_SPEC_TARGET_REQUIRED',
+                'validation',
+                [],
+                'Implement spec target required.',
+            ),
+            1 => $this->resolveSinglePositionalSpec($resolver, $positionals[0]),
+            2 => $resolver->resolveWithinFeature($positionals[0], $positionals[1]),
+            default => throw new FoundryError(
+                'CLI_IMPLEMENT_SPEC_ARGUMENTS_INVALID',
+                'validation',
+                ['arguments' => $positionals],
+                'Implement spec accepts either <feature>/<id>-<slug>, <id>-<slug>, or <feature> <id>.',
+            ),
+        };
+    }
+
+    private function resolveSinglePositionalSpec(ExecutionSpecResolver $resolver, string $argument): ExecutionSpec
+    {
+        $trimmed = trim($argument);
+        $normalized = $this->stripMarkdownExtension($trimmed);
+
+        if (
+            !str_contains($trimmed, '/')
+            && !str_starts_with($trimmed, 'docs/specs/')
+            && !ExecutionSpecFilename::isCanonicalName($normalized)
+            && (new FeatureNameValidator())->validate(FeatureNaming::canonical($normalized))->valid
+        ) {
+            throw new FoundryError(
+                'CLI_IMPLEMENT_SPEC_ID_REQUIRED',
+                'validation',
+                ['feature' => FeatureNaming::canonical($normalized)],
+                'Implement spec id required when invoking `implement spec <feature> <id>`.',
+            );
+        }
+
+        return $resolver->resolve($trimmed);
+    }
+
+    /**
+     * @param array<int,string> $args
+     * @return list<string>
+     */
+    private function positionalArguments(array $args): array
+    {
+        return array_values(array_filter(
+            array_slice($args, 2),
+            static fn(string $arg): bool => !in_array($arg, ['--repair', '--auto-repair'], true),
+        ));
+    }
+
+    /**
+     * @param array<int,string> $args
+     */
+    private function requestedSpecId(array $args): string
+    {
+        $positionals = $this->positionalArguments($args);
+
+        return match (count($positionals)) {
+            0 => '',
+            1 => (string) $positionals[0],
+            default => FeatureNaming::canonical((string) $positionals[0]) . '/' . trim((string) $positionals[1]),
+        };
+    }
+
+    private function stripMarkdownExtension(string $value): string
+    {
+        return str_ends_with($value, '.md')
+            ? substr($value, 0, -strlen('.md'))
+            : $value;
     }
 
     /**
@@ -150,12 +226,20 @@ final class ImplementSpecCommand extends Command
                 static fn(string $match): string => 'Use a fully qualified execution spec id: ' . preg_replace('#^docs/specs/|\.md$#', '', $match),
                 (array) ($error->details['matches'] ?? []),
             )),
-            'EXECUTION_SPEC_NOT_FOUND' => ['Create the execution spec under docs/specs/<feature>/<id>-<slug>.md or use a valid existing execution spec id.'],
+            'EXECUTION_SPEC_NOT_FOUND' => [isset($error->details['feature'], $error->details['id'])
+                ? 'Create or promote an active execution spec under docs/specs/<feature>/<id>-<slug>.md, or use a valid active execution spec id for that feature.'
+                : 'Create the execution spec under docs/specs/<feature>/<id>-<slug>.md or use a valid existing execution spec id.'],
+            'EXECUTION_SPEC_FEATURE_NOT_FOUND' => ['Use a valid feature under docs/specs/<feature>/ before invoking implement spec.'],
+            'EXECUTION_SPEC_DRAFT_ONLY' => ['Promote the draft execution spec to docs/specs/<feature>/<id>-<slug>.md before implementing it.'],
+            'EXECUTION_SPEC_ID_INVALID' => ['Use an execution spec id with one or more dot-separated 3-digit segments, such as 018 or 015.001.'],
             'EXECUTION_SPEC_HEADING_NON_CANONICAL' => ['Make the first line match `# Execution Spec: <id>-<slug>` for this file.'],
             'EXECUTION_SPEC_FEATURE_SECTION_MISSING' => ['Add a ## Feature section naming the canonical feature.'],
             'EXECUTION_SPEC_FEATURE_MISMATCH' => ['Make the ## Feature section match the docs/specs/<feature>/ directory for this execution spec.'],
             'EXECUTION_SPEC_FEATURE_INVALID' => ['Use a lowercase kebab-case feature name in the execution spec ## Feature section.'],
-            'EXECUTION_SPEC_PATH_NON_CANONICAL' => ['Use a canonical execution spec id in the form <feature>/<id>-<slug> or <id>-<slug>.'],
+            'EXECUTION_SPEC_PATH_NON_CANONICAL' => ['Use a canonical execution spec id in the form <feature>/<id>-<slug>, <id>-<slug>, or invoke the command as <feature> <id>.'],
+            'CLI_IMPLEMENT_SPEC_TARGET_REQUIRED' => ['Use `implement spec <feature>/<id>-<slug>`, `implement spec <id>-<slug>`, or `implement spec <feature> <id>`.'],
+            'CLI_IMPLEMENT_SPEC_ID_REQUIRED' => ['Provide the execution spec id as `implement spec <feature> <id>`.'],
+            'CLI_IMPLEMENT_SPEC_ARGUMENTS_INVALID' => ['Use `implement spec <feature>/<id>-<slug>`, `implement spec <id>-<slug>`, or `implement spec <feature> <id>`.'],
             default => [$error->getMessage() !== '' ? $error->getMessage() : 'Resolve the execution spec issue before rerunning implement spec.'],
         };
 

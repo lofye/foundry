@@ -305,3 +305,42 @@ Timestamp: <ISO-8601>
 
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: add exact feature-plus-id shorthand for active execution-spec resolution
+Timestamp: 2026-04-16T09:46:00-04:00
+
+**Context**
+
+- The filename remains the canonical execution-spec identity, but `implement spec` still required either the full `<feature>/<id>-<slug>` ref or a globally unique filename shorthand.
+- In practice, users often know the feature and canonical id before they need the slug text.
+- Any shorthand still needed to preserve active-only resolution and deterministic failure semantics.
+
+**Decision**
+
+- Accept `implement spec <feature> <id>` as a deterministic lookup form for active execution specs.
+- Match the canonical hierarchical id exactly within the provided feature and fail clearly for malformed ids, unknown features, unknown active ids, draft-only matches, or ambiguous duplicates.
+
+**Reasoning**
+
+- Feature-plus-id shorthand improves ergonomics without changing filename identity.
+- Scoping the lookup to one feature preserves determinism and avoids guessing across unrelated execution specs.
+- Explicit failure modes keep the active-versus-draft lifecycle contract intact.
+
+**Alternatives Considered**
+
+- Keep only the full feature-qualified ref.
+- Rely only on unique global filename shorthand.
+- Add fuzzy slug or partial-id matching.
+
+**Impact**
+
+- `implement spec` can now be invoked more quickly when the feature and id are already known.
+- Canonical filename identity, active-only execution, and deterministic blocked results remain unchanged.
+- The CLI help and reference docs now surface the shorthand explicitly.
+
+**Spec Reference**
+
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

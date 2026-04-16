@@ -176,6 +176,38 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: accept exact feature-plus-id shorthand for implement spec
+Timestamp: 2026-04-16T09:45:01-04:00
+
+**Context**
+- `implement spec` already resolved active execution specs deterministically, but the CLI still required either the full `<feature>/<id>-<slug>` ref or a globally unique filename shorthand.
+- Developers and agents often already know the target feature and canonical numeric id before they need the slug text.
+- Convenience could not weaken active-versus-draft rules or deterministic failure behavior.
+
+**Decision**
+- Accept `implement spec <feature> <id>` as a second deterministic invocation form.
+- Resolve the id only within the provided feature, require an exact canonical hierarchical-id match, and fail clearly for malformed, unknown, draft-only, or ambiguous targets.
+
+**Reasoning**
+- Feature-plus-id shorthand removes unnecessary slug typing without guessing.
+- Restricting resolution to one feature preserves determinism and avoids cross-feature ambiguity.
+- Explicit malformed-id and draft-only failures keep canonical execution-spec lifecycle rules intact.
+
+**Alternatives Considered**
+- Keep only full feature-qualified refs and unique filename shorthand.
+- Add fuzzy slug lookup or partial-id guessing.
+- Auto-promote draft specs when no active match exists.
+
+**Impact**
+- `implement spec` is faster to invoke when the feature and canonical id are already known.
+- Existing full-ref and unique filename shorthand behavior remains available.
+- Active-only resolution and deterministic blocked results remain unchanged in principle.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: make canonical conflict detection prohibition-aware
 Timestamp: 2026-04-15T16:05:00-04:00
 

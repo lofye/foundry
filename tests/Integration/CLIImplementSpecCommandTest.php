@@ -59,6 +59,32 @@ final class CLIImplementSpecCommandTest extends TestCase
         );
     }
 
+    public function test_implement_spec_accepts_feature_and_id_shorthand(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+        $this->writeExecutionSpec('event-bus', '001-initial');
+
+        $result = $this->runCommand(['foundry', 'implement', 'spec', 'event-bus', '001', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('completed', $result['payload']['status']);
+        $this->assertSame('event-bus/001-initial', $result['payload']['spec_id']);
+    }
+
+    public function test_implement_spec_accepts_feature_and_hierarchical_id_shorthand(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+        $this->writeExecutionSpec('event-bus', '015.001-nested-work');
+
+        $result = $this->runCommand(['foundry', 'implement', 'spec', 'event-bus', '015.001', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('completed', $result['payload']['status']);
+        $this->assertSame('event-bus/015.001-nested-work', $result['payload']['spec_id']);
+    }
+
     public function test_conflicting_execution_spec_is_blocked(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
@@ -286,6 +312,83 @@ MD);
         );
     }
 
+    public function test_feature_and_id_shorthand_draft_only_match_fails_clearly(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+        $this->writeRawDraftExecutionSpec('event-bus', '001-initial', <<<'MD'
+# Execution Spec: 001-initial
+
+## Feature
+
+- event-bus
+
+## Purpose
+
+- Execute a bounded event bus implementation step.
+
+## Scope
+
+- Add deterministic event bus scaffolding.
+
+## Constraints
+
+- Keep execution deterministic.
+
+## Requested Changes
+
+- Add deterministic event bus scaffolding.
+MD);
+
+        $result = $this->runCommand(['foundry', 'implement', 'spec', 'event-bus', '001', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertSame('EXECUTION_SPEC_DRAFT_ONLY', $result['payload']['issues'][0]['code']);
+        $this->assertContains(
+            'Promote the draft execution spec to docs/specs/<feature>/<id>-<slug>.md before implementing it.',
+            $result['payload']['required_actions'],
+        );
+    }
+
+    public function test_feature_and_id_shorthand_unknown_id_fails_clearly(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+
+        $result = $this->runCommand(['foundry', 'implement', 'spec', 'event-bus', '001', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertSame('EXECUTION_SPEC_NOT_FOUND', $result['payload']['issues'][0]['code']);
+    }
+
+    public function test_feature_and_id_shorthand_malformed_id_fails_clearly(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+        $this->writeExecutionSpec('event-bus', '001-initial');
+
+        $result = $this->runCommand(['foundry', 'implement', 'spec', 'event-bus', '18', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertSame('EXECUTION_SPEC_ID_INVALID', $result['payload']['issues'][0]['code']);
+    }
+
+    public function test_feature_only_invocation_fails_with_clear_missing_id_message_in_text_mode(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+
+        $result = $this->runRawCommand(['foundry', 'implement', 'spec', 'event-bus']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertStringContainsString('Status: blocked', $result['output']);
+        $this->assertStringContainsString('CLI_IMPLEMENT_SPEC_ID_REQUIRED', $result['output']);
+        $this->assertStringContainsString('Provide the execution spec id as `implement spec <feature> <id>`.', $result['output']);
+    }
+
     public function test_log_write_failure_is_surfaced_clearly(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
@@ -318,6 +421,19 @@ MD);
         $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
         return ['status' => $status, 'payload' => $payload];
+    }
+
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,output:string}
+     */
+    private function runRawCommand(array $argv): array
+    {
+        ob_start();
+        $status = (new Application())->run($argv);
+        $output = ob_get_clean() ?: '';
+
+        return ['status' => $status, 'output' => $output];
     }
     /**
      * @param list<string> $requestedChanges
@@ -357,6 +473,17 @@ MD);
     private function writeRawExecutionSpec(string $feature, string $name, string $contents): void
     {
         $path = $this->project->root . '/docs/specs/' . $feature . '/' . $name . '.md';
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($path, $contents);
+    }
+
+    private function writeRawDraftExecutionSpec(string $feature, string $name, string $contents): void
+    {
+        $path = $this->project->root . '/docs/specs/' . $feature . '/drafts/' . $name . '.md';
         $directory = dirname($path);
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);

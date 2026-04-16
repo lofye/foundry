@@ -39,7 +39,8 @@
 ## Expected Behavior
 - Active execution specs live at `docs/specs/<feature>/<id>-<slug>.md`; drafts live under `docs/specs/<feature>/drafts/<id>-<slug>.md`.
 - `<id>` uses one or more dot-separated 3-digit numeric segments such as `001` or `015.002.001`.
-- `implement spec` resolves active execution specs with canonical hierarchical ids and may still accept a unique filename shorthand.
+- `implement spec` resolves active execution specs deterministically from canonical `<feature>/<id>-<slug>` refs, from exact `<feature> <id>` shorthand within a feature, and may still accept a unique active filename shorthand.
+- `<feature> <id>` resolution matches the canonical hierarchical id exactly, resolves active specs only, and fails clearly for malformed ids, unknown features, unknown active ids, draft-only matches, or ambiguous duplicates.
 - Execution spec headings use `# Execution Spec: <id>-<slug>` and match the filename only.
 - Resolver validation rejects noncanonical filenames and noncanonical headings.
 - `plan feature` allocates the next root id without colliding with existing active or draft spec ids, including hierarchical descendants.
@@ -71,6 +72,7 @@
 - Successful active execution-spec implementation appends exactly one correctly formatted implementation-log entry automatically.
 - Draft execution specs are not auto-logged.
 - Implementation-log write failures surface clearly and deterministically and do not appear as a clean successful completion.
+- `implement spec <feature> <id>` resolves the correct active spec deterministically and fails clearly for malformed, draft-only, ambiguous, or unknown shorthand targets.
 - Execution specs that reinforce canonical behavior without instructing a forbidden action are not blocked by canonical conflict detection.
 - True contradictions against canonical non-goals or negative constraints still return `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC` deterministically.
 - Framework-repository execution specs do not create `app/features/<feature>/` scaffolds for framework-internal features such as `execution-spec-system`.
