@@ -1,4 +1,4 @@
-# Execution Spec: 015.005-normalize-additional-context-artifacts
+# Execution Spec: 023-normalize-additional-context-artifacts
 
 ## Feature
 - context-persistence

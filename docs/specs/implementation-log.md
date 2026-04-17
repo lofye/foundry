@@ -59,5 +59,5 @@
 - note: Added a stable `completion` command that emits bash and zsh scripts, derives static command completion from the CLI registry, and completes active execution-spec ids for `implement spec` without including drafts by default.
 
 ## 2026-04-17 10:00:00 -0400
-- spec: context-persistence/020-fails-when-doctor-repairable.md
+- spec: context-persistence/019-fails-when-doctor-repairable.md
 - note: Formalized the already-implemented verify-context readiness behavior that fails when doctor status is `repairable` or `non_compliant`, promoted the execution spec to active, and recorded the completed step.

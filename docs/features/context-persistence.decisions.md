@@ -616,3 +616,35 @@ Timestamp: 2026-04-10T14:15:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: allow a one-time execution-spec renumbering correction in context-persistence
+Timestamp: 2026-04-17T10:30:00-04:00
+
+**Context**
+- The `context-persistence` execution specs drifted out of intended numeric implementation order.
+- In particular, `020-fails-when-doctor-repairable` had already been implemented while `019` remained unimplemented, which broke the intended sequential order within the feature.
+- Foundry’s normal rule is that execution-spec ids are immutable once assigned, but this case was identified as a one-time cleanup to restore coherent feature-local sequencing.
+
+**Decision**
+- Allow a one-time renumbering correction within `context-persistence` so the already-implemented spec becomes `019-fails-when-doctor-repairable` and the unimplemented draft becomes `020-keep-later-systems-safely`.
+- Treat this as an explicit exception rather than a precedent for ordinary execution-spec renumbering.
+
+**Reasoning**
+- This preserves the intended sequential implementation order within the feature.
+- It keeps the active historical sequence easier to read for humans and agents.
+- The exception is narrow, documented, and applied before further work continued, which minimizes ambiguity.
+
+**Alternatives Considered**
+- Leave the numbering as-is and tolerate the gap/order mismatch.
+- Renumber all later drafts more broadly.
+- Preserve immutability strictly even though the sequence was already known to be misordered.
+
+**Impact**
+- `context-persistence` execution-spec numbering is now coherent again after `018.001`.
+- Future ids return to being immutable after this correction.
+- The implementation log and references were updated to reflect the corrected id mapping.
+
+**Spec Reference**
+- Constraints
+- Requested Changes
+- Authority Rule
