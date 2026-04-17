@@ -160,6 +160,13 @@ YAML);
         $this->assertTrue($commandHelp['payload']['command']['supports_pipeline_stage_filter']);
         $this->assertTrue($commandHelp['payload']['command']['supports_extension_filter']);
 
+        $completionHelp = $this->runCommand($app, ['foundry', 'help', 'completion', '--json']);
+        $this->assertSame(0, $completionHelp['status']);
+        $this->assertSame('completion', $completionHelp['payload']['command']['signature']);
+        $this->assertSame('stable', $completionHelp['payload']['command']['stability']);
+        $this->assertSame('Reference', $completionHelp['payload']['command']['category']);
+        $this->assertStringContainsString('completion <bash|zsh>', $completionHelp['payload']['command']['usage']);
+
         $inspectHelp = $this->runCommand($app, ['foundry', 'help', 'graph', 'inspect', '--json']);
         $this->assertSame(0, $inspectHelp['status']);
         $this->assertSame('graph inspect', $inspectHelp['payload']['command']['signature']);

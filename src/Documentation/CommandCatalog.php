@@ -224,6 +224,7 @@ final class CommandCatalog
             $signature === 'init' => 'init --example=blog-api --json',
             $signature === 'new' => 'new demo-app --starter=standard --json',
             $signature === 'init app' => 'init app demo-app --starter=standard --json',
+            $signature === 'completion' => 'completion bash --json',
             $signature === 'examples:list' => 'examples:list --json',
             $signature === 'examples:load' => 'examples:load blog-api --temp --json',
             $signature === 'migrate definitions' => 'migrate definitions --dry-run --json',
@@ -418,7 +419,7 @@ final class CommandCatalog
         }
 
         if (
-            in_array($signature, ['generate docs', 'help', 'inspect cli-surface', 'verify cli-surface'], true)
+            in_array($signature, ['generate docs', 'help', 'completion', 'inspect cli-surface', 'verify cli-surface'], true)
         ) {
             $links[] = ['title' => 'Reference', 'href' => 'reference.html'];
         }
@@ -497,7 +498,8 @@ final class CommandCatalog
             'init app' => ['init', 'new', 'generate docs', 'compile graph'],
             'examples:list' => ['init', 'examples:load', 'new'],
             'examples:load' => ['init', 'examples:list', 'explain'],
-            'help' => ['inspect cli-surface', 'verify cli-surface', 'explain'],
+            'help' => ['completion', 'inspect cli-surface', 'verify cli-surface', 'explain'],
+            'completion' => ['help', 'inspect cli-surface', 'verify cli-surface'],
             'generate docs' => ['graph inspect', 'inspect graph', 'help'],
             'explain' => ['doctor', 'graph inspect', 'inspect graph', 'trace'],
             'pack install' => ['pack search', 'pack list', 'pack info', 'inspect packs'],

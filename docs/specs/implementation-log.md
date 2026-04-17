@@ -49,3 +49,11 @@
 ## 2026-04-16 13:23:23 -0400
 - spec: context-persistence/018.001-plan-feature-writes-one-draft-spec-deterministically.md
 - note: Changed `plan feature` to write exactly one verified draft execution spec per successful invocation, report the exact written path truthfully, and require promotion before planned specs can be executed.
+
+## 2026-04-17 09:26:23 -0400
+- spec: context-persistence/018.002-repair-cli-experience-context-alignment.md
+- note: Repaired `cli-experience` canonical context alignment by restating the current verified CLI surface in spec-matching language, removing an unrelated shorthand-ergonomics state claim, and tracking pending completion work explicitly in `Next Steps`.
+
+## 2026-04-17 09:50:44 -0400
+- spec: cli-experience/001-cli-autocomplete.md
+- note: Added a stable `completion` command that emits bash and zsh scripts, derives static command completion from the CLI registry, and completes active execution-spec ids for `implement spec` without including drafts by default.

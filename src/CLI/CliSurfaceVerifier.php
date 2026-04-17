@@ -245,6 +245,7 @@ final class CliSurfaceVerifier
     private function probeArgsForSignature(string $signature): array
     {
         return match ($signature) {
+            'completion' => ['completion', 'bash'],
             'codemod run' => ['codemod', 'run', 'example-codemod'],
             'examples:load' => ['examples:load', 'blog-api'],
             'inspect node' => ['inspect', 'node', 'feature:example'],

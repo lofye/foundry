@@ -63,6 +63,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $contextInit = $registry->classifyCliCommand(['context', 'init', 'event-bus']);
         $contextDoctor = $registry->classifyCliCommand(['context', 'doctor', '--feature=event-bus']);
         $contextCheckAlignment = $registry->classifyCliCommand(['context', 'check-alignment', '--feature=event-bus']);
+        $completion = $registry->classifyCliCommand(['completion', 'bash']);
         $implementFeature = $registry->classifyCliCommand(['implement', 'feature', 'event-bus']);
         $implementSpec = $registry->classifyCliCommand(['implement', 'spec', 'event-bus/001-initial']);
         $planFeature = $registry->classifyCliCommand(['plan', 'feature', 'event-bus']);
@@ -97,6 +98,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($contextInit);
         $this->assertNotNull($contextDoctor);
         $this->assertNotNull($contextCheckAlignment);
+        $this->assertNotNull($completion);
         $this->assertNotNull($implementFeature);
         $this->assertNotNull($implementSpec);
         $this->assertNotNull($planFeature);
@@ -179,6 +181,10 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $contextCheckAlignment['stability']);
         $this->assertSame('Architecture', $contextCheckAlignment['category']);
         $this->assertSame('context', $contextCheckAlignment['command_type']);
+        $this->assertSame('stable', $completion['stability']);
+        $this->assertSame('Reference', $completion['category']);
+        $this->assertSame('completion', $completion['command_type']);
+        $this->assertSame('completion <bash|zsh>', $completion['usage']);
         $this->assertSame('stable', $implementFeature['stability']);
         $this->assertSame('App Scaffolding', $implementFeature['category']);
         $this->assertSame('implement', $implementFeature['command_type']);

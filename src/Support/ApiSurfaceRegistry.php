@@ -164,7 +164,7 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new', 'spec:validate' => $first,
+            'help', 'completion', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new', 'spec:validate' => $first,
             'license' => match ($second) {
                 'status' => 'license status',
                 'activate' => 'license activate',
@@ -360,6 +360,7 @@ final class ApiSurfaceRegistry
     {
         $commands = [
             $this->cliCommandEntry('help', 'help [<command> [<subcommand>]]', 'stable', 'Show the classified CLI reference and per-command stability details.'),
+            $this->cliCommandEntry('completion', 'completion <bash|zsh>', 'stable', 'Emit deterministic shell completion scripts with registry-backed command completion and active-only spec-id discovery.'),
             $this->cliCommandEntry('compile graph', 'compile graph [--feature=<feature>] [--changed-only] [--no-cache]', 'stable', 'Compile source-of-truth files into the canonical application graph.'),
             $this->cliCommandEntry('cache inspect', 'cache inspect', 'stable', 'Inspect deterministic compile cache state, keys, and invalidation reasons.'),
             $this->cliCommandEntry('cache clear', 'cache clear', 'stable', 'Clear deterministic compile cache artifacts and generated projections.'),
@@ -697,7 +698,7 @@ final class ApiSurfaceRegistry
     private function cliCommandCategory(string $signature): string
     {
         return match (true) {
-            in_array($signature, ['help', 'inspect api-surface', 'inspect cli-surface', 'verify cli-surface'], true) => 'Reference',
+            in_array($signature, ['help', 'completion', 'inspect api-surface', 'inspect cli-surface', 'verify cli-surface'], true) => 'Reference',
             in_array($signature, ['generate docs', 'export openapi'], true) => 'Docs',
             in_array($signature, ['cache inspect', 'cache clear'], true) => 'Build',
             in_array($signature, ['observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions'], true) => 'Observability',

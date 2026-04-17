@@ -38,6 +38,19 @@ Execution specs under `docs/specs/*` are optional planning artifacts only and ar
 
 Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If canonical context is missing, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
 
+## Shell Completion
+
+Foundry can emit deterministic completion scripts for bash and zsh:
+
+```bash
+foundry completion bash
+foundry completion zsh
+```
+
+Static completion comes from the registered CLI surface, so command and subcommand suggestions stay aligned with `help --json` and CLI surface verification.
+
+When completing `foundry implement spec <feature> <id>`, feature names come from `docs/specs/` and execution-spec ids come from active specs under `docs/specs/<feature>/`. Draft specs are excluded by default.
+
 ## Install And First Run (Packagist)
 
 ```bash

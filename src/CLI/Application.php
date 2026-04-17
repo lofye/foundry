@@ -8,6 +8,7 @@ use Foundry\CLI\Commands\CacheClearCommand;
 use Foundry\CLI\Commands\CacheInspectCommand;
 use Foundry\CLI\Commands\CodemodRunCommand;
 use Foundry\CLI\Commands\CompileGraphCommand;
+use Foundry\CLI\Commands\CompletionCommand;
 use Foundry\CLI\Commands\ContextCheckAlignmentCommand;
 use Foundry\CLI\Commands\ContextDoctorCommand;
 use Foundry\CLI\Commands\ContextInitCommand;
@@ -91,6 +92,7 @@ final class Application
     {
         return [
             new CompileGraphCommand(),
+            new CompletionCommand(),
             new ContextInitCommand(),
             new ContextDoctorCommand(),
             new ContextCheckAlignmentCommand(),

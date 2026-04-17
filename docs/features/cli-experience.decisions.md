@@ -27,3 +27,36 @@ Timestamp: 2026-04-16T15:00:00-04:00
 - Purpose
 - Goals
 - Constraints
+
+### Decision: implement CLI autocomplete as emitted shell scripts backed by CLI-owned completion logic
+Timestamp: 2026-04-17T09:49:12-04:00
+
+**Context**
+- `cli-experience` needed first-class shell autocomplete without weakening deterministic CLI contracts or introducing a second command registry.
+- Dynamic completion for execution-spec workflows needed to respect active versus draft lifecycle rules that already govern `implement spec`.
+
+**Decision**
+- Add a stable `completion` CLI command that emits bash and zsh completion scripts.
+- Derive static command and subcommand candidates from `Foundry\Support\ApiSurfaceRegistry`.
+- Complete `implement spec <feature> <id>` dynamically from `docs/specs/`, using active execution-spec ids only by default and excluding drafts.
+
+**Reasoning**
+- Emitted scripts keep shell integration explicit, lightweight, and dependency-free.
+- Registry-backed static completion keeps help output, CLI verification, and autocomplete aligned with one canonical command surface.
+- Active-only spec-id completion preserves execution-spec lifecycle boundaries while still improving CLI ergonomics materially.
+
+**Alternatives Considered**
+- Hardcode command lists separately inside shell scripts.
+- Include draft execution specs in default completion output.
+- Defer autocomplete until a broader shell-integration framework exists.
+
+**Impact**
+- Bash and zsh users can enable deterministic Foundry CLI completion immediately.
+- CLI help, registry metadata, and surface verification now share the same command source for autocomplete-relevant behavior.
+- `implement spec` completion is faster without blurring active and draft execution-spec state.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
