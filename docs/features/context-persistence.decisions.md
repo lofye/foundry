@@ -648,3 +648,37 @@ Timestamp: 2026-04-17T10:30:00-04:00
 - Constraints
 - Requested Changes
 - Authority Rule
+
+### Decision: derive a strict consumability gate from verify-context outputs
+Timestamp: 2026-04-17T11:45:00-04:00
+
+**Context**
+- `verify context` already combined doctor and alignment into a deterministic view, but downstream execution still treated alignment warnings as runnable.
+- Execution spec 020 required a stricter machine-readable answer for whether canonical context is safe for later systems to consume without guessing or partial state.
+- The stricter gate could not rewrite doctor or alignment behavior because those outputs were already part of the feature contract.
+
+**Decision**
+- Derive a per-feature `consumable` flag inside `verify context`.
+- Define `consumable = true` only when doctor status is `ok`, alignment status is `ok`, and required actions are empty.
+- Keep existing verify pass/fail status semantics, but make repo-wide `can_proceed` depend on every feature being consumable.
+- Make context-driven execution surfaces refuse with deterministic `context_not_consumable` guidance when the consumability gate is false, while still allowing explicit repair modes to resolve deterministic required actions first.
+
+**Reasoning**
+- Consumability is stricter than pass/fail readiness and captures whether downstream systems can safely trust the canonical context as-is.
+- Deriving the flag from existing outputs preserves deterministic behavior and avoids inventing a second diagnostics system.
+- Reusing one refusal reason keeps later execution surfaces consistent without weakening the repair-first workflow.
+
+**Alternatives Considered**
+- Change doctor or alignment rules directly to encode consumability.
+- Treat alignment warnings as consumable for execution.
+- Add a separate ad hoc refusal policy inside each execution command.
+
+**Impact**
+- `verify context` now exposes a stricter downstream safety signal without breaking its existing doctor/alignment contracts.
+- Repo-wide verification can now report `can_proceed = false` when any feature is still non-consumable even if per-feature statuses remain `pass`.
+- `implement feature` and `implement spec` now fail closed on non-consumable canonical context and surface one deterministic refusal message.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

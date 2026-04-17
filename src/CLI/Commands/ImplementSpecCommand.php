@@ -195,6 +195,14 @@ final class ImplementSpecCommand extends Command
             }
         }
 
+        if (is_string($payload['reason'] ?? null) && $payload['reason'] !== '') {
+            $lines[] = 'Reason: ' . $payload['reason'];
+        }
+
+        if (is_string($payload['required_action'] ?? null) && $payload['required_action'] !== '') {
+            $lines[] = 'Required action: ' . $payload['required_action'];
+        }
+
         return implode(PHP_EOL, $lines);
     }
 

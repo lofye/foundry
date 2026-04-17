@@ -109,6 +109,25 @@ final class CLIImplementSpecCommandTest extends TestCase
         $this->assertFileDoesNotExist($this->project->root . '/app/features/event-bus/feature.yaml');
     }
 
+    public function test_implement_spec_refuses_non_consumable_context(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeExecutionSpec('event-bus', '001-initial');
+
+        $result = $this->runCommand(['foundry', 'implement', 'spec', 'event-bus/001-initial', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
+        $this->assertSame('context_not_consumable', $result['payload']['reason']);
+        $this->assertSame(
+            'Run `php bin/foundry verify context --json` and resolve all issues before proceeding.',
+            $result['payload']['required_action'],
+        );
+        $this->assertContains('Update the feature state to reflect current implementation.', $result['payload']['required_actions']);
+    }
+
     public function test_auto_log_execution_spec_with_negative_lead_in_fragments_is_not_falsely_blocked(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'execution-spec-system', '--json']);

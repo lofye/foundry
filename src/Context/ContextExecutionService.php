@@ -128,26 +128,24 @@ final class ContextExecutionService
         $repairActions = [];
         $repairAttempted = false;
         $repairSuccessful = false;
+        $consumable = (bool) ($verification['consumable'] ?? false);
 
-        if (!(bool) ($inspection['can_proceed'] ?? false)) {
+        if (!$consumable) {
             if (!$repair && !$autoRepair) {
-                return new ExecutionResult(
-                    feature: $featureName,
-                    status: 'blocked',
-                    canProceed: false,
-                    requiresRepair: true,
+                return $this->nonConsumableBlockedResult(
+                    featureName: $featureName,
+                    verification: $verification,
+                    inspection: $inspection,
                     repairAttempted: false,
                     repairSuccessful: false,
                     actionsTaken: [],
-                    issues: array_values((array) ($verification['issues'] ?? [])),
-                    requiredActions: array_values(array_map('strval', (array) ($inspection['required_actions'] ?? []))),
                 );
             }
 
             $repairAttempted = true;
             $seenRepairSets = [];
 
-            while (!(bool) ($inspection['can_proceed'] ?? false)) {
+            while (!$consumable) {
                 $requiredActions = array_values(array_map('strval', (array) ($inspection['required_actions'] ?? [])));
                 if ($requiredActions === []) {
                     break;
@@ -167,23 +165,21 @@ final class ContextExecutionService
                 $repairActions = array_values(array_merge($repairActions, $applied));
                 $inspection = $this->inspectionService->inspectFeature($featureName);
                 $verification = $this->inspectionService->verifyFeature($featureName);
+                $consumable = (bool) ($verification['consumable'] ?? false);
             }
 
             $repairActions = array_values(array_unique($repairActions));
             sort($repairActions);
-            $repairSuccessful = (bool) ($inspection['can_proceed'] ?? false);
+            $repairSuccessful = $consumable;
 
             if (!$repairSuccessful) {
-                return new ExecutionResult(
-                    feature: $featureName,
-                    status: 'blocked',
-                    canProceed: false,
-                    requiresRepair: true,
+                return $this->nonConsumableBlockedResult(
+                    featureName: $featureName,
+                    verification: $verification,
+                    inspection: $inspection,
                     repairAttempted: true,
                     repairSuccessful: false,
                     actionsTaken: $repairActions,
-                    issues: array_values((array) ($verification['issues'] ?? [])),
-                    requiredActions: array_values(array_map('strval', (array) ($inspection['required_actions'] ?? []))),
                 );
             }
         }
@@ -201,6 +197,7 @@ final class ContextExecutionService
 
         if (
             !(bool) ($finalInspection['can_proceed'] ?? false)
+            || !(bool) ($finalVerification['consumable'] ?? false)
             || array_values((array) ($finalVerification['issues'] ?? [])) !== []
         ) {
             return new ExecutionResult(
@@ -240,7 +237,9 @@ final class ContextExecutionService
      *     repair_successful:bool,
      *     actions_taken:list<string>,
      *     issues:list<array<string,mixed>>,
-     *     required_actions:list<string>
+     *     required_actions:list<string>,
+     *     reason?:string,
+     *     required_action?:string
      * }
      */
     public function executeSpec(ExecutionSpec $executionSpec, bool $repair = false, bool $autoRepair = false): array
@@ -302,7 +301,7 @@ final class ContextExecutionService
             $payload['actions_taken'][] = 'Applied execution spec: ' . $executionSpec->path;
         }
 
-        return [
+        $result = [
             'spec_id' => $executionSpec->specId,
             'feature' => (string) $payload['feature'],
             'status' => (string) $payload['status'],
@@ -314,6 +313,45 @@ final class ContextExecutionService
             'issues' => array_values((array) $payload['issues']),
             'required_actions' => array_values(array_map('strval', (array) $payload['required_actions'])),
         ];
+
+        if (is_string($payload['reason'] ?? null) && $payload['reason'] !== '') {
+            $result['reason'] = (string) $payload['reason'];
+        }
+
+        if (is_string($payload['required_action'] ?? null) && $payload['required_action'] !== '') {
+            $result['required_action'] = (string) $payload['required_action'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<string,mixed> $verification
+     * @param array<string,mixed> $inspection
+     */
+    private function nonConsumableBlockedResult(
+        string $featureName,
+        array $verification,
+        array $inspection,
+        bool $repairAttempted,
+        bool $repairSuccessful,
+        array $actionsTaken,
+    ): ExecutionResult {
+        $refusal = ContextExecutionReadiness::nonConsumableRefusal();
+
+        return new ExecutionResult(
+            feature: $featureName,
+            status: 'blocked',
+            canProceed: false,
+            requiresRepair: true,
+            repairAttempted: $repairAttempted,
+            repairSuccessful: $repairSuccessful,
+            actionsTaken: array_values(array_map('strval', $actionsTaken)),
+            issues: array_values((array) ($verification['issues'] ?? [])),
+            requiredActions: array_values(array_map('strval', (array) ($inspection['required_actions'] ?? []))),
+            reason: $refusal['reason'],
+            requiredAction: $refusal['required_action'],
+        );
     }
 
     /**

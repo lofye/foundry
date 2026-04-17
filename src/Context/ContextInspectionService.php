@@ -83,6 +83,7 @@ final class ContextInspectionService
      *     status:string,
      *     can_proceed:bool,
      *     requires_repair:bool,
+     *     consumable:bool,
      *     doctor_status:string,
      *     alignment_status:string,
      *     issues:list<array<string,mixed>>,
@@ -150,12 +151,19 @@ final class ContextInspectionService
             }
         }
 
-        $readiness = ContextExecutionReadiness::fromVerifyStatus($status);
+        $allConsumable = array_values(array_filter(
+            array_map(
+                static fn(array $feature): bool => (bool) ($feature['consumable'] ?? false),
+                $features,
+            ),
+            static fn(bool $consumable): bool => !$consumable,
+        )) === [];
+        $canProceed = $status === 'pass' && $allConsumable;
 
         return [
             'status' => $status,
-            'can_proceed' => $readiness['can_proceed'],
-            'requires_repair' => $readiness['requires_repair'],
+            'can_proceed' => $canProceed,
+            'requires_repair' => !$canProceed,
             'summary' => $summary,
             'features' => $features,
             'required_actions' => array_values(array_unique($requiredActions)),
@@ -219,6 +227,7 @@ final class ContextInspectionService
      *     status:string,
      *     can_proceed:bool,
      *     requires_repair:bool,
+     *     consumable:bool,
      *     doctor_status:string,
      *     alignment_status:string,
      *     issues:list<array<string,mixed>>,
@@ -231,22 +240,28 @@ final class ContextInspectionService
         $alignmentStatus = (string) ($inspection['summary']['alignment_status'] ?? 'mismatch');
         $status = ContextExecutionReadiness::verifyStatus($doctorStatus, $alignmentStatus);
         $readiness = ContextExecutionReadiness::fromVerifyStatus($status);
+        $requiredActions = $this->requiredActionsFromInspection(
+            (array) ($inspection['doctor'] ?? []),
+            (array) ($inspection['alignment'] ?? []),
+        );
 
         return [
             'feature' => (string) ($inspection['feature'] ?? ''),
             'status' => $status,
             'can_proceed' => $readiness['can_proceed'],
             'requires_repair' => $readiness['requires_repair'],
+            'consumable' => ContextExecutionReadiness::isConsumable(
+                $doctorStatus,
+                $alignmentStatus,
+                $requiredActions,
+            ),
             'doctor_status' => $doctorStatus,
             'alignment_status' => $alignmentStatus,
             'issues' => $this->verificationIssues(
                 (array) ($inspection['doctor'] ?? []),
                 (array) ($inspection['alignment'] ?? []),
             ),
-            'required_actions' => $this->requiredActionsFromInspection(
-                (array) ($inspection['doctor'] ?? []),
-                (array) ($inspection['alignment'] ?? []),
-            ),
+            'required_actions' => $requiredActions,
         ];
     }
 

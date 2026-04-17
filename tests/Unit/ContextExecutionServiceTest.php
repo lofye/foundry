@@ -34,7 +34,29 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertFalse($result['can_proceed']);
         $this->assertTrue($result['requires_repair']);
         $this->assertFalse($result['repair_attempted']);
+        $this->assertSame('context_not_consumable', $result['reason']);
+        $this->assertSame(
+            'Run `php bin/foundry verify context --json` and resolve all issues before proceeding.',
+            $result['required_action'],
+        );
         $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $result['required_actions']);
+    }
+
+    public function test_execution_refuses_non_consumable_context_with_standard_reason(): void
+    {
+        $this->initService()->init('event-bus');
+
+        $result = $this->service()->execute('event-bus')->toArray();
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('context_not_consumable', $result['reason']);
+        $this->assertSame(
+            'Run `php bin/foundry verify context --json` and resolve all issues before proceeding.',
+            $result['required_action'],
+        );
+        $this->assertContains('Update the feature state to reflect current implementation.', $result['required_actions']);
     }
 
     public function test_execution_proceeds_when_context_is_valid(): void
@@ -531,18 +553,18 @@ MD);
         ], array_keys($result));
     }
 
-    public function test_failed_revalidation_returns_completed_with_issues(): void
+    public function test_non_consumable_context_blocks_before_execution_runs(): void
     {
         $this->initService()->init('event-bus');
 
         $result = $this->service()->execute('event-bus')->toArray();
 
-        $this->assertSame('completed_with_issues', $result['status']);
-        $this->assertTrue($result['can_proceed']);
-        $this->assertFalse($result['requires_repair']);
+        $this->assertSame('blocked', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
         $this->assertNotSame([], $result['issues']);
         $this->assertContains(
-            'Update the spec to reflect the decision-backed behavior if it is now intended behavior.',
+            'Update the feature state to reflect current implementation.',
             $result['required_actions'],
         );
     }

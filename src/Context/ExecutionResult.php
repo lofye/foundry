@@ -21,6 +21,8 @@ final readonly class ExecutionResult
         public array $actionsTaken = [],
         public array $issues = [],
         public array $requiredActions = [],
+        public ?string $reason = null,
+        public ?string $requiredAction = null,
     ) {}
 
     /**
@@ -33,12 +35,14 @@ final readonly class ExecutionResult
      *     repair_successful:bool,
      *     actions_taken:list<string>,
      *     issues:list<array<string,mixed>>,
-     *     required_actions:list<string>
+     *     required_actions:list<string>,
+     *     reason?:string,
+     *     required_action?:string
      * }
      */
     public function toArray(): array
     {
-        return [
+        $payload = [
             'feature' => $this->feature,
             'status' => $this->status,
             'can_proceed' => $this->canProceed,
@@ -49,5 +53,15 @@ final readonly class ExecutionResult
             'issues' => array_values($this->issues),
             'required_actions' => array_values($this->requiredActions),
         ];
+
+        if ($this->reason !== null) {
+            $payload['reason'] = $this->reason;
+        }
+
+        if ($this->requiredAction !== null) {
+            $payload['required_action'] = $this->requiredAction;
+        }
+
+        return $payload;
     }
 }

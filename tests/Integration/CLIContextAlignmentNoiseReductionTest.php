@@ -46,6 +46,7 @@ final class CLIContextAlignmentNoiseReductionTest extends TestCase
         $this->assertSame('pass', $first['payload']['status']);
         $this->assertTrue($first['payload']['can_proceed']);
         $this->assertFalse($first['payload']['requires_repair']);
+        $this->assertTrue($first['payload']['consumable']);
         $this->assertSame('ok', $first['payload']['doctor_status']);
         $this->assertSame('ok', $first['payload']['alignment_status']);
         $this->assertSame([], $first['payload']['issues']);

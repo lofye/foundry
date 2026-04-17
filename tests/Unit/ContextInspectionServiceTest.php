@@ -44,22 +44,35 @@ final class ContextInspectionServiceTest extends TestCase
 
     public function test_verification_mapping_produces_correct_pass_fail_outcomes(): void
     {
-        $this->initService()->init('pass-feature');
+        $this->writeConsumableContext('pass-feature');
+        $this->initService()->init('warning-feature');
 
         $pass = $this->service()->verifyFeature('pass-feature');
+        $warning = $this->service()->verifyFeature('warning-feature');
         $fail = $this->service()->verifyFeature('missing-feature');
 
         $this->assertSame('pass', $pass['status']);
         $this->assertTrue($pass['can_proceed']);
         $this->assertFalse($pass['requires_repair']);
+        $this->assertTrue($pass['consumable']);
         $this->assertSame('ok', $pass['doctor_status']);
-        $this->assertSame('warning', $pass['alignment_status']);
+        $this->assertSame('ok', $pass['alignment_status']);
+        $this->assertSame([], $pass['required_actions']);
+
+        $this->assertSame('pass', $warning['status']);
+        $this->assertTrue($warning['can_proceed']);
+        $this->assertFalse($warning['requires_repair']);
+        $this->assertFalse($warning['consumable']);
+        $this->assertSame('ok', $warning['doctor_status']);
+        $this->assertSame('warning', $warning['alignment_status']);
         $this->assertSame([
             'Update the feature state to reflect current implementation.',
-        ], $pass['required_actions']);
+        ], $warning['required_actions']);
+
         $this->assertSame('fail', $fail['status']);
         $this->assertFalse($fail['can_proceed']);
         $this->assertTrue($fail['requires_repair']);
+        $this->assertFalse($fail['consumable']);
         $this->assertSame('repairable', $fail['doctor_status']);
         $this->assertSame('mismatch', $fail['alignment_status']);
     }
@@ -76,11 +89,73 @@ final class ContextInspectionServiceTest extends TestCase
         ));
 
         $this->assertSame('pass', $result['status']);
-        $this->assertTrue($result['can_proceed']);
-        $this->assertFalse($result['requires_repair']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
         $this->assertSame(['alpha-feature', 'zeta-feature'], $features);
         $this->assertSame(2, $result['summary']['pass']);
         $this->assertSame(2, $result['summary']['total']);
+        $this->assertSame([false, false], array_values(array_map(
+            static fn(array $feature): bool => (bool) ($feature['consumable'] ?? true),
+            $result['features'],
+        )));
+    }
+
+    private function writeConsumableContext(string $feature): void
+    {
+        $this->initService()->init($feature);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+# Feature Spec: {$feature}
+
+## Purpose
+
+Introduce deterministic event bus handling.
+
+## Goals
+
+- Preserve consumable canonical context.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Constraints
+
+- Keep output deterministic.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Event bus feature files are present.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+# Feature: {$feature}
+
+## Purpose
+
+Introduce deterministic event bus handling.
+
+## Current State
+
+- Event bus feature scaffolding exists in the app.
+- Event bus feature files are present.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Preserve deterministic event bus verification coverage.
+MD);
     }
 
     private function service(): ContextInspectionService

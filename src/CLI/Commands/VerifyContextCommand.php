@@ -72,7 +72,7 @@ final class VerifyContextCommand extends Command
     }
 
     /**
-     * @param array{feature:string,status:string,can_proceed:bool,requires_repair:bool,doctor_status:string,alignment_status:string,issues:list<array<string,mixed>>,required_actions:list<string>} $payload
+     * @param array{feature:string,status:string,can_proceed:bool,requires_repair:bool,consumable:bool,doctor_status:string,alignment_status:string,issues:list<array<string,mixed>>,required_actions:list<string>} $payload
      */
     private function renderFeature(array $payload): string
     {
@@ -81,6 +81,7 @@ final class VerifyContextCommand extends Command
             'Status: ' . $payload['status'],
             'Can proceed: ' . ($payload['can_proceed'] ? 'yes' : 'no'),
             'Requires repair: ' . ($payload['requires_repair'] ? 'yes' : 'no'),
+            'Consumable: ' . ($payload['consumable'] ? 'yes' : 'no'),
             'Doctor: ' . $payload['doctor_status'],
             'Alignment: ' . $payload['alignment_status'],
             'Issues:',
@@ -127,7 +128,7 @@ final class VerifyContextCommand extends Command
                     continue;
                 }
 
-                $lines[] = '- ' . (string) ($feature['feature'] ?? '') . ': ' . (string) ($feature['status'] ?? '');
+                $lines[] = '- ' . (string) ($feature['feature'] ?? '') . ': ' . (string) ($feature['status'] ?? '') . ' (consumable: ' . (((bool) ($feature['consumable'] ?? false)) ? 'yes' : 'no') . ')';
             }
         }
 

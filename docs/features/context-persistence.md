@@ -14,13 +14,15 @@
 - Feature state documents now normalize through a reusable deterministic normalizer before framework-owned state updates are persisted.
 - `inspect context` aggregates doctor and alignment results into a single deterministic view.
 - `verify context` maps doctor and alignment results to deterministic pass/fail semantics.
+- `verify context` now derives a per-feature `consumable` flag from doctor status, alignment status, and required actions without changing doctor or alignment rules.
 - `verify context` surfaces doctor execution-spec drift issues through its existing flattened issue list.
 - `verify context` fails when doctor is `repairable` or `non_compliant`.
 - `verify context` fails when alignment status is `mismatch`.
+- Repo-wide `verify context` now sets top-level `can_proceed = false` when any feature is not consumable, even if its per-feature status still renders as `pass`.
 - `inspect context` and `verify context` reuse doctor and alignment services rather than reimplementing either path.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
 - `implement feature` executes only from canonical context artifacts and revalidates context before finishing.
-- `implement feature` blocks execution when `can_proceed` is false unless explicit repair mode succeeds.
+- `implement feature` now refuses non-consumable canonical context with deterministic `context_not_consumable` guidance unless explicit repair mode succeeds.
 - `implement feature` updates feature state and decision history after meaningful execution.
 - `implement feature` returns deterministic blocked, repaired, completed, or `completed_with_issues` results.
 - `implement spec` resolves active execution specs deterministically from canonical full refs, exact `<feature> <id>` shorthand within a feature, and unique active filename shorthand.
@@ -29,6 +31,8 @@
 - `implement spec` canonical conflict detection now compares instruction clauses with polarity awareness, requires opposing polarity plus a substantially similar target action before blocking, and no longer treats shared topic words alone as contradiction evidence.
 - Nested execution-spec prohibition bullets preserve full negative context through conflict detection, so aligned prohibitions stay unblocked while true opposing-polarity contradictions still fail.
 - `implement spec` records that execution was driven by a specific execution spec without changing canonical authority.
+- `implement spec` now reuses the same non-consumable-context refusal gate and deterministic refusal reason as `implement feature`.
+- Later context-dependent execution surfaces now expose deterministic `context_not_consumable` refusal guidance when canonical context is not safely consumable.
 - Execution spec conflicts do not override canonical feature authority.
 - `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec deterministically under `docs/specs/<feature>/drafts/<id>-<slug>.md` when a concrete gap exists.
 - `plan feature` now writes at most one draft execution spec file per successful invocation and verifies that its reported `spec_id` and `spec_path` match the actual file written.
@@ -50,7 +54,7 @@
 ## Open Questions
 - How should future multi-step planning remain bounded without becoming roadmap generation?
 - How should future repair flows balance usefulness with strict non-speculative behavior?
-- How should later execution systems consume canonical feature context without weakening deterministic guarantees?
+- How should future compile-time or runtime consumers reuse the consumability gate without duplicating refusal logic?
 
 ## Next Steps
-- Keep later execution systems safely consumable from canonical feature context files.
+- Reuse the consumability refusal helper for any future context-dependent execution surface beyond implement feature and implement spec.

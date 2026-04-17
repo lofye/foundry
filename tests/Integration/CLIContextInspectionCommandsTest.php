@@ -58,6 +58,7 @@ final class CLIContextInspectionCommandsTest extends TestCase
             'status',
             'can_proceed',
             'requires_repair',
+            'consumable',
             'doctor_status',
             'alignment_status',
             'issues',
@@ -75,6 +76,7 @@ final class CLIContextInspectionCommandsTest extends TestCase
         $this->assertSame('pass', $result['payload']['status']);
         $this->assertTrue($result['payload']['can_proceed']);
         $this->assertFalse($result['payload']['requires_repair']);
+        $this->assertFalse($result['payload']['consumable']);
         $this->assertSame('ok', $result['payload']['doctor_status']);
         $this->assertSame('warning', $result['payload']['alignment_status']);
         $this->assertSame([
@@ -137,10 +139,14 @@ final class CLIContextInspectionCommandsTest extends TestCase
 
         $this->assertSame(0, $result['status']);
         $this->assertSame('pass', $result['payload']['status']);
-        $this->assertTrue($result['payload']['can_proceed']);
-        $this->assertFalse($result['payload']['requires_repair']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
         $this->assertSame(['alpha-feature', 'zeta-feature'], $features);
         $this->assertSame(2, $result['payload']['summary']['pass']);
+        $this->assertSame([false, false], array_values(array_map(
+            static fn(array $feature): bool => (bool) ($feature['consumable'] ?? true),
+            $result['payload']['features'],
+        )));
     }
 
     public function test_json_and_text_outputs_report_consistent_readiness(): void

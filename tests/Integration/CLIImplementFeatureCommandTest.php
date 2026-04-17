@@ -76,6 +76,11 @@ final class CLIImplementFeatureCommandTest extends TestCase
         $this->assertSame('blocked', $result['payload']['status']);
         $this->assertFalse($result['payload']['can_proceed']);
         $this->assertTrue($result['payload']['requires_repair']);
+        $this->assertSame('context_not_consumable', $result['payload']['reason']);
+        $this->assertSame(
+            'Run `php bin/foundry verify context --json` and resolve all issues before proceeding.',
+            $result['payload']['required_action'],
+        );
         $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $result['payload']['required_actions']);
     }
 
@@ -123,19 +128,24 @@ final class CLIImplementFeatureCommandTest extends TestCase
         $this->assertStringContainsString('### Decision: context-driven execution for event-bus', $decisions);
     }
 
-    public function test_failed_revalidation_returns_completed_with_issues(): void
+    public function test_non_consumable_context_returns_refusal_payload(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
 
         $result = $this->runCommand(['foundry', 'implement', 'feature', 'event-bus', '--json']);
 
         $this->assertSame(1, $result['status']);
-        $this->assertSame('completed_with_issues', $result['payload']['status']);
-        $this->assertTrue($result['payload']['can_proceed']);
-        $this->assertFalse($result['payload']['requires_repair']);
+        $this->assertSame('blocked', $result['payload']['status']);
+        $this->assertFalse($result['payload']['can_proceed']);
+        $this->assertTrue($result['payload']['requires_repair']);
+        $this->assertSame('context_not_consumable', $result['payload']['reason']);
+        $this->assertSame(
+            'Run `php bin/foundry verify context --json` and resolve all issues before proceeding.',
+            $result['payload']['required_action'],
+        );
         $this->assertNotSame([], $result['payload']['issues']);
         $this->assertContains(
-            'Update the spec to reflect the decision-backed behavior if it is now intended behavior.',
+            'Update the feature state to reflect current implementation.',
             $result['payload']['required_actions'],
         );
     }

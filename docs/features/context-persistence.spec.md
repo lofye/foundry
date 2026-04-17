@@ -42,14 +42,17 @@
 - CLI commands can detect spec-state mismatches using deterministic heuristics.
 - Inspect context aggregates doctor and alignment results into a single deterministic view.
 - Verify context maps doctor and alignment results to deterministic pass/fail semantics.
+- Verify context derives a per-feature `consumable` flag from existing doctor, alignment, and required-action outputs without changing doctor or alignment rules.
 - Verify context surfaces doctor execution-spec drift issues through its existing flattened issue list.
 - Verify context fails when doctor is `repairable` or `non_compliant`.
 - Verify context fails when alignment status is `mismatch`.
+- Verify context reports `consumable = true` only when doctor status is `ok`, alignment status is `ok`, and required actions are empty.
+- Repo-wide verify context keeps its existing pass/fail status semantics but sets top-level `can_proceed = false` when any feature is not consumable.
 - Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
 - Feature state documents normalize through one reusable deterministic normalization path before framework-owned state updates are persisted.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
 - Implement feature consumes canonical feature context as authoritative execution input.
-- Implement feature blocks execution when `can_proceed` is false unless explicit repair mode succeeds.
+- Implement feature refuses execution when canonical context is not consumable unless explicit repair mode succeeds.
 - Implement feature updates feature state and decision history after meaningful execution.
 - Implement feature revalidates context after execution.
 - Implement spec resolves active execution specs deterministically from canonical `<feature>/<id>-<slug>` refs, from exact `<feature> <id>` shorthand within a feature, and from a unique active `<id>-<slug>` shorthand, where `<id>` uses one or more dot-separated 3-digit segments.
@@ -61,6 +64,7 @@
 - Implement spec conflict detection requires opposing polarity plus a substantially similar target action before blocking.
 - Parsed execution-spec prohibition bullets preserve their negative parent context when conflict checks evaluate nested instruction items.
 - Implement spec records that execution was driven by a specific execution spec without changing canonical authority.
+- Later context-dependent execution systems surface a deterministic `context_not_consumable` refusal when canonical context is not safely consumable.
 - Plan feature generates the next bounded execution spec deterministically under `docs/specs/<feature>/drafts/<id>-<slug>.md`, where `<id>` uses one or more dot-separated 3-digit segments.
 - Plan feature writes at most one draft execution spec file per successful invocation and verifies that its reported `spec_id` and `spec_path` match the actual filesystem side effect.
 - Plan feature uses canonical feature context as authoritative planning input.
@@ -89,13 +93,17 @@
 - Feature state normalization keeps canonical section order and conservatively removes duplicate or obviously stale bullets without inventing content.
 - Inspect context returns a deterministic combined context view.
 - Verify context returns deterministic pass/fail status for feature context.
+- Verify context includes `consumable` per feature and derives it strictly from doctor status, alignment status, and required actions.
 - Verify context surfaces `EXECUTION_SPEC_DRIFT` as a doctor-sourced issue without changing its output contract.
+- Repo-wide verify context sets `can_proceed = false` when any feature is not consumable even if all feature statuses still render as `pass`.
 - Alignment results include actionable repair guidance.
 - Implement feature executes only from canonical context artifacts.
+- Implement feature blocks with a deterministic `context_not_consumable` refusal when canonical context is not safely consumable.
 - Implement feature returns deterministic blocked, repaired, completed, or completed_with_issues results.
 - Implement feature updates state and decisions when execution changes feature reality.
 - Implement feature revalidates context before finishing.
 - Implement spec executes a discrete implementation spec without bypassing canonical context validation.
+- Implement spec reuses the same `context_not_consumable` refusal gate as implement feature.
 - Implement spec returns deterministic blocked, repaired, completed, or completed_with_issues results aligned with implement feature.
 - Implement spec resolves active execution specs deterministically from `<feature> <id>` without accepting draft-only or malformed shorthand targets.
 - Execution spec conflicts do not override canonical feature authority.
