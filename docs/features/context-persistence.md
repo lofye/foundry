@@ -30,13 +30,14 @@
 - Nested execution-spec prohibition bullets preserve full negative context through conflict detection, so aligned prohibitions stay unblocked while true opposing-polarity contradictions still fail.
 - `implement spec` records that execution was driven by a specific execution spec without changing canonical authority.
 - Execution spec conflicts do not override canonical feature authority.
-- `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec deterministically under `docs/specs/<feature>/<id>-<slug>.md` when a concrete gap exists.
+- `plan feature` uses canonical feature context as authoritative planning input and generates the next bounded execution spec deterministically under `docs/specs/<feature>/drafts/<id>-<slug>.md` when a concrete gap exists.
+- `plan feature` now writes at most one draft execution spec file per successful invocation and verifies that its reported `spec_id` and `spec_path` match the actual file written.
 - `plan feature` generates non-tautological purpose, scope, requested changes, and slug output for concrete gaps.
 - `plan feature` blocks generic fallback specs and weak slug candidates instead of writing low-information execution specs.
 - `plan feature` now uses bounded completion signals and rejects low-information purpose, scope, requested changes, or completion signals before rendering an execution spec.
 - `plan feature` fails clearly when context cannot proceed or when no bounded next step can be derived.
 - `plan feature` blocks rather than generating vague or self-referential execution specs when only abstract or non-actionable gaps remain.
-- `plan feature` creates an execution spec that is immediately usable by `implement spec`.
+- `plan feature` creates draft execution specs that must be promoted before `implement spec` can execute them.
 - Planner input is normalized into a deterministic structure before planning.
 - Planner output is deterministic and reproducible for identical canonical inputs.
 - Blocked planning responses are deterministic.

@@ -61,7 +61,8 @@
 - Implement spec conflict detection requires opposing polarity plus a substantially similar target action before blocking.
 - Parsed execution-spec prohibition bullets preserve their negative parent context when conflict checks evaluate nested instruction items.
 - Implement spec records that execution was driven by a specific execution spec without changing canonical authority.
-- Plan feature generates the next bounded execution spec deterministically under `docs/specs/<feature>/<id>-<slug>.md`, where `<id>` uses one or more dot-separated 3-digit segments.
+- Plan feature generates the next bounded execution spec deterministically under `docs/specs/<feature>/drafts/<id>-<slug>.md`, where `<id>` uses one or more dot-separated 3-digit segments.
+- Plan feature writes at most one draft execution spec file per successful invocation and verifies that its reported `spec_id` and `spec_path` match the actual filesystem side effect.
 - Plan feature uses canonical feature context as authoritative planning input.
 - Plan feature derives concrete planning gaps from Expected Behavior versus Current State.
 - Plan feature generates non-tautological purpose, scope, requested changes, and slug output for concrete gaps.
@@ -101,7 +102,8 @@
 - Equivalent prohibition wording is not blocked as a canonical conflict.
 - True instruction contradictions with opposing polarity still block deterministically.
 - Plan feature returns deterministic planned or blocked results.
-- Plan feature creates an execution spec that is immediately usable by implement spec.
+- Plan feature creates exactly one draft execution spec whose reported `spec_id` and `spec_path` match the file actually written.
+- Plan feature does not write active execution specs directly and planned draft specs require promotion before `implement spec`.
 - Plan feature blocks rather than generating vague or self-referential execution specs.
 - Plan feature blocks generic fallback slugs and low-information execution-spec candidates instead of writing them.
 - Planned completion signals remain bounded to the requested step rather than broad project-health checks.

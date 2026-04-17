@@ -34,7 +34,8 @@ final class ContextPlanningServiceTest extends TestCase
 
         $this->assertSame('planned', $result['status']);
         $this->assertSame('event-bus/003-contract-test-coverage', $result['spec_id']);
-        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/003-contract-test-coverage.md');
+        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/drafts/003-contract-test-coverage.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/003-contract-test-coverage.md');
     }
 
     public function test_next_execution_spec_number_considers_drafts_and_hierarchical_ids(): void
@@ -47,7 +48,27 @@ final class ContextPlanningServiceTest extends TestCase
 
         $this->assertSame('planned', $result['status']);
         $this->assertSame('event-bus/004-contract-test-coverage', $result['spec_id']);
-        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/004-contract-test-coverage.md');
+        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/drafts/004-contract-test-coverage.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/004-contract-test-coverage.md');
+    }
+
+    public function test_planning_writes_exactly_one_draft_spec_and_reports_it_truthfully(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+
+        $beforePaths = $this->specPaths('event-bus');
+        $result = $this->service()->plan('event-bus')->toArray();
+        $afterPaths = $this->specPaths('event-bus');
+
+        $this->assertSame('planned', $result['status']);
+        $this->assertSame(
+            [(string) $result['spec_path']],
+            array_values(array_diff($afterPaths, $beforePaths)),
+        );
+        $this->assertSame('docs/specs/event-bus/drafts/001-contract-test-coverage.md', $result['spec_path']);
+        $this->assertSame('event-bus/001-contract-test-coverage', $result['spec_id']);
+        $this->assertFileExists($this->project->root . '/' . (string) $result['spec_path']);
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
     }
 
     public function test_generated_execution_spec_matches_stub_structure_exactly(): void
@@ -199,7 +220,19 @@ MD);
         $this->assertFalse($result['can_proceed']);
         $this->assertTrue($result['requires_repair']);
         $this->assertSame('PLANNING_NO_BOUNDED_STEP', $result['issues'][0]['code']);
-        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/001-support.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/drafts/001-support.md');
+    }
+
+    public function test_planning_fails_clearly_when_draft_directory_path_is_blocked(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        mkdir($this->project->root . '/docs/specs/event-bus', 0777, true);
+        file_put_contents($this->project->root . '/docs/specs/event-bus/drafts', 'blocked');
+
+        $this->expectException(\Foundry\Support\FoundryError::class);
+        $this->expectExceptionMessage('Draft execution spec directory path exists but is not a directory.');
+
+        $this->service()->plan('event-bus');
     }
 
     public function test_blocked_planning_response_is_identical_across_repeated_runs(): void
@@ -239,6 +272,27 @@ MD);
     private function initService(): ContextInitService
     {
         return new ContextInitService(new Paths($this->project->root));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function specPaths(string $feature): array
+    {
+        $paths = [];
+
+        foreach ([
+            $this->project->root . '/docs/specs/' . $feature,
+            $this->project->root . '/docs/specs/' . $feature . '/drafts',
+        ] as $directory) {
+            foreach (glob($directory . '/*.md') ?: [] as $path) {
+                $paths[] = str_replace($this->project->root . '/', '', $path);
+            }
+        }
+
+        sort($paths);
+
+        return $paths;
     }
 
     private function writeExistingSpec(string $feature, string $name, string $subdirectory = ''): void

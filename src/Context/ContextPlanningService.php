@@ -89,14 +89,14 @@ final class ContextPlanningService
             );
         }
 
-        $relativeDirectory = 'docs/specs/' . $featureName;
+        $relativeDirectory = 'docs/specs/' . $featureName . '/drafts';
         $absoluteDirectory = $this->paths->join($relativeDirectory);
         if (file_exists($absoluteDirectory) && !is_dir($absoluteDirectory)) {
             throw new FoundryError(
                 'PLANNING_SPEC_DIRECTORY_BLOCKED',
                 'filesystem',
                 ['path' => $relativeDirectory],
-                'Execution spec directory path exists but is not a directory.',
+                'Draft execution spec directory path exists but is not a directory.',
             );
         }
 
@@ -136,6 +136,7 @@ final class ContextPlanningService
             );
         }
 
+        $beforeWritePaths = $this->specMarkdownPaths($featureName);
         $contents = $this->renderExecutionSpec($specId, $name, $featureName, $plan);
         if (file_put_contents($absolutePath, $contents) === false) {
             throw new FoundryError(
@@ -144,6 +145,11 @@ final class ContextPlanningService
                 ['path' => $relativePath],
                 'Unable to write execution spec.',
             );
+        }
+
+        $postWriteVerification = $this->verifySingleDraftWrite($featureName, $specId, $relativePath, $beforeWritePaths);
+        if ($postWriteVerification !== null) {
+            return $postWriteVerification;
         }
 
         return new PlanResult(
@@ -316,6 +322,91 @@ final class ContextPlanningService
         $firstLine = strtok(str_replace("\r\n", "\n", $contents), "\n");
 
         return $firstLine === false ? '' : trim($firstLine);
+    }
+
+    /**
+     * @param list<string> $beforeWritePaths
+     */
+    private function verifySingleDraftWrite(string $featureName, string $specId, string $relativePath, array $beforeWritePaths): ?PlanResult
+    {
+        clearstatcache();
+
+        $afterWritePaths = $this->specMarkdownPaths($featureName);
+        $createdPaths = array_values(array_diff($afterWritePaths, $beforeWritePaths));
+        sort($createdPaths);
+
+        $absolutePath = $this->paths->join($relativePath);
+        if (is_file($absolutePath) && $createdPaths === [$relativePath]) {
+            return null;
+        }
+
+        $message = !is_file($absolutePath)
+            ? 'Planner did not leave the generated draft execution spec at the reported path.'
+            : 'Planner must create exactly one visible draft execution spec file per invocation.';
+
+        return new PlanResult(
+            feature: $featureName,
+            status: 'blocked',
+            canProceed: false,
+            requiresRepair: true,
+            specId: $specId,
+            specPath: $relativePath,
+            actionsTaken: [],
+            issues: [[
+                'code' => 'PLANNING_SPEC_WRITE_CONTRACT_FAILED',
+                'message' => $message,
+                'file_path' => $relativePath,
+                'created_paths' => $createdPaths,
+            ]],
+            requiredActions: [
+                'Inspect docs/specs/' . $featureName . '/ and docs/specs/' . $featureName . '/drafts/ so one planner invocation creates exactly one draft execution spec file.',
+            ],
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function specMarkdownPaths(string $featureName): array
+    {
+        $relativePaths = [];
+
+        foreach ([
+            'docs/specs/' . $featureName,
+            'docs/specs/' . $featureName . '/drafts',
+        ] as $directory) {
+            $absoluteDirectory = $this->paths->join($directory);
+            if (!is_dir($absoluteDirectory)) {
+                continue;
+            }
+
+            foreach (glob($absoluteDirectory . '/*.md') ?: [] as $match) {
+                if (!is_file($match)) {
+                    continue;
+                }
+
+                $relativePath = $this->relativePath($match);
+                if ($relativePath === null) {
+                    continue;
+                }
+
+                $relativePaths[] = $relativePath;
+            }
+        }
+
+        sort($relativePaths);
+
+        return array_values(array_unique($relativePaths));
+    }
+
+    private function relativePath(string $absolutePath): ?string
+    {
+        $root = rtrim($this->paths->root(), '/');
+        if (!str_starts_with($absolutePath, $root . '/')) {
+            return null;
+        }
+
+        return substr($absolutePath, strlen($root) + 1);
     }
 
     /**

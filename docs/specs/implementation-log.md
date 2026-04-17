@@ -45,3 +45,7 @@
 ## 2026-04-16 09:48:21 -0400
 - spec: context-persistence/018-cli-spec-invocation-improvements.md
 - note: Added deterministic `implement spec <feature> <id>` resolution for active specs, kept existing full-ref and unique filename shorthand behavior, and surfaced clear shorthand failure modes for malformed, draft-only, ambiguous, unknown-id, and unknown-feature targets.
+
+## 2026-04-16 13:23:23 -0400
+- spec: context-persistence/018.001-plan-feature-writes-one-draft-spec-deterministically.md
+- note: Changed `plan feature` to write exactly one verified draft execution spec per successful invocation, report the exact written path truthfully, and require promotion before planned specs can be executed.

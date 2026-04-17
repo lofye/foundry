@@ -47,11 +47,16 @@ final class CLIPlanFeatureCommandTest extends TestCase
         ], array_keys($result['payload']));
         $this->assertSame('planned', $result['payload']['status']);
         $this->assertSame('event-bus/001-contract-test-coverage', $result['payload']['spec_id']);
-        $this->assertSame('docs/specs/event-bus/001-contract-test-coverage.md', $result['payload']['spec_path']);
+        $this->assertSame('docs/specs/event-bus/drafts/001-contract-test-coverage.md', $result['payload']['spec_path']);
         $this->assertSame(['generated execution spec'], $result['payload']['actions_taken']);
-        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
+        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/drafts/001-contract-test-coverage.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
+        $this->assertSame(
+            ['docs/specs/event-bus/drafts/001-contract-test-coverage.md'],
+            $this->specPaths('event-bus'),
+        );
 
-        $contents = (string) file_get_contents($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
+        $contents = (string) file_get_contents($this->project->root . '/docs/specs/event-bus/drafts/001-contract-test-coverage.md');
         $this->assertStringContainsString('# Execution Spec: 001-contract-test-coverage', $contents);
         $this->assertStringContainsString('## Feature', $contents);
         $this->assertStringContainsString('## Purpose', $contents);
@@ -79,7 +84,7 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $result['payload']['required_actions']);
     }
 
-    public function test_generated_spec_is_executable_via_implement_spec(): void
+    public function test_generated_draft_spec_is_not_executable_until_promoted(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
         $this->writeMeaningfulContext('event-bus');
@@ -93,9 +98,10 @@ final class CLIPlanFeatureCommandTest extends TestCase
             '--json',
         ]);
 
-        $this->assertSame(0, $implemented['status']);
-        $this->assertSame('completed', $implemented['payload']['status']);
-        $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
+        $this->assertSame(1, $implemented['status']);
+        $this->assertSame('blocked', $implemented['payload']['status']);
+        $this->assertSame('EXECUTION_SPEC_NOT_FOUND', $implemented['payload']['issues'][0]['code']);
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/event-bus/feature.yaml');
     }
 
     public function test_plan_feature_output_is_identical_for_identical_projects(): void
@@ -137,7 +143,7 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertSame(1, $result['status']);
         $this->assertSame('blocked', $result['payload']['status']);
         $this->assertSame('PLANNING_NO_BOUNDED_STEP', $result['payload']['issues'][0]['code']);
-        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/001-support.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/drafts/001-support.md');
     }
 
     /**
@@ -337,6 +343,27 @@ Preserve feature intent across sessions.
 
 - Keep later execution systems safely consumable from canonical feature context files.
 MD);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function specPaths(string $feature): array
+    {
+        $paths = [];
+
+        foreach ([
+            $this->project->root . '/docs/specs/' . $feature,
+            $this->project->root . '/docs/specs/' . $feature . '/drafts',
+        ] as $directory) {
+            foreach (glob($directory . '/*.md') ?: [] as $path) {
+                $paths[] = str_replace($this->project->root . '/', '', $path);
+            }
+        }
+
+        sort($paths);
+
+        return $paths;
     }
 
     private function writeGenericFallbackPlanningContext(string $feature): void

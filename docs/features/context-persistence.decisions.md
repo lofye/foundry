@@ -176,6 +176,38 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: keep planner output draft-only and verify one write per invocation
+Timestamp: 2026-04-16T10:05:00-04:00
+
+**Context**
+- `plan feature` produced bounded execution specs deterministically, but it still wrote them directly into the active spec directory.
+- The planner also trusted its intended output path without verifying that one invocation created exactly one visible execution spec file at the reported location.
+- That blurred the draft-versus-active lifecycle and made the planner result contract weaker than the filesystem truth it was reporting.
+
+**Decision**
+- Write planner-generated execution specs only under `docs/specs/<feature>/drafts/`.
+- After writing, verify that the exact reported draft path exists and that no additional execution spec files were created by the invocation before returning `planned`.
+
+**Reasoning**
+- Planned specs are proposals and should remain non-executable until a deliberate promotion step moves them out of `drafts`.
+- Post-write verification keeps `spec_id`, `spec_path`, and `actions_taken` aligned with the actual filesystem side effects.
+- Verifying one visible write is a safer surgical fix than redesigning the planner pipeline or adding broader transactional machinery.
+
+**Alternatives Considered**
+- Keep writing planner output directly into the active execution-spec directory.
+- Rely on the current single `file_put_contents()` call without post-write verification.
+- Auto-promote planner output immediately so `implement spec` can consume it directly.
+
+**Impact**
+- `plan feature` now follows a clearer lifecycle: plan, review in drafts, promote, then implement.
+- Planner success output is now tied to verified filesystem reality instead of intended write targets alone.
+- Freshly planned specs are no longer immediately executable until they are promoted to active status.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: accept exact feature-plus-id shorthand for implement spec
 Timestamp: 2026-04-16T09:45:01-04:00
 

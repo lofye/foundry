@@ -1,13 +1,13 @@
-# Execution Spec: 021-fails-when-doctor-repairable
+# Execution Spec: 021-revalidates-context-after-execution
 
 ## Feature
 - context-persistence
 
 ## Purpose
-- Current State does not yet reflect fails when doctor is repairable or non_compliant, so this is the next bounded step now.
+- Current State does not yet reflect revalidates context after execution, so this is the next bounded step now.
 
 ## Scope
-- Verify context status mapping and output.
+- Canonical feature execution orchestration.
 
 ## Constraints
 - Keep canonical feature context authoritative.
@@ -16,16 +16,15 @@
 - Respect prior decisions recorded in docs/features/context-persistence.decisions.md.
 
 ## Requested Changes
-- Verify context fails when doctor is repairable or non_compliant.
+- Implement feature revalidates context after execution.
 
 ## Non-Goals
-- Do not broaden this step beyond Verify context status mapping and output.
+- Do not broaden this step beyond Canonical feature execution orchestration.
 - Do not change canonical feature context authority.
 
 ## Completion Signals
-- Verify context fails when doctor is repairable or non_compliant.
-- docs/features/context-persistence.md reflects the completed bounded step.
-- verify context --feature=context-persistence returns pass after execution.
+- Implement feature revalidates context after execution.
+- docs/features/context-persistence.md reflects revalidates context after execution.
 
 ## Post-Execution Expectations
 - Current State reflects the completed bounded work.
