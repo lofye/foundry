@@ -48,6 +48,7 @@
 - Verify context fails when alignment status is `mismatch`.
 - Verify context reports `consumable = true` only when doctor status is `ok`, alignment status is `ok`, and required actions are empty.
 - Repo-wide verify context keeps its existing pass/fail status semantics but sets top-level `can_proceed = false` when any feature is not consumable.
+- Active execution specs require exact implementation-log coverage through a deterministic verification surface, while draft specs remain exempt.
 - Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
 - Feature state documents normalize through one reusable deterministic normalization path before framework-owned state updates are persisted.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
@@ -96,6 +97,7 @@
 - Verify context includes `consumable` per feature and derives it strictly from doctor status, alignment status, and required actions.
 - Verify context surfaces `EXECUTION_SPEC_DRIFT` as a doctor-sourced issue without changing its output contract.
 - Repo-wide verify context sets `can_proceed = false` when any feature is not consumable even if all feature statuses still render as `pass`.
+- Deterministic verification fails when an active execution spec is missing an exact matching implementation-log entry, and drafts do not require log coverage.
 - Alignment results include actionable repair guidance.
 - Implement feature executes only from canonical context artifacts.
 - Implement feature blocks with a deterministic `context_not_consumable` refusal when canonical context is not safely consumable.

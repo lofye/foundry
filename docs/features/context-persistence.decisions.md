@@ -176,6 +176,39 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: require implementation-log coverage for active execution specs during verification
+Timestamp: 2026-04-17T12:20:00-04:00
+
+**Context**
+- Active execution specs already represented promoted bounded work, and successful new implementations now auto-appended implementation-log entries.
+- Older active specs could still remain unlogged, which left implementation history incomplete even though `docs/specs/implementation-log.md` was already canonical.
+- The feature needed an enforced deterministic rule for that history without pulling drafts into the same requirement.
+
+**Decision**
+- Require exact implementation-log coverage for active execution specs through the existing deterministic execution-spec validation surface.
+- Keep draft execution specs exempt from implementation-log coverage.
+- Treat missing coverage as a stable verification failure rather than a documentation-only convention.
+
+**Reasoning**
+- Active-versus-draft placement is the current explicit repository signal available to distinguish completed bounded work from planning artifacts.
+- Exact matching keeps the rule deterministic and easy for both humans and automation to repair.
+- Reusing an existing verification surface is narrower and safer than adding a second historical-audit workflow.
+
+**Alternatives Considered**
+- Leave implementation-log coverage as a manual convention.
+- Require log entries for drafts as well.
+- Add fuzzy historical inference or LLM-based matching.
+
+**Impact**
+- Missing implementation-log coverage for active specs is now machine-detectable.
+- Draft specs remain outside implementation chronology until they are promoted and actually completed.
+- Repository verification can now expose incomplete execution history explicitly instead of silently tolerating it.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: keep planner output draft-only and verify one write per invocation
 Timestamp: 2026-04-16T10:05:00-04:00
 

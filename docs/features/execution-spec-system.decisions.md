@@ -344,3 +344,42 @@ Timestamp: 2026-04-16T09:46:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: enforce implementation-log coverage during deterministic spec validation
+Timestamp: 2026-04-17T12:15:00-04:00
+
+**Context**
+
+- Automatic implementation-log appends already covered newly completed active execution specs, but older promoted specs could still exist without a corresponding entry in `docs/specs/implementation-log.md`.
+- `spec:validate` already served as the deterministic repository-wide execution-spec verification surface, yet it did not enforce this part of the lifecycle contract.
+- Draft specs still needed to remain exempt because they are planning artifacts rather than completed active work.
+
+**Decision**
+
+- Extend `spec:validate` to require an exact matching implementation-log entry for every active canonical execution spec.
+- Continue exempting specs under `docs/specs/<feature>/drafts/`.
+- Treat missing coverage as a deterministic validation violation rather than a best-effort warning.
+
+**Reasoning**
+
+- The implementation log is part of the execution-spec lifecycle contract, so validation should enforce it just like filename, heading, and placement rules.
+- Exact matching keeps the rule deterministic and machine-readable without adding fuzzy historical inference.
+- Reusing `spec:validate` is narrower and clearer than inventing a separate audit command for the same repository state.
+
+**Alternatives Considered**
+
+- Keep implementation-log coverage as a documentation convention only.
+- Enforce the rule only during `implement spec` and never re-check repository state later.
+- Add fuzzy matching or infer implementation history from other repository signals.
+
+**Impact**
+
+- Missing implementation-log coverage for active specs is now detectable through the standard execution-spec verification path.
+- Draft specs remain out of scope for implementation chronology.
+- Repository validation can now surface incomplete execution-spec history deterministically instead of relying on memory.
+
+**Spec Reference**
+
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

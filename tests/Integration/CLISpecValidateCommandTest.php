@@ -30,6 +30,7 @@ final class CLISpecValidateCommandTest extends TestCase
     {
         $this->writeSpec('execution-spec-system', '001-hierarchical-spec-ids-with-padded-segments');
         $this->writeSpec('execution-spec-system', '002-spec-new-cli-command', 'drafts');
+        $this->writeImplementationLogEntry('execution-spec-system/001-hierarchical-spec-ids-with-padded-segments.md');
 
         $json = $this->runCommand(['foundry', 'spec:validate', '--json']);
         $raw = $this->runRawCommand(['foundry', 'spec:validate']);
@@ -67,6 +68,9 @@ TEXT . "\n", $raw['output']);
             'docs/specs/execution-spec-system/not-a-spec.md',
             '# Execution Spec: not-a-spec' . "\n",
         );
+        $this->writeImplementationLogEntry('execution-spec-system/001-first-active.md');
+        $this->writeImplementationLogEntry('execution-spec-system/002-bad-heading.md');
+        $this->writeImplementationLogEntry('execution-spec-system/003-with-status.md');
 
         $json = $this->runCommand(['foundry', 'spec:validate', '--json']);
         $raw = $this->runRawCommand(['foundry', 'spec:validate']);
@@ -96,6 +100,33 @@ TEXT . "\n", $raw['output']);
         $this->assertStringContainsString('EXECUTION_SPEC_INVALID_FILENAME', $raw['output']);
         $this->assertStringContainsString('Summary:', $raw['output']);
         $this->assertStringContainsString('Violations: 4', $raw['output']);
+    }
+
+    public function test_spec_validate_reports_missing_implementation_log_entries_for_active_specs(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-active-missing-log');
+        $this->writeSpec('execution-spec-system', '002-draft-missing-log', 'drafts');
+
+        $json = $this->runCommand(['foundry', 'spec:validate', '--json']);
+        $raw = $this->runRawCommand(['foundry', 'spec:validate']);
+
+        $this->assertSame(1, $json['status']);
+        $this->assertFalse($json['payload']['ok']);
+        $this->assertSame(
+            ['EXECUTION_SPEC_IMPLEMENTATION_LOG_MISSING'],
+            array_map(
+                static fn(array $violation): string => (string) $violation['code'],
+                $json['payload']['violations'],
+            ),
+        );
+        $this->assertSame(
+            'execution-spec-system/001-active-missing-log.md',
+            $json['payload']['violations'][0]['details']['spec'],
+        );
+
+        $this->assertSame(1, $raw['status']);
+        $this->assertStringContainsString('EXECUTION_SPEC_IMPLEMENTATION_LOG_MISSING', $raw['output']);
+        $this->assertStringContainsString('docs/specs/execution-spec-system/001-active-missing-log.md', $raw['output']);
     }
 
     /**
@@ -143,6 +174,22 @@ TEXT . "\n", $raw['output']);
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }
+
+        file_put_contents($absolutePath, $contents);
+    }
+
+    private function writeImplementationLogEntry(string $specReference): void
+    {
+        $absolutePath = $this->project->root . '/docs/specs/implementation-log.md';
+        $directory = dirname($absolutePath);
+
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        $entry = "## 2026-04-17 12:00:00 -0400\n- spec: {$specReference}\n";
+        $existing = file_exists($absolutePath) ? (string) file_get_contents($absolutePath) : '';
+        $contents = $existing === '' ? $entry : rtrim($existing, "\n") . "\n\n" . $entry;
 
         file_put_contents($absolutePath, $contents);
     }

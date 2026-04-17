@@ -29,6 +29,7 @@
 - `spec:new` writes one file on success and no files on failure.
 - `spec:validate` scans active and draft execution specs under `docs/specs/` without modifying files.
 - `spec:validate` reports invalid filenames, invalid placement, duplicate ids, incorrect headings, and forbidden `id`, `parent`, or `status` metadata deterministically.
+- `spec:validate` now also requires exact implementation-log coverage for active execution specs, ignores drafts, and reports missing coverage deterministically.
 - `spec:validate` exits with status `0` when spec state is valid and non-zero when any violations exist.
 - `spec:validate` returns both terminal output and JSON payloads that include every detected violation for repair workflows and automation.
 - PHPUnit coverage covers the execution-spec validation service and CLI command behavior.

@@ -58,6 +58,14 @@
 - spec: cli-experience/001-cli-autocomplete.md
 - note: Added a stable `completion` command that emits bash and zsh scripts, derives static command completion from the CLI registry, and completes active execution-spec ids for `implement spec` without including drafts by default.
 
+## 2026-04-17 09:55:16 -0400
+- spec: cli-experience/002-repair-cli-experience-context-alignment.md
+- note: Repaired `cli-experience` canonical context alignment by restating the current verified CLI surface in spec-matching language, removing an unsupported shorthand-ergonomics claim, and tracking remaining completion work explicitly in `Next Steps`.
+
 ## 2026-04-17 10:00:00 -0400
 - spec: context-persistence/019-fails-when-doctor-repairable.md
 - note: Formalized the already-implemented verify-context readiness behavior that fails when doctor status is `repairable` or `non_compliant`, promoted the execution spec to active, and recorded the completed step.
+
+## 2026-04-17 12:04:09 -0400
+- spec: context-persistence/020.001-require-implementation-log-entry-for-completed-active-specs.md
+- note: Extended deterministic execution-spec validation to require exact implementation-log coverage for active specs while continuing to exempt drafts.

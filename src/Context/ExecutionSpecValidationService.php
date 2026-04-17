@@ -33,6 +33,7 @@ final class ExecutionSpecValidationService
         $checkedFiles = 0;
         $features = [];
         $seenIds = [];
+        $activeSpecReferences = [];
 
         foreach ($this->specFiles() as $relativePath) {
             if (in_array($relativePath, self::IGNORED_ROOT_FILES, true)) {
@@ -66,6 +67,9 @@ final class ExecutionSpecValidationService
             }
 
             $seenIds[$placement['feature']][$parsedName['id']][] = $relativePath;
+            if ($placement['status'] === 'active') {
+                $activeSpecReferences[$relativePath] = $placement['feature'] . '/' . $parsedName['name'] . '.md';
+            }
 
             $contents = file_get_contents($this->paths->join($relativePath));
             if ($contents === false) {
@@ -106,6 +110,25 @@ final class ExecutionSpecValidationService
                         'feature' => $feature,
                         'id' => $id,
                         'paths' => $paths,
+                    ],
+                );
+            }
+        }
+
+        $loggedSpecs = $this->implementationLogEntries($violations);
+        if ($loggedSpecs !== null) {
+            foreach ($activeSpecReferences as $relativePath => $specReference) {
+                if (isset($loggedSpecs[$specReference])) {
+                    continue;
+                }
+
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_IMPLEMENTATION_LOG_MISSING',
+                    $relativePath,
+                    'Active execution specs must have a matching implementation-log entry.',
+                    [
+                        'spec' => $specReference,
+                        'log_path' => 'docs/specs/implementation-log.md',
                     ],
                 );
             }
@@ -164,6 +187,55 @@ final class ExecutionSpecValidationService
         sort($files);
 
         return $files;
+    }
+
+    /**
+     * @param list<array<string,mixed>> $violations
+     * @return array<string,true>|null
+     */
+    private function implementationLogEntries(array &$violations): ?array
+    {
+        $relativePath = 'docs/specs/implementation-log.md';
+        $absolutePath = $this->paths->join($relativePath);
+
+        if (!file_exists($absolutePath)) {
+            return [];
+        }
+
+        if (is_dir($absolutePath)) {
+            $violations[] = $this->violation(
+                'EXECUTION_SPEC_IMPLEMENTATION_LOG_INVALID',
+                $relativePath,
+                'Execution spec implementation log must be a readable file.',
+                ['path' => $relativePath],
+            );
+
+            return null;
+        }
+
+        $contents = file_get_contents($absolutePath);
+        if ($contents === false) {
+            $violations[] = $this->violation(
+                'EXECUTION_SPEC_IMPLEMENTATION_LOG_INVALID',
+                $relativePath,
+                'Execution spec implementation log must be a readable file.',
+                ['path' => $relativePath],
+            );
+
+            return null;
+        }
+
+        $entries = [];
+
+        foreach (preg_split('/\R/', $contents) ?: [] as $line) {
+            if (preg_match('/^- spec: (?<spec>.+)$/', $line, $matches) !== 1) {
+                continue;
+            }
+
+            $entries[(string) $matches['spec']] = true;
+        }
+
+        return $entries;
     }
 
     /**

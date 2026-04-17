@@ -49,6 +49,7 @@
 - `spec:new` normalizes slug input to lowercase kebab-case, rejects empty or low-information results, and creates the required draft template without modifying existing specs.
 - `spec:new` fails clearly when feature input is invalid, the target path already exists, or allocation cannot proceed deterministically.
 - `spec:validate` scans active and draft execution specs, reports filename, placement, heading, duplicate-id, and forbidden-metadata violations, and exits non-zero when violations exist.
+- `spec:validate` also requires exact implementation-log coverage for active execution specs, ignores drafts, and reports missing coverage deterministically.
 - `spec:validate` returns both terminal output and JSON payloads that include every detected violation for repair workflows and automation.
 - Successful `implement spec` runs for active execution specs append one required-format entry to `docs/specs/implementation-log.md`.
 - Draft execution specs are never logged as implemented, and repeated completion of the same active spec does not duplicate the log entry.
@@ -68,6 +69,7 @@
 - `spec:new` emits stable success and failure output for terminals and automation.
 - Draft creation writes one file on success and no files on failure.
 - `spec:validate` detects invalid filenames, misplaced specs, duplicate ids, incorrect headings, and forbidden metadata without modifying files.
+- `spec:validate` fails when an active execution spec is missing an exact matching implementation-log entry and does not require log entries for drafts.
 - PHPUnit coverage covers the execution-spec validation service and CLI command behavior.
 - Successful active execution-spec implementation appends exactly one correctly formatted implementation-log entry automatically.
 - Draft execution specs are not auto-logged.

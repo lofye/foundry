@@ -115,6 +115,11 @@ Standard validation path:
 
 `foundry spec:validate`
 
+Validation also enforces required implementation-log coverage for active specs:
+- active specs must have a matching `- spec: <feature>/<id>-<slug>.md` entry in `docs/specs/implementation-log.md`
+- drafts remain exempt
+- matching is exact rather than fuzzy
+
 ### ID Assignment Rules
 
 - IDs must be unique within a feature.
@@ -277,6 +282,8 @@ Project-wide implementation chronology is recorded in:
 Agents must append a new entry immediately after completing an active execution spec implementation.
 
 Normal `foundry implement spec <feature>/<id>-<slug>` or `foundry implement spec <feature> <id>` completion appends this entry automatically for active specs.
+
+`foundry spec:validate` enforces that every active spec has an exact matching implementation-log entry.
 
 The implementation log is chronological and append-only.
 
