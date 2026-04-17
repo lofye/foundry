@@ -1,3 +1,51 @@
+## 2026-04-07 11:02:41 -0400
+- spec: context-persistence/001-initial.md
+
+## 2026-04-08 15:38:05 -0400
+- spec: context-persistence/002-context-init-and-doctor.md
+
+## 2026-04-09 10:23:29 -0400
+- spec: context-persistence/003-spec-state-alignment-engine.md
+
+## 2026-04-09 11:23:27 -0400
+- spec: context-persistence/004-alignment-noise-reduction.md
+
+## 2026-04-09 11:50:23 -0400
+- spec: context-persistence/005-inspect-context-integration-and-verification-wiring.md
+
+## 2026-04-09 12:03:27 -0400
+- spec: context-persistence/006-context-persistence-reconciliation.md
+
+## 2026-04-09 12:53:00 -0400
+- spec: context-persistence/007-agents-app-agents-scaffold-and-onboarding-integration.md
+
+## 2026-04-09 13:14:29 -0400
+- spec: context-persistence/008-refuse-to-proceed-hardening-and-compliance-finalization.md
+
+## 2026-04-09 15:16:56 -0400
+- spec: context-persistence/009-context-driven-feature-execution.md
+
+## 2026-04-10 10:00:28 -0400
+- spec: context-persistence/010-spec-driven-execution-entry-point.md
+
+## 2026-04-10 10:50:06 -0400
+- spec: context-persistence/011-auto-planning-from-canonical-feature-context.md
+
+## 2026-04-10 13:36:56 -0400
+- spec: canonical-identifiers/001-accept-normalized-input-and-canonicalize-visibly.md
+
+## 2026-04-10 13:36:56 -0400
+- spec: context-persistence/012-planner-output-quality-refinement.md
+
+## 2026-04-10 13:45:24 -0400
+- spec: context-persistence/013-planner-determinism-reproducibility-guarantees.md
+
+## 2026-04-10 16:04:30 -0400
+- spec: context-persistence/014-use-stub-templates-for-generated-specs.md
+
+## 2026-04-10 16:38:33 -0400
+- spec: context-persistence/015-state-normalization-pass-and-canonical-ordering.md
+
 ## 2026-04-14 10:07:03 -0400
 - spec: execution-spec-system/001-hierarchical-spec-ids-with-padded-segments.md
 - note: Implemented hierarchical padded execution-spec ids, filename-only headings, and draft-aware root allocation.
@@ -66,6 +114,16 @@
 - spec: context-persistence/019-fails-when-doctor-repairable.md
 - note: Formalized the already-implemented verify-context readiness behavior that fails when doctor status is `repairable` or `non_compliant`, promoted the execution spec to active, and recorded the completed step.
 
+## 2026-04-17 11:15:10 -0400
+- spec: compiler-determinism/001-freeze-time-for-deterministic-graph-compilation.md
+
+## 2026-04-17 11:36:46 -0400
+- spec: context-persistence/020-keep-later-execution-systems-safely-consumable.md
+
 ## 2026-04-17 12:04:09 -0400
 - spec: context-persistence/020.001-require-implementation-log-entry-for-completed-active-specs.md
 - note: Extended deterministic execution-spec validation to require exact implementation-log coverage for active specs while continuing to exempt drafts.
+
+## 2026-04-17 13:33:01 -0400
+- spec: context-persistence/020.002-suggest-exact-implementation-log-entry-content.md
+- note: Added `spec:log-entry` to emit the exact canonical implementation-log entry content for an active execution spec and reject draft-only or invalid targets clearly.

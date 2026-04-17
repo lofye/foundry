@@ -52,6 +52,7 @@ use Foundry\CLI\Commands\RegressionsCommand;
 use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
 use Foundry\CLI\Commands\SpecNewCommand;
+use Foundry\CLI\Commands\SpecLogEntryCommand;
 use Foundry\CLI\Commands\SpecValidateCommand;
 use Foundry\CLI\Commands\TraceCommand;
 use Foundry\CLI\Commands\UpgradeCheckCommand;
@@ -100,6 +101,7 @@ final class Application
             new ImplementSpecCommand(),
             new PlanFeatureCommand(),
             new SpecNewCommand(),
+            new SpecLogEntryCommand(),
             new SpecValidateCommand(),
             new CacheInspectCommand(),
             new CacheClearCommand(),

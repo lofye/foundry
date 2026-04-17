@@ -383,3 +383,42 @@ Timestamp: 2026-04-17T12:15:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: add an explicit exact log-entry suggestion surface for active specs
+Timestamp: 2026-04-17T13:00:00-04:00
+
+**Context**
+
+- `spec:validate` now enforces exact implementation-log coverage for active execution specs, but humans and agents still had to reconstruct the required entry content from docs or memory before appending it.
+- The canonical log format was already explicit and deterministic, so the remaining gap was outputting that exact content on demand without broadening into automatic backfill logic.
+- Draft specs still needed to remain exempt from implementation chronology.
+
+**Decision**
+
+- Add a dedicated `spec:log-entry` command that resolves one active execution spec and emits the exact canonical implementation-log entry content.
+- Reuse canonical execution-spec resolution and the implementation-log formatter so the suggested content matches validation exactly.
+- Fail clearly for draft-only, malformed, or unknown targets instead of guessing or generating draft log entries.
+
+**Reasoning**
+
+- A small explicit CLI surface is easier to trust and automate than asking users to reassemble the format manually.
+- Reusing the same formatter that automatic append logic already uses keeps the command aligned with both implementation and validation contracts.
+- Keeping drafts out of scope preserves the active-versus-draft lifecycle boundary.
+
+**Alternatives Considered**
+
+- Leave log-entry construction manual.
+- Add suggestion data only to validation failures instead of providing a direct command.
+- Auto-append or auto-backfill missing entries in the same change.
+
+**Impact**
+
+- Humans and agents can now request exact canonical log-entry content without guessing.
+- Validation, suggestion, and automatic append behavior now share one formatting contract.
+- Draft execution specs remain non-chronological planning artifacts until promotion and completion.
+
+**Spec Reference**
+
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

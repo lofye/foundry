@@ -187,6 +187,21 @@ final class ExecutionSpecResolver
 
         if (str_starts_with($pathInput, 'docs/specs/')) {
             $path = str_ends_with($pathInput, '.md') ? $pathInput : $pathInput . '.md';
+            $draftPath = ExecutionSpecFilename::parseDraftPath($path);
+            if ($draftPath !== null) {
+                throw new FoundryError(
+                    'EXECUTION_SPEC_DRAFT_ONLY',
+                    'validation',
+                    [
+                        'spec_id' => $draftPath['feature'] . '/' . $draftPath['name'],
+                        'path' => $path,
+                        'feature' => $draftPath['feature'],
+                        'id' => $draftPath['id'],
+                        'matches' => [$path],
+                    ],
+                    'Execution spec id exists only in drafts and must be promoted before implementation.',
+                );
+            }
 
             return $this->canonicalPathParts($path);
         }
@@ -240,6 +255,37 @@ final class ExecutionSpecResolver
         sort($relativeMatches);
 
         if ($relativeMatches === []) {
+            $draftMatches = [];
+            foreach (glob($this->paths->join('docs/specs/*/drafts/' . $basename . '.md')) ?: [] as $match) {
+                $relative = $this->relativePath($match);
+                if ($relative === null) {
+                    continue;
+                }
+
+                if (ExecutionSpecFilename::parseDraftPath($relative) === null) {
+                    continue;
+                }
+
+                $draftMatches[] = $relative;
+            }
+
+            sort($draftMatches);
+            if ($draftMatches !== []) {
+                $firstDraft = ExecutionSpecFilename::parseDraftPath($draftMatches[0]);
+
+                throw new FoundryError(
+                    'EXECUTION_SPEC_DRAFT_ONLY',
+                    'validation',
+                    [
+                        'spec_id' => $specId,
+                        'feature' => (string) ($firstDraft['feature'] ?? ''),
+                        'id' => (string) ($firstDraft['id'] ?? ''),
+                        'matches' => $draftMatches,
+                    ],
+                    'Execution spec id exists only in drafts and must be promoted before implementation.',
+                );
+            }
+
             throw new FoundryError(
                 'EXECUTION_SPEC_NOT_FOUND',
                 'filesystem',

@@ -115,6 +115,14 @@ Standard validation path:
 
 `foundry spec:validate`
 
+Standard implementation-log suggestion path:
+
+`foundry spec:log-entry <feature>/<id>-<slug>`
+
+or:
+
+`foundry spec:log-entry <feature> <id>`
+
 Validation also enforces required implementation-log coverage for active specs:
 - active specs must have a matching `- spec: <feature>/<id>-<slug>.md` entry in `docs/specs/implementation-log.md`
 - drafts remain exempt
@@ -284,6 +292,8 @@ Agents must append a new entry immediately after completing an active execution 
 Normal `foundry implement spec <feature>/<id>-<slug>` or `foundry implement spec <feature> <id>` completion appends this entry automatically for active specs.
 
 `foundry spec:validate` enforces that every active spec has an exact matching implementation-log entry.
+
+`foundry spec:log-entry` emits the exact canonical timestamp heading, `- spec:` line, and full entry content expected by implementation-log validation for an active spec.
 
 The implementation log is chronological and append-only.
 

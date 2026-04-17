@@ -20,6 +20,7 @@
 - `verify context` fails when alignment status is `mismatch`.
 - Repo-wide `verify context` now sets top-level `can_proceed = false` when any feature is not consumable, even if its per-feature status still renders as `pass`.
 - Active execution specs now require exact implementation-log coverage through the deterministic execution-spec validation path, while drafts remain exempt.
+- Foundry now exposes a deterministic CLI surface that emits the exact canonical implementation-log entry content for one active execution spec.
 - `inspect context` and `verify context` reuse doctor and alignment services rather than reimplementing either path.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
 - `implement feature` executes only from canonical context artifacts and revalidates context before finishing.

@@ -176,6 +176,39 @@ Timestamp: 2026-04-07T15:00:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: expose exact implementation-log entry content through a deterministic CLI surface
+Timestamp: 2026-04-17T13:05:00-04:00
+
+**Context**
+- Exact implementation-log coverage is now enforced for active execution specs, which made correct log-entry formatting part of the repository gate rather than a soft convention.
+- The canonical format already existed, but agents and humans still had to reconstruct the exact content manually before appending an entry.
+- The system needed a direct, deterministic way to surface that content without widening into automatic historical repair or draft logging.
+
+**Decision**
+- Add a deterministic CLI-owned surface that emits the exact canonical implementation-log entry content for one active execution spec.
+- Keep draft execution specs out of scope and fail clearly when a target is draft-only, malformed, or unknown.
+- Reuse canonical execution-spec identity and the existing implementation-log formatter so suggestion output matches validation exactly.
+
+**Reasoning**
+- Exact deterministic output reduces avoidable logging mistakes while preserving the existing append-only log format.
+- Reusing the same underlying identity and formatting rules keeps enforcement and suggestion aligned.
+- Keeping the scope to active specs preserves lifecycle boundaries and avoids inventing chronology for draft planning artifacts.
+
+**Alternatives Considered**
+- Leave log-entry construction manual after adding validation enforcement.
+- Add suggestion text only inside validation failures.
+- Auto-append or auto-backfill missing entries in the same step.
+
+**Impact**
+- Humans and agents can now request canonical log-entry content directly instead of reconstructing it from documentation.
+- Implementation-log suggestion and validation now share one exact formatting contract.
+- Draft specs remain exempt from implementation chronology until they are promoted and completed.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: require implementation-log coverage for active execution specs during verification
 Timestamp: 2026-04-17T12:20:00-04:00
 

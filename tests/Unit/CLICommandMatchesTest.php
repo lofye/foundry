@@ -50,6 +50,7 @@ use Foundry\CLI\Commands\RegressionsCommand;
 use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
 use Foundry\CLI\Commands\SpecNewCommand;
+use Foundry\CLI\Commands\SpecLogEntryCommand;
 use Foundry\CLI\Commands\SpecValidateCommand;
 use Foundry\CLI\Commands\TraceCommand;
 use Foundry\CLI\Commands\UpgradeCheckCommand;
@@ -130,6 +131,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new ImplementSpecCommand())->matches(['implement', 'spec', 'event-bus/001-initial']));
         $this->assertTrue((new PlanFeatureCommand())->matches(['plan', 'feature', 'event-bus']));
         $this->assertTrue((new SpecNewCommand())->matches(['spec:new', 'execution-spec-system', 'add-cli-command']));
+        $this->assertTrue((new SpecLogEntryCommand())->matches(['spec:log-entry', 'execution-spec-system', '004']));
         $this->assertTrue((new SpecValidateCommand())->matches(['spec:validate']));
         $this->assertTrue((new CacheInspectCommand())->matches(['cache', 'inspect']));
         $this->assertTrue((new CacheClearCommand())->matches(['cache', 'clear']));

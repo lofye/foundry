@@ -48,6 +48,8 @@
 - `spec:new <feature> "<slug>"` creates a draft execution spec under `docs/specs/<feature>/drafts/<id>-<slug>.md`.
 - `spec:new` normalizes slug input to lowercase kebab-case, rejects empty or low-information results, and creates the required draft template without modifying existing specs.
 - `spec:new` fails clearly when feature input is invalid, the target path already exists, or allocation cannot proceed deterministically.
+- `spec:log-entry` resolves one active execution spec deterministically and emits the exact canonical implementation-log entry content expected by validation.
+- `spec:log-entry` fails clearly for draft-only, malformed, or unknown targets and does not generate implementation-log entries for drafts.
 - `spec:validate` scans active and draft execution specs, reports filename, placement, heading, duplicate-id, and forbidden-metadata violations, and exits non-zero when violations exist.
 - `spec:validate` also requires exact implementation-log coverage for active execution specs, ignores drafts, and reports missing coverage deterministically.
 - `spec:validate` returns both terminal output and JSON payloads that include every detected violation for repair workflows and automation.
@@ -68,6 +70,8 @@
 - `spec:new` creates correctly named draft execution specs with the required template.
 - `spec:new` emits stable success and failure output for terminals and automation.
 - Draft creation writes one file on success and no files on failure.
+- `spec:log-entry` returns deterministic machine-readable fields for canonical spec ref, canonical spec path, exact `- spec:` line, and full entry content for an active spec.
+- `spec:log-entry` rejects draft-only, malformed, and unknown targets clearly.
 - `spec:validate` detects invalid filenames, misplaced specs, duplicate ids, incorrect headings, and forbidden metadata without modifying files.
 - `spec:validate` fails when an active execution spec is missing an exact matching implementation-log entry and does not require log entries for drafts.
 - PHPUnit coverage covers the execution-spec validation service and CLI command behavior.

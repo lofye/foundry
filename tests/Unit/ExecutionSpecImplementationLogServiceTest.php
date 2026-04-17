@@ -38,6 +38,38 @@ final class ExecutionSpecImplementationLogServiceTest extends TestCase
 MD . "\n", $this->logContents());
     }
 
+    public function test_suggested_entry_returns_exact_canonical_log_entry_content(): void
+    {
+        $payload = $this->serviceAt('2026-04-14 16:05:06 -0400')->suggestedEntry($this->activeExecutionSpec());
+
+        $this->assertSame([
+            'spec_id' => 'execution-spec-system/004-spec-auto-log-on-implementation',
+            'feature' => 'execution-spec-system',
+            'spec_ref' => 'execution-spec-system/004-spec-auto-log-on-implementation.md',
+            'spec_path' => 'docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md',
+            'log_path' => 'docs/specs/implementation-log.md',
+            'timestamp' => '2026-04-14 16:05:06 -0400',
+            'timestamp_heading' => '## 2026-04-14 16:05:06 -0400',
+            'spec_log_line' => '- spec: execution-spec-system/004-spec-auto-log-on-implementation.md',
+            'entry' => "## 2026-04-14 16:05:06 -0400\n- spec: execution-spec-system/004-spec-auto-log-on-implementation.md\n",
+        ], $payload);
+    }
+
+    public function test_suggested_entry_skips_draft_specs(): void
+    {
+        $payload = $this->serviceAt('2026-04-14 16:05:06 -0400')->suggestedEntry(
+            new ExecutionSpec(
+                specId: 'execution-spec-system/004-spec-auto-log-on-implementation',
+                feature: 'execution-spec-system',
+                path: 'docs/specs/execution-spec-system/drafts/004-spec-auto-log-on-implementation.md',
+                name: '004-spec-auto-log-on-implementation',
+                id: '004',
+            ),
+        );
+
+        $this->assertNull($payload);
+    }
+
     public function test_record_if_eligible_is_idempotent_for_existing_spec_entry(): void
     {
         $service = $this->serviceAt('2026-04-14 16:05:06 -0400');

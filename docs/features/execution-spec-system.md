@@ -27,6 +27,9 @@
 - `spec:new` fails clearly when feature input is invalid, the target path already exists, or allocation cannot proceed deterministically.
 - `spec:new` emits stable success and failure output for terminals and automation.
 - `spec:new` writes one file on success and no files on failure.
+- `spec:log-entry` now resolves active execution specs through the canonical resolver and emits the exact implementation-log entry content expected by validation.
+- `spec:log-entry` returns machine-readable canonical spec ref, canonical spec path, exact `- spec:` line, and full entry content for one active spec.
+- `spec:log-entry` fails clearly for draft-only, malformed, or unknown targets and does not suggest implementation-log entries for drafts.
 - `spec:validate` scans active and draft execution specs under `docs/specs/` without modifying files.
 - `spec:validate` reports invalid filenames, invalid placement, duplicate ids, incorrect headings, and forbidden `id`, `parent`, or `status` metadata deterministically.
 - `spec:validate` now also requires exact implementation-log coverage for active execution specs, ignores drafts, and reports missing coverage deterministically.

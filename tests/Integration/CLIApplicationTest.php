@@ -250,6 +250,13 @@ YAML);
         $this->assertSame('App Scaffolding', $specNewHelp['payload']['command']['category']);
         $this->assertStringContainsString('spec:new <feature> <slug>', $specNewHelp['payload']['command']['usage']);
 
+        $specLogEntryHelp = $this->runCommand($app, ['foundry', 'help', 'spec:log-entry', '--json']);
+        $this->assertSame(0, $specLogEntryHelp['status']);
+        $this->assertSame('spec:log-entry', $specLogEntryHelp['payload']['command']['signature']);
+        $this->assertSame('stable', $specLogEntryHelp['payload']['command']['stability']);
+        $this->assertSame('Verification', $specLogEntryHelp['payload']['command']['category']);
+        $this->assertStringContainsString('<feature> <id>', $specLogEntryHelp['payload']['command']['usage']);
+
         $specValidateHelp = $this->runCommand($app, ['foundry', 'help', 'spec:validate', '--json']);
         $this->assertSame(0, $specValidateHelp['status']);
         $this->assertSame('spec:validate', $specValidateHelp['payload']['command']['signature']);

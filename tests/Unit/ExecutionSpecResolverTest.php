@@ -143,6 +143,68 @@ MD);
         $this->assertSame('EXECUTION_SPEC_DRAFT_ONLY', $error->errorCode);
     }
 
+    public function test_unique_shorthand_rejects_draft_only_matches(): void
+    {
+        $this->writeRawDraftExecutionSpec('blog', '001-initial', <<<MD
+# Execution Spec: 001-initial
+
+## Feature
+
+- blog
+
+## Purpose
+
+- Execute a bounded implementation step.
+
+## Scope
+
+- Add initial blog scaffolding.
+
+## Constraints
+
+- Keep execution deterministic.
+
+## Requested Changes
+
+- Add initial blog scaffolding.
+MD);
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('001-initial'));
+
+        $this->assertSame('EXECUTION_SPEC_DRAFT_ONLY', $error->errorCode);
+    }
+
+    public function test_explicit_draft_path_rejects_with_draft_only_error(): void
+    {
+        $this->writeRawDraftExecutionSpec('blog', '001-initial', <<<MD
+# Execution Spec: 001-initial
+
+## Feature
+
+- blog
+
+## Purpose
+
+- Execute a bounded implementation step.
+
+## Scope
+
+- Add initial blog scaffolding.
+
+## Constraints
+
+- Keep execution deterministic.
+
+## Requested Changes
+
+- Add initial blog scaffolding.
+MD);
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('docs/specs/blog/drafts/001-initial.md'));
+
+        $this->assertSame('EXECUTION_SPEC_DRAFT_ONLY', $error->errorCode);
+    }
+
     public function test_feature_and_id_shorthand_rejects_unknown_feature(): void
     {
         $error = $this->expectFoundryError(fn() => $this->resolver()->resolveWithinFeature('unknown-feature', '001'));
