@@ -15,6 +15,7 @@ use Foundry\Compiler\Passes\EnrichPass;
 use Foundry\Compiler\Passes\LinkPass;
 use Foundry\Compiler\Passes\NormalizePass;
 use Foundry\Compiler\Passes\ValidatePass;
+use Foundry\Support\Clock;
 use Foundry\Support\Json;
 use Foundry\Support\Paths;
 
@@ -31,6 +32,7 @@ final class GraphCompiler
     public function __construct(
         private readonly Paths $paths,
         private readonly ?ExtensionRegistry $extensions = null,
+        private readonly Clock $clock = new Clock(),
     ) {
         $this->layout = new BuildLayout($paths);
         $this->sourceScanner = new SourceScanner($paths);
@@ -375,7 +377,7 @@ final class GraphCompiler
         return new ApplicationGraph(
             graphVersion: self::GRAPH_VERSION,
             frameworkVersion: $frameworkVersion,
-            compiledAt: gmdate(DATE_ATOM),
+            compiledAt: $this->clock->nowIso8601(),
             sourceHash: $sourceHash,
             metadata: [],
         );

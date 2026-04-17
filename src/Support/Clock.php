@@ -6,9 +6,13 @@ namespace Foundry\Support;
 
 final class Clock
 {
+    public function __construct(
+        private readonly ?\DateTimeImmutable $fixedNow = null,
+    ) {}
+
     public function now(): \DateTimeImmutable
     {
-        return new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        return $this->fixedNow ?? new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
     }
 
     public function nowIso8601(): string

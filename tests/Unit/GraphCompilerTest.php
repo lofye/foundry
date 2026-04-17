@@ -6,6 +6,7 @@ namespace Foundry\Tests\Unit;
 
 use Foundry\Compiler\CompileOptions;
 use Foundry\Compiler\GraphCompiler;
+use Foundry\Support\Clock;
 use Foundry\Support\Json;
 use Foundry\Support\Paths;
 use Foundry\Tests\Fixtures\TempProject;
@@ -189,13 +190,14 @@ final class GraphCompilerTest extends TestCase
     public function test_graph_and_projection_outputs_match_with_and_without_cache_enabled(): void
     {
         $otherProject = new TempProject();
+        $clock = new Clock(new \DateTimeImmutable('2026-04-17T14:09:23+00:00'));
 
         try {
             $this->createFeature('publish_post', 'POST', '/posts');
             $this->createFeature('publish_post', 'POST', '/posts', $otherProject->root);
 
-            $noCacheCompiler = new GraphCompiler(Paths::fromCwd($this->project->root));
-            $cachedCompiler = new GraphCompiler(Paths::fromCwd($otherProject->root));
+            $noCacheCompiler = new GraphCompiler(Paths::fromCwd($this->project->root), clock: $clock);
+            $cachedCompiler = new GraphCompiler(Paths::fromCwd($otherProject->root), clock: $clock);
 
             $noCacheResult = $noCacheCompiler->compile(new CompileOptions(useCache: false));
             $cachedResult = $cachedCompiler->compile(new CompileOptions());
@@ -205,15 +207,6 @@ final class GraphCompilerTest extends TestCase
 
             $leftGraph = Json::decodeAssoc((string) file_get_contents($this->project->root . '/app/.foundry/build/graph/app_graph.json'));
             $rightGraph = Json::decodeAssoc((string) file_get_contents($otherProject->root . '/app/.foundry/build/graph/app_graph.json'));
-            unset($leftGraph['compiled_at'], $rightGraph['compiled_at']);
-            unset(
-                $leftGraph['graph_metadata']['compiled_at'],
-                $rightGraph['graph_metadata']['compiled_at'],
-                $leftGraph['graph_metadata']['build_association']['compiled_at'],
-                $rightGraph['graph_metadata']['build_association']['compiled_at'],
-                $leftGraph['graph_metadata']['run_association']['build_id'],
-                $rightGraph['graph_metadata']['run_association']['build_id'],
-            );
 
             $this->assertSame($leftGraph, $rightGraph);
             $this->assertSame(
