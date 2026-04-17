@@ -75,6 +75,25 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertStringContainsString('### Decision: context-driven execution for event-bus', (string) file_get_contents($this->project->root . '/docs/features/event-bus.decisions.md'));
     }
 
+    public function test_execution_returns_completed_with_issues_when_post_execution_revalidation_fails(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        unlink($this->project->root . '/docs/features/event-bus.md');
+
+        $result = $this->finalizeExecutionFor(
+            featureName: 'event-bus',
+            repairAttempted: false,
+            repairSuccessful: false,
+            actionsTaken: ['Generated feature files.'],
+        )->toArray();
+
+        $this->assertSame('completed_with_issues', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('CONTEXT_FILE_MISSING', $result['issues'][0]['code']);
+        $this->assertContains('Create missing state file: docs/features/event-bus.md', $result['required_actions']);
+    }
+
     public function test_guided_repair_resolves_simple_issues_deterministically(): void
     {
         $this->writeMeaningfulContext('event-bus');
@@ -676,6 +695,30 @@ MD);
 
         /** @var array{issue:array<string,mixed>,required_actions:list<string>}|null $result */
         $result = $method->invoke($this->service(), $executionSpec);
+
+        return $result;
+    }
+
+    /**
+     * @param list<string> $actionsTaken
+     */
+    private function finalizeExecutionFor(
+        string $featureName,
+        bool $repairAttempted,
+        bool $repairSuccessful,
+        array $actionsTaken,
+    ): \Foundry\Context\ExecutionResult {
+        $method = new \ReflectionMethod(ContextExecutionService::class, 'finalizeExecutionResult');
+        $method->setAccessible(true);
+
+        /** @var \Foundry\Context\ExecutionResult $result */
+        $result = $method->invoke(
+            $this->service(),
+            $featureName,
+            $repairAttempted,
+            $repairSuccessful,
+            $actionsTaken,
+        );
 
         return $result;
     }

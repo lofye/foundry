@@ -191,38 +191,13 @@ final class ContextExecutionService
             $repairAttempted,
         );
 
-        $finalInspection = $this->inspectionService->inspectFeature($featureName);
-        $finalVerification = $this->inspectionService->verifyFeature($featureName);
         $actionsTaken = array_values(array_merge($repairActions, $implementationActions, $contextActions));
 
-        if (
-            !(bool) ($finalInspection['can_proceed'] ?? false)
-            || !(bool) ($finalVerification['consumable'] ?? false)
-            || array_values((array) ($finalVerification['issues'] ?? [])) !== []
-        ) {
-            return new ExecutionResult(
-                feature: $featureName,
-                status: 'completed_with_issues',
-                canProceed: (bool) ($finalInspection['can_proceed'] ?? false),
-                requiresRepair: (bool) ($finalInspection['requires_repair'] ?? true),
-                repairAttempted: $repairAttempted,
-                repairSuccessful: $repairSuccessful,
-                actionsTaken: $actionsTaken,
-                issues: array_values((array) ($finalVerification['issues'] ?? [])),
-                requiredActions: array_values(array_map('strval', (array) ($finalInspection['required_actions'] ?? []))),
-            );
-        }
-
-        return new ExecutionResult(
-            feature: $featureName,
-            status: $repairSuccessful ? 'repaired' : 'completed',
-            canProceed: true,
-            requiresRepair: false,
+        return $this->finalizeExecutionResult(
+            featureName: $featureName,
             repairAttempted: $repairAttempted,
             repairSuccessful: $repairSuccessful,
             actionsTaken: $actionsTaken,
-            issues: [],
-            requiredActions: [],
         );
     }
 
@@ -351,6 +326,51 @@ final class ContextExecutionService
             requiredActions: array_values(array_map('strval', (array) ($inspection['required_actions'] ?? []))),
             reason: $refusal['reason'],
             requiredAction: $refusal['required_action'],
+        );
+    }
+
+    /**
+     * Revalidate canonical context after framework-owned execution updates before returning a final status.
+     *
+     * @param list<string> $actionsTaken
+     */
+    private function finalizeExecutionResult(
+        string $featureName,
+        bool $repairAttempted,
+        bool $repairSuccessful,
+        array $actionsTaken,
+    ): ExecutionResult {
+        $finalInspection = $this->inspectionService->inspectFeature($featureName);
+        $finalVerification = $this->inspectionService->verifyFeature($featureName);
+
+        if (
+            !(bool) ($finalInspection['can_proceed'] ?? false)
+            || !(bool) ($finalVerification['consumable'] ?? false)
+            || array_values((array) ($finalVerification['issues'] ?? [])) !== []
+        ) {
+            return new ExecutionResult(
+                feature: $featureName,
+                status: 'completed_with_issues',
+                canProceed: (bool) ($finalInspection['can_proceed'] ?? false),
+                requiresRepair: (bool) ($finalInspection['requires_repair'] ?? true),
+                repairAttempted: $repairAttempted,
+                repairSuccessful: $repairSuccessful,
+                actionsTaken: $actionsTaken,
+                issues: array_values((array) ($finalVerification['issues'] ?? [])),
+                requiredActions: array_values(array_map('strval', (array) ($finalInspection['required_actions'] ?? []))),
+            );
+        }
+
+        return new ExecutionResult(
+            feature: $featureName,
+            status: $repairSuccessful ? 'repaired' : 'completed',
+            canProceed: true,
+            requiresRepair: false,
+            repairAttempted: $repairAttempted,
+            repairSuccessful: $repairSuccessful,
+            actionsTaken: $actionsTaken,
+            issues: [],
+            requiredActions: [],
         );
     }
 

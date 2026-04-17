@@ -127,3 +127,7 @@
 ## 2026-04-17 13:33:01 -0400
 - spec: context-persistence/020.002-suggest-exact-implementation-log-entry-content.md
 - note: Added `spec:log-entry` to emit the exact canonical implementation-log entry content for an active execution spec and reject draft-only or invalid targets clearly.
+
+## 2026-04-17 16:00:58 -0400
+- spec: context-persistence/021-revalidates-context-after-execution.md
+- note: Extracted the final post-execution context revalidation into one explicit execution-finalization path and added regression coverage that downgrades the result when canonical context is invalid after execution updates.
