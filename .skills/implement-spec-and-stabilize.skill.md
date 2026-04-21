@@ -1,183 +1,199 @@
 ---
-name: implement-spec-and-stabilize
-description: Implement a Foundry execution spec, append implementation log, run validation and tests, optionally run context repair, and perform a feature alignment pass. Use when given a docs/specs/<feature>/<id>-<slug>.md file to fully implement and stabilize the system.
+name: implement-spec-and-stabilize-strict
+description: Strictly implement a Foundry execution spec and enforce a fully clean, verified, aligned system state. Refuses completion if any issues remain.
 ---
 
 # Purpose
 
 Use this skill when:
-- implementing a Foundry execution spec
-- completing a feature change end-to-end
-- stabilizing the system after implementation
-- preparing for a clean, verified state
+- preparing for release
+- finalizing a feature
+- enforcing a fully clean system state
+- zero-tolerance for drift or unresolved issues
 
 This skill helps produce:
 - fully implemented spec
-- updated implementation log
-- passing tests
-- verified context
-- repaired context (if safe and needed)
-- aligned feature documentation
+- zero validation errors
+- zero failing tests
+- zero context verification issues
+- fully aligned feature context
+- production-ready system state
 
 Do not use this skill for:
-- partial implementations
-- speculative or exploratory changes
-- editing specs without implementing them
+- iterative development
+- partially complete specs
+- exploratory work
 
 # Inputs
 
-Expect inputs such as:
+Expect:
 - docs/specs/<feature>/<id>-<slug>.md
 
-If input is missing:
-- stop and request the spec path
+If missing:
+- stop immediately and request it
 
-# Reasoning Principles
+# Core Principle
 
-## 1. Spec Discipline
-- The execution spec is authoritative
-- Implement exactly what is specified
-- Do not invent beyond the spec
+This is a **zero-tolerance pipeline**.
 
-## 2. Deterministic Implementation
-- No randomness
-- No hidden behavior
-- Stable outputs
+If ANY step fails or leaves unresolved issues:
+→ DO NOT COMPLETE  
+→ REPORT FAILURE
 
-## 3. Minimal Safe Changes
-- Only change what is required
-- Avoid unrelated modifications
-
-## 4. Verification First
-- The system must pass validation before being considered complete
-
-## 5. No Silent Failures
-- If something fails, report clearly
+---
 
 # Execution Pipeline
 
 ## Step 1 — Implement Spec
-
-- Implement:
-  docs/specs/<feature>/<id>-<slug>.md
-
-- Ensure:
-    - behavior matches spec exactly
-    - tests are added/updated as required
+- Implement exactly as specified
+- No invention
+- Add/update tests as required
 
 ---
 
 ## Step 2 — Append Implementation Log
-
-Append a correct entry to:
-
-docs/specs/implementation-log.md
-
-Rules:
-- must follow existing format exactly
-- must reference feature and spec ID
-- must be appended (not modified in-place)
+- Append to:
+  docs/specs/implementation-log.md
+- Must follow exact format
 
 ---
 
-## Step 3 — Run Validation
+## Step 3 — Spec Validation (MUST PASS CLEAN)
 
 Run:
 
 php bin/foundry spec:validate --json
 
-- If it fails:
-    - fix ONLY relevant issues
-    - do not modify unrelated specs
+Requirements:
+- zero violations
+- no warnings
+- no unrelated breakage
+
+If ANY violation exists:
+→ FIX or FAIL
 
 ---
 
-## Step 4 — Run Tests
+## Step 4 — Tests (MUST PASS CLEAN)
 
 Run:
 
 php vendor/bin/phpunit
 
-- All tests must pass
-- Fix failures deterministically
+Requirements:
+- all tests pass
+- no skipped critical tests
+
+If ANY failure:
+→ FIX or FAIL
 
 ---
 
-## Step 5 — Verify Context
+## Step 5 — Context Verification (MUST BE CLEAN)
 
 Run:
 
 php bin/foundry verify context --json
 
-- If clean → continue
-- If issues exist → proceed to Step 6
+Requirements:
+- no issues
+- no required_actions
+- all features consumable
+
+If ANY issue exists:
+→ proceed to repair
 
 ---
 
-## Step 6 — Context Auto-Repair (if available)
-
-If safe repairs are possible:
+## Step 6 — Context Repair (REQUIRED IF ISSUES EXIST)
 
 Run:
 
 php bin/foundry context repair --feature=<feature> --json
 
-Rules:
-- only apply safe, deterministic repairs
-- do not invent semantic content
-
----
-
-## Step 7 — Feature Alignment Pass
-
-Run a feature alignment pass across:
-
-docs/features/*
-
-Rules:
-- align spec/state/decisions
-- normalize formatting
-- remove duplication
-- do not invent meaning
-
----
-
-## Step 8 — Final Verification
+Then:
 
 Re-run:
 
 php bin/foundry verify context --json
 
-Ensure:
-- system is clean
-- feature is consumable
+If still not clean:
+→ FAIL (do not proceed)
+
+---
+
+## Step 7 — Feature Alignment Pass (MANDATORY)
+
+Run:
+- feature-alignment-pass across docs/features/*
+
+Then re-run:
+
+php bin/foundry verify context --json
+
+Requirements:
+- still fully clean
+
+If NOT:
+→ FAIL
+
+---
+
+## Step 8 — Final System Check
+
+All must be true:
+
+- spec implemented
+- implementation log correct
+- spec validation clean
+- tests pass
+- context verification clean
+- no remaining issues
+- no required manual actions
+
+If ANY condition is not met:
+→ FAIL
 
 ---
 
 # Output
 
-Return a final JSON summary:
+Return:
 
 {
-"status": "ok|partial|failed",
+"status": "ok|failed",
 "spec": "<feature>/<id>",
-"implemented": true,
-"tests_passed": true,
-"validation_passed": true,
-"context_verified": true,
-"repair_applied": true|false,
-"alignment_performed": true,
+"implemented": true|false,
+"validation_clean": true|false,
+"tests_passed": true|false,
+"context_clean": true|false,
+"alignment_clean": true|false,
 "remaining_issues": [],
-"requires_manual_review": true|false
+"failure_reason": null|string
 }
+
+---
 
 # Completion Criteria
 
-- spec implemented correctly
-- implementation log updated
-- validation passes
-- tests pass
-- context verifies cleanly
-- repair applied if needed and safe
-- alignment completed
-- system is stable and deterministic
+SUCCESS requires:
+
+- zero validation issues
+- zero failing tests
+- zero context issues
+- zero required_actions
+- deterministic alignment
+- no ambiguity
+
+---
+
+# Authority Rule
+
+This skill must NEVER:
+- silently succeed with issues
+- downgrade failures to warnings
+- ignore unresolved problems
+
+It must:
+- enforce a fully clean, production-ready state
+- fail loudly if that state is not achieved
