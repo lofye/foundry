@@ -15,6 +15,9 @@
 - `context check-alignment` detects spec-state mismatches using deterministic heuristics.
 - Feature state documents now normalize through a reusable deterministic normalizer before framework-owned state updates are persisted.
 - Canonical feature spec documents now normalize through the same reusable context-normalization infrastructure on framework-owned spec write paths.
+- `context repair` now exists as an explicit CLI surface for one feature at a time.
+- `context repair` now reuses existing inspect and verify analysis and applies only safe normalization-style repairs to canonical feature spec and state documents.
+- `context repair` now fails clearly when critical canonical context inputs are missing, never auto-writes decision-ledger content, and reports deterministic `repaired`, `no_changes`, `blocked`, or `failed` results from post-repair consumability.
 - `inspect context` aggregates doctor and alignment results into a single deterministic view.
 - `verify context` maps doctor and alignment results to deterministic pass/fail semantics.
 - `verify context` now derives a per-feature `consumable` flag from doctor status, alignment status, and required actions without changing doctor or alignment rules.

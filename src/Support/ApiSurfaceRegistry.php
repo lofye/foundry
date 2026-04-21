@@ -196,6 +196,7 @@ final class ApiSurfaceRegistry
             'context' => match ($second) {
                 'init' => 'context init',
                 'doctor' => 'context doctor',
+                'repair' => 'context repair',
                 'check-alignment' => 'context check-alignment',
                 default => null,
             },
@@ -366,6 +367,7 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('cache clear', 'cache clear', 'stable', 'Clear deterministic compile cache artifacts and generated projections.'),
             $this->cliCommandEntry('context init', 'context init <feature>', 'stable', 'Create missing canonical feature context files without overwriting existing files.'),
             $this->cliCommandEntry('context doctor', 'context doctor --feature=<feature>|--all', 'stable', 'Validate canonical feature context files and report deterministic repair guidance.'),
+            $this->cliCommandEntry('context repair', 'context repair --feature=<feature>', 'stable', 'Apply explicit safe normalization-only repairs to canonical feature context and re-evaluate consumability.'),
             $this->cliCommandEntry('context check-alignment', 'context check-alignment --feature=<feature>', 'stable', 'Check deterministic spec-state alignment for one feature and report actionable mismatches.'),
             $this->cliCommandEntry('implement feature', 'implement feature <feature> [--repair|--auto-repair]', 'stable', 'Execute deterministic feature work from canonical context artifacts, with bounded repair when explicitly requested.'),
             $this->cliCommandEntry('implement spec', 'implement spec <feature>/<id>-<slug>|<id>-<slug>|<feature> <id> [--repair|--auto-repair]', 'stable', 'Execute deterministic feature work from an execution spec while preserving canonical feature authority and the existing context gate.'),

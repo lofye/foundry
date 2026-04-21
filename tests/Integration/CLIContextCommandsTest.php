@@ -234,6 +234,31 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame('Use either --feature=<feature> or --all, not both.', $result['payload']['error']['message']);
     }
 
+    public function test_context_repair_feature_json_returns_required_contract(): void
+    {
+        $this->writeRepairableConsumableContext();
+
+        $result = $this->runCommand(['foundry', 'context', 'repair', '--feature=event-bus', '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame([
+            'status',
+            'feature',
+            'files_changed',
+            'issues_repaired',
+            'issues_remaining',
+            'can_proceed',
+            'requires_manual_action',
+            'doctor_status',
+            'alignment_status',
+            'required_actions',
+        ], array_keys($result['payload']));
+        $this->assertSame('repaired', $result['payload']['status']);
+        $this->assertSame('event-bus', $result['payload']['feature']);
+        $this->assertTrue($result['payload']['can_proceed']);
+        $this->assertFalse($result['payload']['requires_manual_action']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
@@ -267,6 +292,8 @@ MD);
 
     private function writeDivergentSemanticContext(): void
     {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+
         file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
 # Feature Spec: event-bus
 
@@ -320,6 +347,65 @@ Publish posts safely.
 MD);
 
         file_put_contents($this->project->root . '/docs/features/event-bus.decisions.md', '');
+    }
+
+    private function writeRepairableConsumableContext(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+
+        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
+# Feature Spec: event-bus
+
+## Purpose
+
+Introduce event bus handling.
+
+## Constraints
+
+- Keep output deterministic.
+- Keep output deterministic.
+
+## Goals
+
+- Keep event bus scaffolding deterministic.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Event bus feature files are present.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<'MD'
+# Feature: event-bus
+
+## Purpose
+
+Introduce event bus handling.
+
+## Next Steps
+
+- Add smoke-test coverage.
+
+## Current State
+
+- Event bus feature scaffolding exists in the app.
+- Event bus feature files are present.
+
+## Open Questions
+
+- None.
+MD);
     }
 
     /**

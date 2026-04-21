@@ -55,6 +55,10 @@
 - Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
 - Feature state documents normalize through one reusable deterministic normalization path before framework-owned state updates are persisted.
 - Canonical feature spec documents normalize through the reusable context normalization infrastructure before framework-owned spec updates are persisted.
+- `context repair` exists as an explicit CLI-owned repair surface for one feature at a time.
+- `context repair` reuses existing inspect and verify analysis and applies only safe normalization-style repairs to canonical feature spec and state documents.
+- `context repair` fails clearly when critical canonical context inputs are missing, does not auto-write decision-ledger content, and leaves ambiguous semantic divergence for manual action.
+- `context repair` returns deterministic `repaired`, `no_changes`, `blocked`, or `failed` results and computes `can_proceed` from post-repair consumability rather than pre-repair state.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
 - Implement feature consumes canonical feature context as authoritative execution input.
 - Implement feature refuses execution when canonical context is not consumable unless explicit repair mode succeeds.
@@ -99,6 +103,9 @@
 - CLI can detect spec-state alignment issues deterministically.
 - Feature state normalization keeps canonical section order and conservatively removes duplicate or obviously stale bullets without inventing content.
 - Feature spec normalization keeps canonical section order, deterministic spacing, and safe exact-duplicate cleanup without changing intended meaning.
+- `context repair` repairs only safe normalization-style issues in canonical feature spec and state documents when explicitly invoked.
+- `context repair` refuses missing-critical-input and ambiguous semantic repairs without inventing content or modifying decision ledgers.
+- `context repair` returns deterministic `repaired`, `no_changes`, `blocked`, or `failed` JSON results and computes `can_proceed` and manual-action status from post-repair consumability.
 - Inspect context returns a deterministic combined context view.
 - Verify context returns deterministic pass/fail status for feature context.
 - Verify context includes `consumable` per feature and derives it strictly from doctor status, alignment status, and required actions.

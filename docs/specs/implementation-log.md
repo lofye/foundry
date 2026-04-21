@@ -139,3 +139,7 @@
 ## 2026-04-21 10:05:58 -0400
 - spec: context-persistence/023-normalize-additional-context-artifacts.md
 - note: Extended reusable context normalization to canonical feature spec documents on framework-owned spec write paths while preserving meaning, deterministic ordering, and existing state-document normalization behavior.
+
+## 2026-04-21 13:20:07 -0400
+- spec: context-persistence/024-add-context-auto-repair-mode.md
+- note: Added an explicit `context repair` command that reuses existing inspect and verify analysis, applies only safe normalization-style repairs to canonical spec/state files, and fails closed when critical context inputs are missing or manual semantic repair is still required.

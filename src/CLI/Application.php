@@ -12,6 +12,7 @@ use Foundry\CLI\Commands\CompletionCommand;
 use Foundry\CLI\Commands\ContextCheckAlignmentCommand;
 use Foundry\CLI\Commands\ContextDoctorCommand;
 use Foundry\CLI\Commands\ContextInitCommand;
+use Foundry\CLI\Commands\ContextRepairCommand;
 use Foundry\CLI\Commands\DiffCommand;
 use Foundry\CLI\Commands\DoctorCommand;
 use Foundry\CLI\Commands\ExamplesCommand;
@@ -96,6 +97,7 @@ final class Application
             new CompletionCommand(),
             new ContextInitCommand(),
             new ContextDoctorCommand(),
+            new ContextRepairCommand(),
             new ContextCheckAlignmentCommand(),
             new ImplementFeatureCommand(),
             new ImplementSpecCommand(),

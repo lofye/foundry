@@ -370,6 +370,39 @@ Timestamp: 2026-04-20T13:37:14-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: add an explicit conservative context repair surface
+Timestamp: 2026-04-21T13:20:00-04:00
+
+**Context**
+- Foundry already had deterministic doctor, inspect, verify, and normalization infrastructure for canonical feature context.
+- Low-risk canonical spec/state cleanup still required repetitive manual edits even when the safe transformation was already structurally obvious.
+- Any new repair surface had to stay explicit and conservative so it would not invent semantic content or rewrite decision history.
+
+**Decision**
+- Add `context repair --feature=<feature> --json` as an explicit CLI-owned repair surface.
+- Limit automatic repairs to safe normalization-style changes on canonical feature spec and state documents.
+- Reuse the existing inspect and verify pipeline to compute post-repair consumability, fail clearly when critical canonical inputs are missing, and leave ambiguous semantic divergence for manual action.
+
+**Reasoning**
+- An explicit repair command keeps file modification deliberate and preserves existing doctor and verify behavior when repair mode is not invoked.
+- Reusing the existing analysis pipeline keeps repair results aligned with the same doctor, alignment, and consumability contracts already used elsewhere.
+- Restricting scope to meaning-preserving normalization preserves trust and avoids silent invention of decisions or intent.
+
+**Alternatives Considered**
+- Run repair implicitly during ordinary verification.
+- Expand repair mode to rewrite decision ledgers or resolve semantic divergence automatically.
+- Leave all low-risk canonical context cleanup manual.
+
+**Impact**
+- Low-risk canonical spec/state cleanup is now faster and more consistent.
+- Ambiguous semantic repair still requires human judgment.
+- Context verification and execution continue to fail closed outside explicit repair mode.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: extend reusable context normalization to canonical feature specs only
 Timestamp: 2026-04-21T10:06:09-04:00
 

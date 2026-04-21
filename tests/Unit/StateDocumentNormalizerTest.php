@@ -179,6 +179,42 @@ MD);
         $this->assertStringContainsString("- Add retry coverage.\n", $normalized);
     }
 
+    public function test_next_steps_cleanup_uses_current_state_even_when_sections_are_out_of_order(): void
+    {
+        $normalized = $this->normalizer()->normalize(<<<'MD'
+# Feature: payments
+
+## Purpose
+
+Track payment state.
+
+## Next Steps
+
+- Payments API is available.
+
+## Current State
+
+- Payments API is available.
+
+## Open Questions
+
+- TBD.
+MD);
+
+        $this->assertStringContainsString(<<<'MD'
+## Current State
+
+- Payments API is available.
+
+## Open Questions
+
+- TBD.
+
+## Next Steps
+MD, $normalized);
+        $this->assertStringNotContainsString("## Next Steps\n\n- Payments API is available.\n", $normalized);
+    }
+
     public function test_normalization_does_not_invent_missing_sections_or_content(): void
     {
         $normalized = $this->normalizer()->normalize(<<<'MD'

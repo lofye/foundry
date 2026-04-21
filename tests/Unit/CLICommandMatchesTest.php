@@ -10,6 +10,7 @@ use Foundry\CLI\Commands\CodemodRunCommand;
 use Foundry\CLI\Commands\CompileGraphCommand;
 use Foundry\CLI\Commands\ContextCheckAlignmentCommand;
 use Foundry\CLI\Commands\DeepDoctorCommand;
+use Foundry\CLI\Commands\ContextRepairCommand;
 use Foundry\CLI\Commands\DiffCommand;
 use Foundry\CLI\Commands\DoctorCommand;
 use Foundry\CLI\Commands\ExamplesCommand;
@@ -127,6 +128,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new PreviewNotificationCommand())->matches(['preview', 'notification', 'welcome_email']));
         $this->assertTrue((new CompileGraphCommand())->matches(['compile', 'graph']));
         $this->assertTrue((new ContextCheckAlignmentCommand())->matches(['context', 'check-alignment', '--feature=event-bus']));
+        $this->assertTrue((new ContextRepairCommand())->matches(['context', 'repair', '--feature=event-bus']));
         $this->assertTrue((new ImplementFeatureCommand())->matches(['implement', 'feature', 'event-bus']));
         $this->assertTrue((new ImplementSpecCommand())->matches(['implement', 'spec', 'event-bus/001-initial']));
         $this->assertTrue((new PlanFeatureCommand())->matches(['plan', 'feature', 'event-bus']));

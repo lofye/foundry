@@ -46,6 +46,11 @@ final class StateDocumentNormalizer
      */
     private function normalizedSections(array $sections): array
     {
+        $currentStateItems = $this->normalizeCanonicalSection(
+            'Current State',
+            $this->sectionBodyForTitle($sections, 'Current State'),
+            [],
+        );
         $normalizedCanonical = [];
 
         foreach ($sections as $section) {
@@ -56,7 +61,7 @@ final class StateDocumentNormalizer
             $normalizedCanonical[$section['title']] = $this->normalizeCanonicalSection(
                 $section['title'],
                 $section['body'],
-                $normalizedCanonical['Current State'] ?? [],
+                $currentStateItems,
             );
         }
 
