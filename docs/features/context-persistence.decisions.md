@@ -337,6 +337,39 @@ Timestamp: 2026-04-15T16:05:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: expand doctor diagnostics with two high-signal semantic rules
+Timestamp: 2026-04-20T13:37:14-04:00
+
+**Context**
+- The normalized doctor-rule model existed, but it still only enforced execution-spec drift beyond structural validation.
+- Foundry needed stronger feature-scoped context diagnostics without redesigning doctor or verify-context outputs.
+- The new rules needed to stay high-signal and avoid broad speculative semantic duplication.
+
+**Decision**
+- Add exactly two new doctor diagnostic rules:
+  - `STALE_COMPLETED_ITEMS_IN_NEXT_STEPS`
+  - `DECISION_MISSING_FOR_STATE_DIVERGENCE`
+- Keep both rules inside the normalized doctor-rule model and reuse the existing doctor and verify-context output contracts unchanged.
+
+**Reasoning**
+- Stale completed work in `Next Steps` is a common high-signal maintenance failure that the structural validators and alignment checker did not already surface directly.
+- Missing decision coverage for real current-state divergence is a high-value continuity issue because it breaks resumability even when the divergence is intentional.
+- Reusing the existing alignment heuristics for the divergence rule keeps the semantic threshold conservative and deterministic.
+
+**Alternatives Considered**
+- Add `STATE_CLAIM_WITHOUT_SPEC_SUPPORT` as the second rule.
+- Add `SPEC_REQUIREMENT_NOT_TRACKED_IN_STATE` as the second rule.
+- Expand the doctor or verify output schemas to expose a second diagnostic channel.
+
+**Impact**
+- `context doctor` now catches two additional high-signal semantic context problems without changing its public JSON shape.
+- `verify context` now surfaces those doctor issues through its existing flattened issue list.
+- The canonical context workflow is stricter about stale planning state and undocumented intentional divergence.
+
+**Spec Reference**
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: fail closed on generic planner fallback output
 Timestamp: 2026-04-15T15:10:00-04:00
 

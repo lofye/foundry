@@ -193,6 +193,35 @@ final class CLIContextInspectionCommandsTest extends TestCase
         $this->assertContains('Do not rely on execution specs as the source of truth for event-bus.', $result['payload']['required_actions']);
     }
 
+    public function test_verify_context_surfaces_new_doctor_semantic_diagnostics(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeDivergentSemanticContext();
+
+        $result = $this->runCommand(['foundry', 'verify', 'context', '--feature=event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('fail', $result['payload']['status']);
+        $this->assertSame('repairable', $result['payload']['doctor_status']);
+        $this->assertSame('mismatch', $result['payload']['alignment_status']);
+        $this->assertSame([
+            [
+                'source' => 'doctor',
+                'code' => 'STALE_COMPLETED_ITEMS_IN_NEXT_STEPS',
+                'message' => 'Next Steps contains work that is already reflected as implemented in Current State.',
+                'file_path' => 'docs/features/event-bus.md',
+            ],
+            [
+                'source' => 'doctor',
+                'code' => 'DECISION_MISSING_FOR_STATE_DIVERGENCE',
+                'message' => 'Current State diverges from the canonical spec without a supporting decision entry.',
+                'file_path' => 'docs/features/event-bus.decisions.md',
+            ],
+        ], array_slice($result['payload']['issues'], 0, 2));
+        $this->assertContains('Remove already implemented work from Next Steps in docs/features/event-bus.md.', $result['payload']['required_actions']);
+        $this->assertContains('Add a decision entry to docs/features/event-bus.decisions.md that explains the spec-state divergence.', $result['payload']['required_actions']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
@@ -235,5 +264,62 @@ final class CLIContextInspectionCommandsTest extends TestCase
 ## Feature
 - {$feature}
 MD);
+    }
+
+    private function writeDivergentSemanticContext(): void
+    {
+        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
+# Feature Spec: event-bus
+
+## Purpose
+
+Publish posts safely.
+
+## Goals
+
+- Keep publication deterministic.
+
+## Non-Goals
+
+- Do not bypass moderation silently.
+
+## Constraints
+
+- Preserve review workflow history.
+
+## Expected Behavior
+
+- Publishes blog posts through moderated review workflow.
+
+## Acceptance Criteria
+
+- Blog posts publish only after moderation review.
+
+## Assumptions
+
+- Moderation remains the default policy.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<'MD'
+# Feature: event-bus
+
+## Purpose
+
+Publish posts safely.
+
+## Current State
+
+- Publishes posts immediately in production.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Publishes posts immediately in production.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/event-bus.decisions.md', '');
     }
 }

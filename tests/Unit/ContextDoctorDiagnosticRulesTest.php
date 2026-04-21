@@ -10,7 +10,9 @@ use Foundry\Context\ContextDoctorDiagnosticRuleResult;
 use Foundry\Context\ContextDoctorDiagnosticTarget;
 use Foundry\Context\ContextDoctorService;
 use Foundry\Context\ContextInitService;
+use Foundry\Context\DecisionMissingForStateDivergenceContextDoctorRule;
 use Foundry\Context\ExecutionSpecDriftContextDoctorRule;
+use Foundry\Context\StaleCompletedItemsInNextStepsContextDoctorRule;
 use Foundry\Support\Paths;
 use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
@@ -73,6 +75,92 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
             feature: 'event-bus',
             files: $this->existingFiles(),
             featureHasExecutionSpecs: true,
+        )));
+    }
+
+    public function test_decision_missing_for_state_divergence_rule_produces_normalized_result(): void
+    {
+        $rule = new DecisionMissingForStateDivergenceContextDoctorRule();
+
+        $result = $rule->evaluate(new ContextDoctorDiagnosticRuleContext(
+            feature: 'event-bus',
+            files: $this->existingFiles(),
+            featureHasExecutionSpecs: false,
+            contents: [
+                'spec' => $this->divergenceSpec(),
+                'state' => $this->divergenceState(),
+                'decisions' => '',
+            ],
+        ));
+
+        $this->assertInstanceOf(ContextDoctorDiagnosticRuleResult::class, $result);
+        $this->assertSame('DECISION_MISSING_FOR_STATE_DIVERGENCE', $result->code);
+        $this->assertSame(
+            'Current State diverges from the canonical spec without a supporting decision entry.',
+            $result->message,
+        );
+        $this->assertSame(['decisions'], $result->targetBuckets());
+        $this->assertSame(['docs/features/event-bus.decisions.md'], $result->targetFilePaths());
+        $this->assertSame([
+            'Add a decision entry to docs/features/event-bus.decisions.md that explains the spec-state divergence.',
+        ], $result->requiredActions);
+        $this->assertTrue($result->requiresRepair);
+    }
+
+    public function test_decision_missing_for_state_divergence_rule_returns_null_when_decision_support_exists(): void
+    {
+        $rule = new DecisionMissingForStateDivergenceContextDoctorRule();
+
+        $this->assertNull($rule->evaluate(new ContextDoctorDiagnosticRuleContext(
+            feature: 'event-bus',
+            files: $this->existingFiles(),
+            featureHasExecutionSpecs: false,
+            contents: [
+                'spec' => $this->divergenceSpec(),
+                'state' => $this->divergenceState(),
+                'decisions' => $this->supportingDecision(),
+            ],
+        )));
+    }
+
+    public function test_stale_completed_items_in_next_steps_rule_produces_normalized_result(): void
+    {
+        $rule = new StaleCompletedItemsInNextStepsContextDoctorRule();
+
+        $result = $rule->evaluate(new ContextDoctorDiagnosticRuleContext(
+            feature: 'event-bus',
+            files: $this->existingFiles(),
+            featureHasExecutionSpecs: false,
+            contents: [
+                'state' => $this->staleNextStepsState(),
+            ],
+        ));
+
+        $this->assertInstanceOf(ContextDoctorDiagnosticRuleResult::class, $result);
+        $this->assertSame('STALE_COMPLETED_ITEMS_IN_NEXT_STEPS', $result->code);
+        $this->assertSame(
+            'Next Steps contains work that is already reflected as implemented in Current State.',
+            $result->message,
+        );
+        $this->assertSame(['state'], $result->targetBuckets());
+        $this->assertSame(['docs/features/event-bus.md'], $result->targetFilePaths());
+        $this->assertSame([
+            'Remove already implemented work from Next Steps in docs/features/event-bus.md.',
+        ], $result->requiredActions);
+        $this->assertTrue($result->requiresRepair);
+    }
+
+    public function test_stale_completed_items_in_next_steps_rule_returns_null_when_next_steps_are_future_oriented(): void
+    {
+        $rule = new StaleCompletedItemsInNextStepsContextDoctorRule();
+
+        $this->assertNull($rule->evaluate(new ContextDoctorDiagnosticRuleContext(
+            feature: 'event-bus',
+            files: $this->existingFiles(),
+            featureHasExecutionSpecs: false,
+            contents: [
+                'state' => $this->futureOrientedState(),
+            ],
         )));
     }
 
@@ -254,5 +342,142 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
             static fn(array $issue): string => (string) ($issue['code'] ?? ''),
             $issues,
         ));
+    }
+
+    private function divergenceSpec(): string
+    {
+        return <<<'MD'
+# Feature Spec: event-bus
+
+## Purpose
+
+Publish posts safely.
+
+## Goals
+
+- Keep publication deterministic.
+
+## Non-Goals
+
+- Do not bypass moderation silently.
+
+## Constraints
+
+- Preserve review workflow history.
+
+## Expected Behavior
+
+- Publishes blog posts through moderated review workflow.
+
+## Acceptance Criteria
+
+- Blog posts publish only after moderation review.
+
+## Assumptions
+
+- Moderation remains the default policy.
+MD;
+    }
+
+    private function divergenceState(): string
+    {
+        return <<<'MD'
+# Feature: event-bus
+
+## Purpose
+
+Publish posts safely.
+
+## Current State
+
+- Publishes posts immediately in production.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- None.
+MD;
+    }
+
+    private function supportingDecision(): string
+    {
+        return <<<'MD'
+### Decision: temporary publication divergence
+
+Timestamp: 2026-04-20T10:00:00Z
+
+**Context**
+
+- Publishes posts immediately in production temporarily.
+
+**Decision**
+
+- Allow immediate publication temporarily.
+
+**Reasoning**
+
+- The moderation queue is temporarily unavailable.
+
+**Alternatives Considered**
+
+- Keep moderated review and block all publication.
+
+**Impact**
+
+- Publishes posts immediately in production temporarily.
+
+**Spec Reference**
+
+- Expected Behavior
+MD;
+    }
+
+    private function staleNextStepsState(): string
+    {
+        return <<<'MD'
+# Feature: event-bus
+
+## Purpose
+
+Publish posts safely.
+
+## Current State
+
+- Implemented event bus feature scaffolding exists in the app.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Event bus feature scaffolding exists in the app.
+MD;
+    }
+
+    private function futureOrientedState(): string
+    {
+        return <<<'MD'
+# Feature: event-bus
+
+## Purpose
+
+Publish posts safely.
+
+## Current State
+
+- Implemented event bus feature scaffolding exists in the app.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Add contract coverage.
+MD;
     }
 }

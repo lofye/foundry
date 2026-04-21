@@ -131,3 +131,7 @@
 ## 2026-04-17 16:00:58 -0400
 - spec: context-persistence/021-revalidates-context-after-execution.md
 - note: Extracted the final post-execution context revalidation into one explicit execution-finalization path and added regression coverage that downgrades the result when canonical context is invalid after execution updates.
+
+## 2026-04-20 13:37:14 -0400
+- spec: context-persistence/022-expand-context-diagnostic-rules.md
+- note: Added exactly two high-signal doctor diagnostics, `STALE_COMPLETED_ITEMS_IN_NEXT_STEPS` and `DECISION_MISSING_FOR_STATE_DIVERGENCE`, while preserving the existing doctor and verify-context output contracts.

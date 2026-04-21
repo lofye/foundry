@@ -40,6 +40,8 @@ final class ContextDoctorService
     ) {
         $this->diagnosticRules = $diagnosticRules ?? [
             new ExecutionSpecDriftContextDoctorRule(),
+            new StaleCompletedItemsInNextStepsContextDoctorRule(),
+            new DecisionMissingForStateDivergenceContextDoctorRule(),
         ];
     }
 
@@ -79,6 +81,11 @@ final class ContextDoctorService
             feature: $featureName,
             files: $files,
             featureHasExecutionSpecs: $this->featureHasExecutionSpecs($featureName),
+            contents: [
+                'spec' => $this->readContextContents($relativePaths['spec']),
+                'state' => $this->readContextContents($relativePaths['state']),
+                'decisions' => $this->readContextContents($relativePaths['decisions']),
+            ],
         ));
         $files = $this->applyDiagnosticResults($files, $diagnosticResults);
 
@@ -430,6 +437,18 @@ final class ContextDoctorService
         }
 
         return $normalizedPath;
+    }
+
+    private function readContextContents(string $relativePath): string
+    {
+        $path = $this->paths->join($relativePath);
+        if (!is_file($path)) {
+            return '';
+        }
+
+        $contents = file_get_contents($path);
+
+        return is_string($contents) ? $contents : '';
     }
 
     private function moreSevereStatus(string $current, string $candidate): string

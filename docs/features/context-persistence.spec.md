@@ -39,6 +39,8 @@
 - Feature-scoped doctor diagnostics evaluate through one normalized internal rule model that maps to the existing doctor and verify-context contracts.
 - `context doctor` detects when execution specs exist for a feature but one or more canonical feature context files are missing.
 - `context doctor` reports execution-spec drift through the existing per-file issue buckets and required-actions model.
+- `context doctor` detects stale completed work that remains listed in `Next Steps`.
+- `context doctor` detects current-state divergence from the canonical spec when no supporting decision entry exists.
 - CLI commands can detect spec-state mismatches using deterministic heuristics.
 - Inspect context aggregates doctor and alignment results into a single deterministic view.
 - Verify context maps doctor and alignment results to deterministic pass/fail semantics.
@@ -91,6 +93,8 @@
 - CLI can validate context and produce actionable repair guidance.
 - Feature-scoped doctor diagnostics use a normalized internal rule result that can be rendered into doctor file buckets and verify-context flattened issues deterministically.
 - `context doctor` emits `EXECUTION_SPEC_DRIFT` deterministically when execution specs exist but canonical feature context files are missing.
+- `context doctor` emits `STALE_COMPLETED_ITEMS_IN_NEXT_STEPS` deterministically when `Next Steps` still lists work already reflected in `Current State`.
+- `context doctor` emits `DECISION_MISSING_FOR_STATE_DIVERGENCE` deterministically when `Current State` diverges from the canonical spec without a supporting decision entry.
 - CLI can detect spec-state alignment issues deterministically.
 - Feature state normalization keeps canonical section order and conservatively removes duplicate or obviously stale bullets without inventing content.
 - Inspect context returns a deterministic combined context view.

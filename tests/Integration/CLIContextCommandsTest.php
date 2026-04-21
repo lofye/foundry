@@ -200,6 +200,31 @@ final class CLIContextCommandsTest extends TestCase
         ], $result['payload']['required_actions']);
     }
 
+    public function test_context_doctor_reports_semantic_diagnostic_rules_using_existing_json_shape(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeDivergentSemanticContext();
+
+        $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame([
+            'status',
+            'feature',
+            'can_proceed',
+            'requires_repair',
+            'files',
+            'required_actions',
+        ], array_keys($result['payload']));
+        $this->assertSame('repairable', $result['payload']['status']);
+        $this->assertSame(['STALE_COMPLETED_ITEMS_IN_NEXT_STEPS'], $this->issueCodes($result['payload']['files']['state']['issues']));
+        $this->assertSame(['DECISION_MISSING_FOR_STATE_DIVERGENCE'], $this->issueCodes($result['payload']['files']['decisions']['issues']));
+        $this->assertSame([
+            'Remove already implemented work from Next Steps in docs/features/event-bus.md.',
+            'Add a decision entry to docs/features/event-bus.decisions.md that explains the spec-state divergence.',
+        ], $result['payload']['required_actions']);
+    }
+
     public function test_context_doctor_feature_and_all_conflict_fails_deterministically(): void
     {
         $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--all', '--json']);
@@ -238,6 +263,63 @@ final class CLIContextCommandsTest extends TestCase
 ## Feature
 - {$feature}
 MD);
+    }
+
+    private function writeDivergentSemanticContext(): void
+    {
+        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
+# Feature Spec: event-bus
+
+## Purpose
+
+Publish posts safely.
+
+## Goals
+
+- Keep publication deterministic.
+
+## Non-Goals
+
+- Do not bypass moderation silently.
+
+## Constraints
+
+- Preserve review workflow history.
+
+## Expected Behavior
+
+- Publishes blog posts through moderated review workflow.
+
+## Acceptance Criteria
+
+- Blog posts publish only after moderation review.
+
+## Assumptions
+
+- Moderation remains the default policy.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<'MD'
+# Feature: event-bus
+
+## Purpose
+
+Publish posts safely.
+
+## Current State
+
+- Publishes posts immediately in production.
+
+## Open Questions
+
+- None.
+
+## Next Steps
+
+- Publishes posts immediately in production.
+MD);
+
+        file_put_contents($this->project->root . '/docs/features/event-bus.decisions.md', '');
     }
 
     /**

@@ -10,12 +10,15 @@
 - `context init` and `context doctor` initialize and validate canonical feature context deterministically.
 - Feature-scoped doctor diagnostics now evaluate through a normalized internal rule model that feeds the existing doctor file buckets and verify-context flattened issues.
 - `context doctor` detects execution-spec drift when active or draft execution specs exist without complete canonical feature context and reports it through the existing missing-file issue buckets.
+- `context doctor` now flags stale completed work that remains listed in `Next Steps`.
+- `context doctor` now flags current-state divergence from the canonical spec when no supporting decision entry exists.
 - `context check-alignment` detects spec-state mismatches using deterministic heuristics.
 - Feature state documents now normalize through a reusable deterministic normalizer before framework-owned state updates are persisted.
 - `inspect context` aggregates doctor and alignment results into a single deterministic view.
 - `verify context` maps doctor and alignment results to deterministic pass/fail semantics.
 - `verify context` now derives a per-feature `consumable` flag from doctor status, alignment status, and required actions without changing doctor or alignment rules.
 - `verify context` surfaces doctor execution-spec drift issues through its existing flattened issue list.
+- `verify context` now surfaces the new state-staleness and missing-decision doctor diagnostics through the same flattened issue list without changing its output shape.
 - `verify context` fails when doctor is `repairable` or `non_compliant`.
 - `verify context` fails when alignment status is `mismatch`.
 - Repo-wide `verify context` now sets top-level `can_proceed = false` when any feature is not consumable, even if its per-feature status still renders as `pass`.
