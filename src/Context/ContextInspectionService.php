@@ -17,6 +17,7 @@ final class ContextInspectionService
         ?ContextDoctorService $doctorService = null,
         private readonly ContextFileResolver $resolver = new ContextFileResolver(),
         private readonly AlignmentChecker $alignmentChecker = new AlignmentChecker(),
+        private readonly ContextDiagnosticOutputCoalescer $outputCoalescer = new ContextDiagnosticOutputCoalescer(),
     ) {
         $this->doctorService = $doctorService ?? new ContextDoctorService($paths);
     }
@@ -166,7 +167,7 @@ final class ContextInspectionService
             'requires_repair' => !$canProceed,
             'summary' => $summary,
             'features' => $features,
-            'required_actions' => array_values(array_unique($requiredActions)),
+            'required_actions' => $this->outputCoalescer->coalesceRequiredActions($requiredActions),
         ];
     }
 
@@ -289,7 +290,7 @@ final class ContextInspectionService
             ];
         }
 
-        return $issues;
+        return $this->outputCoalescer->coalesceIssueRows($issues);
     }
 
     /**
@@ -299,9 +300,9 @@ final class ContextInspectionService
      */
     private function requiredActionsFromInspection(array $doctor, array $alignment): array
     {
-        return array_values(array_unique(array_merge(
+        return $this->outputCoalescer->coalesceRequiredActions(array_merge(
             array_values(array_map('strval', (array) ($doctor['required_actions'] ?? []))),
             array_values(array_map('strval', (array) ($alignment['required_actions'] ?? []))),
-        )));
+        ));
     }
 }

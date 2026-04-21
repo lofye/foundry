@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
+use Foundry\Context\ContextDoctorDiagnosticRule;
+use Foundry\Context\ContextDoctorDiagnosticRuleContext;
+use Foundry\Context\ContextDoctorDiagnosticRuleResult;
+use Foundry\Context\ContextDoctorDiagnosticTarget;
+use Foundry\Context\ContextDoctorService;
 use Foundry\Context\ContextInitService;
 use Foundry\Context\ContextInspectionService;
 use Foundry\Support\Paths;
@@ -100,6 +105,42 @@ final class ContextInspectionServiceTest extends TestCase
         )));
     }
 
+    public function test_verify_feature_coalesces_duplicate_doctor_issues_and_actions(): void
+    {
+        $this->writeConsumableContext('pass-feature');
+
+        $doctor = new ContextDoctorService(
+            new Paths($this->project->root),
+            diagnosticRules: [
+                $this->fixedRule(
+                    code: 'BETA_RULE',
+                    message: 'Shared issue.',
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/pass-feature.spec.md')],
+                    requiredActions: ['Shared action'],
+                ),
+                $this->fixedRule(
+                    code: 'ALPHA_RULE',
+                    message: 'Shared issue.',
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/pass-feature.spec.md')],
+                    requiredActions: ['Shared action'],
+                ),
+            ],
+        );
+
+        $result = (new ContextInspectionService(new Paths($this->project->root), $doctor))->verifyFeature('pass-feature');
+
+        $this->assertSame('fail', $result['status']);
+        $this->assertSame([
+            [
+                'source' => 'doctor',
+                'code' => 'ALPHA_RULE',
+                'message' => 'Shared issue.',
+                'file_path' => 'docs/features/pass-feature.spec.md',
+            ],
+        ], array_slice($result['issues'], 0, 1));
+        $this->assertSame(['Shared action'], $result['required_actions']);
+    }
+
     private function writeConsumableContext(string $feature): void
     {
         $this->initService()->init($feature);
@@ -161,6 +202,37 @@ MD);
     private function service(): ContextInspectionService
     {
         return new ContextInspectionService(new Paths($this->project->root));
+    }
+
+    /**
+     * @param list<ContextDoctorDiagnosticTarget> $targets
+     * @param list<string> $requiredActions
+     */
+    private function fixedRule(string $code, string $message, array $targets, array $requiredActions): ContextDoctorDiagnosticRule
+    {
+        return new class ($code, $message, $targets, $requiredActions) implements ContextDoctorDiagnosticRule {
+            /**
+             * @param list<ContextDoctorDiagnosticTarget> $targets
+             * @param list<string> $requiredActions
+             */
+            public function __construct(
+                private readonly string $code,
+                private readonly string $message,
+                private readonly array $targets,
+                private readonly array $requiredActions,
+            ) {}
+
+            public function evaluate(ContextDoctorDiagnosticRuleContext $context): ?ContextDoctorDiagnosticRuleResult
+            {
+                return new ContextDoctorDiagnosticRuleResult(
+                    code: $this->code,
+                    message: $this->message,
+                    targets: $this->targets,
+                    requiredActions: $this->requiredActions,
+                    requiresRepair: true,
+                );
+            }
+        };
     }
 
     private function initService(): ContextInitService

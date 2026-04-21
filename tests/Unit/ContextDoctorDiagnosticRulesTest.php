@@ -198,6 +198,77 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
         ], $result['required_actions']);
     }
 
+    public function test_doctor_service_coalesces_overlapping_rule_results_deterministically(): void
+    {
+        $this->initService()->init('event-bus');
+
+        $service = new ContextDoctorService(
+            new Paths($this->project->root),
+            diagnosticRules: [
+                $this->fixedRule(
+                    code: 'BETA_RULE',
+                    message: 'Shared issue.',
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    requiredActions: ['Shared action'],
+                ),
+                $this->fixedRule(
+                    code: 'ALPHA_RULE',
+                    message: 'Shared issue.',
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    requiredActions: ['Shared action'],
+                ),
+                $this->fixedRule(
+                    code: 'ALPHA_RULE',
+                    message: 'Shared issue.',
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    requiredActions: ['Shared action'],
+                ),
+            ],
+        );
+
+        $result = $service->checkFeature('event-bus');
+        $flattened = $service->flattenIssues($result);
+
+        $this->assertSame(['ALPHA_RULE'], $this->issueCodes((array) $result['files']['spec']['issues']));
+        $this->assertSame(['Shared action'], $result['required_actions']);
+        $this->assertSame([
+            [
+                'source' => 'doctor',
+                'code' => 'ALPHA_RULE',
+                'message' => 'Shared issue.',
+                'file_path' => 'docs/features/event-bus.spec.md',
+            ],
+        ], $flattened);
+    }
+
+    public function test_doctor_service_keeps_distinct_same_file_issues_when_remediation_differs(): void
+    {
+        $this->initService()->init('event-bus');
+
+        $service = new ContextDoctorService(
+            new Paths($this->project->root),
+            diagnosticRules: [
+                $this->fixedRule(
+                    code: 'ALPHA_RULE',
+                    message: 'First issue.',
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    requiredActions: ['First action'],
+                ),
+                $this->fixedRule(
+                    code: 'BETA_RULE',
+                    message: 'Second issue.',
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    requiredActions: ['Second action'],
+                ),
+            ],
+        );
+
+        $result = $service->checkFeature('event-bus');
+
+        $this->assertSame(['ALPHA_RULE', 'BETA_RULE'], $this->issueCodes((array) $result['files']['spec']['issues']));
+        $this->assertSame(['First action', 'Second action'], $result['required_actions']);
+    }
+
     public function test_doctor_service_flattens_doctor_issues_for_verify_in_deterministic_order(): void
     {
         $this->initService()->init('event-bus');

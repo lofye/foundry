@@ -41,11 +41,13 @@
 - `context doctor` reports execution-spec drift through the existing per-file issue buckets and required-actions model.
 - `context doctor` detects stale completed work that remains listed in `Next Steps`.
 - `context doctor` detects current-state divergence from the canonical spec when no supporting decision entry exists.
+- `context doctor` coalesces overlapping rule results, duplicate issues, and duplicate required actions deterministically before returning output.
 - CLI commands can detect spec-state mismatches using deterministic heuristics.
 - Inspect context aggregates doctor and alignment results into a single deterministic view.
 - Verify context maps doctor and alignment results to deterministic pass/fail semantics.
 - Verify context derives a per-feature `consumable` flag from existing doctor, alignment, and required-action outputs without changing doctor or alignment rules.
 - Verify context surfaces doctor execution-spec drift issues through its existing flattened issue list.
+- Verify context coalesces duplicate doctor issues and duplicate required actions without changing its outer JSON contract.
 - Verify context fails when doctor is `repairable` or `non_compliant`.
 - Verify context fails when alignment status is `mismatch`.
 - Verify context reports `consumable = true` only when doctor status is `ok`, alignment status is `ok`, and required actions are empty.
@@ -100,6 +102,7 @@
 - `context doctor` emits `EXECUTION_SPEC_DRIFT` deterministically when execution specs exist but canonical feature context files are missing.
 - `context doctor` emits `STALE_COMPLETED_ITEMS_IN_NEXT_STEPS` deterministically when `Next Steps` still lists work already reflected in `Current State`.
 - `context doctor` emits `DECISION_MISSING_FOR_STATE_DIVERGENCE` deterministically when `Current State` diverges from the canonical spec without a supporting decision entry.
+- `context doctor` deduplicates overlapping rule results and coalesces duplicate required actions deterministically without changing its JSON shape.
 - CLI can detect spec-state alignment issues deterministically.
 - Feature state normalization keeps canonical section order and conservatively removes duplicate or obviously stale bullets without inventing content.
 - Feature spec normalization keeps canonical section order, deterministic spacing, and safe exact-duplicate cleanup without changing intended meaning.
@@ -110,6 +113,7 @@
 - Verify context returns deterministic pass/fail status for feature context.
 - Verify context includes `consumable` per feature and derives it strictly from doctor status, alignment status, and required actions.
 - Verify context surfaces `EXECUTION_SPEC_DRIFT` as a doctor-sourced issue without changing its output contract.
+- Verify context coalesces duplicate doctor issues and required actions deterministically without changing its JSON shape.
 - Repo-wide verify context sets `can_proceed = false` when any feature is not consumable even if all feature statuses still render as `pass`.
 - Deterministic verification fails when an active execution spec is missing an exact matching implementation-log entry, and drafts do not require log coverage.
 - Foundry returns deterministic machine-readable canonical implementation-log entry content for an active execution spec and rejects draft-only or invalid targets clearly.

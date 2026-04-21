@@ -403,6 +403,39 @@ Timestamp: 2026-04-21T13:20:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: coalesce overlapping doctor diagnostics conservatively after rule evaluation
+Timestamp: 2026-04-21T13:33:30-04:00
+
+**Context**
+- The normalized doctor-rule infrastructure made it easier to add more feature-scoped diagnostics, but overlapping rules could now describe the same underlying problem more than once.
+- Repeated issue rows and repeated repair guidance would make `context doctor` and `verify context` noisier as the rule set grows, even when the underlying remediation had not changed.
+- The output still needed to stay deterministic, machine-readable, and conservative enough not to hide genuinely distinct problems.
+
+**Decision**
+- Add a deterministic post-processing pass after rule evaluation that coalesces overlapping rule results when they share the same repair target, canonical message, and required-action set.
+- Deduplicate exact duplicate issue rows and duplicate required actions before doctor and verify outputs are returned.
+- Keep distinct problems separate when their remediation path, message, or target semantics differ.
+
+**Reasoning**
+- Post-processing the normalized rule results is narrower and safer than redesigning the rule engine itself.
+- Coalescing on explicit fields preserves determinism and avoids fuzzy semantic clustering.
+- Preserving only one canonical overlapping issue keeps outputs smaller without weakening the existing doctor and verify JSON contracts.
+
+**Alternatives Considered**
+- Leave duplicate issues and repeated actions in place.
+- Add fuzzy semantic similarity or LLM-based clustering.
+- Redesign individual rules to coordinate with each other directly.
+
+**Impact**
+- `context doctor` and `verify context` now stay more readable as more diagnostics are added.
+- Duplicate remediation guidance is reduced without hiding genuinely different failures.
+- External output contracts remain stable while issue counts become less noisy.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: extend reusable context normalization to canonical feature specs only
 Timestamp: 2026-04-21T10:06:09-04:00
 

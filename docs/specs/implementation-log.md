@@ -143,3 +143,7 @@
 ## 2026-04-21 13:20:07 -0400
 - spec: context-persistence/024-add-context-auto-repair-mode.md
 - note: Added an explicit `context repair` command that reuses existing inspect and verify analysis, applies only safe normalization-style repairs to canonical spec/state files, and fails closed when critical context inputs are missing or manual semantic repair is still required.
+
+## 2026-04-21 13:33:30 -0400
+- spec: context-persistence/025-rule-deduplication-and-issue-coalescing.md
+- note: Added deterministic post-processing that coalesces overlapping doctor-rule results, deduplicates exact issue rows, and reuses canonical required-action coalescing across doctor and verify outputs without changing their JSON shapes.

@@ -37,6 +37,7 @@ final class ContextDoctorService
         private readonly StateValidator $stateValidator = new StateValidator(),
         private readonly DecisionLedgerValidator $decisionLedgerValidator = new DecisionLedgerValidator(),
         ?array $diagnosticRules = null,
+        private readonly ContextDiagnosticOutputCoalescer $outputCoalescer = new ContextDiagnosticOutputCoalescer(),
     ) {
         $this->diagnosticRules = $diagnosticRules ?? [
             new ExecutionSpecDriftContextDoctorRule(),
@@ -372,7 +373,7 @@ final class ContextDoctorService
             }
         }
 
-        return array_values(array_unique($actions));
+        return $this->outputCoalescer->coalesceRequiredActions($actions);
     }
 
     /**
@@ -483,7 +484,7 @@ final class ContextDoctorService
             return [$leftTarget, $left->code, $left->message] <=> [$rightTarget, $right->code, $right->message];
         });
 
-        return array_values($results);
+        return $this->outputCoalescer->coalesceRuleResults(array_values($results));
     }
 
     /**
@@ -523,7 +524,7 @@ final class ContextDoctorService
                     (string) ($right['section'] ?? ''),
                 ];
             });
-            $file['issues'] = $issues;
+            $file['issues'] = $this->outputCoalescer->coalesceIssueRows($issues);
             $files[$bucket] = $file;
         }
 
@@ -544,7 +545,7 @@ final class ContextDoctorService
             }
         }
 
-        return array_values(array_unique($actions));
+        return $this->outputCoalescer->coalesceRequiredActions($actions);
     }
 
     /**
@@ -554,7 +555,7 @@ final class ContextDoctorService
      */
     private function mergeRequiredActions(array $base, array $extra): array
     {
-        return array_values(array_unique(array_merge($base, $extra)));
+        return $this->outputCoalescer->coalesceRequiredActions(array_merge($base, $extra));
     }
 
     private function featureHasExecutionSpecs(string $featureName): bool
@@ -629,7 +630,7 @@ final class ContextDoctorService
             }
         }
 
-        return $issues;
+        return $this->outputCoalescer->coalesceIssueRows($issues);
     }
 
     private function diagnosticTargetSortKey(?ContextDoctorDiagnosticTarget $target): string
