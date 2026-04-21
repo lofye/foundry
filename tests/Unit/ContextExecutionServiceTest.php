@@ -123,6 +123,69 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertContains('Fixed malformed spec heading: docs/features/event-bus.spec.md', $result['actions_taken']);
     }
 
+    public function test_spec_repair_write_path_normalizes_existing_feature_spec_noise(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<MD
+# Feature Spec: event-bus
+
+## Purpose
+
+Introduce event bus handling.
+
+## Constraints
+
+- Keep output deterministic.
+- Keep output deterministic.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+- Event bus feature scaffolding exists in the app.
+
+## Acceptance Criteria
+
+- Event bus feature files are present.
+
+## Assumptions
+
+- Initial implementation may be scaffold-first.
+MD);
+
+        $result = $this->service()->execute('event-bus', autoRepair: true)->toArray();
+        $spec = (string) file_get_contents($this->project->root . '/docs/features/event-bus.spec.md');
+
+        $this->assertSame('repaired', $result['status']);
+        $this->assertStringContainsString('Added missing section: docs/features/event-bus.spec.md :: Goals', implode("\n", $result['actions_taken']));
+        $this->assertStringContainsString(<<<'MD'
+## Purpose
+
+Introduce event bus handling.
+
+## Goals
+
+- TBD.
+
+## Non-Goals
+
+- Do not add async delivery.
+
+## Constraints
+
+- Keep output deterministic.
+
+## Expected Behavior
+
+- Event bus feature scaffolding exists in the app.
+MD, $spec);
+        $this->assertSame(1, substr_count($spec, "- Keep output deterministic.\n"));
+        $this->assertSame(1, substr_count($spec, "- Event bus feature scaffolding exists in the app.\n"));
+    }
+
     public function test_execution_input_is_deterministic(): void
     {
         $this->writeMeaningfulContext('event-bus');

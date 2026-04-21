@@ -33,6 +33,7 @@ final class ContextInitService
         private readonly Paths $paths,
         private readonly FeatureNameValidator $featureNameValidator = new FeatureNameValidator(),
         private readonly ContextFileResolver $resolver = new ContextFileResolver(),
+        private readonly FeatureSpecDocumentNormalizer $featureSpecDocumentNormalizer = new FeatureSpecDocumentNormalizer(),
     ) {}
 
     /**
@@ -89,6 +90,10 @@ final class ContextInitService
             }
 
             $contents = $this->renderStub($definition['stub'], $featureName);
+            if ($definition['stub'] === 'spec.stub.md') {
+                $contents = $this->featureSpecDocumentNormalizer->normalize($contents);
+            }
+
             if (file_put_contents($absolutePath, $contents) === false) {
                 throw new FoundryError(
                     'CONTEXT_FILE_WRITE_FAILED',

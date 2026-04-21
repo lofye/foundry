@@ -14,6 +14,7 @@
 - `context doctor` now flags current-state divergence from the canonical spec when no supporting decision entry exists.
 - `context check-alignment` detects spec-state mismatches using deterministic heuristics.
 - Feature state documents now normalize through a reusable deterministic normalizer before framework-owned state updates are persisted.
+- Canonical feature spec documents now normalize through the same reusable context-normalization infrastructure on framework-owned spec write paths.
 - `inspect context` aggregates doctor and alignment results into a single deterministic view.
 - `verify context` maps doctor and alignment results to deterministic pass/fail semantics.
 - `verify context` now derives a per-feature `consumable` flag from doctor status, alignment status, and required actions without changing doctor or alignment rules.

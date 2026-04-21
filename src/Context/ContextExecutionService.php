@@ -20,6 +20,7 @@ final class ContextExecutionService
     private readonly ContextManifestGenerator $contextManifestGenerator;
     private readonly ExecutionSpecImplementationLogService $executionSpecImplementationLogService;
     private readonly StateDocumentNormalizer $stateDocumentNormalizer;
+    private readonly FeatureSpecDocumentNormalizer $featureSpecDocumentNormalizer;
 
     public function __construct(
         private readonly Paths $paths,
@@ -31,6 +32,7 @@ final class ContextExecutionService
         ?ContextManifestGenerator $contextManifestGenerator = null,
         ?ExecutionSpecImplementationLogService $executionSpecImplementationLogService = null,
         ?StateDocumentNormalizer $stateDocumentNormalizer = null,
+        ?FeatureSpecDocumentNormalizer $featureSpecDocumentNormalizer = null,
     ) {
         $this->inspectionService = $inspectionService ?? new ContextInspectionService($paths);
         $this->initService = $initService ?? new ContextInitService($paths);
@@ -38,6 +40,7 @@ final class ContextExecutionService
         $this->contextManifestGenerator = $contextManifestGenerator ?? new ContextManifestGenerator($paths);
         $this->executionSpecImplementationLogService = $executionSpecImplementationLogService ?? new ExecutionSpecImplementationLogService($paths);
         $this->stateDocumentNormalizer = $stateDocumentNormalizer ?? new StateDocumentNormalizer();
+        $this->featureSpecDocumentNormalizer = $featureSpecDocumentNormalizer ?? new FeatureSpecDocumentNormalizer();
     }
 
     /**
@@ -674,7 +677,7 @@ final class ContextExecutionService
             $updated = $expectedHeading . "\n\n" . ltrim($contents);
         }
 
-        file_put_contents($path, (string) $updated);
+        file_put_contents($path, $this->normalizeSpecDocumentIfApplicable($relativePath, (string) $updated));
     }
 
     private function appendMissingSection(string $relativePath, string $section): void
@@ -692,7 +695,7 @@ final class ContextExecutionService
             default => "\n\n## {$section}\n\nTBD.\n",
         };
 
-        file_put_contents($path, $contents . $block);
+        file_put_contents($path, $this->normalizeSpecDocumentIfApplicable($relativePath, $contents . $block));
     }
 
     private function repairDecisionTimestamps(string $relativePath, bool $onlyMissing): void
@@ -1491,6 +1494,16 @@ final class ContextExecutionService
         }
 
         return $part;
+    }
+
+    private function normalizeSpecDocumentIfApplicable(string $relativePath, string $contents): string
+    {
+        $normalizedPath = str_replace('\\', '/', $relativePath);
+        if (preg_match('/^docs\/features\/[a-z0-9]+(?:-[a-z0-9]+)*\.spec\.md$/', $normalizedPath) !== 1) {
+            return $contents;
+        }
+
+        return $this->featureSpecDocumentNormalizer->normalize($contents);
     }
 
     private function readFile(string $relativePath): string

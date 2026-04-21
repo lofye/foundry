@@ -370,6 +370,39 @@ Timestamp: 2026-04-20T13:37:14-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: extend reusable context normalization to canonical feature specs only
+Timestamp: 2026-04-21T10:06:09-04:00
+
+**Context**
+- Reusable deterministic normalization already existed for framework-owned state-document writes.
+- Canonical feature spec documents were still vulnerable to ordering, spacing, and duplicate-bullet drift on framework-owned write paths such as initialization and safe repairs.
+- Decision ledgers remained explicitly out of scope because they are append-only historical records rather than current-intent artifacts.
+
+**Decision**
+- Extend reusable context normalization to `docs/features/<feature>.spec.md`.
+- Keep the expansion limited to canonical feature specs and do not normalize decision ledgers in this step.
+- Apply the new normalization only through narrow framework-owned spec write paths rather than broad repository-wide rewrites.
+
+**Reasoning**
+- Feature specs are current-intent artifacts, so conservative deterministic normalization is safer there than in historical ledgers.
+- Reusing the existing normalization infrastructure reduces drift without inventing a second disconnected formatting path.
+- Limiting integration to framework-owned writes makes the behavior real and reusable while avoiding speculative mass rewrites.
+
+**Alternatives Considered**
+- Leave feature specs unnormalized outside state documents.
+- Normalize decision ledgers in the same step.
+- Add a broad repository markdown formatter.
+
+**Impact**
+- Canonical feature specs now become more stable and easier to diff when Foundry writes or repairs them.
+- Existing state normalization remains intact while spec normalization gains the same deterministic write discipline.
+- Decision-ledger history remains untouched until a future dedicated step addresses it.
+
+**Spec Reference**
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: fail closed on generic planner fallback output
 Timestamp: 2026-04-15T15:10:00-04:00
 

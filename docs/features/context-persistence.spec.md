@@ -54,6 +54,7 @@
 - Foundry can output the exact canonical implementation-log entry content for one active execution spec through a deterministic CLI-owned surface.
 - Inspect and verify reuse doctor and alignment services rather than reimplementing either path.
 - Feature state documents normalize through one reusable deterministic normalization path before framework-owned state updates are persisted.
+- Canonical feature spec documents normalize through the reusable context normalization infrastructure before framework-owned spec updates are persisted.
 - Divergence backed by decision entries is treated differently from unexplained divergence.
 - Implement feature consumes canonical feature context as authoritative execution input.
 - Implement feature refuses execution when canonical context is not consumable unless explicit repair mode succeeds.
@@ -97,6 +98,7 @@
 - `context doctor` emits `DECISION_MISSING_FOR_STATE_DIVERGENCE` deterministically when `Current State` diverges from the canonical spec without a supporting decision entry.
 - CLI can detect spec-state alignment issues deterministically.
 - Feature state normalization keeps canonical section order and conservatively removes duplicate or obviously stale bullets without inventing content.
+- Feature spec normalization keeps canonical section order, deterministic spacing, and safe exact-duplicate cleanup without changing intended meaning.
 - Inspect context returns a deterministic combined context view.
 - Verify context returns deterministic pass/fail status for feature context.
 - Verify context includes `consumable` per feature and derives it strictly from doctor status, alignment status, and required actions.

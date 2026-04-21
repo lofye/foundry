@@ -135,3 +135,7 @@
 ## 2026-04-20 13:37:14 -0400
 - spec: context-persistence/022-expand-context-diagnostic-rules.md
 - note: Added exactly two high-signal doctor diagnostics, `STALE_COMPLETED_ITEMS_IN_NEXT_STEPS` and `DECISION_MISSING_FOR_STATE_DIVERGENCE`, while preserving the existing doctor and verify-context output contracts.
+
+## 2026-04-21 10:05:58 -0400
+- spec: context-persistence/023-normalize-additional-context-artifacts.md
+- note: Extended reusable context normalization to canonical feature spec documents on framework-owned spec write paths while preserving meaning, deterministic ordering, and existing state-document normalization behavior.

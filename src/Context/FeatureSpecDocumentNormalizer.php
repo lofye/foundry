@@ -6,7 +6,7 @@ namespace Foundry\Context;
 
 use Foundry\Support\FoundryError;
 
-final class StateDocumentNormalizer
+final class FeatureSpecDocumentNormalizer
 {
     use SectionedMarkdownDocumentNormalizer;
 
@@ -14,9 +14,25 @@ final class StateDocumentNormalizer
      * @var list<string>
      */
     private const array CANONICAL_SECTION_ORDER = [
-        'Current State',
-        'Open Questions',
-        'Next Steps',
+        'Purpose',
+        'Goals',
+        'Non-Goals',
+        'Constraints',
+        'Expected Behavior',
+        'Acceptance Criteria',
+        'Assumptions',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    private const array BULLET_SECTIONS = [
+        'Goals',
+        'Non-Goals',
+        'Constraints',
+        'Expected Behavior',
+        'Acceptance Criteria',
+        'Assumptions',
     ];
 
     public function normalize(string $contents): string
@@ -25,10 +41,10 @@ final class StateDocumentNormalizer
 
         if (trim($contents) === '') {
             throw new FoundryError(
-                'CONTEXT_STATE_NORMALIZATION_INPUT_INVALID',
+                'CONTEXT_SPEC_NORMALIZATION_INPUT_INVALID',
                 'validation',
                 [],
-                'State document normalization requires non-empty state document content.',
+                'Feature spec normalization requires non-empty feature spec content.',
             );
         }
 
@@ -56,7 +72,6 @@ final class StateDocumentNormalizer
             $normalizedCanonical[$section['title']] = $this->normalizeCanonicalSection(
                 $section['title'],
                 $section['body'],
-                $normalizedCanonical['Current State'] ?? [],
             );
         }
 
@@ -112,34 +127,34 @@ final class StateDocumentNormalizer
     }
 
     /**
-     * @param list<string> $currentStateItems
-     * @return list<string>
+     * @return array{items:list<string>,bullet_section:bool}
      */
-    private function normalizeCanonicalSection(string $title, string $body, array $currentStateItems): array
+    private function normalizeCanonicalSection(string $title, string $body): array
     {
-        $items = $this->deduplicatedItems($this->sectionItems($body));
-
-        return match ($title) {
-            'Current State' => array_values(array_filter(
-                $items,
-                fn(string $item): bool => !$this->isObviousCurrentStateNoise($item),
-            )),
-            'Open Questions' => $items,
-            'Next Steps' => array_values(array_filter(
-                $items,
-                fn(string $item): bool => !$this->isObviousCompletedNextStep($item, $currentStateItems),
-            )),
-            default => $items,
-        };
+        return [
+            'items' => $this->deduplicatedItems($this->sectionItems($body)),
+            'bullet_section' => in_array($title, self::BULLET_SECTIONS, true),
+        ];
     }
 
     /**
-     * @param list<string> $items
+     * @param array{items:list<string>,bullet_section:bool} $normalizedSection
      */
-    private function canonicalBody(array $items, string $originalBody): string
+    private function canonicalBody(array $normalizedSection, string $originalBody): string
     {
+        $items = $normalizedSection['items'];
+        $bulletSection = $normalizedSection['bullet_section'];
+
         if ($items === []) {
-            return $this->isPlaceholderOnlyBody($originalBody) ? '- TBD.' : '';
+            if (!$this->isPlaceholderOnlyBody($originalBody)) {
+                return '';
+            }
+
+            return $bulletSection ? '- TBD.' : 'TBD.';
+        }
+
+        if (!$bulletSection && count($items) === 1) {
+            return $items[0];
         }
 
         return implode("\n", array_map(
@@ -156,10 +171,10 @@ final class StateDocumentNormalizer
         $matchCount = preg_match_all('/^## (.+?)\s*$/m', $contents, $matches, PREG_OFFSET_CAPTURE);
         if ($matchCount === false || $matchCount === 0) {
             throw new FoundryError(
-                'CONTEXT_STATE_NORMALIZATION_INPUT_INVALID',
+                'CONTEXT_SPEC_NORMALIZATION_INPUT_INVALID',
                 'validation',
                 [],
-                'State document normalization requires at least one level-two section.',
+                'Feature spec normalization requires at least one level-two section.',
             );
         }
 
@@ -195,7 +210,7 @@ final class StateDocumentNormalizer
         $deduplicated = [];
 
         foreach ($items as $item) {
-            $key = $this->comparisonKey($item);
+            $key = $this->normalizeItemText($item);
             if ($key === '' || isset($seen[$key])) {
                 continue;
             }
@@ -205,72 +220,5 @@ final class StateDocumentNormalizer
         }
 
         return $deduplicated;
-    }
-
-    /**
-     * @param list<string> $currentStateItems
-     */
-    private function isObviousCompletedNextStep(string $item, array $currentStateItems): bool
-    {
-        if ($this->isObviousCurrentStateNoise($item)) {
-            return true;
-        }
-
-        $normalized = $this->normalizedSemanticKey($item);
-
-        if (str_starts_with($normalized, 'implemented ')) {
-            return true;
-        }
-
-        if ($normalized === 'current state reflects the completed bounded work') {
-            return true;
-        }
-
-        foreach ($currentStateItems as $currentStateItem) {
-            $itemKey = $this->comparisonKey($item);
-            if ($this->comparisonKey($currentStateItem) === $itemKey) {
-                return true;
-            }
-
-            if ($this->comparisonKey($this->stripImplementedPrefix($currentStateItem)) === $itemKey) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function isObviousCurrentStateNoise(string $item): bool
-    {
-        $normalized = $this->normalizedSemanticKey($item);
-
-        if (in_array($normalized, [
-            'feature spec created',
-            'feature state document created',
-            'decision ledger created',
-        ], true)) {
-            return true;
-        }
-
-        return preg_match('/^[a-z0-9.]+ implementation completed$/', $normalized) === 1;
-    }
-
-    private function comparisonKey(string $value): string
-    {
-        return strtolower($this->normalizeItemText($value));
-    }
-
-    private function normalizedSemanticKey(string $value): string
-    {
-        $normalized = strtolower($this->normalizeItemText($value));
-        $normalized = preg_replace('/[^a-z0-9.]+/', ' ', $normalized) ?? $normalized;
-        $normalized = rtrim($normalized, '. ');
-
-        return trim($normalized);
-    }
-
-    private function stripImplementedPrefix(string $value): string
-    {
-        return preg_replace('/^implemented\s+/i', '', $this->normalizeItemText($value)) ?? $this->normalizeItemText($value);
     }
 }
