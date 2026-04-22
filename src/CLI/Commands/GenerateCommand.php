@@ -7,7 +7,9 @@ namespace Foundry\CLI\Commands;
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
 use Foundry\Generate\GenerateEngine;
+use Foundry\Generate\InteractiveGenerateReviewer;
 use Foundry\Generate\Intent;
+use Foundry\Generate\TerminalInteractiveGenerateReviewer;
 use Foundry\Packs\PackManager;
 use Foundry\Support\FoundryError;
 
@@ -40,7 +42,13 @@ final class GenerateCommand extends Command
         'inspect-ui',
     ];
 
-    public function __construct(private readonly ?PackManager $packManager = null) {}
+    /**
+     * @param null|\Closure(CommandContext):InteractiveGenerateReviewer $interactiveReviewerFactory
+     */
+    public function __construct(
+        private readonly ?PackManager $packManager = null,
+        private readonly ?\Closure $interactiveReviewerFactory = null,
+    ) {}
 
     #[\Override]
     public function supportedSignatures(): array
@@ -71,6 +79,7 @@ final class GenerateCommand extends Command
             $context->paths(),
             $this->packManager,
             apiSurfaceRegistry: $context->apiSurfaceRegistry(),
+            interactiveReviewer: $intent->interactive ? $this->interactiveReviewer($context) : null,
         ))->run($intent);
 
         return [
@@ -88,6 +97,7 @@ final class GenerateCommand extends Command
         $parts = [];
         $mode = null;
         $target = null;
+        $interactive = false;
         $dryRun = false;
         $skipVerify = false;
         $explainAfter = false;
@@ -111,6 +121,11 @@ final class GenerateCommand extends Command
 
             if ($arg === '--dry-run') {
                 $dryRun = true;
+                continue;
+            }
+
+            if ($arg === '--interactive' || $arg === '-i') {
+                $interactive = true;
                 continue;
             }
 
@@ -245,6 +260,7 @@ final class GenerateCommand extends Command
             raw: $rawIntent,
             mode: $mode,
             target: $target,
+            interactive: $interactive,
             dryRun: $dryRun,
             skipVerify: $skipVerify,
             explainAfter: $explainAfter,
@@ -254,6 +270,31 @@ final class GenerateCommand extends Command
             gitCommit: $gitCommit,
             gitCommitMessage: $gitCommitMessage !== '' ? $gitCommitMessage : null,
             packHints: $packHints,
+        );
+    }
+
+    private function interactiveReviewer(CommandContext $context): InteractiveGenerateReviewer
+    {
+        if ($this->interactiveReviewerFactory instanceof \Closure) {
+            return ($this->interactiveReviewerFactory)($context);
+        }
+
+        $writer = $context->expectsJson()
+            ? static function (string $text): void {
+                if (defined('STDERR')) {
+                    fwrite(STDERR, $text);
+
+                    return;
+                }
+
+                echo $text;
+            }
+            : static function (string $text): void {
+                echo $text;
+            };
+
+        return new TerminalInteractiveGenerateReviewer(
+            outputWriter: $writer,
         );
     }
 
@@ -282,14 +323,26 @@ final class GenerateCommand extends Command
         $generator = (string) ($payload['plan']['generator_id'] ?? 'generate');
         $packs = array_values(array_map('strval', (array) ($payload['packs_used'] ?? [])));
         $packSummary = $packs === [] ? 'none' : implode(', ', $packs);
+        $interactive = is_array($payload['interactive'] ?? null) ? $payload['interactive'] : [];
+        $interactiveRejected = ($interactive['enabled'] ?? false) === true && ($interactive['approved'] ?? false) !== true;
 
         $lines = [
-            ($payload['metadata']['dry_run'] ?? false) ? 'Generate plan prepared.' : 'Generate completed.',
+            $interactiveRejected
+                ? 'Generate aborted before execution.'
+                : (($payload['metadata']['dry_run'] ?? false) ? 'Generate plan prepared.' : 'Generate completed.'),
             'Mode: ' . (string) ($payload['mode'] ?? 'new'),
             'Generator: ' . $generator,
             'Files affected: ' . $files,
             'Packs: ' . $packSummary,
         ];
+
+        if (($interactive['enabled'] ?? false) === true) {
+            $lines[] = 'Interactive: ' . (($interactive['approved'] ?? false) === true ? 'approved' : 'rejected');
+            $riskLevel = trim((string) ($interactive['risk']['level'] ?? ''));
+            if ($riskLevel !== '') {
+                $lines[] = 'Interactive risk: ' . $riskLevel;
+            }
+        }
 
         $planConfidence = is_array($payload['plan_confidence'] ?? null) ? $payload['plan_confidence'] : [];
         if ($planConfidence !== []) {
@@ -362,7 +415,7 @@ final class GenerateCommand extends Command
             $lines[] = $postExplainRendered;
         }
 
-        if (($payload['metadata']['dry_run'] ?? false) !== true) {
+        if (($payload['metadata']['dry_run'] ?? false) !== true && !$interactiveRejected) {
             $lines[] = '';
             $lines[] = 'Next:';
             $lines[] = '- Inspect architectural changes:';

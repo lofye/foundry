@@ -8,6 +8,7 @@ Core flows:
 foundry generate "add feature" --mode=new
 foundry generate "refine feature" --mode=modify --target=<feature>
 foundry generate "repair feature" --mode=repair --target=<feature>
+foundry generate "refine feature" --mode=modify --target=<feature> --interactive
 foundry generate "add feature" --mode=new --explain --json
 foundry generate "add feature" --mode=new --git-commit --json
 ```
@@ -25,11 +26,16 @@ Notes:
 - `--allow-dirty` lets generate proceed in a dirty repository, but explicit warnings stay attached to the result
 - `--git-commit` stages only safe generate-owned files and creates a commit after successful verification; it never commits by default
 - `--allow-pack-install` lets generate install a missing pack before planning when a pack generator is required
+- `--interactive` or `-i` adds an approval layer that renders summary, detail, and unified file diffs before execution
+- interactive review supports approve, reject, `exclude action <n>`, `exclude file <path|n>`, `toggle risky`, `inspect graph`, and `inspect explain`
+- interactive JSON output records the original plan, modified plan when applicable, user decisions, risk classification, executed actions, and verification results
+- high-risk interactive plans require explicit confirmation before execution
 
 Iteration loop:
 
 ```bash
 foundry generate "add feature" --mode=new
+foundry generate "refine feature" --mode=modify --target=<feature> --interactive
 foundry explain --diff
 foundry generate "refine feature" --mode=modify --target=<feature>
 ```

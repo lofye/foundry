@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace Foundry\Tests\Integration;
 
 use Foundry\CLI\Application;
+use Foundry\CLI\CommandContext;
 use Foundry\CLI\Commands\GenerateCommand;
+use Foundry\Generate\GenerationPlan;
+use Foundry\Generate\InteractiveGenerateReviewRequest;
+use Foundry\Generate\InteractiveGenerateReviewResult;
+use Foundry\Generate\InteractiveGenerateReviewer;
 use Foundry\Packs\HostedPackRegistry;
 use Foundry\Packs\PackChecksum;
 use Foundry\Packs\PackManager;
@@ -304,6 +309,116 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame('foundry generate (new): Create comments', $this->git(['log', '-1', '--format=%s']));
     }
 
+    public function test_generate_interactive_dry_run_includes_review_payload(): void
+    {
+        $app = $this->interactiveApplication(
+            static fn(InteractiveGenerateReviewRequest $request): InteractiveGenerateReviewResult => new InteractiveGenerateReviewResult(
+                approved: true,
+                plan: $request->plan,
+                userDecisions: [['type' => 'approve']],
+                preview: ['summary' => [], 'actions' => [], 'diffs' => []],
+                risk: ['level' => 'LOW', 'reasons' => ['Plan is additive only.'], 'risky_action_indexes' => [], 'risky_paths' => []],
+            ),
+        );
+
+        $result = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--interactive',
+            '--dry-run',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertTrue($result['payload']['interactive']['enabled']);
+        $this->assertTrue($result['payload']['interactive']['approved']);
+        $this->assertArrayHasKey('original_plan', $result['payload']['interactive']);
+        $this->assertNull($result['payload']['interactive']['modified_plan']);
+    }
+
+    public function test_generate_interactive_reject_aborts_without_writing_files(): void
+    {
+        $app = $this->interactiveApplication(
+            static fn(InteractiveGenerateReviewRequest $request): InteractiveGenerateReviewResult => new InteractiveGenerateReviewResult(
+                approved: false,
+                plan: $request->plan,
+                userDecisions: [['type' => 'reject']],
+                preview: ['summary' => [], 'actions' => [], 'diffs' => []],
+                risk: ['level' => 'LOW', 'reasons' => ['Plan is additive only.'], 'risky_action_indexes' => [], 'risky_paths' => []],
+            ),
+        );
+
+        $result = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--interactive',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertTrue($result['payload']['interactive']['rejected']);
+        $this->assertTrue($result['payload']['verification_results']['skipped']);
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/comments_system/feature.yaml');
+    }
+
+    public function test_generate_interactive_can_execute_filtered_modify_plan(): void
+    {
+        $baseline = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--json',
+        ]);
+        $this->assertSame(0, $baseline['status']);
+
+        $feature = (string) $baseline['payload']['plan']['metadata']['feature'];
+        $manifestPath = $this->project->root . '/app/features/' . $feature . '/feature.yaml';
+        $promptsPath = $this->project->root . '/app/features/' . $feature . '/prompts.md';
+        $originalPrompts = (string) file_get_contents($promptsPath);
+
+        $app = $this->interactiveApplication(function (InteractiveGenerateReviewRequest $request) use ($feature): InteractiveGenerateReviewResult {
+            $filtered = $this->modifiedPlanWithoutPath($request->plan, 'app/features/' . $feature . '/prompts.md');
+
+            return new InteractiveGenerateReviewResult(
+                approved: true,
+                plan: $filtered,
+                userDecisions: [
+                    ['type' => 'exclude_file', 'path' => 'app/features/' . $feature . '/prompts.md'],
+                    ['type' => 'approve'],
+                ],
+                preview: ['summary' => [], 'actions' => [], 'diffs' => []],
+                risk: ['level' => 'MEDIUM', 'reasons' => ['Plan modifies existing files.'], 'risky_action_indexes' => [], 'risky_paths' => []],
+                modified: true,
+            );
+        });
+
+        $result = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Refine',
+            'comments',
+            'notes',
+            '--mode=modify',
+            '--target=' . $feature,
+            '--interactive',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertTrue($result['payload']['interactive']['modified']);
+        $this->assertSame($originalPrompts, (string) file_get_contents($promptsPath));
+        $this->assertStringContainsString('Modification intent: Refine comments notes.', (string) file_get_contents($manifestPath));
+        $this->assertCount(1, $result['payload']['actions_taken']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
@@ -357,6 +472,28 @@ final class CLIGenerateCommandTest extends TestCase
         $manager = new PackManager($paths, $registry);
 
         return new Application([new GenerateCommand($manager)]);
+    }
+
+    /**
+     * @param callable(InteractiveGenerateReviewRequest):InteractiveGenerateReviewResult $callback
+     */
+    private function interactiveApplication(callable $callback): Application
+    {
+        return new Application([
+            new GenerateCommand(
+                interactiveReviewerFactory: static function (CommandContext $context) use ($callback): InteractiveGenerateReviewer {
+                    return new class ($callback) implements InteractiveGenerateReviewer {
+                        public function __construct(private readonly mixed $callback) {}
+
+                        #[\Override]
+                        public function review(InteractiveGenerateReviewRequest $request): InteractiveGenerateReviewResult
+                        {
+                            return ($this->callback)($request);
+                        }
+                    };
+                },
+            ),
+        ]);
     }
 
     private function fixtureArchive(string $fixtureName): string
@@ -424,5 +561,29 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame(0, $status, trim($stderr) !== '' ? trim($stderr) : trim($stdout));
 
         return trim($stdout);
+    }
+
+    private function modifiedPlanWithoutPath(GenerationPlan $plan, string $excludedPath): GenerationPlan
+    {
+        $actions = array_values(array_filter(
+            $plan->actions,
+            static fn(array $action): bool => (string) ($action['path'] ?? '') !== $excludedPath,
+        ));
+        $affectedFiles = array_values(array_filter(
+            $plan->affectedFiles,
+            static fn(string $path): bool => $path !== $excludedPath,
+        ));
+
+        return new GenerationPlan(
+            actions: $actions,
+            affectedFiles: $affectedFiles,
+            risks: ['Interactive review modified the original plan before execution.'],
+            validations: $plan->validations,
+            origin: $plan->origin,
+            generatorId: $plan->generatorId,
+            extension: $plan->extension,
+            metadata: $plan->metadata,
+            confidence: $plan->confidence,
+        );
     }
 }

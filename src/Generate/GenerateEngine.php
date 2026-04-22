@@ -19,15 +19,11 @@ use Foundry\Explain\ExplainSupport;
 use Foundry\Explain\ExplainTarget;
 use Foundry\Explain\Snapshot\ExplainSnapshotService;
 use Foundry\Git\GitRepositoryInspector;
-use Foundry\Generation\ContextManifestGenerator;
-use Foundry\Generation\FeatureGenerator;
-use Foundry\Generation\TestGenerator;
 use Foundry\Packs\PackManager;
 use Foundry\Pro\ArchitectureExplainer;
 use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
-use Foundry\Support\Yaml;
 use Foundry\Tooling\BuildArtifactStore;
 
 final class GenerateEngine
@@ -46,6 +42,7 @@ final class GenerateEngine
         ?ApiSurfaceRegistry $apiSurfaceRegistry = null,
         ?ExplainSnapshotService $snapshotService = null,
         ?ExplainDiffService $diffService = null,
+        private readonly ?InteractiveGenerateReviewer $interactiveReviewer = null,
     ) {
         $this->packManager = $packManager ?? new PackManager($paths);
         $this->codeWriter = $codeWriter ?? new CodeWriter();
@@ -160,21 +157,81 @@ final class GenerateEngine
             );
 
             $plan = (new GenerationPlanner($generatorRegistry))->plan($context);
-            (new PlanValidator())->validate($plan, $intent);
+            $validator = new PlanValidator();
+            $validator->validate($plan, $intent, $intent->interactive);
             $plan = $plan->withConfidence($this->confidenceEngine->plan($context, $plan));
             $this->assertGitPlanSafe($gitBefore, $plan, $intent, $gitWarnings);
 
-            if ($intent->dryRun) {
+            $interactiveReview = null;
+            $executionPlan = $plan;
+            $executionIntent = $intent;
+
+            if ($intent->interactive) {
+                if (!$this->interactiveReviewer instanceof InteractiveGenerateReviewer) {
+                    throw new FoundryError(
+                        'GENERATE_INTERACTIVE_REVIEWER_REQUIRED',
+                        'validation',
+                        [],
+                        'Interactive generate requires an interactive reviewer.',
+                    );
+                }
+
+                $preExplain = $this->buildExplainResponse($compiler, $extensions, $compile->graph, $target);
+                $interactiveReview = $this->interactiveReviewer->review(new InteractiveGenerateReviewRequest(
+                    intent: $intent,
+                    plan: $plan,
+                    context: $context,
+                    explainRendered: $preExplain?->rendered,
+                ));
+                $executionPlan = $interactiveReview->plan;
+                $executionIntent = $interactiveReview->allowRisky ? $intent->withAllowRisky(true) : $intent;
+
+                if (!$interactiveReview->approved) {
+                    $outcomeConfidence = $this->confidenceEngine->outcome(
+                        $intent,
+                        $executionPlan,
+                        [],
+                        ['skipped' => true, 'ok' => true],
+                    );
+
+                    $payload = $this->buildPayload(
+                        intent: $intent,
+                        plan: $executionPlan,
+                        actionsTaken: [],
+                        verificationResults: ['skipped' => true, 'ok' => true],
+                        outcomeConfidence: $outcomeConfidence,
+                        errors: [],
+                        context: $context,
+                        packsInstalled: $packsInstalled,
+                        git: $this->gitPayload(
+                            before: $gitBefore,
+                            after: null,
+                            warnings: $gitWarnings,
+                            commit: $gitCommit,
+                        ),
+                        interactive: $this->interactivePayload($plan, $interactiveReview),
+                    );
+
+                    $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
+                    $payload['record'] = $this->historyRecordReference($record);
+
+                    return $payload;
+                }
+
+                $validator->validate($executionPlan, $executionIntent);
+            }
+
+            if ($executionIntent->dryRun) {
                 $outcomeConfidence = $this->confidenceEngine->outcome(
                     $intent,
-                    $plan,
+                    $executionPlan,
                     [],
                     ['skipped' => true, 'ok' => true],
                 );
 
                 $payload = $this->buildPayload(
                     intent: $intent,
-                    plan: $plan,
+                    plan: $executionPlan,
                     actionsTaken: [],
                     verificationResults: ['skipped' => true, 'ok' => true],
                     outcomeConfidence: $outcomeConfidence,
@@ -187,6 +244,7 @@ final class GenerateEngine
                         warnings: $gitWarnings,
                         commit: $gitCommit,
                     ),
+                    interactive: $this->interactivePayload($plan, $interactiveReview),
                 );
 
                 $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -195,18 +253,18 @@ final class GenerateEngine
                 return $payload;
             }
 
-            $fileSnapshots = $this->codeWriter->snapshot($this->absolutePaths($plan->affectedFiles));
-            $actionsTaken = $this->executePlan($plan, $intent);
-            $verificationResults = $intent->skipVerify
+            $fileSnapshots = $this->codeWriter->snapshot($this->absolutePaths($executionPlan->affectedFiles));
+            $actionsTaken = $this->executePlan($executionPlan, $executionIntent);
+            $verificationResults = $executionIntent->skipVerify
                 ? ['skipped' => true, 'ok' => true]
-                : $this->runVerification($plan);
+                : $this->runVerification($executionPlan);
 
             if (($verificationResults['ok'] ?? false) !== true) {
                 throw new FoundryError(
                     'GENERATE_VERIFICATION_FAILED',
                     'validation',
                     [
-                        'plan' => $plan->toArray(),
+                        'plan' => $executionPlan->toArray(),
                         'verification_results' => $verificationResults,
                     ],
                     'Generation was rolled back because verification failed.',
@@ -216,7 +274,7 @@ final class GenerateEngine
             $postExtensions = ExtensionRegistry::forPaths($this->paths);
             $postCompiler = new GraphCompiler($this->paths, $postExtensions);
             $postCompile = $postCompiler->compile(new CompileOptions(emit: true));
-            $postTarget = $this->postGenerateTarget($plan, $context, $postCompile->graph);
+            $postTarget = $this->postGenerateTarget($executionPlan, $context, $postCompile->graph);
             $postSnapshot = $this->snapshotService->capture(
                 'post-generate',
                 $postCompile->graph,
@@ -232,13 +290,13 @@ final class GenerateEngine
             }
 
             $gitAfter = $gitInspector->inspect();
-            if ($intent->gitCommit) {
+            if ($executionIntent->gitCommit) {
                 $gitCommit = $this->commitGenerateChanges(
                     $gitInspector,
                     $gitBefore,
                     $gitAfter,
-                    $intent,
-                    $plan,
+                    $executionIntent,
+                    $executionPlan,
                     $packsInstalled,
                     $gitWarnings,
                 );
@@ -247,7 +305,7 @@ final class GenerateEngine
 
             $postExplain = null;
             $postExplainRendered = null;
-            if ($intent->explainAfter) {
+            if ($executionIntent->explainAfter) {
                 $response = $this->buildExplainResponse($postCompiler, $postExtensions, $postCompile->graph, $postTarget);
                 $postExplain = $response?->toArray();
                 $postExplainRendered = $response?->rendered;
@@ -255,7 +313,7 @@ final class GenerateEngine
 
             $outcomeConfidence = $this->confidenceEngine->outcome(
                 $intent,
-                $plan,
+                $executionPlan,
                 $actionsTaken,
                 $verificationResults,
                 $architectureDiff,
@@ -264,7 +322,7 @@ final class GenerateEngine
 
             $payload = $this->buildPayload(
                 intent: $intent,
-                plan: $plan,
+                plan: $executionPlan,
                 actionsTaken: $actionsTaken,
                 verificationResults: $verificationResults,
                 outcomeConfidence: $outcomeConfidence,
@@ -285,6 +343,7 @@ final class GenerateEngine
                 architectureDiff: $architectureDiff,
                 postExplain: $postExplain,
                 postExplainRendered: $postExplainRendered,
+                interactive: $this->interactivePayload($plan, $interactiveReview),
             );
 
             $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $postCompile->graph->sourceHash()));
@@ -315,6 +374,7 @@ final class GenerateEngine
         ?array $architectureDiff = null,
         ?array $postExplain = null,
         ?string $postExplainRendered = null,
+        ?array $interactive = null,
     ): array {
         $packsUsed = $plan->extension !== null ? [$plan->extension] : [];
 
@@ -340,6 +400,7 @@ final class GenerateEngine
             'post_explain_rendered' => $postExplainRendered,
             'packs_used' => $packsUsed,
             'packs_installed' => $packsInstalled,
+            'interactive' => $interactive,
         ];
     }
 
@@ -389,8 +450,24 @@ final class GenerateEngine
             'git' => $payload['git'] ?? [],
             'packs_used' => $payload['packs_used'] ?? [],
             'packs_installed' => $payload['packs_installed'] ?? [],
+            'interactive' => $payload['interactive'] ?? null,
             'source_hash' => $sourceHash,
         ];
+    }
+
+    private function interactivePayload(GenerationPlan $originalPlan, ?InteractiveGenerateReviewResult $review): ?array
+    {
+        if ($review === null) {
+            return null;
+        }
+
+        return array_merge(
+            $review->toArray(),
+            [
+                'original_plan' => $originalPlan->toArray(),
+                'modified_plan' => $review->modified ? $review->plan->toArray() : null,
+            ],
+        );
     }
 
     /**
@@ -744,8 +821,8 @@ final class GenerateEngine
 
         return match ($strategy) {
             'feature_definition' => $this->executeFeatureDefinition($execution, $plan, $intent),
-            'modify_feature' => $this->executeModifyFeature($execution),
-            'repair_feature' => $this->executeRepairFeature($execution),
+            'modify_feature' => $this->executeModifyFeature($execution, $plan, $intent),
+            'repair_feature' => $this->executeRepairFeature($execution, $plan, $intent),
             default => throw new FoundryError(
                 'GENERATE_PLAN_INVALID',
                 'validation',
@@ -771,89 +848,64 @@ final class GenerateEngine
             );
         }
 
-        $files = (new FeatureGenerator($this->paths))->generateFromArray($definition, $intent->allowRisky);
-        sort($files);
+        return $this->executeSelectedFileActions($plan, $intent);
+    }
 
-        return array_values(array_map(
-            fn(string $path): array => [
-                'type' => 'write_file',
-                'path' => $this->relativePath($path),
-                'status' => 'written',
+    /**
+     * @param array<string,mixed> $execution
+     * @return array<int,array<string,mixed>>
+     */
+    private function executeModifyFeature(array $execution, GenerationPlan $plan, Intent $intent): array
+    {
+        return $this->executeSelectedFileActions($plan, $intent);
+    }
+
+    /**
+     * @param array<string,mixed> $execution
+     * @return array<int,array<string,mixed>>
+     */
+    private function executeRepairFeature(array $execution, GenerationPlan $plan, Intent $intent): array
+    {
+        return $this->executeSelectedFileActions($plan, $intent);
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private function executeSelectedFileActions(GenerationPlan $plan, Intent $intent): array
+    {
+        $afterContents = (new GeneratePlanPreviewBuilder($this->paths))->afterContents($plan, $intent);
+        $executed = [];
+
+        foreach ($plan->actions as $action) {
+            $type = trim((string) ($action['type'] ?? ''));
+            $path = trim((string) ($action['path'] ?? ''));
+            if ($path === '') {
+                continue;
+            }
+
+            $absolutePath = $this->absolutePath($path);
+            $status = 'unchanged';
+
+            if ($type === 'delete_file') {
+                if (is_file($absolutePath)) {
+                    @unlink($absolutePath);
+                    $status = 'deleted';
+                }
+            } elseif (array_key_exists($path, $afterContents) && $afterContents[$path] !== null) {
+                $status = $this->codeWriter->syncFile($absolutePath, (string) $afterContents[$path]) ? 'written' : 'unchanged';
+            }
+
+            $executed[] = [
+                'type' => $type,
+                'path' => $path,
+                'status' => $status,
                 'origin' => $plan->origin,
                 'extension' => $plan->extension,
-            ],
-            $files,
-        ));
-    }
-
-    /**
-     * @param array<string,mixed> $execution
-     * @return array<int,array<string,mixed>>
-     */
-    private function executeModifyFeature(array $execution): array
-    {
-        $manifestPath = $this->absolutePath((string) ($execution['manifest_path'] ?? ''));
-        $manifest = is_array($execution['manifest'] ?? null) ? $execution['manifest'] : [];
-        $promptsPath = $this->absolutePath((string) ($execution['prompts_path'] ?? ''));
-        $promptsContent = (string) ($execution['prompts_content'] ?? '');
-
-        $actions = [];
-        if ($manifest !== []) {
-            $written = $this->codeWriter->syncFile($manifestPath, Yaml::dump($manifest));
-            $actions[] = [
-                'type' => 'update_file',
-                'path' => $this->relativePath($manifestPath),
-                'status' => $written ? 'written' : 'unchanged',
             ];
         }
 
-        if ($promptsContent !== '') {
-            $written = $this->codeWriter->syncFile($promptsPath, $promptsContent);
-            $actions[] = [
-                'type' => 'update_docs',
-                'path' => $this->relativePath($promptsPath),
-                'status' => $written ? 'written' : 'unchanged',
-            ];
-        }
-
-        return $actions;
-    }
-
-    /**
-     * @param array<string,mixed> $execution
-     * @return array<int,array<string,mixed>>
-     */
-    private function executeRepairFeature(array $execution): array
-    {
-        $feature = trim((string) ($execution['feature'] ?? ''));
-        $basePath = $this->absolutePath((string) ($execution['base_path'] ?? ('app/features/' . $feature)));
-        $manifest = is_array($execution['manifest'] ?? null) ? $execution['manifest'] : [];
-        $missingTests = array_values(array_map('strval', (array) ($execution['missing_tests'] ?? [])));
-        $restoreContextManifest = (bool) ($execution['restore_context_manifest'] ?? false);
-        $actions = [];
-
-        if ($missingTests !== []) {
-            $written = (new TestGenerator())->generate($feature, $basePath, $missingTests);
-            sort($written);
-            foreach ($written as $path) {
-                $actions[] = [
-                    'type' => 'add_test',
-                    'path' => $this->relativePath($path),
-                    'status' => 'written',
-                ];
-            }
-        }
-
-        if ($restoreContextManifest) {
-            $path = (new ContextManifestGenerator($this->paths))->write($feature, $manifest);
-            $actions[] = [
-                'type' => 'create_file',
-                'path' => $this->relativePath($path),
-                'status' => 'written',
-            ];
-        }
-
-        return $actions;
+        return $executed;
     }
 
     /**

@@ -146,4 +146,8 @@
 
 ## 2026-04-21 13:33:30 -0400
 - spec: context-persistence/025-rule-deduplication-and-issue-coalescing.md
+
+## 2026-04-22 02:51:48 +0000
+- spec: generate-engine/001-interactive-generate-plan-review.md
+- note: Added interactive generate review with summary/detail/diff preview, approval or rejection, minimal plan filtering, risk confirmation, and filtered-plan execution that reuses the existing validation and verification pipeline.
 - note: Added deterministic post-processing that coalesces overlapping doctor-rule results, deduplicates exact issue rows, and reuses canonical required-action coalescing across doctor and verify outputs without changing their JSON shapes.

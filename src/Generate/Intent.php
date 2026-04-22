@@ -13,6 +13,7 @@ final readonly class Intent
         public string $raw,
         public string $mode,
         public ?string $target = null,
+        public bool $interactive = false,
         public bool $dryRun = false,
         public bool $skipVerify = false,
         public bool $explainAfter = false,
@@ -53,6 +54,7 @@ final readonly class Intent
             'raw' => $this->raw,
             'mode' => $this->mode,
             'target' => $this->target,
+            'interactive' => $this->interactive,
             'dry_run' => $this->dryRun,
             'skip_verify' => $this->skipVerify,
             'explain' => $this->explainAfter,
@@ -63,5 +65,24 @@ final readonly class Intent
             'git_commit_message' => $this->gitCommitMessage,
             'packs' => $this->packHints,
         ];
+    }
+
+    public function withAllowRisky(bool $allowRisky): self
+    {
+        return new self(
+            raw: $this->raw,
+            mode: $this->mode,
+            target: $this->target,
+            interactive: $this->interactive,
+            dryRun: $this->dryRun,
+            skipVerify: $this->skipVerify,
+            explainAfter: $this->explainAfter,
+            allowRisky: $allowRisky,
+            allowDirty: $this->allowDirty,
+            allowPackInstall: $this->allowPackInstall,
+            gitCommit: $this->gitCommit,
+            gitCommitMessage: $this->gitCommitMessage,
+            packHints: $this->packHints,
+        );
     }
 }

@@ -8,7 +8,7 @@ use Foundry\Support\FoundryError;
 
 final class PlanValidator
 {
-    public function validate(GenerationPlan $plan, Intent $intent): void
+    public function validate(GenerationPlan $plan, Intent $intent, bool $forInteractiveReview = false): void
     {
         if (!in_array($plan->origin, ['core', 'pack'], true)) {
             throw new FoundryError(
@@ -72,7 +72,7 @@ final class PlanValidator
                 );
             }
 
-            if ($type === 'delete_file' && !$intent->allowRisky) {
+            if ($type === 'delete_file' && !$intent->allowRisky && !($forInteractiveReview && $intent->interactive)) {
                 throw new FoundryError(
                     'GENERATE_UNSAFE_OPERATION',
                     'validation',
