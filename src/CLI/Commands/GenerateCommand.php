@@ -325,6 +325,7 @@ final class GenerateCommand extends Command
         $packSummary = $packs === [] ? 'none' : implode(', ', $packs);
         $interactive = is_array($payload['interactive'] ?? null) ? $payload['interactive'] : [];
         $interactiveRejected = ($interactive['enabled'] ?? false) === true && ($interactive['approved'] ?? false) !== true;
+        $safetyRouting = is_array($payload['safety_routing'] ?? null) ? $payload['safety_routing'] : [];
 
         $lines = [
             $interactiveRejected
@@ -335,6 +336,11 @@ final class GenerateCommand extends Command
             'Files affected: ' . $files,
             'Packs: ' . $packSummary,
         ];
+
+        if ($safetyRouting !== []) {
+            $recommendedMode = str_replace('_', '-', (string) ($safetyRouting['recommended_mode'] ?? 'non_interactive'));
+            $lines[] = 'Safety routing: ' . $recommendedMode;
+        }
 
         if (($interactive['enabled'] ?? false) === true) {
             $lines[] = 'Interactive: ' . (($interactive['approved'] ?? false) === true ? 'approved' : 'rejected');

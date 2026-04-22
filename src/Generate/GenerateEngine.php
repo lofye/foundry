@@ -34,6 +34,7 @@ final class GenerateEngine
     private readonly ExplainSnapshotService $snapshotService;
     private readonly ExplainDiffService $diffService;
     private readonly ConfidenceEngine $confidenceEngine;
+    private readonly GenerateSafetyRouter $safetyRouter;
 
     public function __construct(
         private readonly Paths $paths,
@@ -43,6 +44,7 @@ final class GenerateEngine
         ?ExplainSnapshotService $snapshotService = null,
         ?ExplainDiffService $diffService = null,
         private readonly ?InteractiveGenerateReviewer $interactiveReviewer = null,
+        ?GenerateSafetyRouter $safetyRouter = null,
     ) {
         $this->packManager = $packManager ?? new PackManager($paths);
         $this->codeWriter = $codeWriter ?? new CodeWriter();
@@ -50,6 +52,7 @@ final class GenerateEngine
         $this->snapshotService = $snapshotService ?? new ExplainSnapshotService($paths, $this->apiSurfaceRegistry);
         $this->diffService = $diffService ?? new ExplainDiffService($paths, $this->snapshotService);
         $this->confidenceEngine = new ConfidenceEngine();
+        $this->safetyRouter = $safetyRouter ?? new GenerateSafetyRouter();
     }
 
     /**
@@ -160,6 +163,7 @@ final class GenerateEngine
             $validator = new PlanValidator();
             $validator->validate($plan, $intent, $intent->interactive);
             $plan = $plan->withConfidence($this->confidenceEngine->plan($context, $plan));
+            $safetyRouting = $this->safetyRouter->route($intent, $plan);
             $this->assertGitPlanSafe($gitBefore, $plan, $intent, $gitWarnings);
 
             $interactiveReview = null;
@@ -210,6 +214,7 @@ final class GenerateEngine
                             commit: $gitCommit,
                         ),
                         interactive: $this->interactivePayload($plan, $interactiveReview),
+                        safetyRouting: $safetyRouting,
                     );
 
                     $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -245,6 +250,7 @@ final class GenerateEngine
                         commit: $gitCommit,
                     ),
                     interactive: $this->interactivePayload($plan, $interactiveReview),
+                    safetyRouting: $safetyRouting,
                 );
 
                 $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -344,6 +350,7 @@ final class GenerateEngine
                 postExplain: $postExplain,
                 postExplainRendered: $postExplainRendered,
                 interactive: $this->interactivePayload($plan, $interactiveReview),
+                safetyRouting: $safetyRouting,
             );
 
             $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $postCompile->graph->sourceHash()));
@@ -375,6 +382,7 @@ final class GenerateEngine
         ?array $postExplain = null,
         ?string $postExplainRendered = null,
         ?array $interactive = null,
+        ?array $safetyRouting = null,
     ): array {
         $packsUsed = $plan->extension !== null ? [$plan->extension] : [];
 
@@ -401,6 +409,7 @@ final class GenerateEngine
             'packs_used' => $packsUsed,
             'packs_installed' => $packsInstalled,
             'interactive' => $interactive,
+            'safety_routing' => $safetyRouting,
         ];
     }
 
@@ -451,6 +460,7 @@ final class GenerateEngine
             'packs_used' => $payload['packs_used'] ?? [],
             'packs_installed' => $payload['packs_installed'] ?? [],
             'interactive' => $payload['interactive'] ?? null,
+            'safety_routing' => $payload['safety_routing'] ?? null,
             'source_hash' => $sourceHash,
         ];
     }

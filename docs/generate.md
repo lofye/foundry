@@ -29,6 +29,8 @@ Notes:
 - `--interactive` or `-i` adds an approval layer that renders summary, detail, and unified file diffs before execution
 - interactive review supports approve, reject, `exclude action <n>`, `exclude file <path|n>`, `toggle risky`, `inspect graph`, and `inspect explain`
 - interactive JSON output records the original plan, modified plan when applicable, user decisions, risk classification, executed actions, and verification results
+- generate JSON output includes `safety_routing`, a deterministic recommendation for the `generate-with-safety-routing` skill contract, plus the signals and reasons behind the route
+- default human output includes the recommended safety-routing mode so developers and agents see the same routing hint
 - high-risk interactive plans require explicit confirmation before execution
 
 Iteration loop:

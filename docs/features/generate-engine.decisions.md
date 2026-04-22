@@ -158,3 +158,44 @@ Timestamp: 2026-04-22T00:15:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: expose deterministic generate safety-routing guidance as payload-level skill contract data
+
+Timestamp: 2026-04-22T10:20:00-04:00
+
+**Context**
+
+- `002-generate-skill-integration` required agents to choose deterministically between the fast non-interactive generate path and interactive review based on intent, risk, and context.
+- The repository does not have an in-process skill runtime that can execute a named Codex skill inside the framework itself.
+- The generate engine already computes plan confidence, plan structure, and interactive risk signals that can drive the routing decision without changing core generation behavior.
+
+**Decision**
+
+- Implement `generate-with-safety-routing` as a deterministic payload contract emitted by `foundry generate` rather than as a framework-internal skill runner.
+- Add a dedicated safety router that inspects explicit interactive intent, CI context, plan confidence, and generate-plan risk to recommend either `interactive` or `non_interactive`.
+- Persist the routing recommendation in generate JSON and history payloads, and surface the recommended mode in default human output.
+
+**Reasoning**
+
+- Emitting the routing contract in payload data keeps the framework focused on deterministic planning and execution while still giving agents a stable integration point.
+- Reusing existing plan confidence and risk analysis avoids duplicating generate logic or creating a second planning pass purely for routing.
+- Including the same recommendation in both human and machine-readable output keeps developers and agents aligned on why a route was chosen.
+
+**Alternatives Considered**
+
+- Build a framework-owned skill runtime that executes named agent skills directly.
+- Route only on risk level and ignore plan confidence or CI context.
+- Keep routing knowledge external to the framework and require every agent integration to reimplement it independently.
+
+**Impact**
+
+- Agents can consume `safety_routing` deterministically to decide when to stay on the fast path and when to escalate to interactive review.
+- Generate output remains backward compatible while becoming more useful for automation-aware tooling.
+- Future CLI work can add `--no-interactive` as an explicit override without changing the routing contract shape.
+
+**Spec Reference**
+
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

@@ -337,6 +337,62 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertTrue($result['payload']['interactive']['approved']);
         $this->assertArrayHasKey('original_plan', $result['payload']['interactive']);
         $this->assertNull($result['payload']['interactive']['modified_plan']);
+        $this->assertSame('interactive', $result['payload']['safety_routing']['recommended_mode']);
+        $this->assertTrue($result['payload']['safety_routing']['forced_by_user']);
+        $this->assertSame(['explicit_interactive'], $result['payload']['safety_routing']['reason_codes']);
+    }
+
+    public function test_generate_new_dry_run_exposes_safety_routing_payload(): void
+    {
+        $result = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertIsArray($result['payload']['safety_routing']);
+        $this->assertContains($result['payload']['safety_routing']['recommended_mode'], ['interactive', 'non_interactive']);
+        $this->assertSame('generate-with-safety-routing', $result['payload']['safety_routing']['skill']['name']);
+        $this->assertArrayHasKey('signals', $result['payload']['safety_routing']);
+        $this->assertArrayHasKey('reason_codes', $result['payload']['safety_routing']);
+    }
+
+    public function test_generate_modify_dry_run_recommends_interactive_safety_routing(): void
+    {
+        $baseline = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--json',
+        ]);
+        $this->assertSame(0, $baseline['status']);
+
+        $feature = (string) $baseline['payload']['plan']['metadata']['feature'];
+
+        $result = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Refine',
+            'comments',
+            'notes',
+            '--mode=modify',
+            '--target=' . $feature,
+            '--dry-run',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('interactive', $result['payload']['safety_routing']['recommended_mode']);
+        $this->assertTrue($result['payload']['safety_routing']['recommended_interactive']);
+        $this->assertSame('MEDIUM', $result['payload']['safety_routing']['signals']['risk_level']);
+        $this->assertContains('elevated_risk', $result['payload']['safety_routing']['reason_codes']);
     }
 
     public function test_generate_interactive_smoke_invocation_reaches_review_and_rejects_non_destructively(): void

@@ -8,6 +8,7 @@
 
 - `foundry generate` already plans work from the current explain-derived model using explicit `new`, `modify`, and `repair` modes with deterministic target resolution.
 - The existing non-interactive generate workflow already supports dry runs, confidence reporting, git safety checks, pack requirement handling, architectural snapshots and diffs, and post-apply verification.
+- Generate JSON payloads and default human output now include a deterministic `safety_routing` recommendation for the `generate-with-safety-routing` skill contract.
 - `foundry generate --interactive` and `foundry generate -i` now render a plan summary, per-action detail, and file diffs before mutation.
 - Interactive generate now supports approve, reject, and minimal plan modification by excluding actions or files and by toggling risky actions before execution.
 - Interactive generate now surfaces risk classification in the plan summary, requires additional confirmation for risky work, requires stronger confirmations for deletions, schema changes, and contract-affecting work, and records user decisions in the result payload.
@@ -21,10 +22,10 @@
 
 - How far should interactive preview support go for future custom generate execution strategies beyond the current file-action-oriented flows?
 - Should interactive review gain richer inspection affordances than the current action, graph, and explain commands?
-- When skill routing is added, which risk thresholds should automatically prefer interactive mode over the fast non-interactive path?
+- Should future CLI work add an explicit `--no-interactive` override once a concrete non-interactive forcing use case appears?
 
 ## Next Steps
 
-- Implement `002-generate-skill-integration` so agents can route automatically between the fast and interactive generate paths.
+- Decide whether a future `--no-interactive` CLI override should surface the non-interactive recommendation explicitly once the need is proven.
 - Expand interactive preview support for future custom execution strategies that cannot yet provide full file diffs through the current preview builder.
 - Refine the interactive inspection surface if richer graph or explain navigation becomes necessary.

@@ -161,3 +161,8 @@
 - spec: generate-engine/001.001-valid-interactive-generate-smoke-invocation.md
 - note: Added an explicit non-destructive interactive generate smoke integration test that uses a valid `--mode=new --interactive` command shape, reaches the review layer, records rejection, and avoids filesystem mutation.
 - note: Updated the earlier interactive-generate execution-spec example so repository docs no longer suggest a mode-less interactive invocation that would fail in CLI validation.
+
+## 2026-04-22 14:20:00 +0000
+- spec: generate-engine/002-generate-skill-integration.md
+- note: Added deterministic `safety_routing` recommendations to generate payloads and history so agent integrations can route between fast non-interactive execution and interactive review without reimplementing framework risk logic.
+- note: Added unit coverage for low-risk, elevated-risk, explicit interactive override, and CI-context routing behavior, plus integration coverage that exercises the emitted routing payload on real generate flows and aligns generate-engine docs with the new skill-contract surface.

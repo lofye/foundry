@@ -30,6 +30,7 @@
 
 - `foundry generate` plans work from the current explain-derived model using explicit `new`, `modify`, and `repair` modes plus deterministic target resolution.
 - The existing non-interactive generate workflow continues to support dry runs, confidence reporting, git safety checks, pack requirement handling, architectural snapshots and diffs, and post-apply verification.
+- Generate JSON output exposes a deterministic `safety_routing` recommendation that agent skills can use to choose between the fast non-interactive path and interactive review.
 - Interactive generate mode renders a plan summary, per-action detail, and file diffs before any file mutation occurs.
 - Interactive generate mode supports approve, reject, and minimal plan modification flows by excluding actions or files, then revalidates the modified plan before execution.
 - Interactive generate mode classifies risk and requires stronger confirmations for deletions, schema changes, and contract-affecting work.
@@ -40,6 +41,7 @@
 
 - `foundry generate` remains deterministic and continues to support the existing non-interactive workflow.
 - Non-interactive generate continues to expose dry-run planning, confidence data, git safeguards, pack resolution, snapshots and diffs, and verification results.
+- Generate emits a deterministic safety-routing recommendation that prefers non-interactive execution for low-risk additive work and interactive review for risky or uncertain plans.
 - `foundry generate --interactive` and `foundry generate -i` present full plan visibility before execution, including summary, detail, and diff output for file changes.
 - Interactive generate supports approve, reject, and minimal plan modification without mutating files before approval.
 - Interactive generate surfaces risk classification in the plan summary and enforces additional confirmation for risky work.
@@ -51,4 +53,4 @@
 ## Assumptions
 
 - The current explain-derived planning pipeline remains the canonical foundation for both non-interactive and interactive generate flows.
-- Interactive review is the next major bounded improvement for generate-engine, with higher-level skill routing considered separately afterward.
+- The current explain-derived planning pipeline remains the canonical foundation for both direct generate execution and deterministic agent-side safety routing.
