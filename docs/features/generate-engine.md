@@ -13,6 +13,8 @@
 - Interactive generate now surfaces risk classification in the plan summary, requires additional confirmation for risky work, requires stronger confirmations for deletions, schema changes, and contract-affecting work, and records user decisions in the result payload.
 - Interactive generate now reuses the existing plan, validator, and verification pipeline, and filtered reviewed plans now execute only the approved file actions.
 - Human and JSON generate output now capture the original plan, modified plan when applicable, user decisions, executed actions, and verification results for interactive runs.
+- The repository now has an explicit non-destructive interactive generate smoke integration path that invokes `foundry generate ... --mode=new --interactive`, reaches review logic, records rejection, and avoids filesystem mutation.
+- Interactive generate coverage includes an explicit valid smoke invocation that reaches review behavior without failing early in argument validation.
 - Adding interactive review did not regress the default non-interactive workflow.
 
 ## Open Questions

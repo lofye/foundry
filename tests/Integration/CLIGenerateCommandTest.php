@@ -339,6 +339,38 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertNull($result['payload']['interactive']['modified_plan']);
     }
 
+    public function test_generate_interactive_smoke_invocation_reaches_review_and_rejects_non_destructively(): void
+    {
+        $app = $this->interactiveApplication(
+            static fn(InteractiveGenerateReviewRequest $request): InteractiveGenerateReviewResult => new InteractiveGenerateReviewResult(
+                approved: false,
+                plan: $request->plan,
+                userDecisions: [['type' => 'reject']],
+                preview: ['summary' => [], 'actions' => [], 'diffs' => []],
+                risk: ['level' => 'LOW', 'reasons' => ['Plan is additive only.'], 'risky_action_indexes' => [], 'risky_paths' => []],
+            ),
+        );
+
+        $result = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--interactive',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertArrayNotHasKey('error', $result['payload']);
+        $this->assertTrue($result['payload']['interactive']['enabled']);
+        $this->assertTrue($result['payload']['interactive']['rejected']);
+        $this->assertSame([['type' => 'reject']], $result['payload']['interactive']['user_decisions']);
+        $this->assertArrayHasKey('original_plan', $result['payload']['interactive']);
+        $this->assertTrue($result['payload']['verification_results']['skipped']);
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/comments_system/feature.yaml');
+    }
+
     public function test_generate_interactive_reject_aborts_without_writing_files(): void
     {
         $app = $this->interactiveApplication(

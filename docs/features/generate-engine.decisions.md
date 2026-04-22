@@ -118,3 +118,43 @@ Timestamp: 2026-04-21T15:05:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: make interactive generate smoke coverage use a valid mode-bearing invocation
+
+Timestamp: 2026-04-22T00:15:00-04:00
+
+**Context**
+
+- Interactive generate behavior was already implemented and covered by integration tests, but the older `001-interactive-generate-plan-review` execution spec still showed a mode-less `foundry generate "<intent>" --interactive` command shape.
+- The actual CLI contract requires `--mode=new|modify|repair`, so a mode-less smoke example was misleading even though the working tests already used valid invocations.
+- `001.001-valid-interactive-generate-smoke-invocation` required one explicit harmless smoke-style path that proves review logic is reached rather than failing in argument validation.
+
+**Decision**
+
+- Keep interactive generate smoke coverage on the existing CLI integration path.
+- Add one explicit non-destructive smoke-style integration test that uses `foundry generate ... --mode=new --interactive --json`, reaches review logic, records rejection, and performs no writes.
+- Update the older execution-spec example so repository documentation no longer suggests a mode-less interactive invocation.
+
+**Reasoning**
+
+- The implementation gap was primarily contract drift and the absence of one named smoke-style assertion, not missing core interactive behavior.
+- Reusing the existing integration harness keeps the change narrow and deterministic.
+- A rejection path is the safest way to prove interactive entry and decision handling without depending on risky filesystem mutation.
+
+**Alternatives Considered**
+
+- Add a second bespoke smoke harness outside the existing generate integration tests.
+- Leave the older execution-spec example unchanged because execution specs are non-authoritative after implementation.
+- Use an approval path that writes files as the smoke check.
+
+**Impact**
+
+- The repository now has truthful, explicit smoke coverage for the valid interactive generate entry path.
+- Future regressions that accidentally reintroduce early `GENERATE_MODE_REQUIRED` failures into the smoke path are easier to catch.
+- Generate-engine docs and implementation coverage now align on the required `--mode` contract for interactive usage.
+
+**Spec Reference**
+
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

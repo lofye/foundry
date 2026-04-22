@@ -156,3 +156,8 @@
 - spec: quality-enforcement/001-require-full-suite-and-90-percent-coverage-before-completion.md
 - note: Added a shared implementation quality gate that requires the full PHPUnit suite, the canonical coverage run, and global line coverage at or above 90% before `implement feature` or `implement spec` can report final success.
 - note: Exposed deterministic machine-readable `quality_gate` output on implementation payloads and reported changed-surface coverage explicitly as not yet supported instead of implying enforcement that does not exist yet.
+
+## 2026-04-22 13:30:22 +0000
+- spec: generate-engine/001.001-valid-interactive-generate-smoke-invocation.md
+- note: Added an explicit non-destructive interactive generate smoke integration test that uses a valid `--mode=new --interactive` command shape, reaches the review layer, records rejection, and avoids filesystem mutation.
+- note: Updated the earlier interactive-generate execution-spec example so repository docs no longer suggest a mode-less interactive invocation that would fail in CLI validation.

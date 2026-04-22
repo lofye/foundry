@@ -55,8 +55,8 @@ visible → understandable → optionally editable → explicitly approved
 Command:
 
 ```
-foundry generate "<intent>" --interactive
-foundry generate "<intent>" -i
+foundry generate "<intent>" --mode=new --interactive
+foundry generate "<intent>" --mode=new -i
 ```
 
 Default behavior remains unchanged.

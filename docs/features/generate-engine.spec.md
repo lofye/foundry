@@ -34,6 +34,7 @@
 - Interactive generate mode supports approve, reject, and minimal plan modification flows by excluding actions or files, then revalidates the modified plan before execution.
 - Interactive generate mode classifies risk and requires stronger confirmations for deletions, schema changes, and contract-affecting work.
 - Interactive generate output includes the original plan, modified plan when applicable, recorded user decisions, executed actions, and verification results in both human and JSON-friendly forms.
+- Repository-owned integration coverage includes a valid non-destructive interactive smoke path that uses the required `--mode`, reaches review logic, and can reject without filesystem mutation.
 
 ## Acceptance Criteria
 
@@ -44,6 +45,7 @@
 - Interactive generate surfaces risk classification in the plan summary and enforces additional confirmation for risky work.
 - Interactive generate reuses the existing plan, validator, and verification pipeline instead of duplicating core logic.
 - Interactive generate emits stable human and JSON output that records plan state, decisions, execution, and verification.
+- Interactive generate coverage includes an explicit valid smoke invocation that reaches review behavior without failing early in argument validation.
 - Adding interactive review does not regress the default non-interactive workflow.
 
 ## Assumptions
