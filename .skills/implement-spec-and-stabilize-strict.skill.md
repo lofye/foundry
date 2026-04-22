@@ -1,6 +1,6 @@
 ---
 name: implement-spec-and-stabilize-strict
-description: Strictly implement a Foundry execution spec and enforce a fully clean, verified, aligned system state. Refuses completion if any issues remain.
+description: Strictly implement a Foundry execution spec and enforce a fully clean, verified, aligned system state. Supports dry-run mode. Refuses completion if any issues remain.
 ---
 
 # Purpose
@@ -32,6 +32,59 @@ Expect:
 If missing:
 - stop immediately and request it
 
+---
+
+# Modes
+
+## Normal Mode (default)
+- Executes the full pipeline
+- Modifies files
+- Applies repairs and alignment
+- Must end in a fully clean state or fail
+
+## Dry-Run Mode
+
+If invoked with "dry-run":
+
+- DO NOT modify any files
+- DO NOT append to implementation-log
+- DO NOT execute repair writes
+
+Instead:
+
+1. Analyze the spec implementation impact
+2. Identify:
+   - files that would change
+   - tests that would be affected
+   - validation issues
+   - context issues
+   - repairable issues
+3. Simulate:
+   - repair results
+   - alignment changes
+
+Return:
+
+{
+  "status": "ok|blocked",
+  "dry_run": true,
+  "would_modify_files": [],
+  "would_add_log_entry": true|false,
+  "would_fail_validation": true|false,
+  "would_fail_tests": true|false,
+  "context_issues": [],
+  "repairable_issues": [],
+  "unresolved_issues": [],
+  "can_proceed": true|false
+}
+
+Rules:
+- No side effects
+- Deterministic output
+- Same input → same output
+
+---
+
 # Core Principle
 
 This is a **zero-tolerance pipeline**.
@@ -42,7 +95,7 @@ If ANY step fails or leaves unresolved issues:
 
 ---
 
-# Execution Pipeline
+# Execution Pipeline (Normal Mode Only)
 
 ## Step 1 — Implement Spec
 - Implement exactly as specified
@@ -156,20 +209,20 @@ If ANY condition is not met:
 
 ---
 
-# Output
+# Output (Normal Mode)
 
 Return:
 
 {
-"status": "ok|failed",
-"spec": "<feature>/<id>",
-"implemented": true|false,
-"validation_clean": true|false,
-"tests_passed": true|false,
-"context_clean": true|false,
-"alignment_clean": true|false,
-"remaining_issues": [],
-"failure_reason": null|string
+  "status": "ok|failed",
+  "spec": "<feature>/<id>",
+  "implemented": true|false,
+  "validation_clean": true|false,
+  "tests_passed": true|false,
+  "context_clean": true|false,
+  "alignment_clean": true|false,
+  "remaining_issues": [],
+  "failure_reason": null|string
 }
 
 ---
@@ -197,46 +250,3 @@ This skill must NEVER:
 It must:
 - enforce a fully clean, production-ready state
 - fail loudly if that state is not achieved
-
----
-
-## Dry-Run Mode
-
-If invoked with "dry-run":
-
-- DO NOT modify any files
-- DO NOT append to implementation-log
-- DO NOT execute repair writes
-
-Instead:
-
-1. Analyze the spec implementation impact
-2. Identify:
-  - files that would change
-  - tests that would be affected
-  - validation issues
-  - context issues
-  - repairable issues
-3. Simulate:
-  - repair results
-  - alignment changes
-
-Return:
-
-{
-"status": "ok|blocked",
-"dry_run": true,
-"would_modify_files": [],
-"would_add_log_entry": true|false,
-"would_fail_validation": true|false,
-"would_fail_tests": true|false,
-"context_issues": [],
-"repairable_issues": [],
-"unresolved_issues": [],
-"can_proceed": true|false
-}
-
-Rules:
-- No side effects
-- Deterministic output
-- Same input → same output
