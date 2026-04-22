@@ -110,6 +110,19 @@ YAML);
         $this->assertSame(0, $doctorCli['payload']['cli_surface']['ambiguous']);
         $this->assertSame(0, $doctorCli['payload']['cli_surface']['orphan_handlers']);
 
+        $deepDoctor = $this->runCommand($app, ['foundry', 'doctor', '--deep', '--feature=list_posts', '--json']);
+        $this->assertSame(0, $deepDoctor['status']);
+        $this->assertTrue($deepDoctor['payload']['deep']);
+        $this->assertArrayHasKey('monetization', $deepDoctor['payload']);
+        $this->assertArrayHasKey('deep_diagnostics', $deepDoctor['payload']['monetization']);
+        $this->assertArrayHasKey('graph', $deepDoctor['payload']['monetization']['deep_diagnostics']);
+        $this->assertSame('list_posts', $deepDoctor['payload']['feature_filter']);
+
+        $deepDoctorHuman = $this->runRawCommand($app, ['foundry', 'doctor', '--deep', '--feature=list_posts']);
+        $this->assertSame(0, $deepDoctorHuman['status']);
+        $this->assertStringContainsString('deep diagnostics', $deepDoctorHuman['output']);
+        $this->assertStringContainsString('Graph:', $deepDoctorHuman['output']);
+
         $visualize = $this->runCommand($app, ['foundry', 'graph', 'visualize', '--events', '--format=dot', '--json']);
         $this->assertSame(0, $visualize['status']);
         $this->assertSame('events', $visualize['payload']['view']);

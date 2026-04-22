@@ -39,6 +39,90 @@ final class PromptFeaturePlannerTest extends TestCase
         $this->assertArrayHasKey('submit', $plan['workflow']['definition']['transitions']);
     }
 
+    public function test_plan_normalizes_provider_overrides_and_invalid_route_data(): void
+    {
+        $planner = new PromptFeaturePlanner();
+
+        $plan = $planner->plan('Review posts', $this->bundleFixture(), [
+            'feature' => [
+                'feature' => 'Review Post',
+                'description' => '',
+                'owners' => ['ops', 'ops', 'product'],
+                'route' => [
+                    'method' => 'TRACE',
+                    'path' => 'review',
+                ],
+                'input' => [
+                    'fields' => [
+                        'Post ID' => ['type' => 'uuid', 'required' => true],
+                        7 => 'ignored',
+                    ],
+                ],
+                'auth' => [
+                    'required' => false,
+                    'strategies' => ['bearer', 'session', 'bearer'],
+                    'permissions' => ['posts.review', 'posts.review'],
+                ],
+            ],
+            'workflow' => [
+                'name' => 'Posts Approval',
+                'definition' => [
+                    'resource' => 'posts',
+                    'states' => ['approved', 'pending_review', 'approved'],
+                    'transitions' => [
+                        'approve' => ['from' => ['pending_review'], 'to' => 'approved'],
+                    ],
+                ],
+            ],
+            'explanation' => ' Provider override ',
+        ]);
+
+        $this->assertSame('review_post', $plan['feature']['feature']);
+        $this->assertSame('Generated feature.', $plan['feature']['description']);
+        $this->assertSame(['ops', 'product'], $plan['feature']['owners']);
+        $this->assertSame('POST', $plan['feature']['route']['method']);
+        $this->assertSame('/generated', $plan['feature']['route']['path']);
+        $this->assertArrayHasKey('post_id', $plan['feature']['input']['fields']);
+        $this->assertSame('uuid', $plan['feature']['input']['fields']['post_id']['type']);
+        $this->assertArrayHasKey('comment', $plan['feature']['input']['fields']);
+        $this->assertArrayHasKey('id', $plan['feature']['input']['fields']);
+        $this->assertSame(['bearer', 'session'], $plan['feature']['auth']['strategies']);
+        $this->assertSame(['posts.review'], $plan['feature']['auth']['permissions']);
+        $this->assertSame('posts_approval', $plan['workflow']['name']);
+        $this->assertSame(['approved', 'pending_review'], $plan['workflow']['definition']['states']);
+        $this->assertSame('Provider override', $plan['explanation']);
+    }
+
+    public function test_plan_derives_read_and_delete_actions_from_instruction_keywords(): void
+    {
+        $planner = new PromptFeaturePlanner();
+
+        $viewPlan = $planner->plan('Fetch posts for reporting', $this->bundleFixture(), [], true);
+        $deletePlan = $planner->plan('Remove posts on request', $this->bundleFixture(), [], true);
+
+        $this->assertSame('view_post', $viewPlan['feature']['feature']);
+        $this->assertSame('GET', $viewPlan['feature']['route']['method']);
+        $this->assertSame('/posts/{id}', $viewPlan['feature']['route']['path']);
+        $this->assertSame('view', $viewPlan['trace']['derived_action']);
+
+        $this->assertSame('delete_post', $deletePlan['feature']['feature']);
+        $this->assertSame('DELETE', $deletePlan['feature']['route']['method']);
+        $this->assertSame('/posts/{id}', $deletePlan['feature']['route']['path']);
+        $this->assertSame('delete', $deletePlan['trace']['derived_action']);
+    }
+
+    public function test_response_schema_exposes_expected_top_level_sections(): void
+    {
+        $schema = (new PromptFeaturePlanner())->responseSchema();
+
+        $this->assertFalse($schema['additionalProperties']);
+        $this->assertArrayHasKey('feature', $schema['properties']);
+        $this->assertArrayHasKey('workflow', $schema['properties']);
+        $this->assertArrayHasKey('explanation', $schema['properties']);
+        $this->assertFalse($schema['properties']['feature']['additionalProperties']);
+        $this->assertFalse($schema['properties']['workflow']['additionalProperties']);
+    }
+
     /**
      * @return array<string,mixed>
      */

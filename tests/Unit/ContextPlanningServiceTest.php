@@ -264,6 +264,58 @@ MD);
         ], array_keys($result));
     }
 
+    public function test_invalid_feature_names_are_blocked_before_context_inspection(): void
+    {
+        $result = $this->service()->plan('Not Valid')->toArray();
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('Not Valid', $result['feature']);
+        $this->assertContains('Use a lowercase kebab-case feature name.', $result['required_actions']);
+    }
+
+    public function test_planning_blocks_when_the_target_spec_path_already_exists(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $this->writeExistingSpec('event-bus', '001-initial');
+        mkdir($this->project->root . '/docs/specs/event-bus/drafts', 0777, true);
+        mkdir($this->project->root . '/docs/specs/event-bus/drafts/002-contract-test-coverage.md', 0777, true);
+
+        $result = $this->service()->plan('event-bus')->toArray();
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertSame('PLANNING_SPEC_PATH_EXISTS', $result['issues'][0]['code']);
+        $this->assertSame('docs/specs/event-bus/drafts/002-contract-test-coverage.md', $result['spec_path']);
+    }
+
+    public function test_missing_or_invalid_stubs_fail_fast(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+
+        $missingFrameworkRoot = $this->project->root . '/missing-framework';
+        mkdir($missingFrameworkRoot, 0777, true);
+
+        try {
+            (new ContextPlanningService(new Paths($this->project->root, $missingFrameworkRoot)))->plan('event-bus');
+            self::fail('Expected missing stub failure.');
+        } catch (\Foundry\Support\FoundryError $error) {
+            $this->assertSame('PLANNING_SPEC_STUB_MISSING', $error->errorCode);
+        }
+
+        $invalidFrameworkRoot = $this->project->root . '/invalid-framework';
+        mkdir($invalidFrameworkRoot . '/stubs/specs', 0777, true);
+        file_put_contents($invalidFrameworkRoot . '/stubs/specs/execution-spec.stub.md', <<<'MD'
+# Wrong Heading
+MD);
+
+        try {
+            (new ContextPlanningService(new Paths($this->project->root, $invalidFrameworkRoot)))->plan('event-bus');
+            self::fail('Expected invalid stub heading failure.');
+        } catch (\Foundry\Support\FoundryError $error) {
+            $this->assertSame('PLANNING_SPEC_STUB_INVALID', $error->errorCode);
+        }
+    }
+
     private function service(): ContextPlanningService
     {
         return new ContextPlanningService(new Paths($this->project->root));

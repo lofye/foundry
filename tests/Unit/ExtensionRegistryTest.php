@@ -4,17 +4,25 @@ declare(strict_types=1);
 
 namespace Foundry\Tests\Unit;
 
+use Foundry\Compiler\Analysis\AnalyzerContext;
+use Foundry\Compiler\Analysis\GraphAnalyzer;
 use Foundry\Compiler\Codemod\Codemod;
 use Foundry\Compiler\Codemod\CodemodResult;
 use Foundry\Compiler\CompilationState;
 use Foundry\Compiler\CompilerPass;
+use Foundry\Compiler\Diagnostics\DiagnosticBag;
 use Foundry\Compiler\Extensions\AbstractCompilerExtension;
 use Foundry\Compiler\Extensions\ExtensionDescriptor;
 use Foundry\Compiler\Extensions\ExtensionRegistry;
 use Foundry\Compiler\Extensions\PackDefinition;
+use Foundry\Doctor\DoctorCheck;
+use Foundry\Doctor\DoctorContext;
 use Foundry\Compiler\Migration\DefinitionFormat;
 use Foundry\Compiler\Migration\MigrationRule;
 use Foundry\Compiler\Projection\GenericProjectionEmitter;
+use Foundry\Pipeline\PipelineExecutionState;
+use Foundry\Pipeline\PipelineStageDefinition;
+use Foundry\Pipeline\StageInterceptor;
 use Foundry\Support\Paths;
 use Foundry\Tests\Fixtures\TempProject;
 use PHPUnit\Framework\TestCase;
@@ -480,6 +488,339 @@ PHP);
         $this->assertFalse($conflictingRow['enabled']);
         $conflictCodes = array_values(array_map(static fn(array $row): string => (string) ($row['code'] ?? ''), $conflictingRow['diagnostics']));
         $this->assertContains('FDY7022_PACK_CONFLICT', $conflictCodes);
+    }
+
+    public function test_registry_exposes_analyzers_checks_pipeline_components_and_stage_passes(): void
+    {
+        $analyzerA = new class implements GraphAnalyzer {
+            public function id(): string
+            {
+                return 'analyzer.a';
+            }
+            public function description(): string
+            {
+                return 'Analyzer A';
+            }
+            public function analyze(\Foundry\Compiler\ApplicationGraph $graph, AnalyzerContext $context, DiagnosticBag $diagnostics): array
+            {
+                return [];
+            }
+        };
+        $analyzerB = new class implements GraphAnalyzer {
+            public function id(): string
+            {
+                return 'analyzer.b';
+            }
+            public function description(): string
+            {
+                return 'Analyzer B';
+            }
+            public function analyze(\Foundry\Compiler\ApplicationGraph $graph, AnalyzerContext $context, DiagnosticBag $diagnostics): array
+            {
+                return [];
+            }
+        };
+        $checkA = new class implements DoctorCheck {
+            public function id(): string
+            {
+                return 'doctor.a';
+            }
+            public function description(): string
+            {
+                return 'Doctor A';
+            }
+            public function check(DoctorContext $context, DiagnosticBag $diagnostics): array
+            {
+                return [];
+            }
+        };
+        $checkB = new class implements DoctorCheck {
+            public function id(): string
+            {
+                return 'doctor.b';
+            }
+            public function description(): string
+            {
+                return 'Doctor B';
+            }
+            public function check(DoctorContext $context, DiagnosticBag $diagnostics): array
+            {
+                return [];
+            }
+        };
+        $interceptorA = new class implements StageInterceptor {
+            public function id(): string
+            {
+                return 'interceptor.a';
+            }
+            public function stage(): string
+            {
+                return 'auth';
+            }
+            public function priority(): int
+            {
+                return 20;
+            }
+            public function handle(PipelineExecutionState $state): void {}
+            public function isDangerous(): bool
+            {
+                return false;
+            }
+        };
+        $interceptorB = new class implements StageInterceptor {
+            public function id(): string
+            {
+                return 'interceptor.b';
+            }
+            public function stage(): string
+            {
+                return 'auth';
+            }
+            public function priority(): int
+            {
+                return 5;
+            }
+            public function handle(PipelineExecutionState $state): void {}
+            public function isDangerous(): bool
+            {
+                return true;
+            }
+        };
+        $discoveryPass = new class implements CompilerPass {
+            public function name(): string
+            {
+                return 'pass.discovery';
+            }
+            public function run(CompilationState $state): void {}
+        };
+        $emitPass = new class implements CompilerPass {
+            public function name(): string
+            {
+                return 'pass.emit';
+            }
+            public function run(CompilationState $state): void {}
+        };
+
+        $alpha = $this->makeExtension(
+            'alpha-ext',
+            analyzers: [$analyzerB],
+            checks: [$checkB],
+            stages: [new PipelineStageDefinition('late', priority: 200)],
+            interceptors: [$interceptorA],
+            discoveryPasses: [$discoveryPass],
+            emitPasses: [$emitPass],
+        );
+        $beta = $this->makeExtension(
+            'beta-ext',
+            analyzers: [$analyzerA],
+            checks: [$checkA],
+            stages: [new PipelineStageDefinition('early', priority: 10)],
+            interceptors: [$interceptorB],
+        );
+
+        $registry = new ExtensionRegistry([$alpha, $beta]);
+
+        $this->assertSame(['analyzer.a', 'analyzer.b'], array_map(
+            static fn(GraphAnalyzer $analyzer): string => $analyzer->id(),
+            $registry->graphAnalyzers(),
+        ));
+        $this->assertSame(['doctor.a', 'doctor.b'], array_map(
+            static fn(DoctorCheck $check): string => $check->id(),
+            $registry->doctorChecks(),
+        ));
+        $this->assertSame(['early', 'late'], array_map(
+            static fn(PipelineStageDefinition $stage): string => $stage->name,
+            $registry->pipelineStages(),
+        ));
+        $this->assertSame(['interceptor.b', 'interceptor.a'], array_map(
+            static fn(StageInterceptor $interceptor): string => $interceptor->id(),
+            $registry->pipelineInterceptors(),
+        ));
+        $this->assertSame(['pass.discovery'], array_map(
+            static fn(CompilerPass $pass): string => $pass->name(),
+            $registry->passesForStage('discovery'),
+        ));
+        $this->assertSame(['pass.emit'], array_map(
+            static fn(CompilerPass $pass): string => $pass->name(),
+            $registry->passesForStage('emit'),
+        ));
+        $this->assertSame([], $registry->passesForStage('unknown'));
+        $this->assertSame(['alpha-ext', 'beta-ext'], $registry->collect(
+            static fn($extension): array => [$extension->name()],
+        ));
+        $this->assertSame(['alpha-ext', 'beta-ext'], array_map(
+            static fn($extension): string => $extension->name(),
+            $registry->loadedExtensions(),
+        ));
+    }
+
+    public function test_registry_disables_duplicate_ids_missing_pack_dependencies_and_dependency_cycles(): void
+    {
+        $stable = $this->makeExtension(
+            'alpha-ext',
+            packs: [$this->pack('alpha-pack', 'alpha-ext')],
+        );
+        $duplicate = $this->makeExtension(
+            'alpha-ext',
+            version: '2.0.0',
+            packs: [$this->pack('duplicate-pack', 'alpha-ext')],
+        );
+        $packMissingDependency = $this->makeExtension(
+            'pack-missing-ext',
+            packs: [$this->pack('pack-dependent', 'pack-missing-ext', ['ghost-pack'])],
+        );
+        $cycleA = $this->makeExtension(
+            'cycle-a',
+            descriptor: ['requiredExtensions' => ['cycle-b']],
+            packs: [$this->pack('cycle-a-pack', 'cycle-a')],
+        );
+        $cycleB = $this->makeExtension(
+            'cycle-b',
+            descriptor: ['requiredExtensions' => ['cycle-a']],
+            packs: [$this->pack('cycle-b-pack', 'cycle-b')],
+        );
+
+        $registry = new ExtensionRegistry([
+            $stable,
+            $duplicate,
+            $packMissingDependency,
+            $cycleA,
+            $cycleB,
+        ]);
+
+        $codes = array_values(array_map(
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
+            $registry->diagnostics(),
+        ));
+        sort($codes);
+
+        $this->assertContains('FDY7005_DUPLICATE_EXTENSION_ID', $codes);
+        $this->assertContains('FDY7018_PACK_DEPENDENCY_MISSING', $codes);
+        $this->assertContains('FDY7019_EXTENSION_DEPENDENCY_CYCLE', $codes);
+        $this->assertSame(['alpha-ext'], $registry->loadOrder());
+        $this->assertSame(['alpha-pack'], array_map(
+            static fn(PackDefinition $pack): string => $pack->name,
+            $registry->packs(),
+        ));
+        $this->assertTrue((bool) $registry->inspectRow('alpha-ext')['enabled']);
+        $this->assertFalse((bool) $registry->inspectRow('pack-missing-ext')['enabled']);
+        $this->assertSame('runtime_enabled', $registry->lifecycleRows()[0]['lifecycle']['current_stage']);
+    }
+
+    private function makeExtension(
+        string $name,
+        string $version = '1.0.0',
+        array $descriptor = [],
+        array $packs = [],
+        array $analyzers = [],
+        array $checks = [],
+        array $stages = [],
+        array $interceptors = [],
+        array $discoveryPasses = [],
+        array $emitPasses = [],
+    ): AbstractCompilerExtension {
+        return new class (
+            $name,
+            $version,
+            $descriptor,
+            $packs,
+            $analyzers,
+            $checks,
+            $stages,
+            $interceptors,
+            $discoveryPasses,
+            $emitPasses,
+        ) extends AbstractCompilerExtension {
+            public function __construct(
+                private readonly string $nameValue,
+                private readonly string $versionValue,
+                private readonly array $descriptorOverrides,
+                private readonly array $packsValue,
+                private readonly array $analyzersValue,
+                private readonly array $checksValue,
+                private readonly array $stagesValue,
+                private readonly array $interceptorsValue,
+                private readonly array $discoveryPassesValue,
+                private readonly array $emitPassesValue,
+            ) {}
+
+            public function name(): string
+            {
+                return $this->nameValue;
+            }
+
+            public function version(): string
+            {
+                return $this->versionValue;
+            }
+
+            public function packs(): array
+            {
+                return $this->packsValue;
+            }
+
+            public function graphAnalyzers(): array
+            {
+                return $this->analyzersValue;
+            }
+
+            public function doctorChecks(): array
+            {
+                return $this->checksValue;
+            }
+
+            public function pipelineStages(): array
+            {
+                return $this->stagesValue;
+            }
+
+            public function pipelineInterceptors(): array
+            {
+                return $this->interceptorsValue;
+            }
+
+            public function discoveryPasses(): array
+            {
+                return $this->discoveryPassesValue;
+            }
+
+            public function emitPasses(): array
+            {
+                return $this->emitPassesValue;
+            }
+
+            public function descriptor(): ExtensionDescriptor
+            {
+                return new ExtensionDescriptor(
+                    name: $this->nameValue,
+                    version: $this->versionValue,
+                    frameworkVersionConstraint: '^1',
+                    graphVersionConstraint: '^1',
+                    requiredExtensions: $this->descriptorOverrides['requiredExtensions'] ?? [],
+                    optionalExtensions: $this->descriptorOverrides['optionalExtensions'] ?? [],
+                    conflictsWithExtensions: $this->descriptorOverrides['conflictsWithExtensions'] ?? [],
+                    providedNodeTypes: $this->descriptorOverrides['providedNodeTypes'] ?? [],
+                    providedProjectionOutputs: $this->descriptorOverrides['providedProjectionOutputs'] ?? [],
+                );
+            }
+        };
+    }
+
+    /**
+     * @param array<int,string> $dependencies
+     */
+    private function pack(string $name, string $extension, array $dependencies = []): PackDefinition
+    {
+        return new PackDefinition(
+            name: $name,
+            version: '1.0.0',
+            extension: $extension,
+            providedCapabilities: [$name . '.capability'],
+            requiredCapabilities: [],
+            dependencies: $dependencies,
+            graphVersionConstraint: '^1',
+            frameworkVersionConstraint: '^1',
+        );
     }
 
     private function copyDirectory(string $source, string $target): void

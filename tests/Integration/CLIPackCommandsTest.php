@@ -101,6 +101,49 @@ final class CLIPackCommandsTest extends TestCase
         ));
     }
 
+    public function test_pack_command_human_output_covers_render_paths(): void
+    {
+        $app = new Application();
+
+        $install = $this->runRawCommand($app, ['foundry', 'pack', 'install', $this->fixturePath('foundry-blog')]);
+        $this->assertSame(0, $install['status']);
+        $this->assertStringContainsString('Pack installed.', $install['output']);
+        $this->assertStringContainsString('Source: local', $install['output']);
+
+        $list = $this->runRawCommand($app, ['foundry', 'pack', 'list']);
+        $this->assertSame(0, $list['status']);
+        $this->assertStringContainsString('Installed packs:', $list['output']);
+        $this->assertStringContainsString('foundry/blog', $list['output']);
+
+        $info = $this->runRawCommand($app, ['foundry', 'pack', 'info', 'foundry/blog']);
+        $this->assertSame(0, $info['status']);
+        $this->assertStringContainsString('Pack: foundry/blog', $info['output']);
+        $this->assertStringContainsString('Capabilities: blog.notes', $info['output']);
+
+        $search = $this->runRawCommand($this->hostedPackApplication([
+            [
+                'name' => 'foundry/blog',
+                'version' => '1.1.0',
+                'description' => 'Blog workflow tools',
+                'download_url' => 'https://downloads.example/foundry-blog-1.1.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
+            ],
+        ]), ['foundry', 'pack', 'search', 'blog']);
+        $this->assertSame(0, $search['status']);
+        $this->assertStringContainsString('Hosted pack results for `blog`:', $search['output']);
+
+        $remove = $this->runRawCommand($app, ['foundry', 'pack', 'remove', 'foundry/blog']);
+        $this->assertSame(0, $remove['status']);
+        $this->assertStringContainsString('Pack deactivated.', $remove['output']);
+
+        $emptyList = $this->runRawCommand($app, ['foundry', 'pack', 'list']);
+        $this->assertSame(0, $emptyList['status']);
+        $this->assertStringContainsString('Installed packs:', $emptyList['output']);
+        $this->assertStringContainsString('foundry/blog [inactive]', $emptyList['output']);
+    }
+
     public function test_pack_install_rejects_invalid_manifests_with_structured_errors(): void
     {
         $invalidSource = $this->project->root . '/invalid-pack';
@@ -337,6 +380,19 @@ final class CLIPackCommandsTest extends TestCase
         $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
         return ['status' => $status, 'payload' => $payload];
+    }
+
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,output:string}
+     */
+    private function runRawCommand(Application $app, array $argv): array
+    {
+        ob_start();
+        $status = $app->run($argv);
+        $output = trim((string) ob_get_clean());
+
+        return ['status' => $status, 'output' => $output];
     }
 
     private function fixturePath(string $name): string

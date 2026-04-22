@@ -234,6 +234,40 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame('Use either --feature=<feature> or --all, not both.', $result['payload']['error']['message']);
     }
 
+    public function test_context_check_alignment_requires_feature_and_rejects_all(): void
+    {
+        $missingFeature = $this->runCommand(['foundry', 'context', 'check-alignment', '--json']);
+        $this->assertSame(1, $missingFeature['status']);
+        $this->assertSame('CLI_CONTEXT_ALIGNMENT_FEATURE_REQUIRED', $missingFeature['payload']['error']['code']);
+
+        $allUnsupported = $this->runCommand(['foundry', 'context', 'check-alignment', '--all', '--json']);
+        $this->assertSame(1, $allUnsupported['status']);
+        $this->assertSame('CLI_CONTEXT_ALIGNMENT_ALL_UNSUPPORTED', $allUnsupported['payload']['error']['code']);
+    }
+
+    public function test_context_check_alignment_renders_human_output_for_aligned_and_mismatch_states(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+
+        $alignedJson = $this->runCommand(['foundry', 'context', 'check-alignment', '--feature=event-bus', '--json']);
+        $aligned = $this->runCommandRaw(['foundry', 'context', 'check-alignment', '--feature=event-bus']);
+        $this->assertSame($alignedJson['status'], $aligned['status']);
+        $this->assertStringContainsString('Context alignment: event-bus', $aligned['output']);
+        $this->assertStringContainsString('Status: ' . $alignedJson['payload']['status'], $aligned['output']);
+        $this->assertStringContainsString((string) $alignedJson['payload']['issues'][0]['code'], $aligned['output']);
+        $this->assertStringContainsString((string) $alignedJson['payload']['required_actions'][0], $aligned['output']);
+
+        $this->writeDivergentSemanticContext();
+        $mismatchJson = $this->runCommand(['foundry', 'context', 'check-alignment', '--feature=event-bus', '--json']);
+        $mismatch = $this->runCommandRaw(['foundry', 'context', 'check-alignment', '--feature=event-bus']);
+
+        $this->assertSame(1, $mismatch['status']);
+        $this->assertSame('mismatch', $mismatchJson['payload']['status']);
+        $this->assertStringContainsString('Status: mismatch', $mismatch['output']);
+        $this->assertStringContainsString((string) $mismatchJson['payload']['issues'][0]['code'], $mismatch['output']);
+        $this->assertStringContainsString((string) $mismatchJson['payload']['required_actions'][0], $mismatch['output']);
+    }
+
     public function test_context_repair_feature_json_returns_required_contract(): void
     {
         $this->writeRepairableConsumableContext();
@@ -259,6 +293,46 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertFalse($result['payload']['requires_manual_action']);
     }
 
+    public function test_context_init_and_repair_render_human_output_and_validation_errors(): void
+    {
+        $missingFeature = $this->runCommand(['foundry', 'context', 'init', '--json']);
+        $this->assertSame(1, $missingFeature['status']);
+        $this->assertSame('CLI_CONTEXT_FEATURE_REQUIRED', $missingFeature['payload']['error']['code']);
+
+        $invalidInit = $this->runCommandRaw(['foundry', 'context', 'init', 'Event_Bus']);
+        $this->assertSame(1, $invalidInit['status']);
+        $this->assertStringContainsString('Context init failed:', $invalidInit['output']);
+        $this->assertStringContainsString('CONTEXT_FEATURE_NAME_UPPERCASE', $invalidInit['output']);
+
+        $firstInit = $this->runCommandRaw(['foundry', 'context', 'init', 'event-bus']);
+        $this->assertSame(0, $firstInit['status']);
+        $this->assertStringContainsString('Context initialized: event-bus', $firstInit['output']);
+        $this->assertStringContainsString('Created:', $firstInit['output']);
+        $this->assertStringContainsString('Already existed:' . PHP_EOL . '- none', $firstInit['output']);
+
+        $secondInit = $this->runCommandRaw(['foundry', 'context', 'init', 'event-bus']);
+        $this->assertSame(0, $secondInit['status']);
+        $this->assertStringContainsString('Already existed:', $secondInit['output']);
+        $this->assertStringContainsString('- docs/features/event-bus.spec.md', $secondInit['output']);
+
+        $missingRepairTarget = $this->runCommand(['foundry', 'context', 'repair', '--json']);
+        $this->assertSame(1, $missingRepairTarget['status']);
+        $this->assertSame('CLI_CONTEXT_REPAIR_TARGET_REQUIRED', $missingRepairTarget['payload']['error']['code']);
+
+        $failedRepair = $this->runCommandRaw(['foundry', 'context', 'repair', '--feature=missing-feature']);
+        $this->assertSame(1, $failedRepair['status']);
+        $this->assertStringContainsString('Status: failed', $failedRepair['output']);
+        $this->assertStringContainsString('Requires manual action: yes', $failedRepair['output']);
+        $this->assertStringContainsString('Error: CONTEXT_REPAIR_CRITICAL_INPUT_MISSING', $failedRepair['output']);
+
+        $this->writeRepairableConsumableContext();
+        $successfulRepair = $this->runCommandRaw(['foundry', 'context', 'repair', '--feature=event-bus']);
+        $this->assertSame(0, $successfulRepair['status']);
+        $this->assertStringContainsString('Status: repaired', $successfulRepair['output']);
+        $this->assertStringContainsString('Files changed:', $successfulRepair['output']);
+        $this->assertStringContainsString('Issues repaired:', $successfulRepair['output']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
@@ -273,6 +347,19 @@ final class CLIContextCommandsTest extends TestCase
         $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
         return ['status' => $status, 'payload' => $payload];
+    }
+
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,output:string}
+     */
+    private function runCommandRaw(array $argv): array
+    {
+        ob_start();
+        $status = (new Application())->run($argv);
+        $output = (string) (ob_get_clean() ?: '');
+
+        return ['status' => $status, 'output' => $output];
     }
 
     private function writeExecutionSpec(string $feature, string $name, bool $draft = false): void

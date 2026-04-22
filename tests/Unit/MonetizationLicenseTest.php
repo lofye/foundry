@@ -192,6 +192,42 @@ final class MonetizationLicenseTest extends TestCase
         );
     }
 
+    public function test_environment_license_key_reports_invalid_status_when_validation_fails(): void
+    {
+        putenv('FOUNDRY_LICENSE_KEY=FPRO-ABCD-EFGH-IJKL-MNOP-00000000');
+
+        $status = (new MonetizationService(new LicenseStore()))->status();
+
+        $this->assertFalse($status['valid']);
+        $this->assertSame('environment', $status['source']);
+        $this->assertSame('invalid', $status['status']);
+    }
+
+    public function test_deactivate_without_any_local_license_reports_clear_message(): void
+    {
+        $status = (new MonetizationService(new LicenseStore()))->deactivate();
+
+        $this->assertFalse($status['deactivated']);
+        $this->assertStringContainsString('No local Foundry license file was active.', (string) $status['message']);
+    }
+
+    public function test_activation_surfaces_remote_validation_rejections(): void
+    {
+        $validationFixture = $this->tempHome . '/remote-validation-rejected.json';
+        file_put_contents($validationFixture, json_encode([
+            'valid' => false,
+            'message' => 'Rejected remotely.',
+        ], JSON_THROW_ON_ERROR));
+        putenv('FOUNDRY_LICENSE_VALIDATION_URL=file://' . $validationFixture);
+
+        try {
+            (new MonetizationService(new LicenseStore()))->activate($this->validKey());
+            self::fail('Expected remote validation rejection.');
+        } catch (FoundryError $error) {
+            $this->assertSame('LICENSE_REMOTE_VALIDATION_FAILED', $error->errorCode);
+        }
+    }
+
     private function validKey(): string
     {
         $body = 'FPRO-ABCD-EFGH-IJKL-MNOP';

@@ -150,6 +150,160 @@ final class TerminalInteractiveGenerateReviewerTest extends TestCase
         $this->assertSame('HIGH', $result->risk['level']);
     }
 
+    public function test_review_supports_help_and_inspection_commands_before_rejection(): void
+    {
+        $base = $this->project->root . '/app/features/comments';
+        mkdir($base, 0777, true);
+        file_put_contents($base . '/permissions.yaml', "version: 1\npermissions: []\n");
+
+        $intent = new Intent(raw: 'Inspect comments', mode: 'modify', interactive: true);
+        $plan = new GenerationPlan(
+            actions: [[
+                'type' => 'update_file',
+                'path' => 'app/features/comments/permissions.yaml',
+                'summary' => 'Update permissions.',
+                'explain_node_id' => 'feature:comments',
+            ]],
+            affectedFiles: ['app/features/comments/permissions.yaml'],
+            risks: ['Updates permissions.'],
+            validations: ['verify_feature'],
+            origin: 'core',
+            generatorId: 'core.feature.modify',
+            metadata: ['feature' => 'comments'],
+        );
+
+        $inputs = ['help', 'inspect graph', 'inspect explain', 'inspect action 1', 'bogus', 'reject'];
+        $output = '';
+        $reviewer = new TerminalInteractiveGenerateReviewer(
+            inputReader: static function () use (&$inputs): string {
+                return array_shift($inputs) ?? 'reject';
+            },
+            outputWriter: static function (string $text) use (&$output): void {
+                $output .= $text;
+            },
+            previewBuilder: new GeneratePlanPreviewBuilder(new Paths($this->project->root)),
+        );
+
+        $result = $reviewer->review(new InteractiveGenerateReviewRequest(
+            intent: $intent,
+            plan: $plan,
+            context: $this->context($intent),
+            explainRendered: "Line one\nLine two",
+        ));
+
+        $this->assertFalse($result->approved);
+        $this->assertStringContainsString('Supported review commands:', $output);
+        $this->assertStringContainsString('Graph inspection:', $output);
+        $this->assertStringContainsString('Explain inspection:', $output);
+        $this->assertStringContainsString('Action inspection:', $output);
+        $this->assertStringContainsString('Unknown review command.', $output);
+        $this->assertSame(['auth'], $result->preview['actions'][0]['dependencies']);
+    }
+
+    public function test_review_can_toggle_risky_actions_and_handle_empty_or_invalid_selections(): void
+    {
+        $base = $this->project->root . '/app/features/comments';
+        mkdir($base, 0777, true);
+        file_put_contents($base . '/legacy.txt', "legacy\n");
+        file_put_contents($base . '/prompts.md', "# comments\n");
+
+        $intent = new Intent(raw: 'Refine comments', mode: 'modify', interactive: true);
+        $plan = new GenerationPlan(
+            actions: [
+                [
+                    'type' => 'delete_file',
+                    'path' => 'app/features/comments/legacy.txt',
+                    'summary' => 'Delete legacy file.',
+                    'explain_node_id' => 'feature:comments',
+                ],
+                [
+                    'type' => 'update_docs',
+                    'path' => 'app/features/comments/prompts.md',
+                    'summary' => 'Update prompts.',
+                    'explain_node_id' => 'feature:comments',
+                ],
+            ],
+            affectedFiles: [
+                'app/features/comments/legacy.txt',
+                'app/features/comments/prompts.md',
+            ],
+            risks: ['Deletes a file.'],
+            validations: ['verify_feature'],
+            origin: 'core',
+            generatorId: 'core.feature.modify',
+            metadata: ['feature' => 'comments'],
+        );
+
+        $inputs = ['exclude action 9', 'exclude file 2', 'toggle risky', 'toggle risky', 'approve', 'yes'];
+        $output = '';
+        $reviewer = new TerminalInteractiveGenerateReviewer(
+            inputReader: static function () use (&$inputs): string {
+                return array_shift($inputs) ?? 'reject';
+            },
+            outputWriter: static function (string $text) use (&$output): void {
+                $output .= $text;
+            },
+            previewBuilder: new GeneratePlanPreviewBuilder(new Paths($this->project->root)),
+        );
+
+        $result = $reviewer->review(new InteractiveGenerateReviewRequest(
+            intent: $intent,
+            plan: $plan,
+            context: $this->context($intent),
+        ));
+
+        $this->assertTrue($result->approved);
+        $this->assertStringContainsString('Action index is out of range.', $output);
+        $this->assertStringContainsString('Excluded file `app/features/comments/prompts.md`.', $output);
+        $this->assertStringContainsString('Risk toggle would remove every action from the plan.', $output);
+        $this->assertStringContainsString('Excluded risky actions.', $output);
+        $this->assertStringNotContainsString('Restored risky actions.', $output);
+    }
+
+    public function test_toggle_risky_reports_when_original_plan_has_no_risky_actions(): void
+    {
+        $base = $this->project->root . '/app/features/comments';
+        mkdir($base, 0777, true);
+        file_put_contents($base . '/prompts.md', "# comments\n");
+
+        $intent = new Intent(raw: 'Refine comments', mode: 'modify', interactive: true);
+        $plan = new GenerationPlan(
+            actions: [[
+                'type' => 'update_docs',
+                'path' => 'app/features/comments/prompts.md',
+                'summary' => 'Update prompts.',
+                'explain_node_id' => 'feature:comments',
+            ]],
+            affectedFiles: ['app/features/comments/prompts.md'],
+            risks: ['Updates prompts.'],
+            validations: ['verify_feature'],
+            origin: 'core',
+            generatorId: 'core.feature.modify',
+            metadata: ['feature' => 'comments'],
+        );
+
+        $inputs = ['toggle risky', 'reject'];
+        $output = '';
+        $reviewer = new TerminalInteractiveGenerateReviewer(
+            inputReader: static function () use (&$inputs): string {
+                return array_shift($inputs) ?? 'reject';
+            },
+            outputWriter: static function (string $text) use (&$output): void {
+                $output .= $text;
+            },
+            previewBuilder: new GeneratePlanPreviewBuilder(new Paths($this->project->root)),
+        );
+
+        $result = $reviewer->review(new InteractiveGenerateReviewRequest(
+            intent: $intent,
+            plan: $plan,
+            context: $this->context($intent),
+        ));
+
+        $this->assertFalse($result->approved);
+        $this->assertStringContainsString('No risky actions are currently present in the original plan.', $output);
+    }
+
     /**
      * @return GenerationContextPacket
      */

@@ -8,6 +8,7 @@ use Foundry\Compiler\Analysis\ArchitectureDoctor;
 use Foundry\Compiler\CompileOptions;
 use Foundry\Compiler\GraphCompiler;
 use Foundry\Doctor\Checks\GraphIntegrityCheck;
+use Foundry\Doctor\Checks\DirectoryHealthCheck;
 use Foundry\Doctor\Checks\MetadataFreshnessCheck;
 use Foundry\Doctor\Checks\PipelineConsistencyCheck;
 use Foundry\Doctor\Checks\RuntimeCompatibilityCheck;
@@ -90,6 +91,56 @@ final class FrameworkDoctorTest extends TestCase
         $this->assertContains('FDY9119_FEATURE_EXECUTION_PLAN_MISSING', $codes);
         $this->assertSame('error', $report['checks']['graph_integrity']['result']['status']);
         $this->assertSame('error', $report['checks']['pipeline_consistency']['result']['status']);
+    }
+
+    public function test_graph_integrity_check_reports_invalid_json_and_hash_mismatches(): void
+    {
+        $paths = Paths::fromCwd($this->project->root);
+        $compiler = new GraphCompiler($paths);
+        $compileResult = $compiler->compile(new CompileOptions());
+        $layout = $compiler->buildLayout();
+
+        file_put_contents($layout->graphJsonPath(), '{invalid json');
+        file_put_contents($layout->graphPhpPath(), "<?php\nreturn [];\n");
+
+        $report = $this->doctor([
+            new GraphIntegrityCheck(),
+        ], $compiler, $compileResult)->diagnose($this->doctorContext($compiler, $compileResult));
+
+        $codes = array_values(array_map(
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
+            (array) ($report['diagnostics']['items'] ?? []),
+        ));
+        sort($codes);
+
+        $this->assertContains('FDY9110_BUILD_ARTIFACT_INVALID', $codes);
+        $this->assertContains('FDY9112_BUILD_ARTIFACT_HASH_MISMATCH', $codes);
+        $this->assertSame('error', $report['checks']['graph_integrity']['result']['status']);
+        $this->assertNotEmpty($report['checks']['graph_integrity']['result']['json_artifacts_checked']);
+    }
+
+    public function test_directory_health_check_reports_missing_required_and_optional_directories(): void
+    {
+        $paths = Paths::fromCwd($this->project->root);
+        $compiler = new GraphCompiler($paths);
+        $compileResult = $compiler->compile(new CompileOptions());
+
+        $this->deleteDirectory($this->project->root . '/app/.foundry/build/quality');
+        $this->deleteDirectory($this->project->root . '/storage/logs');
+
+        $report = $this->doctor([
+            new DirectoryHealthCheck(),
+        ], $compiler, $compileResult)->diagnose($this->doctorContext($compiler, $compileResult));
+
+        $codes = array_values(array_map(
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
+            (array) ($report['diagnostics']['items'] ?? []),
+        ));
+        sort($codes);
+
+        $this->assertContains('FDY9106_DIRECTORY_MISSING', $codes);
+        $this->assertSame('error', $report['checks']['directory_health']['result']['status']);
+        $this->assertCount(13, $report['checks']['directory_health']['result']['directories']);
     }
 
     /**
@@ -183,5 +234,32 @@ YAML);
         file_put_contents($base . '/permissions.yaml', "version: 1\npermissions: [posts.create]\nrules:\n  admin: [posts.create]\n");
         file_put_contents($base . '/context.manifest.json', '{"version":1,"feature":"publish_post","kind":"http"}');
         file_put_contents($base . '/tests/publish_post_feature_test.php', '<?php declare(strict_types=1);');
+    }
+
+    private function deleteDirectory(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $items = scandir($path);
+        if ($items === false) {
+            return;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $fullPath = $path . '/' . $item;
+            if (is_dir($fullPath)) {
+                $this->deleteDirectory($fullPath);
+            } else {
+                @unlink($fullPath);
+            }
+        }
+
+        @rmdir($path);
     }
 }

@@ -69,6 +69,56 @@ final class ExplainSnapshotServiceTest extends TestCase
         $this->assertSame($snapshot['explain']['confidence'], $snapshot['confidence']);
     }
 
+    public function test_capture_supports_round_trip_loads_for_canonical_labels(): void
+    {
+        $this->seedFeature();
+
+        $paths = Paths::fromCwd($this->project->root);
+        $extensions = ExtensionRegistry::forPaths($paths);
+        $graph = (new GraphCompiler($paths, $extensions))->compile(new CompileOptions(emit: true))->graph;
+        $service = new ExplainSnapshotService($paths, new ApiSurfaceRegistry());
+
+        $snapshot = $service->capture('post-generate', $graph, $extensions, GeneratorRegistry::forExtensions($extensions), 'route:POST /posts');
+        $loaded = $service->load('post-generate');
+
+        $this->assertSame($snapshot['label'], $loaded['label']);
+        $this->assertSame($snapshot['metadata'], $loaded['metadata']);
+        $this->assertSame($snapshot['application']['summary'], $loaded['application']['summary']);
+        $this->assertSame('route:POST /posts', $snapshot['metadata']['target']['raw']);
+    }
+
+    public function test_load_rejects_missing_corrupt_and_invalid_snapshots(): void
+    {
+        $paths = Paths::fromCwd($this->project->root);
+        $service = new ExplainSnapshotService($paths, new ApiSurfaceRegistry());
+
+        try {
+            $service->load('pre-generate');
+            self::fail('Expected missing snapshot failure.');
+        } catch (\Foundry\Support\FoundryError $error) {
+            $this->assertSame('EXPLAIN_SNAPSHOT_NOT_FOUND', $error->errorCode);
+        }
+
+        mkdir($this->project->root . '/.foundry/snapshots', 0777, true);
+        file_put_contents($service->snapshotPath('pre-generate'), '{bad json');
+
+        try {
+            $service->load('pre-generate');
+            self::fail('Expected corrupt snapshot failure.');
+        } catch (\Foundry\Support\FoundryError $error) {
+            $this->assertSame('EXPLAIN_SNAPSHOT_CORRUPT', $error->errorCode);
+        }
+
+        file_put_contents($service->snapshotPath('pre-generate'), json_encode(['schema_version' => 'bad'], JSON_THROW_ON_ERROR));
+
+        try {
+            $service->load('pre-generate');
+            self::fail('Expected invalid snapshot failure.');
+        } catch (\Foundry\Support\FoundryError $error) {
+            $this->assertSame('EXPLAIN_SNAPSHOT_INVALID', $error->errorCode);
+        }
+    }
+
     private function seedFeature(): void
     {
         $feature = $this->project->root . '/app/features/publish_post';

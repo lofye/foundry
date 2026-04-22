@@ -61,6 +61,39 @@ final class CLICompletionCommandTest extends TestCase
         $this->assertSame('CLI_COMPLETION_SHELL_UNSUPPORTED', $result['payload']['error']['code']);
     }
 
+    public function test_completion_requires_shell_and_valid_context(): void
+    {
+        $missingShell = $this->runCommand(['foundry', 'completion', '--json']);
+        $this->assertSame(1, $missingShell['status']);
+        $this->assertSame('CLI_COMPLETION_SHELL_REQUIRED', $missingShell['payload']['error']['code']);
+
+        $invalidContext = $this->runCommand([
+            'foundry',
+            'completion',
+            'bash',
+            '--complete',
+            '--current=gr',
+            '--',
+            'foundry',
+            'gr',
+            '--json',
+        ]);
+        $this->assertSame(1, $invalidContext['status']);
+        $this->assertSame('CLI_COMPLETION_CONTEXT_INVALID', $invalidContext['payload']['error']['code']);
+
+        $withoutCurrentOrWords = $this->runCommand([
+            'foundry',
+            'completion',
+            'bash',
+            '--complete',
+            '--index=1',
+            '--json',
+        ]);
+        $this->assertSame(0, $withoutCurrentOrWords['status']);
+        $this->assertArrayHasKey('candidates', $withoutCurrentOrWords['payload']);
+        $this->assertNotEmpty($withoutCurrentOrWords['payload']['candidates']);
+    }
+
     public function test_static_completion_includes_expected_top_level_commands_and_subcommands(): void
     {
         $topLevel = $this->runCommand([

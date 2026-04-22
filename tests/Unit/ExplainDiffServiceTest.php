@@ -152,6 +152,85 @@ final class ExplainDiffServiceTest extends TestCase
         $service->loadLast();
     }
 
+    public function test_store_load_and_render_support_round_trip_diffs(): void
+    {
+        $service = $this->service();
+        mkdir($this->project->root . '/.foundry/snapshots', 0777, true);
+
+        file_put_contents($this->project->root . '/.foundry/snapshots/pre-generate.json', Json::encode([
+            'schema_version' => 1,
+            'label' => 'pre-generate',
+            'metadata' => ['explain_schema_version' => 2],
+            'categories' => [],
+        ], true));
+        file_put_contents($this->project->root . '/.foundry/snapshots/post-generate.json', Json::encode([
+            'schema_version' => 1,
+            'label' => 'post-generate',
+            'metadata' => ['explain_schema_version' => 2],
+            'categories' => [],
+        ], true));
+
+        $diff = [
+            'schema_version' => 1,
+            'summary' => ['added' => 1, 'removed' => 0, 'modified' => 0],
+            'added' => [[
+                'type' => 'pack',
+                'id' => 'foundry/blog',
+                'label' => 'foundry/blog',
+                'origin' => 'extension',
+                'extension' => 'foundry/blog',
+            ]],
+            'removed' => [],
+            'modified' => [],
+            'confidence' => [
+                'score' => 0.3,
+                'band' => 'low',
+                'warnings' => ['Diff confidence is limited.'],
+            ],
+        ];
+
+        $service->storeLast($diff);
+        $loaded = $service->loadLast();
+        $rendered = $service->render($loaded);
+
+        $this->assertSame($diff, $loaded);
+        $this->assertStringContainsString('Confidence: low (0.30)', $rendered);
+        $this->assertStringContainsString('Note: Diff confidence is limited.', $rendered);
+        $this->assertStringContainsString('Added:', $rendered);
+        $this->assertStringContainsString('foundry/blog', $rendered);
+    }
+
+    public function test_load_last_rejects_missing_corrupt_and_invalid_diff_files(): void
+    {
+        $service = $this->service();
+
+        try {
+            $service->loadLast();
+            self::fail('Expected missing diff failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('EXPLAIN_DIFF_NOT_FOUND', $error->errorCode);
+        }
+
+        mkdir($this->project->root . '/.foundry/diffs', 0777, true);
+        file_put_contents($service->lastDiffPath(), '{bad json');
+
+        try {
+            $service->loadLast();
+            self::fail('Expected corrupt diff failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('EXPLAIN_DIFF_CORRUPT', $error->errorCode);
+        }
+
+        file_put_contents($service->lastDiffPath(), Json::encode(['schema_version' => 'bad'], true));
+
+        try {
+            $service->loadLast();
+            self::fail('Expected invalid diff failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('EXPLAIN_DIFF_INVALID', $error->errorCode);
+        }
+    }
+
     private function service(): ExplainDiffService
     {
         $paths = Paths::fromCwd($this->project->root);

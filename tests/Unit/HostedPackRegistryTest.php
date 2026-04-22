@@ -218,6 +218,71 @@ final class HostedPackRegistryTest extends TestCase
         }
     }
 
+    public function test_registry_validates_query_registry_url_root_entry_version_and_download_url(): void
+    {
+        $registry = $this->registry([]);
+
+        try {
+            $registry->search('');
+            self::fail('Expected empty query failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('PACK_SEARCH_QUERY_REQUIRED', $error->errorCode);
+        }
+
+        $invalidUrlRegistry = new HostedPackRegistry(
+            Paths::fromCwd($this->project->root),
+            static fn(string $url): string => '[]',
+            'ftp://registry.example/packs',
+        );
+        try {
+            $invalidUrlRegistry->entries();
+            self::fail('Expected invalid registry URL failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('PACK_REGISTRY_URL_INVALID', $error->errorCode);
+        }
+
+        $rootInvalidRegistry = $this->registryFetcher(static fn(string $url): string => '{"bad":true}');
+        try {
+            $rootInvalidRegistry->entries();
+            self::fail('Expected invalid registry root failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('PACK_REGISTRY_INVALID', $error->errorCode);
+        }
+
+        $entryInvalidRegistry = $this->registryFetcher(static fn(string $url): string => json_encode(['bad'], JSON_THROW_ON_ERROR));
+        try {
+            $entryInvalidRegistry->entries();
+            self::fail('Expected invalid entry failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('PACK_REGISTRY_ENTRY_INVALID', $error->errorCode);
+        }
+
+        $versionRegistry = $this->registry([
+            [
+                'name' => 'foundry/blog',
+                'version' => '1.0.0',
+                'description' => 'Blog workflow tools',
+                'download_url' => 'https://downloads.example/foundry-blog-1.0.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
+            ],
+        ]);
+        try {
+            $versionRegistry->resolve('foundry/blog', '9.9.9');
+            self::fail('Expected missing version failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('PACK_REGISTRY_VERSION_NOT_FOUND', $error->errorCode);
+        }
+
+        try {
+            $registry->downloadArchive('http://downloads.example/insecure.zip');
+            self::fail('Expected invalid download URL failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('PACK_DOWNLOAD_URL_INVALID', $error->errorCode);
+        }
+    }
+
     /**
      * @param array<int,array<string,string>> $entries
      */

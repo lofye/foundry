@@ -397,6 +397,41 @@ YAML);
         $this->assertStringContainsString('Compile cache cleared.', $cacheClear['output']);
     }
 
+    public function test_non_json_help_renders_command_and_family_summaries(): void
+    {
+        $app = new Application();
+
+        $commandHelp = $this->runCommandRaw($app, ['foundry', 'help', 'completion']);
+        $this->assertSame(0, $commandHelp['status']);
+        $this->assertStringContainsString('Command: completion', $commandHelp['output']);
+        $this->assertStringContainsString('Availability: Core', $commandHelp['output']);
+        $this->assertStringContainsString('Classification: public_api', $commandHelp['output']);
+
+        $families = [
+            'cache' => 'Inspect or clear deterministic compile cache state.',
+            'compile' => 'Compile authored source-of-truth files into canonical graph artifacts.',
+            'context' => 'Context command family.',
+            'examples' => 'List or load curated onboarding examples with explicit taxonomy and copy mode.',
+            'export' => 'Export graph and API artifacts for docs and tooling.',
+            'generate' => 'Generate docs, scaffolds, helper artifacts, and framework-managed outputs.',
+            'graph' => 'Inspect or render graph slices through the graph command family.',
+            'inspect' => 'Inspect compiled graph, feature, integration, and reference surfaces.',
+            'pack' => 'Search hosted packs or install, inspect, and deactivate deterministic Foundry packs.',
+            'queue' => 'Browse local development queue commands.',
+            'schedule' => 'Browse local development scheduler commands.',
+            'verify' => 'Verify graph, pipeline, contract, integration, and extension surfaces.',
+        ];
+
+        foreach ($families as $family => $summary) {
+            $result = $this->runCommandRaw($app, ['foundry', 'help', $family]);
+
+            $this->assertSame(0, $result['status']);
+            $this->assertStringContainsString('Command Family: ' . $family, $result['output']);
+            $this->assertStringContainsString('Summary: ' . $summary, $result['output']);
+            $this->assertStringContainsString('Use `foundry help <full command>`', $result['output']);
+        }
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
