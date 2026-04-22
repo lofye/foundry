@@ -36,6 +36,42 @@ final class TempProject
 JSON);
         file_put_contents($this->root . '/vendor/autoload.php', "<?php\n");
         file_put_contents($this->root . '/vendor/bin/foundry', "#!/usr/bin/env php\n<?php\n");
+        file_put_contents($this->root . '/vendor/bin/phpunit', <<<'PHP'
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+$root = dirname(__DIR__, 2);
+$args = $_SERVER['argv'] ?? [];
+$isCoverage = in_array('--coverage-text', $args, true);
+
+$readControl = static function (string $name, string $default) use ($root): string {
+    $path = $root . '/' . $name;
+    if (!is_file($path)) {
+        return $default;
+    }
+
+    return rtrim((string) file_get_contents($path), "\r\n");
+};
+
+if ($isCoverage) {
+    $exitCode = (int) $readControl('.foundry-test-coverage-exit-code', '0');
+    $defaultOutput = sprintf(
+        "PHPUnit 12.0.0 by Sebastian Bergmann and contributors.\n\nCode Coverage Report:\n  2026-04-21 12:00:00\n\nSummary:\n  Classes: 100.00%% (10/10)\n  Methods: 100.00%% (20/20)\n  Lines:   %s%% (95/100)\n",
+        $readControl('.foundry-test-coverage-lines', '95.00'),
+    );
+    fwrite(STDOUT, $readControl('.foundry-test-coverage-output', $defaultOutput));
+    exit($exitCode);
+}
+
+$exitCode = (int) $readControl('.foundry-test-phpunit-exit-code', '0');
+$output = $readControl(
+    '.foundry-test-phpunit-output',
+    $exitCode === 0 ? "PHPUnit passed.\n" : "PHPUnit failed.\n",
+);
+fwrite($exitCode === 0 ? STDOUT : STDERR, $output);
+exit($exitCode);
+PHP);
         file_put_contents($this->root . '/foundry', <<<'PHP'
 #!/usr/bin/env php
 <?php

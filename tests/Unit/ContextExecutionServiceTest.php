@@ -70,6 +70,8 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertFalse($result['requires_repair']);
         $this->assertFalse($result['repair_attempted']);
         $this->assertFalse($result['repair_successful']);
+        $this->assertTrue($result['quality_gate']['passed']);
+        $this->assertSame(95.0, $result['quality_gate']['coverage']['global_line_coverage']);
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
         $this->assertStringContainsString('Implemented Event bus feature scaffolding exists in the app.', (string) file_get_contents($this->project->root . '/docs/features/event-bus.md'));
         $this->assertStringContainsString('### Decision: context-driven execution for event-bus', (string) file_get_contents($this->project->root . '/docs/features/event-bus.decisions.md'));
@@ -92,6 +94,21 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertTrue($result['requires_repair']);
         $this->assertSame('CONTEXT_FILE_MISSING', $result['issues'][0]['code']);
         $this->assertContains('Create missing state file: docs/features/event-bus.md', $result['required_actions']);
+    }
+
+    public function test_execution_returns_completed_with_issues_when_quality_gate_fails(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        file_put_contents($this->project->root . '/.foundry-test-coverage-lines', "89.50\n");
+
+        $result = $this->service()->execute('event-bus')->toArray();
+
+        $this->assertSame('completed_with_issues', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('IMPLEMENTATION_QUALITY_GATE_GLOBAL_COVERAGE_BELOW_THRESHOLD', $result['issues'][0]['code']);
+        $this->assertFalse($result['quality_gate']['passed']);
+        $this->assertSame(89.5, $result['quality_gate']['coverage']['global_line_coverage']);
     }
 
     public function test_guided_repair_resolves_simple_issues_deterministically(): void
@@ -632,6 +649,7 @@ MD);
             'actions_taken',
             'issues',
             'required_actions',
+            'quality_gate',
         ], array_keys($result));
     }
 

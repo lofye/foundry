@@ -10,6 +10,7 @@ final readonly class ExecutionResult
      * @param list<string> $actionsTaken
      * @param list<array<string,mixed>> $issues
      * @param list<string> $requiredActions
+     * @param array<string,mixed>|null $qualityGate
      */
     public function __construct(
         public string $feature,
@@ -21,6 +22,7 @@ final readonly class ExecutionResult
         public array $actionsTaken = [],
         public array $issues = [],
         public array $requiredActions = [],
+        public ?array $qualityGate = null,
         public ?string $reason = null,
         public ?string $requiredAction = null,
     ) {}
@@ -36,6 +38,7 @@ final readonly class ExecutionResult
      *     actions_taken:list<string>,
      *     issues:list<array<string,mixed>>,
      *     required_actions:list<string>,
+     *     quality_gate?:array<string,mixed>,
      *     reason?:string,
      *     required_action?:string
      * }
@@ -53,6 +56,10 @@ final readonly class ExecutionResult
             'issues' => array_values($this->issues),
             'required_actions' => array_values($this->requiredActions),
         ];
+
+        if ($this->qualityGate !== null) {
+            $payload['quality_gate'] = $this->qualityGate;
+        }
 
         if ($this->reason !== null) {
             $payload['reason'] = $this->reason;

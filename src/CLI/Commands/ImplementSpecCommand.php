@@ -153,7 +153,8 @@ final class ImplementSpecCommand extends Command
      *     repair_successful:bool,
      *     actions_taken:list<string>,
      *     issues:list<array<string,mixed>>,
-     *     required_actions:list<string>
+     *     required_actions:list<string>,
+     *     quality_gate?:array<string,mixed>
      * } $payload
      */
     private function renderMessage(array $payload): string
@@ -192,6 +193,16 @@ final class ImplementSpecCommand extends Command
         } else {
             foreach ($payload['required_actions'] as $action) {
                 $lines[] = '- ' . $action;
+            }
+        }
+
+        if (is_array($payload['quality_gate'] ?? null)) {
+            $lines[] = 'Quality gate: ' . (((bool) ($payload['quality_gate']['passed'] ?? false)) ? 'passed' : 'failed');
+            if (isset($payload['quality_gate']['coverage']['global_line_coverage'])) {
+                $coverage = $payload['quality_gate']['coverage']['global_line_coverage'];
+                if (is_float($coverage) || is_int($coverage)) {
+                    $lines[] = sprintf('Global line coverage: %.2f%%', (float) $coverage);
+                }
             }
         }
 

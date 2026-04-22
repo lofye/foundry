@@ -45,10 +45,12 @@ final class CLIImplementFeatureCommandTest extends TestCase
             'actions_taken',
             'issues',
             'required_actions',
+            'quality_gate',
         ], array_keys($result['payload']));
         $this->assertSame('completed', $result['payload']['status']);
         $this->assertTrue($result['payload']['can_proceed']);
         $this->assertFalse($result['payload']['requires_repair']);
+        $this->assertTrue($result['payload']['quality_gate']['passed']);
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
         $this->assertSame(0, $verify['status']);
         $this->assertSame('pass', $verify['payload']['status']);
@@ -126,6 +128,20 @@ final class CLIImplementFeatureCommandTest extends TestCase
         $this->assertStringContainsString('## Current State', $state);
         $this->assertStringContainsString('Implemented Event bus feature scaffolding exists in the app.', $state);
         $this->assertStringContainsString('### Decision: context-driven execution for event-bus', $decisions);
+    }
+
+    public function test_implement_feature_fails_when_quality_gate_does_not_pass(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+        file_put_contents($this->project->root . '/.foundry-test-coverage-lines', "89.50\n");
+
+        $result = $this->runCommand(['foundry', 'implement', 'feature', 'event-bus', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('completed_with_issues', $result['payload']['status']);
+        $this->assertSame('IMPLEMENTATION_QUALITY_GATE_GLOBAL_COVERAGE_BELOW_THRESHOLD', $result['payload']['issues'][0]['code']);
+        $this->assertFalse($result['payload']['quality_gate']['passed']);
     }
 
     public function test_non_consumable_context_returns_refusal_payload(): void

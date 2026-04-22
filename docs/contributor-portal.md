@@ -97,6 +97,7 @@ php bin/foundry doctor --json
 - Do not hand-edit generated output under `app/generated/*`; fix the generator, compiler, verifier, or authored source instead.
 - Preserve stable CLI names, JSON shapes, explain structure, and ordering unless the contract itself changes.
 - Keep test coverage at or above 90% for affected areas.
+- Foundry-owned implementation completion now also requires the full PHPUnit suite and the canonical coverage run to pass before work is reported as done.
 - Follow spec discipline: update the spec or docs first for contract changes, then implement, realign examples, and verify determinism.
 - Use [Contributor PR Checklist](contributor-pr-checklist.md) before merge.
 
@@ -108,7 +109,7 @@ Use the safe edit loop from `AGENTS.md`:
 2. Make the smallest possible change in framework source files.
 3. Recompile the root app if graph behavior, generated projections, or the demo app changed.
 4. Run the narrowest relevant PHPUnit coverage first.
-5. Run broader verification before finalizing.
+5. Run broader verification before finalizing, including the full PHPUnit suite and the canonical coverage command when implementation completion is the goal.
 
 Recommended command loop in this repository:
 

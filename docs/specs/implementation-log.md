@@ -151,3 +151,8 @@
 - spec: generate-engine/001-interactive-generate-plan-review.md
 - note: Added interactive generate review with summary/detail/diff preview, approval or rejection, minimal plan filtering, risk confirmation, and filtered-plan execution that reuses the existing validation and verification pipeline.
 - note: Added deterministic post-processing that coalesces overlapping doctor-rule results, deduplicates exact issue rows, and reuses canonical required-action coalescing across doctor and verify outputs without changing their JSON shapes.
+
+## 2026-04-22 03:21:49 +0000
+- spec: quality-enforcement/001-require-full-suite-and-90-percent-coverage-before-completion.md
+- note: Added a shared implementation quality gate that requires the full PHPUnit suite, the canonical coverage run, and global line coverage at or above 90% before `implement feature` or `implement spec` can report final success.
+- note: Exposed deterministic machine-readable `quality_gate` output on implementation payloads and reported changed-surface coverage explicitly as not yet supported instead of implying enforcement that does not exist yet.

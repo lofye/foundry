@@ -32,6 +32,7 @@ Start with [Contributor Portal](contributor-portal.md) when you need the archite
 - [ ] Were relevant unit tests updated?
 - [ ] Were relevant integration tests updated?
 - [ ] Does coverage remain above 90% for affected areas?
+- [ ] If implementation completion is being claimed, did the full PHPUnit suite and the canonical coverage command both pass?
 - [ ] Were focused tests run first, then broader verification?
 
 ## Documentation

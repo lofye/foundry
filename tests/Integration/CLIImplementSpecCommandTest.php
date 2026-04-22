@@ -46,10 +46,12 @@ final class CLIImplementSpecCommandTest extends TestCase
             'actions_taken',
             'issues',
             'required_actions',
+            'quality_gate',
         ], array_keys($result['payload']));
         $this->assertSame('event-bus/001-initial', $result['payload']['spec_id']);
         $this->assertSame('event-bus', $result['payload']['feature']);
         $this->assertSame('completed', $result['payload']['status']);
+        $this->assertTrue($result['payload']['quality_gate']['passed']);
         $this->assertContains('Appended implementation log entry: docs/specs/implementation-log.md', $result['payload']['actions_taken']);
         $this->assertContains('Applied execution spec: docs/specs/event-bus/001-initial.md', $result['payload']['actions_taken']);
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
@@ -329,6 +331,21 @@ MD);
                 (string) file_get_contents($this->project->root . '/docs/specs/implementation-log.md'),
             ),
         );
+    }
+
+    public function test_implement_spec_fails_when_quality_gate_does_not_pass(): void
+    {
+        $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
+        $this->writeMeaningfulContext('event-bus');
+        $this->writeExecutionSpec('event-bus', '001-initial');
+        file_put_contents($this->project->root . '/.foundry-test-coverage-lines', "89.50\n");
+
+        $result = $this->runCommand(['foundry', 'implement', 'spec', 'event-bus/001-initial', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('completed_with_issues', $result['payload']['status']);
+        $this->assertSame('IMPLEMENTATION_QUALITY_GATE_GLOBAL_COVERAGE_BELOW_THRESHOLD', $result['payload']['issues'][0]['code']);
+        $this->assertFalse($result['payload']['quality_gate']['passed']);
     }
 
     public function test_feature_and_id_shorthand_draft_only_match_fails_clearly(): void

@@ -6,6 +6,7 @@ namespace Foundry\Context;
 
 use Foundry\Generation\ContextManifestGenerator;
 use Foundry\Generation\FeatureGenerator;
+use Foundry\Quality\ImplementationQualityGateService;
 use Foundry\Support\FoundryError;
 use Foundry\Support\FeatureNaming;
 use Foundry\Support\Paths;
@@ -21,6 +22,7 @@ final class ContextExecutionService
     private readonly ExecutionSpecImplementationLogService $executionSpecImplementationLogService;
     private readonly StateDocumentNormalizer $stateDocumentNormalizer;
     private readonly FeatureSpecDocumentNormalizer $featureSpecDocumentNormalizer;
+    private readonly ImplementationQualityGateService $implementationQualityGateService;
 
     public function __construct(
         private readonly Paths $paths,
@@ -33,6 +35,7 @@ final class ContextExecutionService
         ?ExecutionSpecImplementationLogService $executionSpecImplementationLogService = null,
         ?StateDocumentNormalizer $stateDocumentNormalizer = null,
         ?FeatureSpecDocumentNormalizer $featureSpecDocumentNormalizer = null,
+        ?ImplementationQualityGateService $implementationQualityGateService = null,
     ) {
         $this->inspectionService = $inspectionService ?? new ContextInspectionService($paths);
         $this->initService = $initService ?? new ContextInitService($paths);
@@ -41,6 +44,7 @@ final class ContextExecutionService
         $this->executionSpecImplementationLogService = $executionSpecImplementationLogService ?? new ExecutionSpecImplementationLogService($paths);
         $this->stateDocumentNormalizer = $stateDocumentNormalizer ?? new StateDocumentNormalizer();
         $this->featureSpecDocumentNormalizer = $featureSpecDocumentNormalizer ?? new FeatureSpecDocumentNormalizer();
+        $this->implementationQualityGateService = $implementationQualityGateService ?? new ImplementationQualityGateService($paths);
     }
 
     /**
@@ -216,6 +220,7 @@ final class ContextExecutionService
      *     actions_taken:list<string>,
      *     issues:list<array<string,mixed>>,
      *     required_actions:list<string>,
+     *     quality_gate?:array<string,mixed>,
      *     reason?:string,
      *     required_action?:string
      * }
@@ -292,6 +297,10 @@ final class ContextExecutionService
             'required_actions' => array_values(array_map('strval', (array) $payload['required_actions'])),
         ];
 
+        if (is_array($payload['quality_gate'] ?? null)) {
+            $result['quality_gate'] = $payload['quality_gate'];
+        }
+
         if (is_string($payload['reason'] ?? null) && $payload['reason'] !== '') {
             $result['reason'] = (string) $payload['reason'];
         }
@@ -364,6 +373,27 @@ final class ContextExecutionService
             );
         }
 
+        $qualityGate = $this->implementationQualityGateService->verify();
+        $actionsTaken = array_values(array_merge(
+            $actionsTaken,
+            array_map('strval', (array) ($qualityGate['actions_taken'] ?? [])),
+        ));
+
+        if (!(bool) ($qualityGate['passed'] ?? false)) {
+            return new ExecutionResult(
+                feature: $featureName,
+                status: 'completed_with_issues',
+                canProceed: false,
+                requiresRepair: true,
+                repairAttempted: $repairAttempted,
+                repairSuccessful: $repairSuccessful,
+                actionsTaken: $actionsTaken,
+                issues: array_values((array) ($qualityGate['issues'] ?? [])),
+                requiredActions: array_values(array_map('strval', (array) ($qualityGate['required_actions'] ?? []))),
+                qualityGate: $qualityGate,
+            );
+        }
+
         return new ExecutionResult(
             feature: $featureName,
             status: $repairSuccessful ? 'repaired' : 'completed',
@@ -374,6 +404,7 @@ final class ContextExecutionService
             actionsTaken: $actionsTaken,
             issues: [],
             requiredActions: [],
+            qualityGate: $qualityGate,
         );
     }
 
