@@ -13,6 +13,10 @@
 - `implement feature` and `implement spec` no longer report final success unless the quality gate passes.
 - Full-suite failure blocks final completion.
 - Coverage-run failure blocks final completion.
+- The repository strict PHPUnit baseline is now clean under the existing configuration: the stale init-app scaffold assertion, risky human-mode first-run tests, and warning-producing cleanup/stub-loading paths were fixed at the source without weakening PHPUnit strictness.
+- Strict PHPUnit warning and risky enforcement remain enabled, and pre-existing blockers are fixed at their real source instead of being hidden by relaxed PHPUnit rules.
+- `php vendor/bin/phpunit` now exits `0` under the repository's strict warning and risky settings.
+- `php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text` still exits successfully after the strict-baseline cleanup.
 - Implementation-completion payloads now expose machine-readable `quality_gate` reporting with full-suite status, coverage status, global line coverage, threshold, changed files examined, per-file changed-surface coverage, under-covered changed files, and changed-surface pass/fail status.
 - The quality-gate result is deterministic and machine-readable.
 - Global line coverage is now enforced at or above 90% for Foundry-owned implementation completion.

@@ -24,6 +24,7 @@
 - The enforcement path must be hard to forget in Foundry-owned implementation workflows.
 - Global line coverage must fail completion when it is below 90%.
 - Changed-surface coverage must be enforced deterministically for changed PHP source files under enforcement.
+- Strict PHPUnit warning and risky enforcement must remain enabled; inherited blocker debt must be fixed at the source rather than hidden by weaker configuration.
 - Changed-surface detection must prefer workflow-owned touched-file evidence when available and use repository-owned changed-file detection as the fallback.
 - Changed-surface enforcement scope must exclude docs, generated internals, vendor content, storage artifacts, stubs, and nested test paths.
 - The quality gate must fail closed when required evidence is missing or commands fail.
@@ -33,6 +34,7 @@
 - Foundry-owned implementation workflows run one shared quality gate before returning final success.
 - The shared quality gate runs `php vendor/bin/phpunit` as the full-suite requirement.
 - The shared quality gate runs `php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text --coverage-clover storage/tmp/foundry-quality-gate-clover.xml` as the canonical coverage requirement.
+- The repository strict PHPUnit baseline stays clean under the existing warning and risky settings, and pre-existing blockers are fixed at their real source instead of being hidden by relaxed PHPUnit rules.
 - Completion is downgraded from final success when the full suite fails, the coverage run fails, coverage cannot be parsed deterministically, global line coverage is below 90%, changed files cannot be determined deterministically, or any enforced changed PHP source file is below 90% line coverage.
 - Quality-gate output is machine-readable and includes whether the full suite ran, whether coverage ran, the required threshold, the measured global line coverage, changed files examined, per-file changed-surface coverage, under-covered changed files, and changed-surface pass/fail status.
 - Changed-surface coverage is enforced deterministically rather than being reported as unsupported.
@@ -48,6 +50,7 @@
 - Global line coverage below 90% blocks final completion.
 - Changed-surface coverage below 90% for any enforced changed PHP source file blocks final completion.
 - Changed-surface attribution failure blocks final completion.
+- The repository strict PHPUnit suite exits cleanly under the existing warning and risky settings without weakening PHPUnit configuration.
 - Workflow-owned touched-file evidence is used when available, with repository-owned changed-file detection as the deterministic fallback.
 - The quality-gate result is deterministic and machine-readable.
 - PHPUnit coverage proves the shared gate behavior and both CLI implementation entry points.

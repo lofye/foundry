@@ -145,6 +145,19 @@ final class CompileCacheInspectorTest extends TestCase
         $this->assertFileDoesNotExist($this->paths->generated() . '/routes.php');
     }
 
+    public function test_clear_is_idempotent_after_recursive_child_removal(): void
+    {
+        $this->createFeature('publish_post', 'POST', '/posts');
+        $this->compiler->compile(new CompileOptions());
+
+        $first = $this->inspector->clear();
+        $second = $this->inspector->clear();
+
+        $this->assertTrue($first['cleared']);
+        $this->assertFalse($second['cleared']);
+        $this->assertSame([], $second['removed_paths']);
+    }
+
     /**
      * @return array<string,mixed>
      */

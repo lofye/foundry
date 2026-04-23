@@ -649,15 +649,20 @@ final class ImplementationQualityGateService
 
     private function prepareCloverPath(string $path): void
     {
-        if (!is_dir(dirname($path))) {
-            mkdir(dirname($path), 0777, true);
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
         }
 
-        @unlink($path);
+        if (is_file($path)) {
+            unlink($path);
+        }
     }
 
     private function cleanupCloverPath(string $path): void
     {
-        @unlink($path);
+        if (is_file($path)) {
+            unlink($path);
+        }
     }
 }

@@ -101,7 +101,7 @@ final class CLIInitAppCommandTest extends TestCase
         $this->assertStringContainsString('prefer `foundry ...`', $agents);
         $this->assertStringContainsString('use `./foundry ...`', $agents);
         $this->assertStringContainsString('foundry verify context --feature=<feature> --json', $agents);
-        $this->assertStringContainsString('Meaningful work may proceed only when `verify context` passes.', $agents);
+        $this->assertStringContainsString('Meaningful work may proceed only when `verify context` passes', $agents);
         $this->assertStringNotContainsString('Yes. Here is a revised APP-AGENTS.md', $agents);
         $this->assertSame(
             file_get_contents($this->frameworkRoot() . '/APP-AGENTS.md'),

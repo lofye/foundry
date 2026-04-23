@@ -223,6 +223,16 @@ final class ContextPlanningService
     {
         $relativePath = 'stubs/specs/execution-spec.stub.md';
         $stubPath = $this->paths->frameworkJoin($relativePath);
+
+        if (!is_file($stubPath) || !is_readable($stubPath)) {
+            throw new FoundryError(
+                'PLANNING_SPEC_STUB_MISSING',
+                'filesystem',
+                ['path' => $relativePath],
+                'Execution spec stub could not be read.',
+            );
+        }
+
         $contents = file_get_contents($stubPath);
 
         if ($contents === false) {

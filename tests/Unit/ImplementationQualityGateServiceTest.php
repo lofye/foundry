@@ -37,6 +37,7 @@ final class ImplementationQualityGateServiceTest extends TestCase
         $this->assertTrue($result['changed_surface']['supported']);
         $this->assertSame('no_enforced_files', $result['changed_surface']['status']);
         $this->assertTrue($result['changed_surface']['passed']);
+        $this->assertFileDoesNotExist($this->project->root . '/storage/tmp/foundry-quality-gate-clover.xml');
     }
 
     public function test_quality_gate_fails_when_full_suite_fails(): void
@@ -62,6 +63,7 @@ final class ImplementationQualityGateServiceTest extends TestCase
         $this->assertTrue($result['full_suite']['passed']);
         $this->assertTrue($result['coverage']['ran']);
         $this->assertFalse($result['coverage']['passed']);
+        $this->assertFileDoesNotExist($this->project->root . '/storage/tmp/foundry-quality-gate-clover.xml');
     }
 
     public function test_quality_gate_fails_when_global_coverage_is_below_threshold(): void

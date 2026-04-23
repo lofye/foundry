@@ -52,6 +52,7 @@ final class FirstRunServiceTest extends TestCase
             interactive: true,
             inputReader: static fn(string $prompt): string => '3',
         );
+        $this->expectOutputRegex('/Foundry Framework[\s\S]*Choose an option:/');
 
         $result = $service->run(new CommandContext(cwd: $root));
 
@@ -69,6 +70,7 @@ final class FirstRunServiceTest extends TestCase
             interactive: true,
             inputReader: static fn(string $prompt): string => '2',
         );
+        $this->expectOutputRegex('/Foundry Framework[\s\S]*Choose an option:/');
 
         $result = $service->run(new CommandContext(cwd: $root));
 
@@ -107,6 +109,7 @@ final class FirstRunServiceTest extends TestCase
                 return array_shift($inputs) ?? 'wat';
             },
         );
+        $this->expectOutputRegex('/Foundry Framework[\s\S]*Choose an option:[\s\S]*Select an example:/');
 
         $result = $service->run(new CommandContext(cwd: $root));
 
@@ -122,7 +125,9 @@ final class FirstRunServiceTest extends TestCase
     {
         $path = tempnam(sys_get_temp_dir(), $prefix);
         $this->assertIsString($path);
-        @unlink($path);
+        if (file_exists($path)) {
+            unlink($path);
+        }
         mkdir($path, 0777, true);
 
         return str_replace('\\', '/', $path);
@@ -142,14 +147,14 @@ final class FirstRunServiceTest extends TestCase
         /** @var \SplFileInfo $item */
         foreach ($iterator as $item) {
             if ($item->isDir()) {
-                @rmdir($item->getPathname());
+                rmdir($item->getPathname());
                 continue;
             }
 
-            @unlink($item->getPathname());
+            unlink($item->getPathname());
         }
 
-        @rmdir($path);
+        rmdir($path);
     }
 
     private function copyDirectory(string $source, string $target): void

@@ -522,6 +522,10 @@ final class CompileCacheInspector
 
     private function deleteDirectory(string $path): void
     {
+        if (!is_dir($path)) {
+            return;
+        }
+
         $items = scandir($path);
         if ($items === false) {
             return;
@@ -535,13 +539,12 @@ final class CompileCacheInspector
             $fullPath = $path . '/' . $item;
             if (is_dir($fullPath)) {
                 $this->deleteDirectory($fullPath);
-                @rmdir($fullPath);
                 continue;
             }
 
-            @unlink($fullPath);
+            unlink($fullPath);
         }
 
-        @rmdir($path);
+        rmdir($path);
     }
 }

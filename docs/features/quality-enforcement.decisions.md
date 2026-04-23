@@ -130,3 +130,37 @@ Timestamp: 2026-04-22T22:45:48-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: remove strict PHPUnit blocker debt at the source instead of weakening enforcement
+Timestamp: 2026-04-22T23:35:00-04:00
+
+**Context**
+- The `quality-enforcement/001.002-eliminate-phpunit-warning-and-risky-state-blockers.md` execution spec required the repository to regain a genuinely clean strict PHPUnit baseline.
+- The repository still had one stale scaffold assertion plus strict-mode blockers caused by risky human-mode test output and warning-prone cleanup/stub-loading paths.
+- The quality-enforcement feature depends on `php vendor/bin/phpunit` and the coverage command being trustworthy hard gates under the existing strict PHPUnit configuration.
+
+**Decision**
+- Keep the existing strict PHPUnit configuration unchanged.
+- Fix the stale init-app scaffold assertion in test code.
+- Fix the risky first-run tests by asserting the interactive output they intentionally trigger.
+- Fix framework cleanup and stub-loading paths so missing files and already-removed directories are handled explicitly rather than relying on warning suppression.
+
+**Reasoning**
+- Relaxing warning or risky enforcement would make the quality gate less trustworthy precisely where this feature is supposed to be strict.
+- The smallest durable fix is to make tests honest about expected output and make filesystem cleanup and idempotence explicit in framework code.
+- Clearing the baseline blocker debt lets future strict-gate failures represent real regressions instead of inherited suite noise.
+
+**Alternatives Considered**
+- Disable or weaken strict PHPUnit warning and risky handling.
+- Leave warning suppression in place and treat the suite as "good enough."
+- Patch only the visible stale assertion and ignore the strict-mode blocker sites named in the execution spec.
+
+**Impact**
+- `php vendor/bin/phpunit` now exits cleanly under the repository's strict warning and risky settings.
+- The coverage gate remains compatible with the strict-baseline cleanup.
+- Quality-enforcement can now rely on the repository test suite as an honest completion signal.
+
+**Spec Reference**
+- Constraints
+- Requested Changes
+- Completion Signals
