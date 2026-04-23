@@ -24,6 +24,7 @@ use Foundry\Pro\ArchitectureExplainer;
 use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
+use Foundry\Support\Uuid;
 use Foundry\Tooling\BuildArtifactStore;
 
 final class GenerateEngine
@@ -61,6 +62,8 @@ final class GenerateEngine
     public function run(Intent $intent): array
     {
         $gitInspector = new GitRepositoryInspector($this->paths->root());
+        $planStore = new PlanRecordStore($this->paths);
+        $planId = Uuid::v4();
         $gitBefore = $gitInspector->inspect();
         $gitWarnings = [];
         $gitCommit = $intent->gitCommit
@@ -68,19 +71,7 @@ final class GenerateEngine
             : null;
         $initialExtensions = ExtensionRegistry::forPaths($this->paths);
         $requirementResolver = new PackRequirementResolver();
-        $initialRequirements = $requirementResolver->resolve($intent, $initialExtensions->packRegistry());
         $preSnapshot = null;
-        if (!$intent->dryRun) {
-            $initialCompiler = new GraphCompiler($this->paths, $initialExtensions);
-            $initialCompile = $initialCompiler->compile(new CompileOptions(emit: true));
-            $preSnapshot = $this->snapshotService->capture(
-                'pre-generate',
-                $initialCompile->graph,
-                $initialExtensions,
-                GeneratorRegistry::forExtensions($initialExtensions),
-                $this->resolveTarget($intent, $initialCompile->graph, $initialExtensions),
-            );
-        }
 
         $packsInstalled = [];
         $packSnapshots = $intent->dryRun
@@ -93,8 +84,31 @@ final class GenerateEngine
                 $this->diffService->lastDiffPath(),
             ]);
         $fileSnapshots = [];
+        $context = null;
+        $plan = null;
+        $executionPlan = null;
+        $interactiveReview = null;
+        $safetyRouting = null;
+        $actionsTaken = [];
+        $verificationResults = null;
+        $frameworkVersion = null;
+        $graphVersion = null;
+        $sourceHash = null;
 
         try {
+            $initialRequirements = $requirementResolver->resolve($intent, $initialExtensions->packRegistry());
+            if (!$intent->dryRun) {
+                $initialCompiler = new GraphCompiler($this->paths, $initialExtensions);
+                $initialCompile = $initialCompiler->compile(new CompileOptions(emit: true));
+                $preSnapshot = $this->snapshotService->capture(
+                    'pre-generate',
+                    $initialCompile->graph,
+                    $initialExtensions,
+                    GeneratorRegistry::forExtensions($initialExtensions),
+                    $this->resolveTarget($intent, $initialCompile->graph, $initialExtensions),
+                );
+            }
+
             if ($initialRequirements['suggested_packs'] !== []) {
                 if ($intent->dryRun || !$intent->allowPackInstall) {
                     throw new FoundryError(
@@ -117,6 +131,9 @@ final class GenerateEngine
             $compiler = new GraphCompiler($this->paths, $extensions);
             $artifactStore = new BuildArtifactStore($compiler->buildLayout());
             $compile = $compiler->compile(new CompileOptions(emit: true));
+            $frameworkVersion = $compile->graph->frameworkVersion();
+            $graphVersion = $compile->graph->graphVersion();
+            $sourceHash = $compile->graph->sourceHash();
 
             if ($compile->diagnostics->hasErrors() && $intent->mode !== 'repair' && !$intent->allowRisky) {
                 throw new FoundryError(
@@ -166,7 +183,6 @@ final class GenerateEngine
             $safetyRouting = $this->safetyRouter->route($intent, $plan);
             $this->assertGitPlanSafe($gitBefore, $plan, $intent, $gitWarnings);
 
-            $interactiveReview = null;
             $executionPlan = $plan;
             $executionIntent = $intent;
 
@@ -218,7 +234,24 @@ final class GenerateEngine
                     );
 
                     $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
+                    $planRecord = $planStore->persist($this->planRecordPayload(
+                        planId: $planId,
+                        status: 'aborted',
+                        intent: $intent,
+                        context: $context,
+                        originalPlan: $plan,
+                        finalPlan: $interactiveReview->modified ? $interactiveReview->plan : null,
+                        interactiveReview: $interactiveReview,
+                        actionsTaken: [],
+                        verificationResults: ['skipped' => true, 'ok' => true],
+                        safetyRouting: $safetyRouting,
+                        frameworkVersion: $frameworkVersion,
+                        graphVersion: $graphVersion,
+                        sourceHash: $compile->graph->sourceHash(),
+                        error: null,
+                    ));
                     $payload['record'] = $this->historyRecordReference($record);
+                    $payload['plan_record'] = $this->planRecordReference($planRecord);
 
                     return $payload;
                 }
@@ -254,7 +287,24 @@ final class GenerateEngine
                 );
 
                 $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
+                $planRecord = $planStore->persist($this->planRecordPayload(
+                    planId: $planId,
+                    status: 'success',
+                    intent: $intent,
+                    context: $context,
+                    originalPlan: $plan,
+                    finalPlan: $interactiveReview?->modified === true ? $interactiveReview->plan : null,
+                    interactiveReview: $interactiveReview,
+                    actionsTaken: [],
+                    verificationResults: ['skipped' => true, 'ok' => true],
+                    safetyRouting: $safetyRouting,
+                    frameworkVersion: $frameworkVersion,
+                    graphVersion: $graphVersion,
+                    sourceHash: $compile->graph->sourceHash(),
+                    error: null,
+                ));
                 $payload['record'] = $this->historyRecordReference($record);
+                $payload['plan_record'] = $this->planRecordReference($planRecord);
 
                 return $payload;
             }
@@ -280,6 +330,9 @@ final class GenerateEngine
             $postExtensions = ExtensionRegistry::forPaths($this->paths);
             $postCompiler = new GraphCompiler($this->paths, $postExtensions);
             $postCompile = $postCompiler->compile(new CompileOptions(emit: true));
+            $frameworkVersion = $postCompile->graph->frameworkVersion();
+            $graphVersion = $postCompile->graph->graphVersion();
+            $sourceHash = $postCompile->graph->sourceHash();
             $postTarget = $this->postGenerateTarget($executionPlan, $context, $postCompile->graph);
             $postSnapshot = $this->snapshotService->capture(
                 'post-generate',
@@ -354,11 +407,44 @@ final class GenerateEngine
             );
 
             $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $postCompile->graph->sourceHash()));
+            $planRecord = $planStore->persist($this->planRecordPayload(
+                planId: $planId,
+                status: 'success',
+                intent: $intent,
+                context: $context,
+                originalPlan: $plan,
+                finalPlan: $interactiveReview?->modified === true ? $executionPlan : null,
+                interactiveReview: $interactiveReview,
+                actionsTaken: $actionsTaken,
+                verificationResults: $verificationResults,
+                safetyRouting: $safetyRouting,
+                frameworkVersion: $frameworkVersion,
+                graphVersion: $graphVersion,
+                sourceHash: $postCompile->graph->sourceHash(),
+                error: null,
+            ));
             $payload['record'] = $this->historyRecordReference($record);
+            $payload['plan_record'] = $this->planRecordReference($planRecord);
 
             return $payload;
         } catch (\Throwable $error) {
             $this->restoreGenerateState($packSnapshots, $fileSnapshots, $iterationSnapshots);
+            $planStore->persist($this->planRecordPayload(
+                planId: $planId,
+                status: 'failed',
+                intent: $intent,
+                context: $context,
+                originalPlan: $plan,
+                finalPlan: $interactiveReview?->modified === true ? $executionPlan : null,
+                interactiveReview: $interactiveReview,
+                actionsTaken: $actionsTaken,
+                verificationResults: $verificationResults,
+                safetyRouting: $safetyRouting,
+                frameworkVersion: $frameworkVersion,
+                graphVersion: $graphVersion,
+                sourceHash: $sourceHash,
+                error: $this->publicErrorPayload($error),
+            ));
 
             throw $error;
         }
@@ -491,6 +577,112 @@ final class GenerateEngine
             'kind' => $record['kind'] ?? null,
             'label' => $record['label'] ?? null,
             'sequence' => $record['sequence'] ?? null,
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function planRecordReference(array $record): array
+    {
+        return [
+            'plan_id' => $record['plan_id'] ?? null,
+            'timestamp' => $record['timestamp'] ?? null,
+            'status' => $record['status'] ?? null,
+            'storage_path' => $record['storage_path'] ?? null,
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function planRecordPayload(
+        string $planId,
+        string $status,
+        Intent $intent,
+        ?GenerationContextPacket $context,
+        ?GenerationPlan $originalPlan,
+        ?GenerationPlan $finalPlan,
+        ?InteractiveGenerateReviewResult $interactiveReview,
+        array $actionsTaken,
+        ?array $verificationResults,
+        ?array $safetyRouting,
+        ?string $frameworkVersion,
+        ?int $graphVersion,
+        ?string $sourceHash,
+        ?array $error,
+    ): array {
+        $effectivePlan = $finalPlan ?? $originalPlan;
+        $affectedFiles = $effectivePlan?->affectedFiles ?? [];
+        $riskLevel = $this->planRiskLevel($interactiveReview, $safetyRouting);
+
+        return [
+            'plan_id' => $planId,
+            'timestamp' => null,
+            'storage_path' => null,
+            'intent' => $intent->raw,
+            'mode' => $intent->mode,
+            'targets' => $context?->targets ?? [],
+            'generation_context_packet' => $context?->toArray(),
+            'plan_original' => $originalPlan?->toArray(),
+            'plan_final' => $finalPlan?->toArray(),
+            'interactive' => $interactiveReview !== null
+                ? [
+                    'enabled' => true,
+                    'approved' => $interactiveReview->approved,
+                    'rejected' => !$interactiveReview->approved,
+                    'modified' => $interactiveReview->modified,
+                    'allow_risky' => $interactiveReview->allowRisky,
+                    'preview' => $interactiveReview->preview,
+                    'risk' => $interactiveReview->risk,
+                ]
+                : null,
+            'user_decisions' => $interactiveReview?->userDecisions ?? [],
+            'actions_executed' => $actionsTaken,
+            'affected_files' => $affectedFiles,
+            'risk_level' => $riskLevel,
+            'verification_results' => $verificationResults,
+            'status' => $status,
+            'error' => $error,
+            'metadata' => [
+                'framework_version' => $frameworkVersion,
+                'graph_version' => $graphVersion,
+                'source_hash' => $sourceHash,
+                'dry_run' => $intent->dryRun,
+                'interactive_requested' => $intent->interactive,
+                'plan_origin' => $effectivePlan?->origin,
+                'generator_id' => $effectivePlan?->generatorId,
+                'safety_routing' => $safetyRouting,
+            ],
+        ];
+    }
+
+    private function planRiskLevel(?InteractiveGenerateReviewResult $interactiveReview, ?array $safetyRouting): ?string
+    {
+        $interactiveRisk = trim((string) ($interactiveReview?->risk['level'] ?? ''));
+        if ($interactiveRisk !== '') {
+            return $interactiveRisk;
+        }
+
+        $routingRisk = trim((string) ($safetyRouting['signals']['risk_level'] ?? ''));
+
+        return $routingRisk !== '' ? $routingRisk : null;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function publicErrorPayload(\Throwable $error): array
+    {
+        if ($error instanceof FoundryError) {
+            return $error->toArray()['error'];
+        }
+
+        return [
+            'code' => 'CLI_UNHANDLED_EXCEPTION',
+            'category' => 'runtime',
+            'message' => $error->getMessage(),
+            'details' => ['exception' => $error::class],
         ];
     }
 

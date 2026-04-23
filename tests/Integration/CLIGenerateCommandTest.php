@@ -247,6 +247,8 @@ final class CLIGenerateCommandTest extends TestCase
             $generate['payload']['git']['warnings'],
         );
         $this->assertSame('generate', $generate['payload']['record']['kind']);
+        $this->assertMatchesRegularExpression('/^[a-f0-9-]{36}$/', (string) $generate['payload']['plan_record']['plan_id']);
+        $this->assertStringStartsWith('.foundry/plans/', (string) $generate['payload']['plan_record']['storage_path']);
         $this->assertSame(0, $history['status']);
         $this->assertContains(
             $generate['payload']['record']['id'],
@@ -255,6 +257,130 @@ final class CLIGenerateCommandTest extends TestCase
                 $history['payload']['entries'],
             )),
         );
+    }
+
+    public function test_plan_list_and_show_return_persisted_generate_plan_records_deterministically(): void
+    {
+        $app = new Application();
+
+        $first = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+            '--json',
+        ]);
+        $second = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'bookmarks',
+            '--mode=new',
+            '--dry-run',
+            '--json',
+        ]);
+
+        $listA = $this->runCommand($app, ['foundry', 'plan:list', '--json']);
+        $listB = $this->runCommand($app, ['foundry', 'plan:list', '--json']);
+        $show = $this->runCommand($app, ['foundry', 'plan:show', $first['payload']['plan_record']['plan_id'], '--json']);
+
+        $this->assertSame(0, $listA['status']);
+        $this->assertSame($listA['payload'], $listB['payload']);
+        $this->assertContains(
+            $first['payload']['plan_record']['plan_id'],
+            array_values(array_map(
+                static fn(array $row): string => (string) ($row['plan_id'] ?? ''),
+                $listA['payload']['plans'],
+            )),
+        );
+        $this->assertContains(
+            $second['payload']['plan_record']['plan_id'],
+            array_values(array_map(
+                static fn(array $row): string => (string) ($row['plan_id'] ?? ''),
+                $listA['payload']['plans'],
+            )),
+        );
+        $this->assertSame(0, $show['status']);
+        $this->assertSame($first['payload']['plan_record']['plan_id'], $show['payload']['plan_id']);
+        $this->assertSame('success', $show['payload']['status']);
+        $this->assertSame('Create comments', $show['payload']['intent']);
+        $this->assertSame('new', $show['payload']['mode']);
+        $this->assertSame([], $show['payload']['actions_executed']);
+        $this->assertSame($first['payload']['plan']['actions'], $show['payload']['plan_original']['actions']);
+    }
+
+    public function test_generate_interactive_reject_persists_aborted_plan_record(): void
+    {
+        $app = $this->interactiveApplication(
+            static fn(InteractiveGenerateReviewRequest $request): InteractiveGenerateReviewResult => new InteractiveGenerateReviewResult(
+                approved: false,
+                plan: $request->plan,
+                userDecisions: [['type' => 'reject']],
+                preview: ['summary' => [], 'actions' => [], 'diffs' => []],
+                risk: ['level' => 'LOW', 'reasons' => ['Plan is additive only.'], 'risky_action_indexes' => [], 'risky_paths' => []],
+            ),
+        );
+
+        $result = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--interactive',
+            '--json',
+        ]);
+        $show = $this->runCommand($app, ['foundry', 'plan:show', $result['payload']['plan_record']['plan_id'], '--json']);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame(0, $show['status']);
+        $this->assertSame('aborted', $show['payload']['status']);
+        $this->assertTrue($show['payload']['interactive']['enabled']);
+        $this->assertTrue($show['payload']['interactive']['rejected']);
+        $this->assertSame([['type' => 'reject']], $show['payload']['user_decisions']);
+        $this->assertNotNull($show['payload']['plan_original']);
+        $this->assertNull($show['payload']['plan_final']);
+    }
+
+    public function test_generate_failure_persists_failed_plan_record(): void
+    {
+        $app = new Application();
+
+        $failed = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'blog',
+            'post',
+            'notes',
+            '--mode=new',
+            '--packs=foundry/blog',
+            '--json',
+        ]);
+        $plans = $this->runCommand($app, ['foundry', 'plan:list', '--json']);
+        $failedPlanId = null;
+
+        foreach ($plans['payload']['plans'] as $plan) {
+            if (($plan['status'] ?? null) !== 'failed' || ($plan['intent'] ?? null) !== 'Create blog post notes') {
+                continue;
+            }
+
+            $failedPlanId = (string) $plan['plan_id'];
+            break;
+        }
+
+        $this->assertSame(1, $failed['status']);
+        $this->assertIsString($failedPlanId);
+
+        $show = $this->runCommand($app, ['foundry', 'plan:show', $failedPlanId, '--json']);
+
+        $this->assertSame(0, $show['status']);
+        $this->assertSame('failed', $show['payload']['status']);
+        $this->assertSame('GENERATE_PACK_INSTALL_REQUIRED', $show['payload']['error']['code']);
+        $this->assertNull($show['payload']['generation_context_packet']);
+        $this->assertNull($show['payload']['plan_original']);
     }
 
     public function test_generate_git_preflight_ignores_internal_foundry_artifacts_between_runs(): void
@@ -559,7 +685,17 @@ final class CLIGenerateCommandTest extends TestCase
         $registry = new HostedPackRegistry($paths, $fetcher, $registryUrl);
         $manager = new PackManager($paths, $registry);
 
-        return new Application([new GenerateCommand($manager)]);
+        $commands = [new GenerateCommand($manager)];
+
+        foreach (Application::registeredCommands() as $command) {
+            if ($command instanceof GenerateCommand) {
+                continue;
+            }
+
+            $commands[] = $command;
+        }
+
+        return new Application($commands);
     }
 
     /**
@@ -567,21 +703,29 @@ final class CLIGenerateCommandTest extends TestCase
      */
     private function interactiveApplication(callable $callback): Application
     {
-        return new Application([
-            new GenerateCommand(
-                interactiveReviewerFactory: static function (CommandContext $context) use ($callback): InteractiveGenerateReviewer {
-                    return new class ($callback) implements InteractiveGenerateReviewer {
-                        public function __construct(private readonly mixed $callback) {}
+        $commands = [new GenerateCommand(
+            interactiveReviewerFactory: static function (CommandContext $context) use ($callback): InteractiveGenerateReviewer {
+                return new class ($callback) implements InteractiveGenerateReviewer {
+                    public function __construct(private readonly mixed $callback) {}
 
-                        #[\Override]
-                        public function review(InteractiveGenerateReviewRequest $request): InteractiveGenerateReviewResult
-                        {
-                            return ($this->callback)($request);
-                        }
-                    };
-                },
-            ),
-        ]);
+                    #[\Override]
+                    public function review(InteractiveGenerateReviewRequest $request): InteractiveGenerateReviewResult
+                    {
+                        return ($this->callback)($request);
+                    }
+                };
+            },
+        )];
+
+        foreach (Application::registeredCommands() as $command) {
+            if ($command instanceof GenerateCommand) {
+                continue;
+            }
+
+            $commands[] = $command;
+        }
+
+        return new Application($commands);
     }
 
     private function fixtureArchive(string $fixtureName): string

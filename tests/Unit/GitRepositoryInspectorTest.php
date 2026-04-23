@@ -42,10 +42,17 @@ final class GitRepositoryInspectorTest extends TestCase
         file_put_contents($this->project->root . '/notes.txt', "notes\n");
         mkdir($this->project->root . '/.foundry/snapshots', 0777, true);
         file_put_contents($this->project->root . '/.foundry/snapshots/pre-generate.json', "{}\n");
+        mkdir($this->project->root . '/.foundry/plans', 0777, true);
+        file_put_contents($this->project->root . '/.foundry/plans/20260423T010203Z_test-plan.json', "{}\n");
 
         $inspector = new GitRepositoryInspector($this->project->root);
         $state = $inspector->inspect();
-        $files = $inspector->describePaths(['composer.json', 'notes.txt', '.foundry/snapshots/pre-generate.json'], $state);
+        $files = $inspector->describePaths([
+            'composer.json',
+            'notes.txt',
+            '.foundry/snapshots/pre-generate.json',
+            '.foundry/plans/20260423T010203Z_test-plan.json',
+        ], $state);
 
         $this->assertTrue($state['available']);
         $this->assertSame('main', $state['branch']);
@@ -54,19 +61,23 @@ final class GitRepositoryInspectorTest extends TestCase
         $this->assertContains('composer.json', $state['changed_files']);
         $this->assertContains('notes.txt', $state['changed_files']);
         $this->assertContains('.foundry/snapshots/pre-generate.json', $state['ignored_internal_files']);
+        $this->assertContains('.foundry/plans/20260423T010203Z_test-plan.json', $state['ignored_internal_files']);
         $this->assertContains('composer.json', $state['safety_relevant']['changed_files']);
         $this->assertContains('notes.txt', $state['safety_relevant']['changed_files']);
         $this->assertNotContains('.foundry/snapshots/pre-generate.json', $state['safety_relevant']['changed_files']);
+        $this->assertNotContains('.foundry/plans/20260423T010203Z_test-plan.json', $state['safety_relevant']['changed_files']);
 
         $composer = $this->fileRow($files, 'composer.json');
         $notes = $this->fileRow($files, 'notes.txt');
         $snapshot = $this->fileRow($files, '.foundry/snapshots/pre-generate.json');
+        $plan = $this->fileRow($files, '.foundry/plans/20260423T010203Z_test-plan.json');
 
         $this->assertSame('unstaged', $composer['status']);
         $this->assertNotEmpty($composer['last_commit']);
         $this->assertSame('untracked', $notes['status']);
         $this->assertNull($notes['last_commit']);
         $this->assertSame('untracked', $snapshot['status']);
+        $this->assertSame('untracked', $plan['status']);
     }
 
     public function test_commit_only_records_requested_files(): void

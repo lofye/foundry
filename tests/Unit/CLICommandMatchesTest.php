@@ -43,6 +43,8 @@ use Foundry\CLI\Commands\LicenseCommand;
 use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\ObserveCommand;
 use Foundry\CLI\Commands\PackCommand;
+use Foundry\CLI\Commands\PlanListCommand;
+use Foundry\CLI\Commands\PlanShowCommand;
 use Foundry\CLI\Commands\PlanFeatureCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
 use Foundry\CLI\Commands\PromptCommand;
@@ -132,6 +134,8 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new ImplementFeatureCommand())->matches(['implement', 'feature', 'event-bus']));
         $this->assertTrue((new ImplementSpecCommand())->matches(['implement', 'spec', 'event-bus/001-initial']));
         $this->assertTrue((new PlanFeatureCommand())->matches(['plan', 'feature', 'event-bus']));
+        $this->assertTrue((new PlanListCommand())->matches(['plan:list']));
+        $this->assertTrue((new PlanShowCommand())->matches(['plan:show', '123e4567-e89b-12d3-a456-426614174000']));
         $this->assertTrue((new SpecNewCommand())->matches(['spec:new', 'execution-spec-system', 'add-cli-command']));
         $this->assertTrue((new SpecLogEntryCommand())->matches(['spec:log-entry', 'execution-spec-system', '004']));
         $this->assertTrue((new SpecValidateCommand())->matches(['spec:validate']));

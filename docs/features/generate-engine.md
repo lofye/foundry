@@ -14,6 +14,12 @@
 - Interactive generate now surfaces risk classification in the plan summary, requires additional confirmation for risky work, requires stronger confirmations for deletions, schema changes, and contract-affecting work, and records user decisions in the result payload.
 - Interactive generate now reuses the existing plan, validator, and verification pipeline, and filtered reviewed plans now execute only the approved file actions.
 - Human and JSON generate output now capture the original plan, modified plan when applicable, user decisions, executed actions, and verification results for interactive runs.
+- Every terminal generate run now persists a canonical plan record under `.foundry/plans/` with a UUID plan id, timestamp, original/final plan data, context packet, execution outcome, verification data, and explicit storage version metadata.
+- `foundry plan:list` now returns a deterministic repository-local listing of persisted generate plan summaries.
+- `foundry plan:show <plan_id>` now resolves one canonical persisted plan record by plan id.
+- The dedicated `.foundry/plans/` persisted plan surface now coexists with the broader shared `history` surface instead of replacing it.
+- Generate failures and interactive rejections now persist failed or aborted plan artifacts in addition to successful runs, while the older `history --kind=generate` surface remains available for broader build/observability-style history.
+- Persisted plan artifacts now use UUID plan ids, filesystem-safe timestamped storage paths, and truthful terminal status values across success, failure, and abort outcomes.
 - The repository now has an explicit non-destructive interactive generate smoke integration path that invokes `foundry generate ... --mode=new --interactive`, reaches review logic, records rejection, and avoids filesystem mutation.
 - Interactive generate coverage includes an explicit valid smoke invocation that reaches review behavior without failing early in argument validation.
 - Adding interactive review did not regress the default non-interactive workflow.
@@ -23,9 +29,11 @@
 - How far should interactive preview support go for future custom generate execution strategies beyond the current file-action-oriented flows?
 - Should interactive review gain richer inspection affordances than the current action, graph, and explain commands?
 - Should future CLI work add an explicit `--no-interactive` override once a concrete non-interactive forcing use case appears?
+- Should future replay and undo commands consume persisted plan records directly or add a second derived index optimized for those workflows?
 
 ## Next Steps
 
 - Decide whether a future `--no-interactive` CLI override should surface the non-interactive recommendation explicitly once the need is proven.
 - Expand interactive preview support for future custom execution strategies that cannot yet provide full file diffs through the current preview builder.
 - Refine the interactive inspection surface if richer graph or explain navigation becomes necessary.
+- Decide how replay and undo commands should layer on top of the new `.foundry/plans/` record contract without introducing divergent history state.

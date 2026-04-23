@@ -199,3 +199,45 @@ Timestamp: 2026-04-22T10:20:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: persist terminal generate runs as repository-local plan artifacts while retaining the broader history surface
+
+Timestamp: 2026-04-23T00:40:00-04:00
+
+**Context**
+
+- The `003-plan-persistence-and-history` execution spec required every terminal generate run to become a first-class persisted artifact with enough canonical data for later inspection, replay, and undo work.
+- The repository already had `history` support backed by `app/.foundry/build/history`, but that surface was shared across build, quality, observability, and generate records and stored a narrower summary-oriented generate payload.
+- The new contract needed stable plan ids, append-only repository-local storage, and dedicated inspection commands without regressing the existing generate workflow or broader history features.
+
+**Decision**
+
+- Add a dedicated persisted plan store under `.foundry/plans/` for terminal generate runs.
+- Keep plan records append-only and machine-readable with explicit storage versioning, UUID plan ids, filesystem-safe timestamps, canonical context and plan data, and terminal status semantics (`success`, `failed`, `aborted`).
+- Add `plan:list` and `plan:show <plan_id>` as the dedicated inspection surface for persisted generate plan history.
+- Retain the older `history --kind=generate` surface for compatibility and broader build/observability-style history, rather than replacing it in this step.
+
+**Reasoning**
+
+- A dedicated plan store keeps the replay/undo foundation explicit instead of overloading the broader shared history surface with plan-specific semantics.
+- Persisting canonical plan data at terminal states makes rejected interactive sessions and failed generate attempts inspectable without pretending they succeeded.
+- Keeping the existing `history` surface avoids unnecessary churn in unrelated observability and compatibility workflows while the new plan contract stabilizes.
+
+**Alternatives Considered**
+
+- Extend `app/.foundry/build/history` in place and skip a dedicated `.foundry/plans/` contract.
+- Persist only successful generate runs and treat failures or interactive rejections as logs-only events.
+- Add replay or undo execution in the same step instead of separating persistence from later action-taking commands.
+
+**Impact**
+
+- Generate-engine now has a repository-local, append-only plan history contract suitable for later replay, undo, and audit work.
+- Developers and agents can inspect terminal generate runs deterministically by plan id through `plan:list` and `plan:show`.
+- Existing history-oriented workflows remain intact while generate gains a more purpose-built persisted artifact surface.
+
+**Spec Reference**
+
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

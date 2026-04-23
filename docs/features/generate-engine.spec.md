@@ -10,6 +10,7 @@
 - Plan generation work from the current explain-derived system state.
 - Preserve the existing non-interactive generate workflow for fast deterministic changes.
 - Add an interactive review-and-approval layer for riskier generate flows without duplicating core planning or verification logic.
+- Persist terminal generate runs as first-class repository-local plan artifacts that later inspection, replay, and undo work can consume.
 - Keep machine-readable and human-readable outputs aligned so agents and developers can inspect the same plan.
 
 ## Non-Goals
@@ -23,6 +24,7 @@
 - Generate behavior must remain deterministic for the same input and project state.
 - Interactive review must not mutate files before explicit approval.
 - Interactive review must reuse the existing plan, validation, and verification primitives instead of reimplementing them.
+- Persisted generate plan history must be repository-local, append-only, machine-readable, and complete enough for later inspection and reuse.
 - Risky mutations must surface explicit warnings and stronger confirmation requirements.
 - JSON output must remain trustworthy for automation consumers.
 
@@ -35,6 +37,12 @@
 - Interactive generate mode supports approve, reject, and minimal plan modification flows by excluding actions or files, then revalidates the modified plan before execution.
 - Interactive generate mode classifies risk and requires stronger confirmations for deletions, schema changes, and contract-affecting work.
 - Interactive generate output includes the original plan, modified plan when applicable, recorded user decisions, executed actions, and verification results in both human and JSON-friendly forms.
+- Every terminal generate run persists a canonical plan record under `.foundry/plans/` with plan identity, intent, targets, generation context, original/final plan data, execution outcome, verification data, and explicit storage version metadata.
+- Persisted generate plan records use UUID plan ids and filesystem-safe timestamped filenames.
+- Successful runs, failed runs, and interactive rejections all persist terminal plan artifacts with truthful status semantics instead of leaving failures to logs only.
+- `plan:list` provides a deterministic list of persisted generate plan summaries and `plan:show <plan_id>` resolves one canonical persisted record by plan id.
+- The dedicated persisted plan surface coexists with the broader shared `history` surface instead of replacing it in this step.
+- The older `history --kind=generate` surface remains available for compatibility and broader build and observability style history while persisted plans stabilize as a dedicated contract.
 - Repository-owned integration coverage includes a valid non-destructive interactive smoke path that uses the required `--mode`, reaches review logic, and can reject without filesystem mutation.
 
 ## Acceptance Criteria
@@ -47,6 +55,10 @@
 - Interactive generate surfaces risk classification in the plan summary and enforces additional confirmation for risky work.
 - Interactive generate reuses the existing plan, validator, and verification pipeline instead of duplicating core logic.
 - Interactive generate emits stable human and JSON output that records plan state, decisions, execution, and verification.
+- Terminal generate runs persist append-only plan artifacts under `.foundry/plans/` with an explicit storage version and canonical plan/execution metadata.
+- Persisted generate plan artifacts use UUID plan ids, filesystem-safe timestamped paths, and truthful terminal status values for success, failure, and abort outcomes.
+- `plan:list` and `plan:show <plan_id>` expose deterministic inspection of persisted generate plan history.
+- The older `history --kind=generate` inspection surface remains available alongside persisted plan records for broader compatibility-oriented history workflows.
 - Interactive generate coverage includes an explicit valid smoke invocation that reaches review behavior without failing early in argument validation.
 - Adding interactive review does not regress the default non-interactive workflow.
 

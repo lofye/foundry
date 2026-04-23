@@ -68,6 +68,8 @@ final class ApiSurfaceRegistryTest extends TestCase
         $implementFeature = $registry->classifyCliCommand(['implement', 'feature', 'event-bus']);
         $implementSpec = $registry->classifyCliCommand(['implement', 'spec', 'event-bus/001-initial']);
         $planFeature = $registry->classifyCliCommand(['plan', 'feature', 'event-bus']);
+        $planList = $registry->classifyCliCommand(['plan:list']);
+        $planShow = $registry->classifyCliCommand(['plan:show', '123e4567-e89b-12d3-a456-426614174000']);
         $specNew = $registry->classifyCliCommand(['spec:new', 'execution-spec-system', 'add-cli-command']);
         $specLogEntry = $registry->classifyCliCommand(['spec:log-entry', 'execution-spec-system', '004']);
         $specValidate = $registry->classifyCliCommand(['spec:validate']);
@@ -105,6 +107,8 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($implementFeature);
         $this->assertNotNull($implementSpec);
         $this->assertNotNull($planFeature);
+        $this->assertNotNull($planList);
+        $this->assertNotNull($planShow);
         $this->assertNotNull($specNew);
         $this->assertNotNull($specLogEntry);
         $this->assertNotNull($specValidate);
@@ -202,6 +206,12 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $planFeature['stability']);
         $this->assertSame('App Scaffolding', $planFeature['category']);
         $this->assertSame('plan', $planFeature['command_type']);
+        $this->assertSame('experimental', $planList['stability']);
+        $this->assertSame('App Scaffolding', $planList['category']);
+        $this->assertSame('plan:list', $planList['command_type']);
+        $this->assertSame('experimental', $planShow['stability']);
+        $this->assertSame('App Scaffolding', $planShow['category']);
+        $this->assertSame('plan:show', $planShow['command_type']);
         $this->assertSame('stable', $specNew['stability']);
         $this->assertSame('App Scaffolding', $specNew['category']);
         $this->assertSame('spec:new', $specNew['command_type']);
@@ -264,6 +274,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $cacheMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/manifests/compile_cache.json');
         $qualityMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/quality/summary.json');
         $historyMetadata = $registry->classifyGeneratedMetadata('app/.foundry/build/history/build-abc.json');
+        $planMetadata = $registry->classifyGeneratedMetadata('.foundry/plans/20260423T010203Z_123e4567-e89b-12d3-a456-426614174000.json');
 
         $this->assertNotNull($manifest);
         $this->assertNotNull($platformConfig);
@@ -273,6 +284,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($cacheMetadata);
         $this->assertNotNull($qualityMetadata);
         $this->assertNotNull($historyMetadata);
+        $this->assertNotNull($planMetadata);
         $this->assertSame('public_api', $manifest['classification']);
         $this->assertSame('experimental_api', $platformConfig['classification']);
         $this->assertSame('extension_api', $packRegistry['classification']);
@@ -281,5 +293,6 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('internal_api', $cacheMetadata['classification']);
         $this->assertSame('internal_api', $qualityMetadata['classification']);
         $this->assertSame('internal_api', $historyMetadata['classification']);
+        $this->assertSame('internal_api', $planMetadata['classification']);
     }
 }

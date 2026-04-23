@@ -265,6 +265,7 @@ final class GitRepositoryInspector
         foreach ([
             '.foundry/cache/',
             '.foundry/diffs/',
+            '.foundry/plans/',
             '.foundry/snapshots/',
             'app/.foundry/',
             'app/generated/',
