@@ -79,7 +79,7 @@ Execution rules:
 
 - When a bug is encountered, create a test that fails because of that bug, then modify the non-test code so that the test passes while maintaining the intent of the original code
 - Never take a shortcut such as forcing a false-positive test pass
-- Keep test coverage of lines at or above 90%
+- Test coverage of lines must be kept at or above 90%
 - Implementations are not complete unless the full quality gate passes
 
 ## Recommended Command Loop
@@ -190,7 +190,7 @@ Read-before-acting rule:
 Primary execution gate:
 
 - `foundry verify context --feature=<feature> --json` is the primary machine-readable proceed/fail gate
-- Meaningful work may proceed only when `verify context` passes.
+- Meaningful work may proceed only when `verify context` passes
 - `can_proceed=true` means meaningful work may proceed
 - `can_proceed=false` means meaningful work is blocked and repair must happen first
 - `requires_repair=true` means repair is the only valid next step before implementation
