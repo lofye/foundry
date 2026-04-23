@@ -249,6 +249,7 @@ final class GenerateEngine
                         graphVersion: $graphVersion,
                         sourceHash: $compile->graph->sourceHash(),
                         error: null,
+                        undo: null,
                     ));
                     $payload['record'] = $this->historyRecordReference($record);
                     $payload['plan_record'] = $this->planRecordReference($planRecord);
@@ -302,6 +303,7 @@ final class GenerateEngine
                     graphVersion: $graphVersion,
                     sourceHash: $compile->graph->sourceHash(),
                     error: null,
+                    undo: null,
                 ));
                 $payload['record'] = $this->historyRecordReference($record);
                 $payload['plan_record'] = $this->planRecordReference($planRecord);
@@ -422,6 +424,7 @@ final class GenerateEngine
                 graphVersion: $graphVersion,
                 sourceHash: $postCompile->graph->sourceHash(),
                 error: null,
+                undo: $this->persistedUndoPayload($fileSnapshots),
             ));
             $payload['record'] = $this->historyRecordReference($record);
             $payload['plan_record'] = $this->planRecordReference($planRecord);
@@ -444,6 +447,7 @@ final class GenerateEngine
                 graphVersion: $graphVersion,
                 sourceHash: $sourceHash,
                 error: $this->publicErrorPayload($error),
+                undo: null,
             ));
 
             throw $error;
@@ -465,7 +469,11 @@ final class GenerateEngine
             );
         }
 
-        [$selectedPlan, $selectedPlanName] = $this->selectReplayPlan($record);
+        [$selectedPlan, $selectedPlanName] = $this->selectPersistedPlan(
+            $record,
+            'PLAN_REPLAY_PLAN_UNAVAILABLE',
+            'Persisted plan record does not contain a replayable plan.',
+        );
         $plan = GenerationPlan::fromArray($selectedPlan);
         $intent = $this->replayIntent($record, $plan, $dryRun);
         $validator = new PlanValidator();
@@ -565,6 +573,70 @@ final class GenerateEngine
             ),
             'safety_routing' => $safetyRouting,
         ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public function undo(string $planId, bool $dryRun = false, bool $confirmDestructive = false): array
+    {
+        $record = (new PlanRecordStore($this->paths))->load($planId);
+        if (!is_array($record)) {
+            throw new FoundryError(
+                'PLAN_RECORD_NOT_FOUND',
+                'not_found',
+                ['plan_id' => $planId],
+                'Persisted plan record not found.',
+            );
+        }
+
+        if (($record['status'] ?? null) !== 'success' || (($record['metadata']['dry_run'] ?? false) === true)) {
+            return $this->undoUnavailablePayload(
+                $record,
+                'nothing_to_undo',
+                'Persisted plan record does not contain applied generate changes to undo.',
+            );
+        }
+
+        [$selectedPlan, $selectedPlanName] = $this->selectPersistedPlan(
+            $record,
+            'PLAN_UNDO_PLAN_UNAVAILABLE',
+            'Persisted plan record does not contain an undoable plan.',
+        );
+        $plan = GenerationPlan::fromArray($selectedPlan);
+        $intent = $this->replayIntent($record, $plan, false);
+        $analysis = $this->analyzeUndo($record, $plan, $intent, $selectedPlanName);
+        $operations = $analysis['operations'];
+        unset($analysis['operations']);
+
+        if ($dryRun) {
+            $analysis['status'] = 'dry_run';
+            $analysis['dry_run'] = true;
+            $analysis['reversed_actions'] = [];
+
+            return $analysis;
+        }
+
+        if (($analysis['requires_confirmation'] ?? false) === true && !$confirmDestructive) {
+            $analysis['status'] = 'confirmation_required';
+            $analysis['dry_run'] = false;
+            $analysis['reversed_actions'] = [];
+            $analysis['warnings'][] = 'Destructive undo requires explicit confirmation. Re-run with --yes to delete generated files.';
+            $analysis['warnings'] = array_values(array_unique(array_map('strval', $analysis['warnings'])));
+
+            return $analysis;
+        }
+
+        $reversedActions = $this->applyUndoOperations($operations);
+        $analysis['dry_run'] = false;
+        $analysis['reversed_actions'] = $reversedActions;
+        $analysis['status'] = $this->undoStatus(
+            $reversedActions,
+            $analysis['irreversible_actions'],
+            $analysis['skipped_actions'],
+        );
+
+        return $analysis;
     }
 
     /**
@@ -728,6 +800,7 @@ final class GenerateEngine
         ?int $graphVersion,
         ?string $sourceHash,
         ?array $error,
+        ?array $undo,
     ): array {
         $effectivePlan = $finalPlan ?? $originalPlan;
         $affectedFiles = $effectivePlan?->affectedFiles ?? [];
@@ -761,6 +834,7 @@ final class GenerateEngine
             'verification_results' => $verificationResults,
             'status' => $status,
             'error' => $error,
+            'undo' => $undo,
             'metadata' => [
                 'framework_version' => $frameworkVersion,
                 'graph_version' => $graphVersion,
@@ -785,6 +859,398 @@ final class GenerateEngine
         $routingRisk = trim((string) ($safetyRouting['signals']['risk_level'] ?? ''));
 
         return $routingRisk !== '' ? $routingRisk : null;
+    }
+
+    /**
+     * @param array<string,array{exists:bool,content:?string}> $snapshots
+     * @return array<string,mixed>|null
+     */
+    private function persistedUndoPayload(array $snapshots): ?array
+    {
+        if ($snapshots === []) {
+            return null;
+        }
+
+        $fileSnapshots = [];
+        foreach ($snapshots as $path => $snapshot) {
+            $fileSnapshots[] = [
+                'path' => $this->relativePath((string) $path),
+                'exists' => ($snapshot['exists'] ?? false) === true,
+                'content' => array_key_exists('content', $snapshot) ? $snapshot['content'] : null,
+            ];
+        }
+
+        usort(
+            $fileSnapshots,
+            static fn(array $left, array $right): int => strcmp((string) ($left['path'] ?? ''), (string) ($right['path'] ?? '')),
+        );
+
+        return ['file_snapshots' => $fileSnapshots];
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     * @return array<string,mixed>
+     */
+    private function undoUnavailablePayload(array $record, string $status, string $warning): array
+    {
+        return [
+            'plan_id' => (string) ($record['plan_id'] ?? ''),
+            'status' => $status,
+            'dry_run' => false,
+            'fully_reversible' => false,
+            'requires_confirmation' => false,
+            'reversible_actions' => [],
+            'reversed_actions' => [],
+            'irreversible_actions' => [],
+            'skipped_actions' => [],
+            'warnings' => [$warning],
+            'source_record' => [
+                'status' => $record['status'] ?? null,
+                'timestamp' => $record['timestamp'] ?? null,
+                'storage_path' => $record['storage_path'] ?? null,
+                'selected_plan' => null,
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     * @return array<string,mixed>
+     */
+    private function analyzeUndo(array $record, GenerationPlan $plan, Intent $intent, string $selectedPlanName): array
+    {
+        $afterContents = (new GeneratePlanPreviewBuilder($this->paths))->afterContents($plan, $intent);
+        $snapshots = $this->undoSnapshotMap($record);
+        $executedByAction = [];
+
+        foreach ((array) ($record['actions_executed'] ?? []) as $action) {
+            if (!is_array($action)) {
+                continue;
+            }
+
+            $path = trim((string) ($action['path'] ?? ''));
+            $type = trim((string) ($action['type'] ?? ''));
+            if ($path === '' || $type === '') {
+                continue;
+            }
+
+            $executedByAction[$type . ':' . $path] = $action;
+        }
+
+        $reversibleActions = [];
+        $irreversibleActions = [];
+        $skippedActions = [];
+        $operations = [];
+        $requiresConfirmation = false;
+
+        foreach ($plan->actions as $index => $action) {
+            if (!is_array($action)) {
+                continue;
+            }
+
+            $type = trim((string) ($action['type'] ?? ''));
+            $path = trim((string) ($action['path'] ?? ''));
+            if ($type === '' || $path === '') {
+                continue;
+            }
+
+            $executed = is_array($executedByAction[$type . ':' . $path] ?? null) ? $executedByAction[$type . ':' . $path] : null;
+            $recordedStatus = trim((string) ($executed['status'] ?? ''));
+            if ($recordedStatus === '' || $recordedStatus === 'unchanged' || $recordedStatus === 'planned') {
+                continue;
+            }
+
+            $snapshot = is_array($snapshots[$path] ?? null) ? $snapshots[$path] : null;
+            $absolutePath = $this->absolutePath($path);
+            $exists = is_file($absolutePath);
+            $current = $exists ? (string) (file_get_contents($absolutePath) ?: '') : null;
+            $expected = array_key_exists($path, $afterContents) ? $afterContents[$path] : null;
+
+            if (in_array($type, ['create_file', 'add_test'], true)) {
+                if ($snapshot === null) {
+                    $irreversibleActions[] = $this->undoIssue($index, $type, $path, 'missing_prechange_snapshot', 'Pre-change file snapshot is missing, so create-file undo cannot prove the path was newly created.');
+                    continue;
+                }
+
+                if (($snapshot['exists'] ?? false) === true) {
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'preexisting_path', 'Undo skipped because the path existed before generate and deleting it would be unsafe.');
+                    continue;
+                }
+
+                if (!$exists) {
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'already_reversed', 'Undo skipped because the generated file is already absent.');
+                    continue;
+                }
+
+                if (!is_string($expected) || $current !== $expected) {
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'current_state_differs', 'Undo skipped because the current file contents differ from the stored generated contents.');
+                    continue;
+                }
+
+                $publicAction = [
+                    'action_index' => $index,
+                    'type' => $type,
+                    'path' => $path,
+                    'strategy' => 'delete_created_file',
+                    'recorded_status' => $recordedStatus,
+                ];
+                $reversibleActions[] = $publicAction;
+                $operations[] = $publicAction + [
+                    'absolute_path' => $absolutePath,
+                    'destructive' => true,
+                    'snapshot' => $snapshot,
+                ];
+                $requiresConfirmation = true;
+
+                continue;
+            }
+
+            if (in_array($type, ['update_file', 'update_docs'], true)) {
+                if ($snapshot === null || ($snapshot['exists'] ?? false) !== true) {
+                    $irreversibleActions[] = $this->undoIssue($index, $type, $path, 'missing_prior_contents', 'Undo cannot restore this updated file because prior contents were not persisted.');
+                    continue;
+                }
+
+                if (!$exists) {
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'missing_current_file', 'Undo skipped because the updated file is now missing.');
+                    continue;
+                }
+
+                if ($current === (string) ($snapshot['content'] ?? '')) {
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'already_reversed', 'Undo skipped because the file already matches the persisted pre-change contents.');
+                    continue;
+                }
+
+                if (!is_string($expected) || $current !== $expected) {
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'current_state_differs', 'Undo skipped because the current file contents differ from the stored generated contents.');
+                    continue;
+                }
+
+                $publicAction = [
+                    'action_index' => $index,
+                    'type' => $type,
+                    'path' => $path,
+                    'strategy' => 'restore_previous_contents',
+                    'recorded_status' => $recordedStatus,
+                ];
+                $reversibleActions[] = $publicAction;
+                $operations[] = $publicAction + [
+                    'absolute_path' => $absolutePath,
+                    'destructive' => false,
+                    'snapshot' => $snapshot,
+                ];
+
+                continue;
+            }
+
+            if ($type === 'delete_file') {
+                if ($snapshot === null || ($snapshot['exists'] ?? false) !== true) {
+                    $irreversibleActions[] = $this->undoIssue($index, $type, $path, 'missing_prior_contents', 'Undo cannot restore this deleted file because prior contents were not persisted.');
+                    continue;
+                }
+
+                if ($exists && $current !== (string) ($snapshot['content'] ?? '')) {
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'current_state_differs', 'Undo skipped because a different file now exists at the deleted path.');
+                    continue;
+                }
+
+                if ($exists) {
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'already_reversed', 'Undo skipped because the deleted file already matches the persisted pre-change contents.');
+                    continue;
+                }
+
+                $publicAction = [
+                    'action_index' => $index,
+                    'type' => $type,
+                    'path' => $path,
+                    'strategy' => 'restore_deleted_file',
+                    'recorded_status' => $recordedStatus,
+                ];
+                $reversibleActions[] = $publicAction;
+                $operations[] = $publicAction + [
+                    'absolute_path' => $absolutePath,
+                    'destructive' => false,
+                    'snapshot' => $snapshot,
+                ];
+
+                continue;
+            }
+
+            $irreversibleActions[] = $this->undoIssue($index, $type, $path, 'unsupported_action_type', 'Undo does not support this action type in V1.');
+        }
+
+        $warnings = [];
+        if ($reversibleActions === [] && $irreversibleActions === [] && $skippedActions === []) {
+            $warnings[] = 'No applied file changes were recorded for this plan.';
+        }
+        if ($irreversibleActions !== []) {
+            $warnings[] = 'Some recorded actions are not reversible in V1.';
+        }
+        if ($skippedActions !== []) {
+            $warnings[] = 'Some reversible actions were skipped because the current filesystem state is unsafe or already reverted.';
+        }
+        if ($requiresConfirmation) {
+            $warnings[] = 'Deleting generated files is considered destructive and requires explicit confirmation.';
+        }
+
+        return [
+            'plan_id' => (string) ($record['plan_id'] ?? ''),
+            'status' => 'planned',
+            'dry_run' => false,
+            'fully_reversible' => $irreversibleActions === [] && $skippedActions === [],
+            'requires_confirmation' => $requiresConfirmation,
+            'reversible_actions' => $reversibleActions,
+            'reversed_actions' => [],
+            'irreversible_actions' => $irreversibleActions,
+            'skipped_actions' => $skippedActions,
+            'warnings' => $warnings,
+            'source_record' => [
+                'status' => $record['status'] ?? null,
+                'timestamp' => $record['timestamp'] ?? null,
+                'storage_path' => $record['storage_path'] ?? null,
+                'selected_plan' => $selectedPlanName,
+            ],
+            'operations' => $operations,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     * @return array<string,array{exists:bool,content:?string}>
+     */
+    private function undoSnapshotMap(array $record): array
+    {
+        $snapshots = [];
+
+        foreach ((array) ($record['undo']['file_snapshots'] ?? []) as $snapshot) {
+            if (!is_array($snapshot)) {
+                continue;
+            }
+
+            $path = trim((string) ($snapshot['path'] ?? ''));
+            if ($path === '') {
+                continue;
+            }
+
+            $snapshots[$path] = [
+                'exists' => ($snapshot['exists'] ?? false) === true,
+                'content' => array_key_exists('content', $snapshot) ? $snapshot['content'] : null,
+            ];
+        }
+
+        ksort($snapshots);
+
+        return $snapshots;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function undoIssue(int $index, string $type, string $path, string $reason, string $message): array
+    {
+        return [
+            'action_index' => $index,
+            'type' => $type,
+            'path' => $path,
+            'reason' => $reason,
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * @param list<array<string,mixed>> $operations
+     * @return list<array<string,mixed>>
+     */
+    private function applyUndoOperations(array $operations): array
+    {
+        if ($operations === []) {
+            return [];
+        }
+
+        $reversed = [];
+        $restoreSnapshots = [];
+
+        foreach ($operations as $operation) {
+            if (!is_array($operation)) {
+                continue;
+            }
+
+            $strategy = (string) ($operation['strategy'] ?? '');
+            $absolutePath = (string) ($operation['absolute_path'] ?? '');
+            if ($absolutePath === '') {
+                continue;
+            }
+
+            if ($strategy === 'delete_created_file') {
+                if (is_file($absolutePath) && !unlink($absolutePath)) {
+                    throw new FoundryError(
+                        'PLAN_UNDO_DELETE_FAILED',
+                        'filesystem',
+                        ['path' => $this->relativePath($absolutePath)],
+                        'Unable to delete generated file during undo.',
+                    );
+                }
+
+                $reversed[] = [
+                    'action_index' => $operation['action_index'] ?? null,
+                    'type' => $operation['type'] ?? null,
+                    'path' => $operation['path'] ?? null,
+                    'strategy' => $strategy,
+                    'status' => 'deleted',
+                ];
+
+                continue;
+            }
+
+            $snapshot = is_array($operation['snapshot'] ?? null) ? $operation['snapshot'] : null;
+            if ($snapshot === null) {
+                continue;
+            }
+
+            $restoreSnapshots[$absolutePath] = $snapshot;
+            $reversed[] = [
+                'action_index' => $operation['action_index'] ?? null,
+                'type' => $operation['type'] ?? null,
+                'path' => $operation['path'] ?? null,
+                'strategy' => $strategy,
+                'status' => 'restored',
+            ];
+        }
+
+        if ($restoreSnapshots !== []) {
+            $this->codeWriter->restore($restoreSnapshots);
+        }
+
+        $this->rebuildAfterRestore();
+
+        return $reversed;
+    }
+
+    /**
+     * @param list<array<string,mixed>> $reversedActions
+     * @param list<array<string,mixed>> $irreversibleActions
+     * @param list<array<string,mixed>> $skippedActions
+     */
+    private function undoStatus(array $reversedActions, array $irreversibleActions, array $skippedActions): string
+    {
+        if ($reversedActions === [] && $irreversibleActions === [] && $skippedActions === []) {
+            return 'nothing_to_undo';
+        }
+
+        if ($reversedActions !== [] && $irreversibleActions === [] && $skippedActions === []) {
+            return 'undone';
+        }
+
+        if ($reversedActions !== []) {
+            return 'partial';
+        }
+
+        if ($irreversibleActions !== [] && $skippedActions === []) {
+            return 'irreversible';
+        }
+
+        return 'skipped';
     }
 
     /**
@@ -1135,7 +1601,7 @@ final class GenerateEngine
      * @param array<string,mixed> $record
      * @return array{0:array<string,mixed>,1:string}
      */
-    private function selectReplayPlan(array $record): array
+    private function selectPersistedPlan(array $record, string $errorCode, string $errorMessage): array
     {
         $interactive = is_array($record['interactive'] ?? null) ? $record['interactive'] : [];
         $approvedFinalPlan = ($interactive['approved'] ?? false) === true && is_array($record['plan_final'] ?? null)
@@ -1152,13 +1618,13 @@ final class GenerateEngine
         }
 
         throw new FoundryError(
-            'PLAN_REPLAY_PLAN_UNAVAILABLE',
+            $errorCode,
             'validation',
             [
                 'plan_id' => $record['plan_id'] ?? null,
                 'status' => $record['status'] ?? null,
             ],
-            'Persisted plan record does not contain a replayable plan.',
+            $errorMessage,
         );
     }
 

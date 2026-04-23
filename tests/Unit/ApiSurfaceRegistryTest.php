@@ -71,6 +71,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $planList = $registry->classifyCliCommand(['plan:list']);
         $planReplay = $registry->classifyCliCommand(['plan:replay', '123e4567-e89b-12d3-a456-426614174000']);
         $planShow = $registry->classifyCliCommand(['plan:show', '123e4567-e89b-12d3-a456-426614174000']);
+        $planUndo = $registry->classifyCliCommand(['plan:undo', '123e4567-e89b-12d3-a456-426614174000']);
         $specNew = $registry->classifyCliCommand(['spec:new', 'execution-spec-system', 'add-cli-command']);
         $specLogEntry = $registry->classifyCliCommand(['spec:log-entry', 'execution-spec-system', '004']);
         $specValidate = $registry->classifyCliCommand(['spec:validate']);
@@ -111,6 +112,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($planList);
         $this->assertNotNull($planReplay);
         $this->assertNotNull($planShow);
+        $this->assertNotNull($planUndo);
         $this->assertNotNull($specNew);
         $this->assertNotNull($specLogEntry);
         $this->assertNotNull($specValidate);
@@ -218,6 +220,10 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('experimental', $planShow['stability']);
         $this->assertSame('App Scaffolding', $planShow['category']);
         $this->assertSame('plan:show', $planShow['command_type']);
+        $this->assertSame('experimental', $planUndo['stability']);
+        $this->assertSame('App Scaffolding', $planUndo['category']);
+        $this->assertSame('plan:undo', $planUndo['command_type']);
+        $this->assertSame('plan:undo <plan_id> [--dry-run] [--yes]', $planUndo['usage']);
         $this->assertSame('stable', $specNew['stability']);
         $this->assertSame('App Scaffolding', $specNew['category']);
         $this->assertSame('spec:new', $specNew['command_type']);

@@ -47,6 +47,7 @@ use Foundry\CLI\Commands\PlanListCommand;
 use Foundry\CLI\Commands\PlanFeatureCommand;
 use Foundry\CLI\Commands\PlanReplayCommand;
 use Foundry\CLI\Commands\PlanShowCommand;
+use Foundry\CLI\Commands\PlanUndoCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
 use Foundry\CLI\Commands\PromptCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
@@ -138,6 +139,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new PlanListCommand())->matches(['plan:list']));
         $this->assertTrue((new PlanReplayCommand())->matches(['plan:replay', '123e4567-e89b-12d3-a456-426614174000']));
         $this->assertTrue((new PlanShowCommand())->matches(['plan:show', '123e4567-e89b-12d3-a456-426614174000']));
+        $this->assertTrue((new PlanUndoCommand())->matches(['plan:undo', '123e4567-e89b-12d3-a456-426614174000']));
         $this->assertTrue((new SpecNewCommand())->matches(['spec:new', 'execution-spec-system', 'add-cli-command']));
         $this->assertTrue((new SpecLogEntryCommand())->matches(['spec:log-entry', 'execution-spec-system', '004']));
         $this->assertTrue((new SpecValidateCommand())->matches(['spec:validate']));

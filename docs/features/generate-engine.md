@@ -18,8 +18,11 @@
 - `foundry plan:list` now returns a deterministic repository-local listing of persisted generate plan summaries.
 - `foundry plan:show <plan_id>` now resolves one canonical persisted plan record by plan id.
 - `foundry plan:replay <plan_id>` now replays a persisted plan artifact by selecting the approved final plan when present and otherwise the original executable plan.
+- `foundry plan:undo <plan_id>` now previews or applies conservative best-effort rollback from persisted plan artifacts and requires `--yes` before deleting generated files.
 - Replay now supports adaptive replay by default, strict drift failure through `--strict`, and validation-only dry runs through `--dry-run`.
 - Replay now reuses stored plan artifacts, reconstructed replay intent metadata, plan validation, git safety checks, execution ordering, verification, and safety-routing analysis without silently generating a new plan.
+- Successful live persisted plan records now store minimal pre-change file snapshots so V1 undo can restore updated or deleted files only when rollback inputs are explicitly available.
+- Undo now returns deterministic `status`, `fully_reversible`, `reversible_actions`, `reversed_actions`, `irreversible_actions`, `skipped_actions`, and `warnings` payload fields so partial and irreversible outcomes are explicit.
 - The dedicated `.foundry/plans/` persisted plan surface now coexists with the broader shared `history` surface instead of replacing it.
 - Generate failures and interactive rejections now persist failed or aborted plan artifacts in addition to successful runs, while the older `history --kind=generate` surface remains available for broader build/observability-style history.
 - Persisted plan artifacts now use UUID plan ids, filesystem-safe timestamped storage paths, and truthful terminal status values across success, failure, and abort outcomes.
@@ -32,7 +35,7 @@
 - How far should interactive preview support go for future custom generate execution strategies beyond the current file-action-oriented flows?
 - Should interactive review gain richer inspection affordances than the current action, graph, and explain commands?
 - Should future CLI work add an explicit `--no-interactive` override once a concrete non-interactive forcing use case appears?
-- Should future replay and undo commands consume persisted plan records directly or add a second derived index optimized for those workflows?
+- Should future undo support grow beyond file-content rollback into richer graph-aware or git-assisted restoration without weakening the current conservative contract?
 - Should replay eventually persist its own execution history separately from the original generate plan record, or remain a read-and-apply operation only?
 
 ## Next Steps

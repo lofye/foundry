@@ -119,6 +119,48 @@ Timestamp: 2026-04-21T15:05:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: add conservative persisted-plan undo with explicit rollback inputs and destructive-confirmation gating
+
+Timestamp: 2026-04-23T12:29:29-04:00
+
+**Context**
+
+- The `003.002-plan-undo` execution spec required a first undo layer for persisted generate plans, but it explicitly rejected pretending that Foundry could perform perfect rollback for every action type.
+- Existing persisted plan records already carried executable plan data and executed-action summaries, but they did not preserve the pre-change file contents needed to restore updated or deleted files safely.
+- Create-file rollback is destructive because the reversal deletes files, and update/delete rollback is only trustworthy when the prior contents were captured explicitly.
+
+**Decision**
+
+- Add `plan:undo <plan_id>` as an explicit persisted-plan rollback surface with `--dry-run` preview support and `--yes` confirmation gating for destructive generated-file deletion.
+- Extend successful live plan records to persist the minimal pre-change file snapshots needed for conservative V1 undo under the repository-local `.foundry/plans/` artifact contract.
+- Limit V1 undo to deterministic file-action rollback only: delete newly created generated files when the stored pre-change snapshot proves the path was absent, restore updated files only when prior contents were persisted, and restore deleted files only when prior contents were persisted.
+- Report irreversible actions, unsafe current-state skips, and partial outcomes explicitly instead of silently guessing rollback behavior.
+
+**Reasoning**
+
+- Persisting only the minimal rollback inputs needed for supported file actions keeps the plan artifact contract local and deterministic without introducing full repository snapshots or hidden history stores.
+- Requiring explicit confirmation before deleting generated files makes undo trustworthy for humans and agents, especially in non-interactive or JSON-driven flows.
+- Treating missing rollback data and current-state drift as explicit irreversible or skipped cases preserves user trust better than attempting best guesses that might overwrite manual edits.
+
+**Alternatives Considered**
+
+- Add git-based rollback as the primary undo mechanism in this step.
+- Reconstruct previous file contents heuristically from plan metadata or current repository state.
+- Allow destructive create-file reversal by default without requiring an explicit confirmation step.
+
+**Impact**
+
+- Foundry now has a first-class persisted-plan undo surface that is honest about what V1 can and cannot reverse.
+- Successful generate runs carry enough local rollback data for supported update and delete reversals without changing the broader history subsystem.
+- Future undo work can extend this contract deliberately while preserving the current conservative guarantee.
+
+**Spec Reference**
+
+- Goals
+- Constraints
+- Requested Changes
+- Acceptance Criteria
+
 ### Decision: implement explicit persisted-plan replay on top of the existing generate execution path
 
 Timestamp: 2026-04-23T10:11:10-04:00

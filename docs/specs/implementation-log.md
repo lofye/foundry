@@ -182,3 +182,8 @@
 - spec: generate-engine/003.001-plan-replay.md
 - note: Added `plan:replay` with adaptive, strict, and dry-run modes that rehydrate persisted plan artifacts, reuse generate validation and execution seams, and surface drift explicitly instead of silently regenerating new plans.
 - note: Added replay-focused integration and command-surface coverage proving stored-plan execution by id, strict drift failure, adaptive drift reporting, and dry-run no-write behavior.
+
+## 2026-04-23 12:29:29 -0400
+- spec: generate-engine/003.002-plan-undo.md
+- note: Added `plan:undo` with conservative dry-run and live rollback modes, explicit `--yes` gating for destructive generated-file deletion, and deterministic reporting of reversible, irreversible, and unsafe-skipped actions.
+- note: Extended successful persisted plan artifacts with minimal pre-change file snapshots so V1 undo can restore updated or deleted files only when rollback inputs are explicitly available, and added focused undo integration plus unit coverage.

@@ -10,7 +10,7 @@ use Foundry\Support\Paths;
 
 final class PlanRecordStore
 {
-    private const int STORAGE_VERSION = 1;
+    private const int STORAGE_VERSION = 2;
 
     /**
      * @param null|\Closure():\DateTimeImmutable $clock

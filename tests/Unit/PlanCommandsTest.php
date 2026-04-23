@@ -8,6 +8,7 @@ use Foundry\CLI\CommandContext;
 use Foundry\CLI\Commands\PlanListCommand;
 use Foundry\CLI\Commands\PlanReplayCommand;
 use Foundry\CLI\Commands\PlanShowCommand;
+use Foundry\CLI\Commands\PlanUndoCommand;
 use Foundry\Generate\PlanRecordStore;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Paths;
@@ -71,6 +72,16 @@ final class PlanCommandsTest extends TestCase
             self::fail('Expected missing plan id validation failure.');
         } catch (FoundryError $error) {
             $this->assertSame('PLAN_REPLAY_ID_REQUIRED', $error->errorCode);
+        }
+    }
+
+    public function test_plan_undo_requires_plan_id(): void
+    {
+        try {
+            (new PlanUndoCommand())->run(['plan:undo'], new CommandContext($this->project->root));
+            self::fail('Expected missing plan id validation failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('PLAN_UNDO_ID_REQUIRED', $error->errorCode);
         }
     }
 
@@ -214,6 +225,26 @@ final class PlanCommandsTest extends TestCase
         );
     }
 
+    public function test_plan_undo_renders_human_readable_nothing_to_undo_message(): void
+    {
+        $this->store('2026-04-23T01:02:03Z')->persist(
+            $this->record(
+                '11111111-1111-4111-8111-111111111111',
+                'Create comments',
+            ),
+        );
+
+        $result = (new PlanUndoCommand())->run(
+            ['plan:undo', '11111111-1111-4111-8111-111111111111'],
+            new CommandContext($this->project->root),
+        );
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('No applied generate changes to undo.', (string) $result['message']);
+        $this->assertStringContainsString('Status: nothing_to_undo', (string) $result['message']);
+        $this->assertNull($result['payload']);
+    }
+
     private function store(string $timestamp): PlanRecordStore
     {
         return new PlanRecordStore(
@@ -294,6 +325,13 @@ final class PlanCommandsTest extends TestCase
             'verification_results' => ['skipped' => true, 'ok' => true],
             'status' => $status,
             'error' => null,
+            'undo' => [
+                'file_snapshots' => [[
+                    'path' => 'app/features/comments/feature.yaml',
+                    'exists' => false,
+                    'content' => null,
+                ]],
+            ],
             'metadata' => $metadata,
         ];
     }

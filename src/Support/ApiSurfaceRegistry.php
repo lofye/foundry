@@ -164,7 +164,7 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'completion', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new', 'spec:log-entry', 'spec:validate', 'plan:list', 'plan:replay', 'plan:show' => $first,
+            'help', 'completion', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new', 'spec:log-entry', 'spec:validate', 'plan:list', 'plan:replay', 'plan:show', 'plan:undo' => $first,
             'license' => match ($second) {
                 'status' => 'license status',
                 'activate' => 'license activate',
@@ -375,6 +375,7 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('plan:list', 'plan:list', 'experimental', 'List persisted generate plan artifacts stored under the repository-local plan history.'),
             $this->cliCommandEntry('plan:replay', 'plan:replay <plan_id> [--strict] [--dry-run]', 'experimental', 'Replay one persisted generate plan artifact with explicit drift handling and validation.'),
             $this->cliCommandEntry('plan:show', 'plan:show <plan_id>', 'experimental', 'Show one persisted generate plan artifact by plan id.'),
+            $this->cliCommandEntry('plan:undo', 'plan:undo <plan_id> [--dry-run] [--yes]', 'experimental', 'Undo one persisted generate plan artifact conservatively with explicit confirmation for destructive reversals.'),
             $this->cliCommandEntry('spec:new', 'spec:new <feature> <slug>', 'stable', 'Create a new draft execution spec with deterministic ID allocation and canonical template content.'),
             $this->cliCommandEntry('spec:log-entry', 'spec:log-entry <feature>/<id>-<slug>|<id>-<slug>|<feature> <id>', 'stable', 'Emit the exact canonical implementation-log entry content for one active execution spec.'),
             $this->cliCommandEntry('spec:validate', 'spec:validate', 'stable', 'Validate draft and active execution specs against canonical naming, placement, heading, metadata, and required implementation-log coverage rules.'),
@@ -709,7 +710,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['generate docs', 'export openapi'], true) => 'Docs',
             in_array($signature, ['cache inspect', 'cache clear'], true) => 'Build',
             in_array($signature, ['observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions'], true) => 'Observability',
-            in_array($signature, ['plan:list', 'plan:replay', 'plan:show'], true) => 'App Scaffolding',
+            in_array($signature, ['plan:list', 'plan:replay', 'plan:show', 'plan:undo'], true) => 'App Scaffolding',
             in_array($signature, ['serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail'], true) => 'Runtime',
             in_array($signature, ['license status', 'license activate', 'license deactivate', 'features'], true) => 'Monetization',
             in_array($signature, ['pack install', 'pack search', 'pack remove', 'pack list', 'pack info'], true) => 'Extensions',

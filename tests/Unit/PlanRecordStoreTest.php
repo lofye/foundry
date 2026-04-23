@@ -30,14 +30,15 @@ final class PlanRecordStoreTest extends TestCase
 
         $record = $store->persist($this->record('11111111-1111-4111-8111-111111111111', 'Create comments'));
 
-        $this->assertSame(1, $record['storage_version']);
+        $this->assertSame(2, $record['storage_version']);
         $this->assertSame('2026-04-23T01:02:03Z', $record['timestamp']);
         $this->assertSame(
             '.foundry/plans/20260423T010203Z_11111111-1111-4111-8111-111111111111.json',
             $record['storage_path'],
         );
-        $this->assertSame(1, $record['metadata']['storage_version']);
+        $this->assertSame(2, $record['metadata']['storage_version']);
         $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', (string) $record['metadata']['integrity_hash']);
+        $this->assertSame('app/features/comments/feature.yaml', $record['undo']['file_snapshots'][0]['path']);
         $this->assertFileExists($this->project->root . '/' . $record['storage_path']);
     }
 
@@ -201,6 +202,13 @@ final class PlanRecordStoreTest extends TestCase
             'verification_results' => ['skipped' => true, 'ok' => true],
             'status' => $status,
             'error' => null,
+            'undo' => [
+                'file_snapshots' => [[
+                    'path' => 'app/features/comments/feature.yaml',
+                    'exists' => false,
+                    'content' => null,
+                ]],
+            ],
             'metadata' => [
                 'framework_version' => '0.1.0',
                 'graph_version' => 1,

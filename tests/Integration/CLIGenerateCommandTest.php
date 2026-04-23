@@ -426,6 +426,87 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertFileDoesNotExist($this->project->root . '/app/features/' . $feature . '/feature.yaml');
     }
 
+    public function test_plan_undo_dry_run_previews_without_changing_files(): void
+    {
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--json',
+        ]);
+
+        $planId = (string) $generate['payload']['plan_record']['plan_id'];
+        $feature = (string) $generate['payload']['plan']['metadata']['feature'];
+        $featurePath = $this->project->root . '/app/features/' . $feature . '/feature.yaml';
+
+        $undo = $this->runCommand($app, ['foundry', 'plan:undo', $planId, '--dry-run', '--json']);
+
+        $this->assertSame(0, $undo['status']);
+        $this->assertSame('dry_run', $undo['payload']['status']);
+        $this->assertTrue($undo['payload']['fully_reversible']);
+        $this->assertNotEmpty($undo['payload']['reversible_actions']);
+        $this->assertSame([], $undo['payload']['reversed_actions']);
+        $this->assertFileExists($featurePath);
+    }
+
+    public function test_plan_undo_requires_explicit_confirmation_for_destructive_deletes(): void
+    {
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--json',
+        ]);
+
+        $planId = (string) $generate['payload']['plan_record']['plan_id'];
+        $feature = (string) $generate['payload']['plan']['metadata']['feature'];
+        $featurePath = $this->project->root . '/app/features/' . $feature . '/feature.yaml';
+
+        $undo = $this->runCommand($app, ['foundry', 'plan:undo', $planId, '--json']);
+
+        $this->assertSame(1, $undo['status']);
+        $this->assertSame('confirmation_required', $undo['payload']['status']);
+        $this->assertTrue($undo['payload']['requires_confirmation']);
+        $this->assertSame([], $undo['payload']['reversed_actions']);
+        $this->assertFileExists($featurePath);
+    }
+
+    public function test_plan_undo_reverses_generated_create_file_actions_when_confirmed(): void
+    {
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--json',
+        ]);
+
+        $planId = (string) $generate['payload']['plan_record']['plan_id'];
+        $feature = (string) $generate['payload']['plan']['metadata']['feature'];
+        $featurePath = $this->project->root . '/app/features/' . $feature . '/feature.yaml';
+        $recordPath = $this->project->root . '/' . $generate['payload']['plan_record']['storage_path'];
+        $record = json_decode((string) file_get_contents($recordPath), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame(false, $record['undo']['file_snapshots'][0]['exists']);
+        $this->assertFileExists($featurePath);
+
+        $undo = $this->runCommand($app, ['foundry', 'plan:undo', $planId, '--yes', '--json']);
+
+        $this->assertSame(0, $undo['status']);
+        $this->assertSame('undone', $undo['payload']['status']);
+        $this->assertTrue($undo['payload']['fully_reversible']);
+        $this->assertNotEmpty($undo['payload']['reversed_actions']);
+        $this->assertFileDoesNotExist($featurePath);
+    }
+
     public function test_generate_interactive_reject_persists_aborted_plan_record(): void
     {
         $app = $this->interactiveApplication(
