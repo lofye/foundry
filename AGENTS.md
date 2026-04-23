@@ -277,6 +277,8 @@ Agents MUST:
 - not rename existing IDs
 - not add metadata fields like `id`, `parent`, or `status`
 - append implementation logs only for completed active specs
+- never implement a spec from `docs/specs/<feature>/drafts/`
+- require a spec to be promoted to the active spec path before implementation
 
 Violation of any rule above is considered an incorrect implementation.
 

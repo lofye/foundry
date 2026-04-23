@@ -171,3 +171,9 @@
 - spec: quality-enforcement/001.001-enforce-changed-surface-90-percent-coverage.md
 - note: Extended the shared implementation quality gate to derive deterministic changed-file sets from workflow-touched files or repository state, emit a Clover report during the canonical coverage run, and enforce 90% changed-surface line coverage for changed PHP source files under enforcement.
 - note: Added machine-readable changed-surface reporting for changed files examined, per-file coverage, under-covered files, and attribution failures, and removed the old unsupported changed-surface status.
+
+## 2026-04-23 13:53:20 +0000
+- spec: generate-engine/003-plan-persistence-and-history.md
+
+## 2026-04-23 13:53:20 +0000
+- spec: quality-enforcement/001.002-eliminate-phpunit-warning-and-risky-state-blockers.md
