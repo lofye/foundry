@@ -17,6 +17,9 @@
 - Every terminal generate run now persists a canonical plan record under `.foundry/plans/` with a UUID plan id, timestamp, original/final plan data, context packet, execution outcome, verification data, and explicit storage version metadata.
 - `foundry plan:list` now returns a deterministic repository-local listing of persisted generate plan summaries.
 - `foundry plan:show <plan_id>` now resolves one canonical persisted plan record by plan id.
+- `foundry plan:replay <plan_id>` now replays a persisted plan artifact by selecting the approved final plan when present and otherwise the original executable plan.
+- Replay now supports adaptive replay by default, strict drift failure through `--strict`, and validation-only dry runs through `--dry-run`.
+- Replay now reuses stored plan artifacts, reconstructed replay intent metadata, plan validation, git safety checks, execution ordering, verification, and safety-routing analysis without silently generating a new plan.
 - The dedicated `.foundry/plans/` persisted plan surface now coexists with the broader shared `history` surface instead of replacing it.
 - Generate failures and interactive rejections now persist failed or aborted plan artifacts in addition to successful runs, while the older `history --kind=generate` surface remains available for broader build/observability-style history.
 - Persisted plan artifacts now use UUID plan ids, filesystem-safe timestamped storage paths, and truthful terminal status values across success, failure, and abort outcomes.
@@ -30,10 +33,12 @@
 - Should interactive review gain richer inspection affordances than the current action, graph, and explain commands?
 - Should future CLI work add an explicit `--no-interactive` override once a concrete non-interactive forcing use case appears?
 - Should future replay and undo commands consume persisted plan records directly or add a second derived index optimized for those workflows?
+- Should replay eventually persist its own execution history separately from the original generate plan record, or remain a read-and-apply operation only?
 
 ## Next Steps
 
 - Decide whether a future `--no-interactive` CLI override should surface the non-interactive recommendation explicitly once the need is proven.
 - Expand interactive preview support for future custom execution strategies that cannot yet provide full file diffs through the current preview builder.
 - Refine the interactive inspection surface if richer graph or explain navigation becomes necessary.
-- Decide how replay and undo commands should layer on top of the new `.foundry/plans/` record contract without introducing divergent history state.
+- Decide how undo commands should layer on top of the new `.foundry/plans/` record contract without introducing divergent history state.
+- Decide whether replay should eventually emit its own persisted operational history in addition to reusing the stored plan artifact contract.

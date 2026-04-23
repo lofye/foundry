@@ -453,6 +453,123 @@ final class GenerateEngine
     /**
      * @return array<string,mixed>
      */
+    public function replay(string $planId, bool $strict = false, bool $dryRun = false): array
+    {
+        $record = (new PlanRecordStore($this->paths))->load($planId);
+        if (!is_array($record)) {
+            throw new FoundryError(
+                'PLAN_RECORD_NOT_FOUND',
+                'not_found',
+                ['plan_id' => $planId],
+                'Persisted plan record not found.',
+            );
+        }
+
+        [$selectedPlan, $selectedPlanName] = $this->selectReplayPlan($record);
+        $plan = GenerationPlan::fromArray($selectedPlan);
+        $intent = $this->replayIntent($record, $plan, $dryRun);
+        $validator = new PlanValidator();
+        $validator->validate($plan, $intent);
+
+        $extensions = ExtensionRegistry::forPaths($this->paths);
+        $compiler = new GraphCompiler($this->paths, $extensions);
+        $compile = $compiler->compile(new CompileOptions(emit: true));
+
+        if ($compile->diagnostics->hasErrors() && $intent->mode !== 'repair' && !$intent->allowRisky) {
+            throw new FoundryError(
+                'PLAN_REPLAY_PRECONDITION_FAILED',
+                'validation',
+                [
+                    'plan_id' => $planId,
+                    'compile' => $compile->toArray(),
+                ],
+                'Replay cannot proceed while the current graph has errors.',
+            );
+        }
+
+        $gitInspector = new GitRepositoryInspector($this->paths->root());
+        $gitBefore = $gitInspector->inspect();
+        $gitWarnings = [];
+        $this->assertGitPlanSafe($gitBefore, $plan, $intent, $gitWarnings);
+
+        $driftSummary = $this->replayDriftSummary($record, $plan, $intent, $gitInspector, $gitBefore, $compile->graph->sourceHash());
+        if ($strict && ($driftSummary['detected'] ?? false) === true) {
+            throw new FoundryError(
+                'PLAN_REPLAY_STRICT_DRIFT',
+                'validation',
+                [
+                    'plan_id' => $planId,
+                    'drift_summary' => $driftSummary,
+                ],
+                'Strict replay cannot proceed because material drift was detected.',
+            );
+        }
+
+        $safetyRouting = $this->safetyRouter->route($intent, $plan);
+        $actionsExecuted = $dryRun ? $this->plannedReplayActions($plan) : [];
+        $verification = ['skipped' => true, 'ok' => true];
+        $fileSnapshots = [];
+
+        try {
+            if (!$dryRun) {
+                $fileSnapshots = $this->codeWriter->snapshot($this->absolutePaths($plan->affectedFiles));
+                $actionsExecuted = $this->executePlan($plan, $intent);
+                $verification = $intent->skipVerify
+                    ? ['skipped' => true, 'ok' => true]
+                    : $this->runVerification($plan);
+
+                if (($verification['ok'] ?? false) !== true) {
+                    throw new FoundryError(
+                        'PLAN_REPLAY_VERIFICATION_FAILED',
+                        'validation',
+                        [
+                            'plan_id' => $planId,
+                            'plan' => $plan->toArray(),
+                            'verification' => $verification,
+                        ],
+                        'Replay was rolled back because verification failed.',
+                    );
+                }
+            }
+        } catch (\Throwable $error) {
+            if ($fileSnapshots !== []) {
+                $this->codeWriter->restore($fileSnapshots);
+                $this->rebuildAfterRestore();
+            }
+
+            throw $error;
+        }
+
+        return [
+            'plan_id' => $planId,
+            'replay_mode' => $strict ? 'strict' : 'adaptive',
+            'status' => $dryRun ? 'dry_run' : 'replayed',
+            'replayable' => true,
+            'drift_detected' => ($driftSummary['detected'] ?? false) === true,
+            'drift_summary' => $driftSummary,
+            'actions_executed' => $actionsExecuted,
+            'verification' => $verification,
+            'dry_run' => $dryRun,
+            'plan' => $plan->toArray(),
+            'source_record' => [
+                'status' => $record['status'] ?? null,
+                'timestamp' => $record['timestamp'] ?? null,
+                'storage_path' => $record['storage_path'] ?? null,
+                'selected_plan' => $selectedPlanName,
+            ],
+            'git' => $this->gitPayload(
+                before: $gitBefore,
+                after: $dryRun ? null : $gitInspector->inspect(),
+                warnings: $gitWarnings,
+                commit: null,
+            ),
+            'safety_routing' => $safetyRouting,
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
     private function buildPayload(
         Intent $intent,
         GenerationPlan $plan,
@@ -648,6 +765,7 @@ final class GenerateEngine
                 'framework_version' => $frameworkVersion,
                 'graph_version' => $graphVersion,
                 'source_hash' => $sourceHash,
+                'requested_intent' => $intent->toArray(),
                 'dry_run' => $intent->dryRun,
                 'interactive_requested' => $intent->interactive,
                 'plan_origin' => $effectivePlan?->origin,
@@ -1011,6 +1129,242 @@ final class GenerateEngine
         return str_starts_with($path, $this->paths->root() . '/')
             ? $path
             : $this->paths->join($path);
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     * @return array{0:array<string,mixed>,1:string}
+     */
+    private function selectReplayPlan(array $record): array
+    {
+        $interactive = is_array($record['interactive'] ?? null) ? $record['interactive'] : [];
+        $approvedFinalPlan = ($interactive['approved'] ?? false) === true && is_array($record['plan_final'] ?? null)
+            ? $record['plan_final']
+            : null;
+        $originalPlan = is_array($record['plan_original'] ?? null) ? $record['plan_original'] : null;
+
+        if (is_array($approvedFinalPlan)) {
+            return [$approvedFinalPlan, 'final'];
+        }
+
+        if (is_array($originalPlan)) {
+            return [$originalPlan, 'original'];
+        }
+
+        throw new FoundryError(
+            'PLAN_REPLAY_PLAN_UNAVAILABLE',
+            'validation',
+            [
+                'plan_id' => $record['plan_id'] ?? null,
+                'status' => $record['status'] ?? null,
+            ],
+            'Persisted plan record does not contain a replayable plan.',
+        );
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     */
+    private function replayIntent(array $record, GenerationPlan $plan, bool $dryRun): Intent
+    {
+        $storedIntent = is_array($record['metadata']['requested_intent'] ?? null)
+            ? $record['metadata']['requested_intent']
+            : [
+                'raw' => $record['intent'] ?? '',
+                'mode' => $record['mode'] ?? 'new',
+                'target' => $this->replayTarget($record),
+                'interactive' => false,
+                'dry_run' => (bool) ($record['metadata']['dry_run'] ?? false),
+                'skip_verify' => false,
+                'explain' => false,
+                'allow_risky' => (bool) ($record['interactive']['allow_risky'] ?? false),
+                'allow_dirty' => false,
+                'allow_pack_install' => false,
+                'git_commit' => false,
+                'git_commit_message' => null,
+                'packs' => [],
+            ];
+
+        $storedIntent['interactive'] = false;
+        $storedIntent['dry_run'] = $dryRun;
+        $storedIntent['skip_verify'] = false;
+        $storedIntent['explain'] = false;
+        $storedIntent['git_commit'] = false;
+        $storedIntent['git_commit_message'] = null;
+        $storedIntent['allow_risky'] = ($storedIntent['allow_risky'] ?? false) === true || $this->planRequiresRisky($plan);
+        $storedIntent['target'] = $storedIntent['target'] ?? $this->replayTarget($record);
+
+        return Intent::fromArray($storedIntent);
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     */
+    private function replayTarget(array $record): ?string
+    {
+        $target = is_array($record['targets'][0] ?? null) ? $record['targets'][0] : [];
+        $requested = trim((string) ($target['requested'] ?? ''));
+        if ($requested !== '') {
+            return $requested;
+        }
+
+        $resolved = trim((string) ($target['resolved'] ?? ''));
+
+        return $resolved !== '' ? $resolved : null;
+    }
+
+    private function planRequiresRisky(GenerationPlan $plan): bool
+    {
+        foreach ($plan->actions as $action) {
+            if ((string) ($action['type'] ?? '') === 'delete_file') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     * @param array<string,mixed> $gitState
+     * @return array{detected:bool,messages:list<string>,items:list<array<string,mixed>>}
+     */
+    private function replayDriftSummary(
+        array $record,
+        GenerationPlan $plan,
+        Intent $intent,
+        GitRepositoryInspector $gitInspector,
+        array $gitState,
+        ?string $currentSourceHash,
+    ): array {
+        $items = [];
+        $storedSourceHash = trim((string) ($record['metadata']['source_hash'] ?? ''));
+        if ($storedSourceHash !== '' && is_string($currentSourceHash) && $currentSourceHash !== '' && $storedSourceHash !== $currentSourceHash) {
+            $items[] = [
+                'code' => 'source_hash_changed',
+                'path' => null,
+                'message' => 'Stored graph source hash differs from the current compiled graph.',
+                'details' => [
+                    'stored_source_hash' => $storedSourceHash,
+                    'current_source_hash' => $currentSourceHash,
+                ],
+            ];
+        }
+
+        foreach ($gitInspector->describePaths($plan->affectedFiles, $gitState) as $row) {
+            if (($row['changed'] ?? false) !== true) {
+                continue;
+            }
+
+            $items[] = [
+                'code' => 'repository_state_changed',
+                'path' => $row['path'] ?? null,
+                'message' => 'Affected path has local repository changes.',
+                'details' => $row,
+            ];
+        }
+
+        $afterContents = (new GeneratePlanPreviewBuilder($this->paths))->afterContents($plan, $intent);
+
+        foreach ($plan->actions as $action) {
+            $type = trim((string) ($action['type'] ?? ''));
+            $path = trim((string) ($action['path'] ?? ''));
+            if ($path === '') {
+                continue;
+            }
+
+            $absolute = $this->absolutePath($path);
+            $exists = is_file($absolute);
+            $current = $exists ? (string) (file_get_contents($absolute) ?: '') : null;
+            $expected = $afterContents[$path] ?? null;
+
+            if ($type === 'delete_file') {
+                if (!$exists) {
+                    $items[] = [
+                        'code' => 'missing_delete_target',
+                        'path' => $path,
+                        'message' => 'Replay expected to delete a file that is already missing.',
+                        'details' => ['action_type' => $type],
+                    ];
+                }
+
+                continue;
+            }
+
+            if ($type === 'update_file' || $type === 'update_docs') {
+                if (!$exists) {
+                    $items[] = [
+                        'code' => 'missing_target_file',
+                        'path' => $path,
+                        'message' => 'Replay expected to update a file that is currently missing.',
+                        'details' => ['action_type' => $type],
+                    ];
+                    continue;
+                }
+            }
+
+            if (($type === 'create_file' || $type === 'add_test') && $exists && $expected !== null && $current !== $expected) {
+                $items[] = [
+                    'code' => 'existing_file_differs',
+                    'path' => $path,
+                    'message' => 'Replay expected to create a file, but a different file already exists at that path.',
+                    'details' => ['action_type' => $type],
+                ];
+                continue;
+            }
+
+            if ($exists && $expected !== null && $current !== $expected) {
+                $items[] = [
+                    'code' => 'file_content_differs',
+                    'path' => $path,
+                    'message' => 'Current file contents differ from the stored replay target.',
+                    'details' => ['action_type' => $type],
+                ];
+            }
+        }
+
+        usort($items, static fn(array $left, array $right): int => [
+            (string) ($left['code'] ?? ''),
+            (string) ($left['path'] ?? ''),
+        ] <=> [
+            (string) ($right['code'] ?? ''),
+            (string) ($right['path'] ?? ''),
+        ]);
+
+        return [
+            'detected' => $items !== [],
+            'messages' => array_values(array_map(
+                static fn(array $item): string => (string) ($item['message'] ?? ''),
+                $items,
+            )),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * @return list<array<string,mixed>>
+     */
+    private function plannedReplayActions(GenerationPlan $plan): array
+    {
+        $planned = [];
+
+        foreach ($plan->actions as $action) {
+            $type = trim((string) ($action['type'] ?? ''));
+            $path = trim((string) ($action['path'] ?? ''));
+            if ($path === '') {
+                continue;
+            }
+
+            $planned[] = [
+                'type' => $type,
+                'path' => $path,
+                'status' => 'planned',
+                'origin' => $plan->origin,
+                'extension' => $plan->extension,
+            ];
+        }
+
+        return $planned;
     }
 
     /**

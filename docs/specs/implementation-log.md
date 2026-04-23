@@ -177,3 +177,8 @@
 
 ## 2026-04-23 13:53:20 +0000
 - spec: quality-enforcement/001.002-eliminate-phpunit-warning-and-risky-state-blockers.md
+
+## 2026-04-23 10:11:10 -0400
+- spec: generate-engine/003.001-plan-replay.md
+- note: Added `plan:replay` with adaptive, strict, and dry-run modes that rehydrate persisted plan artifacts, reuse generate validation and execution seams, and surface drift explicitly instead of silently regenerating new plans.
+- note: Added replay-focused integration and command-surface coverage proving stored-plan execution by id, strict drift failure, adaptive drift reporting, and dry-run no-write behavior.

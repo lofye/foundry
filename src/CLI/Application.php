@@ -46,8 +46,9 @@ use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\ObserveCommand;
 use Foundry\CLI\Commands\PackCommand;
 use Foundry\CLI\Commands\PlanListCommand;
-use Foundry\CLI\Commands\PlanShowCommand;
 use Foundry\CLI\Commands\PlanFeatureCommand;
+use Foundry\CLI\Commands\PlanReplayCommand;
+use Foundry\CLI\Commands\PlanShowCommand;
 use Foundry\CLI\Commands\PreviewNotificationCommand;
 use Foundry\CLI\Commands\PromptCommand;
 use Foundry\CLI\Commands\QueueWorkCommand;
@@ -105,6 +106,7 @@ final class Application
             new ImplementSpecCommand(),
             new PlanFeatureCommand(),
             new PlanListCommand(),
+            new PlanReplayCommand(),
             new PlanShowCommand(),
             new SpecNewCommand(),
             new SpecLogEntryCommand(),

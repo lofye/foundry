@@ -161,4 +161,24 @@ final readonly class GenerationPlan
             'metadata' => $this->metadata,
         ];
     }
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            actions: array_values(array_filter((array) ($data['actions'] ?? []), 'is_array')),
+            affectedFiles: array_values(array_map('strval', (array) ($data['affected_files'] ?? []))),
+            risks: array_values(array_map('strval', (array) ($data['risks'] ?? []))),
+            validations: array_values(array_map('strval', (array) ($data['validations'] ?? []))),
+            origin: (string) ($data['origin'] ?? ''),
+            generatorId: (string) ($data['generator_id'] ?? ''),
+            extension: is_string($data['extension'] ?? null) && trim((string) $data['extension']) !== ''
+                ? trim((string) $data['extension'])
+                : null,
+            metadata: is_array($data['metadata'] ?? null) ? $data['metadata'] : [],
+            confidence: is_array($data['confidence'] ?? null) ? $data['confidence'] : [],
+        );
+    }
 }

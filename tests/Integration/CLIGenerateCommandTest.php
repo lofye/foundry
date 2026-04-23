@@ -311,6 +311,121 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame($first['payload']['plan']['actions'], $show['payload']['plan_original']['actions']);
     }
 
+    public function test_plan_replay_reuses_stored_plan_artifact_by_id(): void
+    {
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+            '--json',
+        ]);
+
+        $planId = (string) $generate['payload']['plan_record']['plan_id'];
+        $feature = (string) $generate['payload']['plan']['metadata']['feature'];
+        $recordPath = $this->project->root . '/' . $generate['payload']['plan_record']['storage_path'];
+        $record = json_decode((string) file_get_contents($recordPath), true, 512, JSON_THROW_ON_ERROR);
+        $record['plan_original']['metadata']['execution']['feature_definition']['description'] = 'Replay-owned description.';
+        file_put_contents($recordPath, json_encode($record, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL);
+
+        $replay = $this->runCommand($app, ['foundry', 'plan:replay', $planId, '--json']);
+
+        $this->assertSame(0, $replay['status']);
+        $this->assertSame('replayed', $replay['payload']['status']);
+        $this->assertFalse($replay['payload']['drift_detected']);
+        $this->assertSame('original', $replay['payload']['source_record']['selected_plan']);
+        $this->assertFileExists($this->project->root . '/app/features/' . $feature . '/feature.yaml');
+        $this->assertStringContainsString(
+            'Replay-owned description.',
+            (string) file_get_contents($this->project->root . '/app/features/' . $feature . '/feature.yaml'),
+        );
+    }
+
+    public function test_plan_replay_strict_mode_fails_when_material_drift_is_detected(): void
+    {
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+            '--json',
+        ]);
+
+        $planId = (string) $generate['payload']['plan_record']['plan_id'];
+        $recordPath = $this->project->root . '/' . $generate['payload']['plan_record']['storage_path'];
+        $record = json_decode((string) file_get_contents($recordPath), true, 512, JSON_THROW_ON_ERROR);
+        $record['metadata']['source_hash'] = 'strict-drift-source-hash';
+        file_put_contents($recordPath, json_encode($record, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL);
+
+        $replay = $this->runCommand($app, ['foundry', 'plan:replay', $planId, '--strict', '--json']);
+
+        $this->assertSame(1, $replay['status']);
+        $this->assertSame('PLAN_REPLAY_STRICT_DRIFT', $replay['payload']['error']['code']);
+        $this->assertTrue($replay['payload']['error']['details']['drift_summary']['detected']);
+    }
+
+    public function test_plan_replay_adaptive_mode_surfaces_drift_and_proceeds_when_safe(): void
+    {
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+            '--json',
+        ]);
+
+        $planId = (string) $generate['payload']['plan_record']['plan_id'];
+        $feature = (string) $generate['payload']['plan']['metadata']['feature'];
+        $recordPath = $this->project->root . '/' . $generate['payload']['plan_record']['storage_path'];
+        $record = json_decode((string) file_get_contents($recordPath), true, 512, JSON_THROW_ON_ERROR);
+        $record['metadata']['source_hash'] = 'adaptive-drift-source-hash';
+        file_put_contents($recordPath, json_encode($record, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL);
+
+        $replay = $this->runCommand($app, ['foundry', 'plan:replay', $planId, '--json']);
+
+        $this->assertSame(0, $replay['status']);
+        $this->assertSame('adaptive', $replay['payload']['replay_mode']);
+        $this->assertTrue($replay['payload']['drift_detected']);
+        $this->assertNotEmpty($replay['payload']['drift_summary']['messages']);
+        $this->assertSame('replayed', $replay['payload']['status']);
+        $this->assertFileExists($this->project->root . '/app/features/' . $feature . '/feature.yaml');
+    }
+
+    public function test_plan_replay_dry_run_validates_without_writing_files(): void
+    {
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+            '--json',
+        ]);
+
+        $planId = (string) $generate['payload']['plan_record']['plan_id'];
+        $feature = (string) $generate['payload']['plan']['metadata']['feature'];
+
+        $replay = $this->runCommand($app, ['foundry', 'plan:replay', $planId, '--dry-run', '--json']);
+
+        $this->assertSame(0, $replay['status']);
+        $this->assertSame('dry_run', $replay['payload']['status']);
+        $this->assertTrue($replay['payload']['replayable']);
+        $this->assertTrue($replay['payload']['verification']['skipped']);
+        $this->assertNotEmpty($replay['payload']['actions_executed']);
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/' . $feature . '/feature.yaml');
+    }
+
     public function test_generate_interactive_reject_persists_aborted_plan_record(): void
     {
         $app = $this->interactiveApplication(

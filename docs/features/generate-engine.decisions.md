@@ -119,6 +119,48 @@ Timestamp: 2026-04-21T15:05:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: implement explicit persisted-plan replay on top of the existing generate execution path
+
+Timestamp: 2026-04-23T10:11:10-04:00
+
+**Context**
+
+- `003.001-plan-replay` required persisted generate plans to become executable inputs rather than inspection-only artifacts.
+- The repository already persisted canonical plan records under `.foundry/plans/`, but replay still needed a safe command surface, drift handling, and deterministic execution based on stored plan data.
+- Replay needed to reuse existing generate validation, git safety, execution ordering, and verification behavior without silently creating a fresh plan behind the user’s back.
+
+**Decision**
+
+- Add `plan:replay <plan_id>` as an explicit replay command over persisted generate plan artifacts.
+- Reconstruct replay execution from the stored approved final plan when present and otherwise the stored original plan, together with persisted intent metadata needed for deterministic validation and execution.
+- Support adaptive replay by default, strict replay failure with `--strict`, and validation-only dry runs with `--dry-run`.
+- Surface drift explicitly in both success and strict-failure paths instead of silently adapting the stored artifact itself.
+
+**Reasoning**
+
+- Reusing the stored plan artifact keeps replay truthful to the persisted generate result and avoids quietly re-planning from changed system state.
+- Keeping replay on the existing generate execution path preserves deterministic file ordering, validator behavior, git safety checks, and verification semantics.
+- Explicit drift reporting lets adaptive replay remain useful while still giving strict replay a clear contract for reproducibility-sensitive use cases.
+
+**Alternatives Considered**
+
+- Regenerate a fresh plan from the stored intent and call that replay.
+- Block replay entirely unless current source hashes and filesystem state match exactly.
+- Create a second replay-only executor disconnected from the existing generate engine helpers.
+
+**Impact**
+
+- Persisted plans are now reusable operational inputs rather than one-time history artifacts.
+- Developers and agents can choose between adaptive replay, strict replay, and dry-run replay with deterministic JSON output and explicit drift visibility.
+- The replay foundation now exists for future undo and richer policy layers without weakening the stored-plan contract.
+
+**Spec Reference**
+
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
+
 ### Decision: make interactive generate smoke coverage use a valid mode-bearing invocation
 
 Timestamp: 2026-04-22T00:15:00-04:00

@@ -69,6 +69,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $implementSpec = $registry->classifyCliCommand(['implement', 'spec', 'event-bus/001-initial']);
         $planFeature = $registry->classifyCliCommand(['plan', 'feature', 'event-bus']);
         $planList = $registry->classifyCliCommand(['plan:list']);
+        $planReplay = $registry->classifyCliCommand(['plan:replay', '123e4567-e89b-12d3-a456-426614174000']);
         $planShow = $registry->classifyCliCommand(['plan:show', '123e4567-e89b-12d3-a456-426614174000']);
         $specNew = $registry->classifyCliCommand(['spec:new', 'execution-spec-system', 'add-cli-command']);
         $specLogEntry = $registry->classifyCliCommand(['spec:log-entry', 'execution-spec-system', '004']);
@@ -108,6 +109,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($implementSpec);
         $this->assertNotNull($planFeature);
         $this->assertNotNull($planList);
+        $this->assertNotNull($planReplay);
         $this->assertNotNull($planShow);
         $this->assertNotNull($specNew);
         $this->assertNotNull($specLogEntry);
@@ -209,6 +211,10 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('experimental', $planList['stability']);
         $this->assertSame('App Scaffolding', $planList['category']);
         $this->assertSame('plan:list', $planList['command_type']);
+        $this->assertSame('experimental', $planReplay['stability']);
+        $this->assertSame('App Scaffolding', $planReplay['category']);
+        $this->assertSame('plan:replay', $planReplay['command_type']);
+        $this->assertSame('plan:replay <plan_id> [--strict] [--dry-run]', $planReplay['usage']);
         $this->assertSame('experimental', $planShow['stability']);
         $this->assertSame('App Scaffolding', $planShow['category']);
         $this->assertSame('plan:show', $planShow['command_type']);

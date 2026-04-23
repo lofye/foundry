@@ -6,6 +6,7 @@ namespace Foundry\Tests\Unit;
 
 use Foundry\CLI\CommandContext;
 use Foundry\CLI\Commands\PlanListCommand;
+use Foundry\CLI\Commands\PlanReplayCommand;
 use Foundry\CLI\Commands\PlanShowCommand;
 use Foundry\Generate\PlanRecordStore;
 use Foundry\Support\FoundryError;
@@ -63,6 +64,16 @@ final class PlanCommandsTest extends TestCase
         }
     }
 
+    public function test_plan_replay_requires_plan_id(): void
+    {
+        try {
+            (new PlanReplayCommand())->run(['plan:replay'], new CommandContext($this->project->root));
+            self::fail('Expected missing plan id validation failure.');
+        } catch (FoundryError $error) {
+            $this->assertSame('PLAN_REPLAY_ID_REQUIRED', $error->errorCode);
+        }
+    }
+
     public function test_plan_show_reports_missing_record(): void
     {
         try {
@@ -104,6 +115,105 @@ final class PlanCommandsTest extends TestCase
         $this->assertNull($result['payload']);
     }
 
+    public function test_plan_replay_renders_human_readable_dry_run_with_drift_notices(): void
+    {
+        $this->store('2026-04-23T01:02:03Z')->persist(
+            $this->record(
+                '11111111-1111-4111-8111-111111111111',
+                'Create comments',
+                planOriginal: $this->replayPlan(),
+            ),
+        );
+
+        $result = (new PlanReplayCommand())->run(
+            ['plan:replay', '11111111-1111-4111-8111-111111111111', '--dry-run'],
+            new CommandContext($this->project->root),
+        );
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('Replay dry run prepared.', (string) $result['message']);
+        $this->assertStringContainsString('Replay mode: adaptive', (string) $result['message']);
+        $this->assertStringContainsString('Drift detected: yes', (string) $result['message']);
+        $this->assertStringContainsString('Verification: skipped', (string) $result['message']);
+        $this->assertStringContainsString('Replay source: original', (string) $result['message']);
+        $this->assertStringContainsString('Drift notices:', (string) $result['message']);
+        $this->assertNull($result['payload']);
+    }
+
+    public function test_plan_replay_uses_approved_final_plan_when_present(): void
+    {
+        $this->store('2026-04-23T01:02:03Z')->persist(
+            $this->record(
+                '11111111-1111-4111-8111-111111111111',
+                'Create comments',
+                planOriginal: $this->replayPlan(marker: 'original'),
+                planFinal: $this->replayPlan(marker: 'final'),
+                interactive: [
+                    'enabled' => true,
+                    'approved' => true,
+                    'rejected' => false,
+                    'modified' => true,
+                    'allow_risky' => false,
+                    'preview' => ['summary' => [], 'actions' => [], 'diffs' => []],
+                    'risk' => ['level' => 'LOW', 'reasons' => [], 'risky_action_indexes' => [], 'risky_paths' => []],
+                ],
+            ),
+        );
+
+        $result = (new PlanReplayCommand())->run(
+            ['plan:replay', '11111111-1111-4111-8111-111111111111', '--dry-run'],
+            new CommandContext($this->project->root, true),
+        );
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('final', $result['payload']['source_record']['selected_plan']);
+        $this->assertSame('final', $result['payload']['plan']['metadata']['marker']);
+    }
+
+    public function test_plan_replay_can_reconstruct_fallback_intent_for_risky_delete_records(): void
+    {
+        $this->store('2026-04-23T01:02:03Z')->persist(
+            $this->record(
+                '11111111-1111-4111-8111-111111111111',
+                'Delete comments',
+                mode: 'modify',
+                targets: [[
+                    'requested' => 'comments',
+                    'resolved' => 'feature:comments',
+                ]],
+                planOriginal: $this->replayPlan(
+                    marker: 'delete',
+                    actions: [[
+                        'type' => 'delete_file',
+                        'path' => 'app/features/comments/feature.yaml',
+                        'summary' => 'Delete file.',
+                        'explain_node_id' => 'feature:comments',
+                    ]],
+                ),
+                interactive: null,
+                metadataOverrides: [
+                    'requested_intent' => null,
+                    'source_hash' => '',
+                ],
+            ),
+        );
+
+        $result = (new PlanReplayCommand())->run(
+            ['plan:replay', '11111111-1111-4111-8111-111111111111', '--dry-run'],
+            new CommandContext($this->project->root, true),
+        );
+
+        $this->assertSame(0, $result['status']);
+        $this->assertTrue($result['payload']['drift_detected']);
+        $this->assertContains(
+            'missing_delete_target',
+            array_values(array_map(
+                static fn(array $item): string => (string) ($item['code'] ?? ''),
+                $result['payload']['drift_summary']['items'],
+            )),
+        );
+    }
+
     private function store(string $timestamp): PlanRecordStore
     {
         return new PlanRecordStore(
@@ -115,6 +225,7 @@ final class PlanCommandsTest extends TestCase
     /**
      * @param list<string> $affectedFiles
      * @param list<array<string,mixed>> $actionsExecuted
+     * @param list<array<string,mixed>> $targets
      * @return array<string,mixed>
      */
     private function record(
@@ -122,18 +233,60 @@ final class PlanCommandsTest extends TestCase
         string $intent,
         string $status = 'success',
         string $riskLevel = 'LOW',
+        string $mode = 'new',
+        array $targets = [],
         array $affectedFiles = [],
         array $actionsExecuted = [],
+        ?array $planOriginal = null,
+        ?array $planFinal = null,
+        ?array $interactive = null,
+        array $metadataOverrides = [],
     ): array {
+        $metadata = [
+            'framework_version' => '0.1.0',
+            'graph_version' => 1,
+            'source_hash' => 'abc123',
+            'requested_intent' => [
+                'raw' => $intent,
+                'mode' => $mode,
+                'target' => $targets[0]['requested'] ?? null,
+                'interactive' => false,
+                'dry_run' => true,
+                'skip_verify' => false,
+                'explain' => false,
+                'allow_risky' => false,
+                'allow_dirty' => false,
+                'allow_pack_install' => false,
+                'git_commit' => false,
+                'git_commit_message' => null,
+                'packs' => [],
+            ],
+            'dry_run' => true,
+            'interactive_requested' => false,
+            'plan_origin' => 'core',
+            'generator_id' => 'generate comments',
+            'safety_routing' => null,
+        ];
+
+        foreach ($metadataOverrides as $key => $value) {
+            if ($value === null) {
+                unset($metadata[$key]);
+
+                continue;
+            }
+
+            $metadata[$key] = $value;
+        }
+
         return [
             'plan_id' => $planId,
             'intent' => $intent,
-            'mode' => 'new',
-            'targets' => [],
+            'mode' => $mode,
+            'targets' => $targets,
             'generation_context_packet' => null,
-            'plan_original' => null,
-            'plan_final' => null,
-            'interactive' => ['enabled' => true, 'rejected' => $status === 'aborted'],
+            'plan_original' => $planOriginal,
+            'plan_final' => $planFinal,
+            'interactive' => $interactive ?? ['enabled' => true, 'rejected' => $status === 'aborted'],
             'user_decisions' => [],
             'actions_executed' => $actionsExecuted,
             'affected_files' => $affectedFiles,
@@ -141,16 +294,36 @@ final class PlanCommandsTest extends TestCase
             'verification_results' => ['skipped' => true, 'ok' => true],
             'status' => $status,
             'error' => null,
-            'metadata' => [
-                'framework_version' => '0.1.0',
-                'graph_version' => 1,
-                'source_hash' => 'abc123',
-                'dry_run' => true,
-                'interactive_requested' => false,
-                'plan_origin' => 'core',
-                'generator_id' => 'generate comments',
-                'safety_routing' => null,
-            ],
+            'metadata' => $metadata,
+        ];
+    }
+
+    /**
+     * @param list<array<string,mixed>>|null $actions
+     * @return array<string,mixed>
+     */
+    private function replayPlan(string $marker = 'original', ?array $actions = null): array
+    {
+        $actions ??= [[
+            'type' => 'create_file',
+            'path' => 'app/features/comments/feature.yaml',
+            'summary' => 'Create feature scaffold.',
+            'explain_node_id' => 'feature:comments',
+        ]];
+
+        return [
+            'actions' => $actions,
+            'affected_files' => array_values(array_map(
+                static fn(array $action): string => (string) ($action['path'] ?? ''),
+                $actions,
+            )),
+            'risks' => [],
+            'validations' => ['compile_graph'],
+            'origin' => 'core',
+            'generator_id' => 'core.feature.' . $marker,
+            'extension' => null,
+            'confidence' => ['band' => 'high', 'score' => 0.91],
+            'metadata' => ['marker' => $marker],
         ];
     }
 }
