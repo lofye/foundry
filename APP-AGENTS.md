@@ -186,6 +186,9 @@ Read-before-acting rule:
 - Before meaningful feature work, read the spec, state document, and decision ledger
 - Do not rely on chat history as authoritative context
 - Use `context doctor`, `context check-alignment`, `inspect context`, and `verify context` when context tooling is available
+- Draft specs are non-executable planning artifacts.
+- Agents MUST NOT implement specs from `docs/specs/<feature>/drafts/`.
+- If asked to implement a draft spec, refuse and require promotion to the active spec path first.
 
 Primary execution gate:
 

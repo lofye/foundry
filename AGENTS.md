@@ -265,6 +265,9 @@ Key rules:
 - IDs must be unique within a feature, not globally
 - slugs are not required to be unique
 - drafts live in `docs/specs/<feature-name>/drafts/`
+- Draft specs are non-executable planning artifacts
+- Agents MUST NOT implement specs from `docs/specs/<feature>/drafts/`
+- If asked to implement a draft spec, refuse and require promotion to the active spec path first
 - active executable specs live in `docs/specs/<feature-name>/`
 - the spec heading must mirror the filename only
 
@@ -277,10 +280,17 @@ Agents MUST:
 - not rename existing IDs
 - not add metadata fields like `id`, `parent`, or `status`
 - append implementation logs only for completed active specs
-- never implement a spec from `docs/specs/<feature>/drafts/`
-- require a spec to be promoted to the active spec path before implementation
 
 Violation of any rule above is considered an incorrect implementation.
+
+---
+
+## Repo Skills
+
+Use repository-local skills from `.skills/` before falling back to installed skills.
+
+Example:
+- `.skills/implement-spec-and-stabilize-strict.skill.md`
 
 ---
 
@@ -363,6 +373,8 @@ Stop immediately if:
 - alignment status is `mismatch`
 - required files are missing
 - spec/state/code divergence is unresolved
+- the execution spec being implemented is in a draft execution spec path
+- draft specs must be promoted to the active spec directory before implementation
 
 ## Allowed Actions While Blocked
 
