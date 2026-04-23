@@ -51,6 +51,7 @@ final class CLIImplementFeatureCommandTest extends TestCase
         $this->assertTrue($result['payload']['can_proceed']);
         $this->assertFalse($result['payload']['requires_repair']);
         $this->assertTrue($result['payload']['quality_gate']['passed']);
+        $this->assertSame('passed', $result['payload']['quality_gate']['changed_surface']['status']);
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
         $this->assertSame(0, $verify['status']);
         $this->assertSame('pass', $verify['payload']['status']);

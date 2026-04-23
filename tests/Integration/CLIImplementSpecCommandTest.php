@@ -52,6 +52,7 @@ final class CLIImplementSpecCommandTest extends TestCase
         $this->assertSame('event-bus', $result['payload']['feature']);
         $this->assertSame('completed', $result['payload']['status']);
         $this->assertTrue($result['payload']['quality_gate']['passed']);
+        $this->assertSame('passed', $result['payload']['quality_gate']['changed_surface']['status']);
         $this->assertContains('Appended implementation log entry: docs/specs/implementation-log.md', $result['payload']['actions_taken']);
         $this->assertContains('Applied execution spec: docs/specs/event-bus/001-initial.md', $result['payload']['actions_taken']);
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');

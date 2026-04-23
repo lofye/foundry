@@ -190,7 +190,7 @@ Read-before-acting rule:
 Primary execution gate:
 
 - `foundry verify context --feature=<feature> --json` is the primary machine-readable proceed/fail gate
-- Meaningful work may proceed only when `verify context` passes
+- Meaningful work may proceed only when `verify context` passes.
 - `can_proceed=true` means meaningful work may proceed
 - `can_proceed=false` means meaningful work is blocked and repair must happen first
 - `requires_repair=true` means repair is the only valid next step before implementation

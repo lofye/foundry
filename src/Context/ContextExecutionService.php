@@ -373,7 +373,9 @@ final class ContextExecutionService
             );
         }
 
-        $qualityGate = $this->implementationQualityGateService->verify();
+        $qualityGate = $this->implementationQualityGateService->verify(
+            $this->qualityGateTouchedFiles($actionsTaken),
+        );
         $actionsTaken = array_values(array_merge(
             $actionsTaken,
             array_map('strval', (array) ($qualityGate['actions_taken'] ?? [])),
@@ -428,6 +430,35 @@ final class ContextExecutionService
                 'Remove any misplaced app/features/' . $executionSpec->feature . '/ output before rerunning verification.',
             ],
         ];
+    }
+
+    /**
+     * @param list<string> $actionsTaken
+     * @return list<string>
+     */
+    private function qualityGateTouchedFiles(array $actionsTaken): array
+    {
+        $paths = [];
+
+        foreach ($actionsTaken as $action) {
+            foreach (explode(' | ', $action) as $segment) {
+                if (preg_match('/:\s+(.+)$/', $segment, $matches) !== 1) {
+                    continue;
+                }
+
+                $path = trim((string) $matches[1]);
+                if ($path === '') {
+                    continue;
+                }
+
+                $paths[] = str_replace('\\', '/', $path);
+            }
+        }
+
+        $paths = array_values(array_unique(array_filter($paths, static fn(string $path): bool => $path !== '')));
+        sort($paths);
+
+        return $paths;
     }
 
     /**

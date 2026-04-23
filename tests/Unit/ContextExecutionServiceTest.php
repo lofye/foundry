@@ -72,6 +72,7 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertFalse($result['repair_successful']);
         $this->assertTrue($result['quality_gate']['passed']);
         $this->assertSame(95.0, $result['quality_gate']['coverage']['global_line_coverage']);
+        $this->assertSame('passed', $result['quality_gate']['changed_surface']['status']);
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
         $this->assertStringContainsString('Implemented Event bus feature scaffolding exists in the app.', (string) file_get_contents($this->project->root . '/docs/features/event-bus.md'));
         $this->assertStringContainsString('### Decision: context-driven execution for event-bus', (string) file_get_contents($this->project->root . '/docs/features/event-bus.decisions.md'));

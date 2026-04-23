@@ -44,6 +44,16 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $args = $_SERVER['argv'] ?? [];
 $isCoverage = in_array('--coverage-text', $args, true);
+$coverageCloverPath = null;
+
+foreach ($args as $index => $arg) {
+    if ($arg !== '--coverage-clover') {
+        continue;
+    }
+
+    $coverageCloverPath = $args[$index + 1] ?? null;
+    break;
+}
 
 $readControl = static function (string $name, string $default) use ($root): string {
     $path = $root . '/' . $name;
@@ -56,10 +66,71 @@ $readControl = static function (string $name, string $default) use ($root): stri
 
 if ($isCoverage) {
     $exitCode = (int) $readControl('.foundry-test-coverage-exit-code', '0');
+    $skipCloverWrite = trim($readControl('.foundry-test-skip-coverage-clover', '')) === '1';
     $defaultOutput = sprintf(
         "PHPUnit 12.0.0 by Sebastian Bergmann and contributors.\n\nCode Coverage Report:\n  2026-04-21 12:00:00\n\nSummary:\n  Classes: 100.00%% (10/10)\n  Methods: 100.00%% (20/20)\n  Lines:   %s%% (95/100)\n",
         $readControl('.foundry-test-coverage-lines', '95.00'),
     );
+
+    if (!$skipCloverWrite && is_string($coverageCloverPath) && $coverageCloverPath !== '') {
+        $coverageFiles = json_decode($readControl('.foundry-test-coverage-files.json', '[]'), true);
+        if (!is_array($coverageFiles)) {
+            $coverageFiles = [];
+        }
+
+        if ($coverageFiles === []) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+            );
+
+            foreach ($iterator as $file) {
+                if (!$file instanceof SplFileInfo || !$file->isFile()) {
+                    continue;
+                }
+
+                $absolutePath = str_replace('\\', '/', $file->getPathname());
+                $relativePath = ltrim(str_replace('\\', '/', substr($absolutePath, strlen($root))), '/');
+                if (!str_ends_with($relativePath, '.php')) {
+                    continue;
+                }
+
+                if (str_starts_with($relativePath, 'vendor/')) {
+                    continue;
+                }
+
+                $coverageFiles[] = [
+                    'path' => $absolutePath,
+                    'statements' => 10,
+                    'covered_statements' => 10,
+                ];
+            }
+        }
+
+        $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<coverage generated=\"0\">\n  <project timestamp=\"0\">\n";
+        foreach ($coverageFiles as $row) {
+            if (!is_array($row) || !is_string($row['path'] ?? null)) {
+                continue;
+            }
+
+            $statements = (int) ($row['statements'] ?? 0);
+            $coveredStatements = (int) ($row['covered_statements'] ?? 0);
+            $xml .= sprintf(
+                "    <file name=\"%s\">\n      <metrics statements=\"%d\" coveredstatements=\"%d\"/>\n    </file>\n",
+                htmlspecialchars((string) $row['path'], ENT_QUOTES),
+                $statements,
+                $coveredStatements,
+            );
+        }
+        $xml .= "  </project>\n</coverage>\n";
+
+        $coverageDir = dirname($coverageCloverPath);
+        if (!is_dir($coverageDir)) {
+            mkdir($coverageDir, 0777, true);
+        }
+
+        file_put_contents($coverageCloverPath, $xml);
+    }
+
     fwrite(STDOUT, $readControl('.foundry-test-coverage-output', $defaultOutput));
     exit($exitCode);
 }

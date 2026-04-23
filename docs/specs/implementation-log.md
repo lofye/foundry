@@ -166,3 +166,8 @@
 - spec: generate-engine/002-generate-skill-integration.md
 - note: Added deterministic `safety_routing` recommendations to generate payloads and history so agent integrations can route between fast non-interactive execution and interactive review without reimplementing framework risk logic.
 - note: Added unit coverage for low-risk, elevated-risk, explicit interactive override, and CI-context routing behavior, plus integration coverage that exercises the emitted routing payload on real generate flows and aligns generate-engine docs with the new skill-contract surface.
+
+## 2026-04-22 22:45:47 -0400
+- spec: quality-enforcement/001.001-enforce-changed-surface-90-percent-coverage.md
+- note: Extended the shared implementation quality gate to derive deterministic changed-file sets from workflow-touched files or repository state, emit a Clover report during the canonical coverage run, and enforce 90% changed-surface line coverage for changed PHP source files under enforcement.
+- note: Added machine-readable changed-surface reporting for changed files examined, per-file coverage, under-covered files, and attribution failures, and removed the old unsupported changed-surface status.

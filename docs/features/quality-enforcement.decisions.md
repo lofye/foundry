@@ -90,3 +90,43 @@ Timestamp: 2026-04-21T11:05:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: enforce changed-surface coverage through workflow-touched files plus Clover attribution
+Timestamp: 2026-04-22T22:45:48-04:00
+
+**Context**
+- The initial quality-enforcement rollout deliberately deferred changed-surface enforcement and reported that gap explicitly as unsupported.
+- The active execution spec `quality-enforcement/001.001-enforce-changed-surface-90-percent-coverage.md` now requires that unsupported status to be removed and replaced with deterministic enforcement.
+- Foundry-owned implementation workflows already record the files they touch, while the repository also has a Git inspector that can derive changed files when workflow-owned file lists are unavailable.
+- The existing coverage gate already runs one canonical PHPUnit coverage command, but changed-surface attribution needs per-file data rather than only the global line summary.
+
+**Decision**
+- Extend `ImplementationQualityGateService` to enforce changed-surface coverage for changed PHP source files under enforcement.
+- Prefer the deterministic touched-file set derived from Foundry-owned workflow actions, and fall back to repository-owned changed-file detection only when no explicit touched-file list is available.
+- Extend the canonical coverage command to also emit a deterministic Clover report at `storage/tmp/foundry-quality-gate-clover.xml` during the same coverage run.
+- Fail closed when changed files cannot be determined deterministically, when Clover attribution is missing for an enforced changed file, or when any enforced changed file is below the 90% threshold.
+- Exclude docs, generated artifacts, vendor content, storage artifacts, stubs, and nested `tests/` paths from changed-surface enforcement.
+
+**Reasoning**
+- Reusing workflow-touched files is the narrowest and most trustworthy signal for Foundry-owned implementation completion because it avoids conflating unrelated dirty-worktree files with the current run.
+- Git inspection remains a deterministic repository-owned fallback when explicit workflow file lists are unavailable.
+- Clover attribution adds the minimum extra machine-readable surface needed for per-file line coverage without introducing a second disconnected enforcement flow.
+- Failing closed preserves the core quality-enforcement principle that implementation completion must not be reported as final when required evidence is missing.
+- Excluding non-runtime or non-enforced surfaces keeps the gate focused on changed implementation code rather than docs or generated internals.
+
+**Alternatives Considered**
+- Continue reporting changed-surface coverage as unsupported.
+- Enforce changed-surface coverage from the current dirty working tree alone, even when the workflow already knows which files it touched.
+- Introduce a second standalone changed-surface verification command instead of extending the existing shared quality gate.
+- Attempt heuristic attribution from text coverage output alone without machine-readable per-file coverage data.
+
+**Impact**
+- `implement feature` and `implement spec` now require full-suite, global, and changed-surface coverage evidence before reporting final success.
+- Quality-gate payloads now report deterministic changed-file sets, per-file changed-surface coverage, and under-covered changed files.
+- Unsupported changed-surface reporting is removed in favor of real enforcement or explicit hard failure when attribution cannot be trusted.
+
+**Spec Reference**
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria
