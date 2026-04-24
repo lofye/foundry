@@ -161,6 +161,48 @@ Timestamp: 2026-04-23T12:29:29-04:00
 - Requested Changes
 - Acceptance Criteria
 
+### Decision: upgrade persisted-plan undo to structured snapshot-and-patch rollback with integrity checks
+
+Timestamp: 2026-04-23T16:59:57-04:00
+
+**Context**
+
+- `004-plan-snapshot-and-patch-based-undo` required persisted generate plans to carry stronger rollback data than the first conservative undo step from `003.002`.
+- The existing undo contract could restore files from stored pre-change snapshots, but it did not expose a real patch-based path, store post-change integrity signals, or distinguish clearly between snapshot-backed and patch-backed reversal.
+- The new step still prohibited Git dependence and full version-control semantics, so the stronger rollback model had to remain repository-local and deterministic.
+
+**Decision**
+
+- Extend successful live persisted plan records to store structured rollback payloads with `file_snapshots_before`, `file_snapshots_after`, unified-diff `patches`, and before/after integrity hashes.
+- Teach `plan:undo` to prefer patch-backed restoration for updated or deleted files when a valid stored patch is available, and to fall back to snapshot-backed restoration when patch data is unavailable but trusted snapshots exist.
+- Validate stored post-change hashes against the current filesystem before applying rollback, emit explicit `integrity_warnings`, and refuse or skip affected actions instead of guessing when integrity has drifted.
+- Extend undo output with deterministic rollback-specific fields including `rollback_mode`, `reversible`, `files_recovered`, `files_unrecoverable`, and `confidence_level`.
+
+**Reasoning**
+
+- Persisting both snapshots and unified diffs keeps rollback data self-contained and deterministic while letting undo scale beyond pure snapshot restore for common update/delete paths.
+- Hash-based integrity checks make rollback safer by turning hidden divergence into explicit warnings and skips rather than silent overwrite behavior.
+- Keeping patch use inside the existing persisted-plan undo surface avoids creating a second rollback subsystem or drifting away from the append-only `.foundry/plans/` contract.
+
+**Alternatives Considered**
+
+- Keep snapshot-only rollback and treat `004` as documentation-only tightening.
+- Persist only patches and remove stored snapshots entirely.
+- Require Git for integrity and rollback instead of embedding rollback payloads in plan artifacts.
+
+**Impact**
+
+- Persisted generate plans now carry enough structured rollback data to support both snapshot-backed and patch-backed undo deterministically.
+- Undo output is more explicit about rollback fidelity, integrity mismatches, and actual recovered versus unrecoverable files.
+- Future rollback work can build on the same artifact contract without backtracking on the no-guessing rule.
+
+**Spec Reference**
+
+- Purpose
+- Requested Changes
+- Authority Rule
+- Completion Signals
+
 ### Decision: implement explicit persisted-plan replay on top of the existing generate execution path
 
 Timestamp: 2026-04-23T10:11:10-04:00

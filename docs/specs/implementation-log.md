@@ -187,3 +187,8 @@
 - spec: generate-engine/003.002-plan-undo.md
 - note: Added `plan:undo` with conservative dry-run and live rollback modes, explicit `--yes` gating for destructive generated-file deletion, and deterministic reporting of reversible, irreversible, and unsafe-skipped actions.
 - note: Extended successful persisted plan artifacts with minimal pre-change file snapshots so V1 undo can restore updated or deleted files only when rollback inputs are explicitly available, and added focused undo integration plus unit coverage.
+
+## 2026-04-23 16:59:57 -0400
+- spec: generate-engine/004-plan-snapshot-and-patch-based-undo.md
+- note: Upgraded persisted generate plan rollback data to store before/after snapshots, unified-diff patches, and integrity hashes so undo can use structured rollback inputs instead of snapshot-only best effort.
+- note: Extended `plan:undo` to select snapshot or patch rollback deterministically, surface `rollback_mode`, `reversible`, `files_recovered`, `files_unrecoverable`, `integrity_warnings`, and `confidence_level`, and added focused patch, deleted-file, integrity-mismatch, and determinism coverage.

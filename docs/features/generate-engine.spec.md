@@ -42,9 +42,9 @@
 - Successful runs, failed runs, and interactive rejections all persist terminal plan artifacts with truthful status semantics instead of leaving failures to logs only.
 - `plan:list` provides a deterministic list of persisted generate plan summaries and `plan:show <plan_id>` resolves one canonical persisted record by plan id.
 - `plan:replay <plan_id>` reuses a persisted generate plan artifact by selecting the approved final plan when present and otherwise the original executable plan, then revalidates it before execution.
-- `plan:undo <plan_id>` performs conservative best-effort rollback from persisted plan artifacts, supports dry-run preview, and requires explicit confirmation before deleting generated files.
+- `plan:undo <plan_id>` performs deterministic rollback from persisted plan artifacts, supports dry-run preview, requires explicit confirmation before deleting generated files, and uses structured snapshot or patch rollback data instead of guesswork.
 - Replay supports adaptive drift-aware execution by default, strict replay failure with `--strict`, and dry-run validation with `--dry-run`.
-- Persisted plan records retain the execution metadata needed to reconstruct replay intent deterministically without regenerating a fresh plan silently, and successful live runs persist the minimal pre-change file snapshots needed for V1 undo support.
+- Persisted plan records retain the execution metadata needed to reconstruct replay intent deterministically without regenerating a fresh plan silently, and successful live runs now persist structured rollback inputs including before/after snapshots, unified diffs, and integrity hashes for undo.
 - The dedicated persisted plan surface coexists with the broader shared `history` surface instead of replacing it in this step.
 - The older `history --kind=generate` surface remains available for compatibility and broader build and observability style history while persisted plans stabilize as a dedicated contract.
 - Repository-owned integration coverage includes a valid non-destructive interactive smoke path that uses the required `--mode`, reaches review logic, and can reject without filesystem mutation.
@@ -63,9 +63,9 @@
 - Persisted generate plan artifacts use UUID plan ids, filesystem-safe timestamped paths, and truthful terminal status values for success, failure, and abort outcomes.
 - `plan:list` and `plan:show <plan_id>` expose deterministic inspection of persisted generate plan history.
 - `plan:replay <plan_id>` replays persisted generate plans explicitly, fails clearly when replayable plan data is missing, and uses the stored plan artifact as the execution basis instead of silently regenerating a new plan.
-- `plan:undo <plan_id>` previews or applies conservative rollback explicitly, reports reversible versus irreversible actions honestly, and refuses destructive file deletions until the user confirms with `--yes`.
+- `plan:undo <plan_id>` previews or applies snapshot- or patch-backed rollback explicitly, reports reversible versus irreversible actions honestly, and refuses destructive file deletions until the user confirms with `--yes`.
 - Replay exposes adaptive, strict, and dry-run modes with explicit `drift_detected`, `drift_summary`, `actions_executed`, and `verification` output.
-- Undo exposes deterministic `status`, `fully_reversible`, `reversible_actions`, `reversed_actions`, `irreversible_actions`, `skipped_actions`, and `warnings` output.
+- Undo exposes deterministic `rollback_mode`, `reversible`, `files_recovered`, `files_unrecoverable`, `integrity_warnings`, `confidence_level`, `status`, `reversible_actions`, `reversed_actions`, `irreversible_actions`, `skipped_actions`, and `warnings` output.
 - The older `history --kind=generate` inspection surface remains available alongside persisted plan records for broader compatibility-oriented history workflows.
 - Interactive generate coverage includes an explicit valid smoke invocation that reaches review behavior without failing early in argument validation.
 - Adding interactive review does not regress the default non-interactive workflow.
