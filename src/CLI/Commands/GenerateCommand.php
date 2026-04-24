@@ -63,6 +63,10 @@ final class GenerateCommand extends Command
             return false;
         }
 
+        if ($this->hasWorkflowFlag($args)) {
+            return true;
+        }
+
         $target = trim((string) ($args[1] ?? ''));
         if ($target === '' || str_starts_with($target, '--')) {
             return false;
@@ -83,7 +87,7 @@ final class GenerateCommand extends Command
         ))->run($intent);
 
         return [
-            'status' => 0,
+            'status' => ($payload['ok'] ?? true) === true ? 0 : 1,
             'message' => $context->expectsJson() ? null : $this->renderMessage($payload),
             'payload' => $context->expectsJson() ? $payload : null,
         ];
@@ -97,6 +101,8 @@ final class GenerateCommand extends Command
         $parts = [];
         $mode = null;
         $target = null;
+        $workflowPath = null;
+        $multiStep = false;
         $interactive = false;
         $dryRun = false;
         $policyCheck = false;
@@ -123,6 +129,11 @@ final class GenerateCommand extends Command
 
             if ($arg === '--dry-run') {
                 $dryRun = true;
+                continue;
+            }
+
+            if ($arg === '--multi-step') {
+                $multiStep = true;
                 continue;
             }
 
@@ -187,6 +198,17 @@ final class GenerateCommand extends Command
                 continue;
             }
 
+            if (str_starts_with($arg, '--workflow=')) {
+                $workflowPath = trim(substr($arg, strlen('--workflow=')));
+                continue;
+            }
+
+            if ($arg === '--workflow') {
+                $workflowPath = trim((string) ($args[$index + 1] ?? ''));
+                $skipNext = true;
+                continue;
+            }
+
             if ($arg === '--target') {
                 $target = trim((string) ($args[$index + 1] ?? ''));
                 $skipNext = true;
@@ -223,6 +245,82 @@ final class GenerateCommand extends Command
         }
 
         $rawIntent = trim(implode(' ', $parts));
+        if ($workflowPath !== null && $workflowPath !== '') {
+            if ($rawIntent !== '') {
+                throw new FoundryError(
+                    'GENERATE_WORKFLOW_INTENT_CONFLICT',
+                    'validation',
+                    [],
+                    'Generate workflow runs do not accept a free-form top-level intent.',
+                );
+            }
+
+            if ($mode !== null && $mode !== '') {
+                throw new FoundryError(
+                    'GENERATE_WORKFLOW_MODE_CONFLICT',
+                    'validation',
+                    [],
+                    'Generate workflow steps declare their own modes; omit top-level --mode.',
+                );
+            }
+
+            if ($target !== null && $target !== '') {
+                throw new FoundryError(
+                    'GENERATE_WORKFLOW_TARGET_CONFLICT',
+                    'validation',
+                    [],
+                    'Generate workflow steps declare their own targets; omit top-level --target.',
+                );
+            }
+
+            if ($gitCommit) {
+                throw new FoundryError(
+                    'GENERATE_WORKFLOW_GIT_COMMIT_UNSUPPORTED',
+                    'validation',
+                    [],
+                    'Generate workflow does not support top-level --git-commit yet.',
+                );
+            }
+
+            if ($explainAfter) {
+                throw new FoundryError(
+                    'GENERATE_WORKFLOW_EXPLAIN_UNSUPPORTED',
+                    'validation',
+                    [],
+                    'Generate workflow does not support top-level --explain yet.',
+                );
+            }
+
+            return new Intent(
+                raw: 'workflow ' . $workflowPath,
+                mode: 'workflow',
+                target: null,
+                workflowPath: $workflowPath,
+                multiStep: $multiStep,
+                interactive: $interactive,
+                dryRun: $dryRun,
+                policyCheck: $policyCheck,
+                skipVerify: $skipVerify,
+                explainAfter: false,
+                allowRisky: $allowRisky,
+                allowPolicyViolations: $allowPolicyViolations,
+                allowDirty: $allowDirty,
+                allowPackInstall: $allowPackInstall,
+                gitCommit: false,
+                gitCommitMessage: null,
+                packHints: $packHints,
+            );
+        }
+
+        if ($multiStep) {
+            throw new FoundryError(
+                'GENERATE_MULTI_STEP_WORKFLOW_REQUIRED',
+                'validation',
+                [],
+                'Generate requires --workflow when --multi-step is used.',
+            );
+        }
+
         if ($rawIntent === '') {
             throw new FoundryError(
                 'GENERATE_INTENT_REQUIRED',
@@ -272,6 +370,8 @@ final class GenerateCommand extends Command
             raw: $rawIntent,
             mode: $mode,
             target: $target,
+            workflowPath: null,
+            multiStep: false,
             interactive: $interactive,
             dryRun: $dryRun,
             policyCheck: $policyCheck,
@@ -328,10 +428,32 @@ final class GenerateCommand extends Command
     }
 
     /**
+     * @param array<int,string> $args
+     */
+    private function hasWorkflowFlag(array $args): bool
+    {
+        foreach ($args as $index => $arg) {
+            if ($index === 0) {
+                continue;
+            }
+
+            if ($arg === '--workflow' || str_starts_with($arg, '--workflow=') || $arg === '--multi-step') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param array<string,mixed> $payload
      */
     private function renderMessage(array $payload): string
     {
+        if (is_array($payload['workflow'] ?? null)) {
+            return $this->renderWorkflowMessage($payload);
+        }
+
         $feature = trim((string) ($payload['plan']['metadata']['feature'] ?? ''));
         $files = count((array) ($payload['plan']['affected_files'] ?? []));
         $generator = (string) ($payload['plan']['generator_id'] ?? 'generate');
@@ -479,6 +601,54 @@ final class GenerateCommand extends Command
             $lines[] = '    foundry explain';
             $lines[] = '- Continue iterating:';
             $lines[] = '    ' . $this->refineCommand($payload);
+        }
+
+        return implode(PHP_EOL, $lines);
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    private function renderWorkflowMessage(array $payload): string
+    {
+        $workflow = is_array($payload['workflow'] ?? null) ? $payload['workflow'] : [];
+        $steps = array_values(array_filter((array) ($workflow['steps'] ?? []), 'is_array'));
+        $completed = count(array_filter(
+            $steps,
+            static fn(array $step): bool => (string) ($step['status'] ?? '') === 'complete',
+        ));
+
+        $lines = [
+            ($payload['ok'] ?? false) === true ? 'Generate workflow completed.' : 'Generate workflow failed.',
+            'Workflow: ' . (string) ($workflow['id'] ?? ''),
+            'Source: ' . (string) ($workflow['path'] ?? ''),
+            'Status: ' . (string) ($workflow['status'] ?? (($payload['ok'] ?? false) === true ? 'success' : 'failed')),
+            sprintf('Steps: %d/%d complete', $completed, count($steps)),
+        ];
+
+        $failedStepId = trim((string) ($workflow['failed_step_id'] ?? ''));
+        if ($failedStepId !== '') {
+            $lines[] = 'Failed step: ' . $failedStepId;
+        }
+
+        $lines[] = '';
+        $lines[] = 'Step progression:';
+        foreach ($steps as $step) {
+            $lines[] = sprintf(
+                '- [%s] %s: %s',
+                (string) ($step['status'] ?? 'pending'),
+                (string) ($step['id'] ?? 'step'),
+                (string) ($step['description'] ?? 'Generate workflow step'),
+            );
+        }
+
+        $rollbackGuidance = array_values(array_filter(array_map('strval', (array) ($workflow['rollback_guidance'] ?? []))));
+        if ($rollbackGuidance !== []) {
+            $lines[] = '';
+            $lines[] = 'Rollback guidance:';
+            foreach ($rollbackGuidance as $guidance) {
+                $lines[] = '- ' . $guidance;
+            }
         }
 
         return implode(PHP_EOL, $lines);

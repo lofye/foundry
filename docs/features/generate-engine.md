@@ -11,6 +11,8 @@
 - Generate JSON payloads and default human output now include a deterministic `safety_routing` recommendation for the `generate-with-safety-routing` skill contract.
 - Generate now optionally loads `.foundry/policies/generate.json`, evaluates deterministic V1 repository-local policy rules against validated plans before execution, and returns policy status, matched rules, warnings, violations, and override metadata in both human and JSON output.
 - `foundry generate --policy-check` now evaluates planning, validation, and repository policy without executing feature-file writes, and `--allow-policy-violations` now acts as an explicit visible override for blocking policy results.
+- `foundry generate --workflow=<file> [--multi-step]` now loads repository-local JSON workflow definitions, executes steps sequentially through the existing single-step generate engine, resolves `{{shared.*}}` and `{{steps.<id>.*}}` placeholders deterministically, and emits per-step input/output/status plus explicit rollback guidance on fail-fast workflow errors.
+- Workflow runs now persist a parent workflow plan record in addition to the underlying per-step generate plan records so grouped workflow execution remains inspectable without hiding step-level rollback artifacts.
 - `foundry generate --interactive` and `foundry generate -i` now render a plan summary, per-action detail, and file diffs before mutation.
 - Interactive generate now supports approve, reject, and minimal plan modification by excluding actions or files and by toggling risky actions before execution.
 - Interactive generate now surfaces policy warnings and violations during review, re-evaluates policy after plan modifications, and requires explicit confirmation before executing a policy-denied plan with an override.
@@ -42,6 +44,8 @@
 - Should future generate policy work add non-overrideable blocking rules, or keep V1-style explicit overrides as the only enforcement escape hatch?
 - Should future undo support grow beyond single-plan snapshot and patch rollback into richer graph-aware or git-assisted restoration without weakening the current deterministic contract?
 - Should replay eventually persist its own execution history separately from the original generate plan record, or remain a read-and-apply operation only?
+- Should workflow runs eventually gain first-class replay and grouped undo semantics on top of the parent workflow plan record instead of relying on the persisted per-step plan records?
+- Should workflow mode eventually support top-level `--explain` and `--git-commit`, or should those remain follow-on work until grouped semantics are specified?
 
 ## Next Steps
 
@@ -51,3 +55,5 @@
 - Decide whether future policy iterations need non-overrideable rules, starter policy templates, or broader scoped matching beyond the current repository-local V1 contract.
 - Decide how undo commands should layer on top of the new `.foundry/plans/` record contract without introducing divergent history state.
 - Decide whether replay should eventually emit its own persisted operational history in addition to reusing the stored plan artifact contract.
+- Decide whether workflow runs should add grouped replay and undo semantics beyond the current parent-record inspection plus per-step rollback guidance.
+- Decide whether workflow mode should grow explicit top-level explain or git-commit support once grouped output and commit semantics are specified.

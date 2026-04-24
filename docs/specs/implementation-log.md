@@ -201,3 +201,15 @@
 - note: Updated generate-engine feature docs and decision ledger.
 - note: Added focused unit and integration coverage.
 - note: Resolved test warnings/deprecations to satisfy strict coverage gate (now exits 0 at 90.02% line coverage).
+
+## 2026-04-24 11:15:00 -0400
+- spec: generate-engine/006-multi-step-generate.md
+- note: Added repository-local JSON workflow execution through `foundry generate --workflow=<file> [--multi-step]` with explicit step ids, dependency ordering, and deterministic shared-context placeholder resolution.
+- note: Reused the existing single-step generate pipeline for each workflow step, surfaced per-step input/output/status in CLI and JSON output, and added explicit fail-fast rollback guidance for partial-success workflows.
+- note: Persisted grouped workflow plan records alongside the underlying per-step plan records, updated generate-engine docs and decisions, and added focused workflow loader, CLI, and integration coverage.
+- note: workflow CLI support
+- note: deterministic step execution
+- note: placeholder resolution model
+- note: fail-fast behavior
+- note: grouped plan records
+- note: strict coverage passing

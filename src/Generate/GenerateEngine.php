@@ -64,6 +64,18 @@ final class GenerateEngine
      */
     public function run(Intent $intent): array
     {
+        if ($intent->isWorkflow()) {
+            return $this->runWorkflow($intent);
+        }
+
+        return $this->runSingle($intent);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function runSingle(Intent $intent): array
+    {
         $gitInspector = new GitRepositoryInspector($this->paths->root());
         $planStore = new PlanRecordStore($this->paths);
         $policyEngine = new GeneratePolicyEngine($this->paths);
@@ -505,6 +517,196 @@ final class GenerateEngine
     /**
      * @return array<string,mixed>
      */
+    private function runWorkflow(Intent $intent): array
+    {
+        $loader = new GenerateWorkflowLoader($this->paths);
+        $resolver = new GenerateWorkflowContextResolver();
+        $definition = $loader->load((string) $intent->workflowPath);
+        if ($intent->multiStep && count($definition->steps) < 2) {
+            throw new FoundryError(
+                'GENERATE_WORKFLOW_MULTI_STEP_MINIMUM',
+                'validation',
+                ['path' => $definition->path],
+                'Generate workflow requires at least two steps when --multi-step is used.',
+            );
+        }
+
+        $compiler = new GraphCompiler($this->paths, ExtensionRegistry::forPaths($this->paths));
+        $artifactStore = new BuildArtifactStore($compiler->buildLayout());
+        $planStore = new PlanRecordStore($this->paths);
+        $planId = Uuid::v4();
+        $runtimeContext = [
+            'shared' => $definition->sharedContext,
+            'steps' => [],
+            'workflow' => [
+                'id' => $definition->id,
+                'path' => $definition->path,
+            ],
+        ];
+        $steps = [];
+        $actionsTaken = [];
+        $packsInstalled = [];
+        $packsUsed = [];
+        $affectedFiles = [];
+        $rollbackGuidance = [];
+        $verificationSteps = [];
+        $error = null;
+
+        foreach ($definition->steps as $stepDefinition) {
+            $step = $resolver->resolveStep($stepDefinition, $runtimeContext);
+            foreach ($step->dependencies as $dependency) {
+                $dependencyStatus = (string) ($runtimeContext['steps'][$dependency]['status'] ?? '');
+                if ($dependencyStatus !== 'complete') {
+                    $error = [
+                        'code' => 'GENERATE_WORKFLOW_DEPENDENCY_UNRESOLVED',
+                        'message' => 'Generate workflow dependency did not complete successfully.',
+                        'details' => [
+                            'step_id' => $step->id,
+                            'dependency' => $dependency,
+                        ],
+                    ];
+                    $steps[] = [
+                        'id' => $step->id,
+                        'description' => $step->description,
+                        'dependencies' => $step->dependencies,
+                        'status' => 'failed',
+                        'input' => $this->workflowStepInput($step),
+                        'error' => $error,
+                    ];
+
+                    break 2;
+                }
+            }
+
+            $stepIntent = new Intent(
+                raw: $step->rawIntent,
+                mode: $step->mode,
+                target: $step->target,
+                workflowPath: null,
+                multiStep: false,
+                interactive: $intent->interactive,
+                dryRun: $intent->dryRun,
+                policyCheck: $intent->policyCheck,
+                skipVerify: $intent->skipVerify,
+                explainAfter: false,
+                allowRisky: $intent->allowRisky,
+                allowPolicyViolations: $intent->allowPolicyViolations,
+                allowDirty: $intent->allowDirty,
+                allowPackInstall: $intent->allowPackInstall,
+                gitCommit: false,
+                gitCommitMessage: null,
+                packHints: array_values(array_unique(array_merge($intent->packHints, $step->packHints))),
+            );
+
+            try {
+                $stepPayload = $this->runSingle($stepIntent);
+                $stepSummary = $this->workflowStepSummary($step, $stepPayload);
+                $steps[] = $stepSummary;
+                $runtimeContext['steps'][$step->id] = $this->workflowContextExtension($stepSummary);
+                $actionsTaken = array_values(array_merge($actionsTaken, array_values(array_filter((array) ($stepPayload['actions_taken'] ?? []), 'is_array'))));
+                $packsInstalled = array_values(array_merge($packsInstalled, array_values(array_filter((array) ($stepPayload['packs_installed'] ?? []), 'is_array'))));
+                $packsUsed = array_values(array_merge($packsUsed, array_values(array_map('strval', (array) ($stepPayload['packs_used'] ?? [])))));
+                $affectedFiles = array_values(array_merge($affectedFiles, array_values(array_map('strval', (array) ($stepPayload['plan']['affected_files'] ?? [])))));
+                $verificationSteps[] = [
+                    'step_id' => $step->id,
+                    'ok' => (bool) (($stepPayload['verification_results']['ok'] ?? false) === true),
+                    'skipped' => (bool) (($stepPayload['verification_results']['skipped'] ?? false) === true),
+                ];
+            } catch (\Throwable $stepError) {
+                $rollbackGuidance = $this->workflowRollbackGuidance($steps);
+                $publicError = $this->publicErrorPayload($stepError);
+                $error = $publicError + [
+                    'details' => array_merge(
+                        is_array($publicError['details'] ?? null)
+                            ? (array) $publicError['details']
+                            : [],
+                        ['failed_step_id' => $step->id],
+                    ),
+                ];
+                $steps[] = [
+                    'id' => $step->id,
+                    'description' => $step->description,
+                    'dependencies' => $step->dependencies,
+                    'status' => 'failed',
+                    'input' => $this->workflowStepInput($step),
+                    'error' => $error,
+                ];
+                break;
+            }
+        }
+
+        $packsUsed = array_values(array_unique($packsUsed));
+        sort($packsUsed);
+        $affectedFiles = array_values(array_unique($affectedFiles));
+        sort($affectedFiles);
+
+        $ok = $error === null;
+        $workflow = [
+            'id' => $definition->id,
+            'path' => $definition->path,
+            'multi_step' => count($definition->steps) > 1,
+            'status' => $ok ? 'success' : 'failed',
+            'shared_context_initial' => $runtimeContext['shared'],
+            'shared_context_final' => $runtimeContext,
+            'step_count' => count($definition->steps),
+            'completed_steps' => count(array_filter(
+                $steps,
+                static fn(array $step): bool => (string) ($step['status'] ?? '') === 'complete',
+            )),
+            'failed_step_id' => $ok ? null : ($steps[count($steps) - 1]['id'] ?? null),
+            'steps' => $steps,
+            'rollback_guidance' => $rollbackGuidance,
+        ];
+
+        $verificationResults = [
+            'ok' => $ok,
+            'skipped' => $verificationSteps !== [] && count(array_filter(
+                $verificationSteps,
+                static fn(array $step): bool => ($step['skipped'] ?? false) === true,
+            )) === count($verificationSteps),
+            'steps' => $verificationSteps,
+        ];
+
+        $payload = [
+            'ok' => $ok,
+            'intent' => $intent->raw,
+            'mode' => 'workflow',
+            'actions_taken' => $actionsTaken,
+            'verification_results' => $verificationResults,
+            'errors' => $error !== null ? [$error] : [],
+            'error' => $error,
+            'metadata' => [
+                'dry_run' => $intent->dryRun,
+                'policy_check' => $intent->policyCheck,
+                'workflow_path' => $definition->path,
+                'multi_step' => $intent->multiStep || count($definition->steps) > 1,
+                'context' => $runtimeContext,
+            ],
+            'packs_used' => $packsUsed,
+            'packs_installed' => $packsInstalled,
+            'workflow' => $workflow,
+        ];
+
+        $record = $artifactStore->persistGenerateRecord($this->workflowHistoryPayload($payload));
+        $planRecord = $planStore->persist($this->workflowPlanRecordPayload(
+            planId: $planId,
+            intent: $intent,
+            workflow: $workflow,
+            actionsTaken: $actionsTaken,
+            verificationResults: $verificationResults,
+            affectedFiles: $affectedFiles,
+            packsUsed: $packsUsed,
+            error: $error,
+        ));
+        $payload['record'] = $this->historyRecordReference($record);
+        $payload['plan_record'] = $this->planRecordReference($planRecord);
+
+        return $payload;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
     public function replay(string $planId, bool $strict = false, bool $dryRun = false): array
     {
         $record = (new PlanRecordStore($this->paths))->load($planId);
@@ -796,6 +998,178 @@ final class GenerateEngine
             'policy' => $payload['policy'] ?? null,
             'source_hash' => $sourceHash,
         ];
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @return array<string,mixed>
+     */
+    private function workflowHistoryPayload(array $payload): array
+    {
+        return [
+            'intent' => [
+                'raw' => $payload['intent'] ?? '',
+                'mode' => 'workflow',
+            ],
+            'target' => $payload['metadata']['workflow_path'] ?? null,
+            'workflow' => $payload['workflow'] ?? [],
+            'actions_taken' => $payload['actions_taken'] ?? [],
+            'verification_results' => $payload['verification_results'] ?? [],
+            'metadata' => [
+                'dry_run' => $payload['metadata']['dry_run'] ?? false,
+                'policy_check' => $payload['metadata']['policy_check'] ?? false,
+                'workflow_path' => $payload['metadata']['workflow_path'] ?? null,
+                'multi_step' => $payload['metadata']['multi_step'] ?? false,
+            ],
+            'packs_used' => $payload['packs_used'] ?? [],
+            'packs_installed' => $payload['packs_installed'] ?? [],
+            'source_hash' => null,
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function workflowPlanRecordPayload(
+        string $planId,
+        Intent $intent,
+        array $workflow,
+        array $actionsTaken,
+        array $verificationResults,
+        array $affectedFiles,
+        array $packsUsed,
+        ?array $error,
+    ): array {
+        return [
+            'plan_id' => $planId,
+            'timestamp' => null,
+            'storage_path' => null,
+            'intent' => $intent->raw,
+            'mode' => 'workflow',
+            'targets' => [],
+            'generation_context_packet' => [
+                'workflow' => [
+                    'id' => $workflow['id'] ?? null,
+                    'path' => $workflow['path'] ?? null,
+                    'shared_context_initial' => $workflow['shared_context_initial'] ?? [],
+                    'shared_context_final' => $workflow['shared_context_final'] ?? [],
+                ],
+            ],
+            'plan_original' => null,
+            'plan_final' => null,
+            'interactive' => null,
+            'user_decisions' => [],
+            'actions_executed' => $actionsTaken,
+            'affected_files' => $affectedFiles,
+            'risk_level' => null,
+            'policy' => null,
+            'verification_results' => $verificationResults,
+            'status' => $error === null ? 'success' : 'failed',
+            'error' => $error,
+            'undo' => null,
+            'workflow' => $workflow,
+            'metadata' => [
+                'requested_intent' => $intent->toArray(),
+                'dry_run' => $intent->dryRun,
+                'policy_check' => $intent->policyCheck,
+                'interactive_requested' => $intent->interactive,
+                'workflow_id' => $workflow['id'] ?? null,
+                'workflow_path' => $workflow['path'] ?? null,
+                'multi_step' => $workflow['multi_step'] ?? false,
+                'step_ids' => array_values(array_map(
+                    static fn(array $step): string => (string) ($step['id'] ?? ''),
+                    array_values(array_filter((array) ($workflow['steps'] ?? []), 'is_array')),
+                )),
+                'packs_used' => $packsUsed,
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function workflowStepInput(GenerateWorkflowStepDefinition $step): array
+    {
+        return [
+            'intent' => $step->rawIntent,
+            'mode' => $step->mode,
+            'target' => $step->target,
+            'packs' => $step->packHints,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @return array<string,mixed>
+     */
+    private function workflowStepSummary(GenerateWorkflowStepDefinition $step, array $payload): array
+    {
+        return [
+            'id' => $step->id,
+            'description' => $step->description,
+            'dependencies' => $step->dependencies,
+            'status' => 'complete',
+            'input' => $this->workflowStepInput($step),
+            'output' => [
+                'plan' => $payload['plan'] ?? null,
+                'target' => $payload['metadata']['target'] ?? null,
+                'actions_taken' => $payload['actions_taken'] ?? [],
+                'verification_results' => $payload['verification_results'] ?? [],
+                'plan_record' => $payload['plan_record'] ?? null,
+                'record' => $payload['record'] ?? null,
+                'packs_used' => $payload['packs_used'] ?? [],
+                'packs_installed' => $payload['packs_installed'] ?? [],
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $stepSummary
+     * @return array<string,mixed>
+     */
+    private function workflowContextExtension(array $stepSummary): array
+    {
+        $plan = is_array($stepSummary['output']['plan'] ?? null) ? $stepSummary['output']['plan'] : [];
+        $target = is_array($stepSummary['output']['target'] ?? null) ? $stepSummary['output']['target'] : null;
+
+        return [
+            'status' => $stepSummary['status'] ?? 'complete',
+            'feature' => $plan['metadata']['feature'] ?? null,
+            'target' => $target,
+            'generator_id' => $plan['generator_id'] ?? null,
+            'origin' => $plan['origin'] ?? null,
+            'affected_files' => $plan['affected_files'] ?? [],
+            'plan_record' => $stepSummary['output']['plan_record'] ?? null,
+        ];
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $steps
+     * @return array<int,string>
+     */
+    private function workflowRollbackGuidance(array $steps): array
+    {
+        $guidance = [];
+
+        foreach ($steps as $step) {
+            if ((string) ($step['status'] ?? '') !== 'complete') {
+                continue;
+            }
+
+            $planRecordId = trim((string) ($step['output']['plan_record']['plan_id'] ?? ''));
+            if ($planRecordId === '') {
+                continue;
+            }
+
+            $guidance[] = sprintf(
+                'Review step %s with `foundry plan:show %s` and undo it with `foundry plan:undo %s --dry-run` if needed.',
+                (string) ($step['id'] ?? 'step'),
+                $planRecordId,
+                $planRecordId,
+            );
+        }
+
+        return $guidance;
     }
 
     private function interactivePayload(GenerationPlan $originalPlan, ?InteractiveGenerateReviewResult $review): ?array

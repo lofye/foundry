@@ -40,6 +40,8 @@
 - Generate optionally loads `.foundry/policies/generate.json`, evaluates deterministic repository-local policy rules against the validated plan before execution, and surfaces policy status, matched rules, warnings, violations, and override state in both human and JSON output.
 - `foundry generate --policy-check` evaluates plan policy without mutating feature files, while `--allow-policy-violations` remains an explicit override that must stay visible in output and persisted plan history.
 - V1 generate policy violations remain overrideable only through an explicit CLI override or explicit interactive confirmation, and policy results are persisted alongside terminal generate plan records.
+- `foundry generate --workflow=<file> [--multi-step]` now executes repository-local JSON workflow definitions as ordered multi-step generate runs with explicit dependencies, deterministic shared-context placeholder resolution, per-step input/output/status reporting, and fail-fast rollback guidance.
+- Workflow steps reuse the existing single-step generate planner, validator, policy checks, interactive review, and persisted plan-record pipeline instead of creating a separate execution engine.
 - Every terminal generate run persists a canonical plan record under `.foundry/plans/` with plan identity, intent, targets, generation context, original/final plan data, execution outcome, verification data, and explicit storage version metadata.
 - Persisted generate plan records use UUID plan ids and filesystem-safe timestamped filenames.
 - Successful runs, failed runs, and interactive rejections all persist terminal plan artifacts with truthful status semantics instead of leaving failures to logs only.
@@ -64,6 +66,8 @@
 - Interactive generate emits stable human and JSON output that records plan state, decisions, execution, and verification.
 - Generate emits stable human and JSON policy results covering whether a repository policy was loaded, the evaluated status, matched rules, surfaced warnings or violations, and whether an explicit override was used.
 - `foundry generate --policy-check` evaluates the plan and repository policy without executing file mutations, and policy-denied plans do not execute silently without an explicit override.
+- `foundry generate --workflow=<file> [--multi-step]` executes ordered workflow steps sequentially, resolves explicit dependencies, merges deterministic shared-context outputs between steps, and reports each step’s input, output, and status in CLI and JSON output.
+- Workflow runs fail fast on the first failing step, return the failed step id and rollback guidance explicitly, and keep earlier successful steps visible instead of collapsing them into silent partial success.
 - Terminal generate runs persist append-only plan artifacts under `.foundry/plans/` with an explicit storage version and canonical plan/execution metadata.
 - Persisted generate plan artifacts use UUID plan ids, filesystem-safe timestamped paths, and truthful terminal status values for success, failure, and abort outcomes.
 - `plan:list` and `plan:show <plan_id>` expose deterministic inspection of persisted generate plan history.

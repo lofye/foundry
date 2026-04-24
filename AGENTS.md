@@ -41,6 +41,37 @@ Execution rules:
 - when specs, commands, or validation rules tightly constrain the task, follow them rather than improvising
 - do not treat the reasoning policy as optional guidance
 
+### Command Execution Permission
+
+Agents MAY run non-destructive shell commands without asking for confirmation when the command is needed to inspect, test, validate, or measure the repository.
+
+Allowed without confirmation:
+- reading files
+- listing directories
+- searching the repository
+- running tests
+- running coverage
+- running Foundry CLI validation/inspection commands
+- generating local reports under ignored/temp paths
+- modifying files inside the repository as part of the active implementation task
+- deleting or recreating temporary/build/cache artifacts inside the repository
+
+Agents MUST NOT pause for confirmation before running commands that are:
+- repository-local
+- non-destructive outside the repository
+- necessary to complete the requested task
+
+Agents MUST ask for confirmation before:
+- deleting files outside the repository
+- modifying global/system/user configuration
+- installing system packages
+- accessing credentials or secrets
+- making network calls unless explicitly required by the task
+- publishing, deploying, tagging, releasing, or pushing changes
+- running destructive commands outside the repository
+
+If unsure, prefer the safest repository-local command that gathers more information rather than pausing.
+
 ---
 
 ## Philosophy
@@ -115,6 +146,8 @@ Do not skip:
 ---
 
 ## Safe Edit Loop
+
+Do not block implementation progress by asking for permission to run safe repository-local inspection, test, validation, or coverage commands. Run them, capture the result, and continue.
 
 1. Inspect the relevant code, command, or service.
 2. If the task is meaningful feature work, read the feature spec, state document, and decision ledger, then verify context before changing behavior.

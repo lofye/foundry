@@ -218,10 +218,24 @@ final class ApiSurfaceRegistry
             'doctor', 'prompt' => $first,
             'inspect', 'verify' => $second !== '' ? $first . ' ' . $second : null,
             'generate' => $second === '' || str_starts_with($second, '--')
-                ? null
+                ? ($this->containsWorkflowFlag($args) ? 'generate <intent>' : null)
                 : (in_array($second, $generateTargets, true) ? 'generate ' . $second : 'generate <intent>'),
             default => null,
         };
+    }
+
+    /**
+     * @param array<int,string> $args
+     */
+    private function containsWorkflowFlag(array $args): bool
+    {
+        foreach ($args as $arg) {
+            if ($arg === '--workflow' || str_starts_with($arg, '--workflow=')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -401,7 +415,7 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('explain', 'explain [<target>] [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow] [--git] [--diff]', 'experimental', 'Explain a framework, application, or installed pack subject from the compiled graph, projections, diagnostics, docs metadata, and extension registry. When no target is given, Foundry explains the first feature or route deterministically. JSON output includes deterministic confidence data, optional Git context, and `foundry explain --diff` renders the last architectural generate diff.'),
             $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.'),
             $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.'),
-            $this->cliCommandEntry('generate <intent>', 'generate <intent...> --mode=<new|modify|repair> [--target=<target>] [--dry-run] [--no-verify] [--explain] [--allow-risky] [--allow-dirty] [--allow-pack-install] [--packs=<vendor/pack,...>] [--git-commit] [--git-commit-message=<message>]', 'experimental', 'Plan and execute explain-driven, pack-aware system changes through deterministic generators, Git-aware safety checks, architectural snapshots, explain diffs, verification loops, and explicit plan/outcome confidence signals.'),
+            $this->cliCommandEntry('generate <intent>', 'generate <intent...> --mode=<new|modify|repair> [--target=<target>] [--dry-run] [--no-verify] [--explain] [--allow-risky] [--allow-dirty] [--allow-pack-install] [--packs=<vendor/pack,...>] [--git-commit] [--git-commit-message=<message>] | generate --workflow=<file> [--multi-step] [--dry-run] [--interactive] [--no-verify] [--allow-risky] [--allow-dirty] [--allow-pack-install] [--allow-policy-violations] [--policy-check]', 'experimental', 'Plan and execute explain-driven, pack-aware system changes through deterministic generators, Git-aware safety checks, architectural snapshots, explain diffs, verification loops, explicit plan/outcome confidence signals, and ordered multi-step workflow execution from repository-local workflow files.'),
             $this->cliCommandEntry('serve', 'serve', 'internal', 'Emit the lightweight local PHP server hint used in development.'),
             $this->cliCommandEntry('queue:work', 'queue:work [<queue>]', 'internal', 'Run the local queue worker loop.'),
             $this->cliCommandEntry('queue:inspect', 'queue:inspect [<queue>]', 'internal', 'Inspect queued jobs for local development.'),

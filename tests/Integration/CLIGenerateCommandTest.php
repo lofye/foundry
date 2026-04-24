@@ -131,6 +131,216 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertFileExists($this->project->root . '/app/features/blog_post_notes/feature.yaml');
     }
 
+    public function test_generate_workflow_executes_steps_sequentially_and_merges_step_context(): void
+    {
+        $this->writeGenerateWorkflow([
+            'shared_context' => [
+                'resource' => 'comments',
+            ],
+            'steps' => [
+                [
+                    'id' => 'create_comments',
+                    'intent' => 'Create {{shared.resource}}',
+                    'mode' => 'new',
+                ],
+                [
+                    'id' => 'create_audit',
+                    'intent' => 'Create {{steps.create_comments.feature}} audit',
+                    'mode' => 'new',
+                    'dependencies' => ['create_comments'],
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+        $result = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--multi-step',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertTrue($result['payload']['ok']);
+        $this->assertSame('success', $result['payload']['workflow']['status']);
+        $this->assertSame(2, $result['payload']['workflow']['completed_steps']);
+        $firstFeature = (string) $result['payload']['workflow']['shared_context_final']['steps']['create_comments']['feature'];
+        $secondFeature = (string) $result['payload']['workflow']['shared_context_final']['steps']['create_audit']['feature'];
+        $this->assertSame('Create ' . $firstFeature . ' audit', $result['payload']['workflow']['steps'][1]['input']['intent']);
+        $this->assertNotSame('', $firstFeature);
+        $this->assertNotSame('', $secondFeature);
+        $this->assertFileExists($this->project->root . '/app/features/' . $firstFeature . '/feature.yaml');
+        $this->assertFileExists($this->project->root . '/app/features/' . $secondFeature . '/feature.yaml');
+        $this->assertSame('success', $result['payload']['plan_record']['status']);
+    }
+
+    public function test_generate_workflow_fails_fast_and_reports_rollback_guidance_for_completed_steps(): void
+    {
+        $this->writeGenerateWorkflow([
+            'shared_context' => [
+                'resource' => 'comments',
+            ],
+            'steps' => [
+                [
+                    'id' => 'create_comments',
+                    'intent' => 'Create {{shared.resource}}',
+                    'mode' => 'new',
+                ],
+                [
+                    'id' => 'modify_missing_feature',
+                    'intent' => 'Refine missing feature',
+                    'mode' => 'modify',
+                    'target' => 'missing_feature',
+                    'dependencies' => ['create_comments'],
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+        $result = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--multi-step',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertFalse($result['payload']['ok']);
+        $this->assertSame('failed', $result['payload']['workflow']['status']);
+        $this->assertSame('modify_missing_feature', $result['payload']['workflow']['failed_step_id']);
+        $this->assertSame('complete', $result['payload']['workflow']['steps'][0]['status']);
+        $this->assertSame('failed', $result['payload']['workflow']['steps'][1]['status']);
+        $this->assertNotEmpty($result['payload']['workflow']['rollback_guidance']);
+        $firstFeature = (string) $result['payload']['workflow']['steps'][0]['output']['plan']['metadata']['feature'];
+        $this->assertNotSame('', $firstFeature);
+        $this->assertFileExists($this->project->root . '/app/features/' . $firstFeature . '/feature.yaml');
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/missing_feature/feature.yaml');
+        $this->assertSame('failed', $result['payload']['plan_record']['status']);
+    }
+
+    public function test_generate_workflow_plain_output_shows_step_progression_and_rollback_guidance(): void
+    {
+        $this->writeGenerateWorkflow([
+            'shared_context' => [
+                'resource' => 'comments',
+            ],
+            'steps' => [
+                [
+                    'id' => 'create_comments',
+                    'intent' => 'Create {{shared.resource}}',
+                    'mode' => 'new',
+                ],
+                [
+                    'id' => 'modify_missing_feature',
+                    'intent' => 'Refine missing feature',
+                    'mode' => 'modify',
+                    'target' => 'missing_feature',
+                    'dependencies' => ['create_comments'],
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+        $result = $this->runPlainCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--multi-step',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertStringContainsString('Generate workflow failed.', $result['output']);
+        $this->assertStringContainsString('Step progression:', $result['output']);
+        $this->assertStringContainsString('[complete] create_comments', $result['output']);
+        $this->assertStringContainsString('[failed] modify_missing_feature', $result['output']);
+        $this->assertStringContainsString('Rollback guidance:', $result['output']);
+    }
+
+    public function test_generate_workflow_rejects_invalid_top_level_argument_combinations(): void
+    {
+        $this->writeGenerateWorkflow([
+            'steps' => [[
+                'id' => 'create_comments',
+                'intent' => 'Create comments',
+                'mode' => 'new',
+            ]],
+        ]);
+
+        $app = new Application();
+
+        $intentConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--workflow=generate-workflow.json',
+            '--json',
+        ]);
+        $this->assertSame(1, $intentConflict['status']);
+        $this->assertSame('GENERATE_WORKFLOW_INTENT_CONFLICT', $intentConflict['payload']['error']['code']);
+
+        $modeConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--mode=new',
+            '--json',
+        ]);
+        $this->assertSame(1, $modeConflict['status']);
+        $this->assertSame('GENERATE_WORKFLOW_MODE_CONFLICT', $modeConflict['payload']['error']['code']);
+
+        $targetConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--target=comments',
+            '--json',
+        ]);
+        $this->assertSame(1, $targetConflict['status']);
+        $this->assertSame('GENERATE_WORKFLOW_TARGET_CONFLICT', $targetConflict['payload']['error']['code']);
+
+        $gitCommitConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--git-commit',
+            '--json',
+        ]);
+        $this->assertSame(1, $gitCommitConflict['status']);
+        $this->assertSame('GENERATE_WORKFLOW_GIT_COMMIT_UNSUPPORTED', $gitCommitConflict['payload']['error']['code']);
+
+        $explainConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--explain',
+            '--json',
+        ]);
+        $this->assertSame(1, $explainConflict['status']);
+        $this->assertSame('GENERATE_WORKFLOW_EXPLAIN_UNSUPPORTED', $explainConflict['payload']['error']['code']);
+
+        $multiStepMissingWorkflow = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--multi-step',
+            '--json',
+        ]);
+        $this->assertSame(1, $multiStepMissingWorkflow['status']);
+        $this->assertSame('GENERATE_MULTI_STEP_WORKFLOW_REQUIRED', $multiStepMissingWorkflow['payload']['error']['code']);
+
+        $multiStepMinimum = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--multi-step',
+            '--json',
+        ]);
+        $this->assertSame(1, $multiStepMinimum['status']);
+        $this->assertSame('GENERATE_WORKFLOW_MULTI_STEP_MINIMUM', $multiStepMinimum['payload']['error']['code']);
+    }
+
     public function test_generate_records_architectural_snapshots_diff_and_post_explain(): void
     {
         $app = new Application();
@@ -1206,6 +1416,17 @@ final class CLIGenerateCommandTest extends TestCase
         file_put_contents(
             $dir . '/generate.json',
             json_encode($policy, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL,
+        );
+    }
+
+    /**
+     * @param array<string,mixed> $workflow
+     */
+    private function writeGenerateWorkflow(array $workflow): void
+    {
+        file_put_contents(
+            $this->project->root . '/generate-workflow.json',
+            json_encode($workflow, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL,
         );
     }
 

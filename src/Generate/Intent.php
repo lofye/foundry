@@ -13,6 +13,8 @@ final readonly class Intent
         public string $raw,
         public string $mode,
         public ?string $target = null,
+        public ?string $workflowPath = null,
+        public bool $multiStep = false,
         public bool $interactive = false,
         public bool $dryRun = false,
         public bool $policyCheck = false,
@@ -56,6 +58,8 @@ final readonly class Intent
             'raw' => $this->raw,
             'mode' => $this->mode,
             'target' => $this->target,
+            'workflow_path' => $this->workflowPath,
+            'multi_step' => $this->multiStep,
             'interactive' => $this->interactive,
             'dry_run' => $this->dryRun,
             'policy_check' => $this->policyCheck,
@@ -89,6 +93,10 @@ final readonly class Intent
             target: is_string($data['target'] ?? null) && trim((string) $data['target']) !== ''
                 ? trim((string) $data['target'])
                 : null,
+            workflowPath: is_string($data['workflow_path'] ?? null) && trim((string) ($data['workflow_path'] ?? null)) !== ''
+                ? trim((string) $data['workflow_path'])
+                : null,
+            multiStep: ($data['multi_step'] ?? false) === true,
             interactive: ($data['interactive'] ?? false) === true,
             dryRun: ($data['dry_run'] ?? false) === true,
             policyCheck: ($data['policy_check'] ?? false) === true,
@@ -112,6 +120,8 @@ final readonly class Intent
             raw: $this->raw,
             mode: $this->mode,
             target: $this->target,
+            workflowPath: $this->workflowPath,
+            multiStep: $this->multiStep,
             interactive: $this->interactive,
             dryRun: $this->dryRun,
             policyCheck: $this->policyCheck,
@@ -133,6 +143,8 @@ final readonly class Intent
             raw: $this->raw,
             mode: $this->mode,
             target: $this->target,
+            workflowPath: $this->workflowPath,
+            multiStep: $this->multiStep,
             interactive: $this->interactive,
             dryRun: $this->dryRun,
             policyCheck: $this->policyCheck,
@@ -146,5 +158,10 @@ final readonly class Intent
             gitCommitMessage: $this->gitCommitMessage,
             packHints: $this->packHints,
         );
+    }
+
+    public function isWorkflow(): bool
+    {
+        return $this->workflowPath !== null && $this->workflowPath !== '';
     }
 }

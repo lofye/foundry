@@ -408,3 +408,49 @@ Timestamp: 2026-04-23T00:40:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: implement multi-step generate workflows as an ordered wrapper over the existing single-step engine
+
+Timestamp: 2026-04-24T11:15:00-04:00
+
+**Context**
+
+- `006-multi-step-generate` required generate to execute multiple coordinated steps as one deterministic workflow without inventing a separate planning DSL or bypassing the existing safety pipeline.
+- The repository already had one mature single-step generate engine covering planning, validation, policy checks, interactive review, verification, history persistence, and per-plan rollback artifacts.
+- Workflow steps needed shared context, explicit dependency ordering, clear per-step visibility, and fail-fast behavior that leaves earlier successful work inspectable instead of silently hiding it.
+
+**Decision**
+
+- Implement V1 multi-step generate as a repository-local JSON workflow file loaded through `foundry generate --workflow=<file> [--multi-step]`.
+- Resolve per-step `intent`, `description`, `target`, and `packs` fields through deterministic `{{shared.*}}` and `{{steps.<id>.*}}` placeholder expansion over immutable initial shared context plus explicit step-output extensions.
+- Execute workflow steps sequentially by reusing the existing single-step `GenerateEngine` path for each step, persist the underlying per-step plan records as usual, and persist one parent workflow plan record that groups the ordered workflow result.
+- Keep V1 workflow mode conservative by rejecting top-level `--explain` and `--git-commit` until grouped semantics are specified explicitly.
+
+**Reasoning**
+
+- Wrapping the existing single-step engine preserves deterministic planning, validation, policy, and review behavior without creating a second generate subsystem.
+- Placeholder-based shared context is expressive enough for V1 workflows while staying explicit, serializable, and easy to validate.
+- Persisting the underlying step records preserves real rollback handles for partial-success workflows, while the parent workflow record makes the grouped run itself inspectable.
+- Deferring grouped explain and git-commit behavior avoids ambiguous multi-step output and commit semantics in this bounded step.
+
+**Alternatives Considered**
+
+- Merge all workflow steps into one synthetic `GenerationPlan`.
+- Build a dedicated workflow-only planner and executor separate from the existing generate engine.
+- Skip parent workflow persistence and rely only on per-step plan records.
+- Support top-level workflow `--explain` and `--git-commit` immediately.
+
+**Impact**
+
+- Foundry now supports deterministic ordered multi-step generate workflows with explicit dependency checks, shared context interpolation, per-step visibility, and fail-fast rollback guidance.
+- Workflow mode reuses the existing generate safety pipeline and keeps successful earlier steps inspectable even when a later step fails.
+- Future replay, undo, explain, and commit semantics for grouped workflow runs can now build on a real parent workflow record instead of retrofitting grouped state later.
+
+**Spec Reference**
+
+- Purpose
+- Goals
+- Execution Model
+- Requirements
+- CLI Behavior
+- Acceptance Criteria
