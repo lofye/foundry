@@ -163,16 +163,22 @@ final class CLIGenerateCommandTest extends TestCase
 
         $this->assertSame(0, $result['status']);
         $this->assertTrue($result['payload']['ok']);
-        $this->assertSame('success', $result['payload']['workflow']['status']);
-        $this->assertSame(2, $result['payload']['workflow']['completed_steps']);
-        $firstFeature = (string) $result['payload']['workflow']['shared_context_final']['steps']['create_comments']['feature'];
-        $secondFeature = (string) $result['payload']['workflow']['shared_context_final']['steps']['create_audit']['feature'];
+        $this->assertSame('completed', $result['payload']['workflow']['status']);
+        $this->assertSame('foundry.generate.workflow_record.v1', $result['payload']['workflow']['schema']);
+        $this->assertSame(2, $result['payload']['workflow']['result']['completed_steps']);
+        $this->assertNull($result['payload']['workflow']['started_at']);
+        $this->assertNull($result['payload']['workflow']['completed_at']);
+        $firstFeature = (string) $result['payload']['workflow']['shared_context']['steps']['create_comments']['feature'];
+        $secondFeature = (string) $result['payload']['workflow']['shared_context']['steps']['create_audit']['feature'];
         $this->assertSame('Create ' . $firstFeature . ' audit', $result['payload']['workflow']['steps'][1]['input']['intent']);
+        $this->assertSame('completed', $result['payload']['workflow']['steps'][0]['status']);
+        $this->assertSame('completed', $result['payload']['workflow']['steps'][1]['status']);
+        $this->assertNotEmpty($result['payload']['workflow']['steps'][0]['record_id']);
         $this->assertNotSame('', $firstFeature);
         $this->assertNotSame('', $secondFeature);
         $this->assertFileExists($this->project->root . '/app/features/' . $firstFeature . '/feature.yaml');
         $this->assertFileExists($this->project->root . '/app/features/' . $secondFeature . '/feature.yaml');
-        $this->assertSame('success', $result['payload']['plan_record']['status']);
+        $this->assertSame('completed', $result['payload']['plan_record']['status']);
     }
 
     public function test_generate_workflow_fails_fast_and_reports_rollback_guidance_for_completed_steps(): void
@@ -209,8 +215,8 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame(1, $result['status']);
         $this->assertFalse($result['payload']['ok']);
         $this->assertSame('failed', $result['payload']['workflow']['status']);
-        $this->assertSame('modify_missing_feature', $result['payload']['workflow']['failed_step_id']);
-        $this->assertSame('complete', $result['payload']['workflow']['steps'][0]['status']);
+        $this->assertSame('modify_missing_feature', $result['payload']['workflow']['result']['failed_step']);
+        $this->assertSame('completed', $result['payload']['workflow']['steps'][0]['status']);
         $this->assertSame('failed', $result['payload']['workflow']['steps'][1]['status']);
         $this->assertNotEmpty($result['payload']['workflow']['rollback_guidance']);
         $firstFeature = (string) $result['payload']['workflow']['steps'][0]['output']['plan']['metadata']['feature'];
@@ -253,9 +259,64 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame(1, $result['status']);
         $this->assertStringContainsString('Generate workflow failed.', $result['output']);
         $this->assertStringContainsString('Step progression:', $result['output']);
-        $this->assertStringContainsString('[complete] create_comments', $result['output']);
+        $this->assertStringContainsString('[completed] create_comments', $result['output']);
         $this->assertStringContainsString('[failed] modify_missing_feature', $result['output']);
         $this->assertStringContainsString('Rollback guidance:', $result['output']);
+    }
+
+    public function test_generate_workflow_persists_canonical_parent_and_linked_step_records(): void
+    {
+        $this->writeGenerateWorkflow([
+            'shared_context' => [
+                'resource' => 'comments',
+            ],
+            'steps' => [
+                [
+                    'id' => 'create_comments',
+                    'intent' => 'Create {{shared.resource}}',
+                    'mode' => 'new',
+                ],
+                [
+                    'id' => 'create_audit',
+                    'intent' => 'Create {{steps.create_comments.feature}} audit',
+                    'mode' => 'new',
+                    'dependencies' => ['create_comments'],
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--workflow=generate-workflow.json',
+            '--multi-step',
+            '--json',
+        ]);
+        $this->assertSame(0, $generate['status']);
+
+        $workflowPlanId = (string) $generate['payload']['plan_record']['plan_id'];
+        $workflowId = (string) $generate['payload']['workflow']['workflow_id'];
+        $firstStepRecordId = (string) $generate['payload']['workflow']['steps'][0]['record_id'];
+
+        $planList = $this->runCommand($app, ['foundry', 'plan:list', '--json']);
+        $workflowShow = $this->runCommand($app, ['foundry', 'plan:show', $workflowPlanId, '--json']);
+        $stepShow = $this->runCommand($app, ['foundry', 'plan:show', $firstStepRecordId, '--json']);
+
+        $this->assertSame(0, $planList['status']);
+        $this->assertSame(0, $workflowShow['status']);
+        $this->assertSame(0, $stepShow['status']);
+        $this->assertSame('foundry.generate.workflow_record.v1', $workflowShow['payload']['schema']);
+        $this->assertSame($workflowId, $workflowShow['payload']['workflow_id']);
+        $this->assertSame('repository_file', $workflowShow['payload']['source']['type']);
+        $this->assertSame('generate-workflow.json', $workflowShow['payload']['source']['path']);
+        $this->assertSame($firstStepRecordId, $workflowShow['payload']['steps'][0]['record_id']);
+        $this->assertSame($workflowId, $stepShow['payload']['metadata']['workflow']['workflow_id']);
+        $this->assertSame('create_comments', $stepShow['payload']['metadata']['workflow']['step_id']);
+        $this->assertSame(0, $stepShow['payload']['metadata']['workflow']['step_index']);
+        $this->assertTrue($stepShow['payload']['metadata']['workflow']['is_workflow_step']);
+        $this->assertContains('workflow', array_column($planList['payload']['plans'], 'record_kind'));
+        $this->assertContains('workflow_step', array_column($planList['payload']['plans'], 'record_kind'));
     }
 
     public function test_generate_workflow_rejects_invalid_top_level_argument_combinations(): void

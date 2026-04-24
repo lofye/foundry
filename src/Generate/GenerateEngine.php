@@ -74,7 +74,11 @@ final class GenerateEngine
     /**
      * @return array<string,mixed>
      */
-    private function runSingle(Intent $intent): array
+    private function runSingle(
+        Intent $intent,
+        ?array $workflowLinkage = null,
+        ?\Closure $planRecordObserver = null,
+    ): array
     {
         $gitInspector = new GitRepositoryInspector($this->paths->root());
         $planStore = new PlanRecordStore($this->paths);
@@ -274,6 +278,7 @@ final class GenerateEngine
                         interactive: $this->interactivePayload($plan, $interactiveReview),
                         safetyRouting: $safetyRouting,
                         policy: $policy,
+                        workflowLinkage: $workflowLinkage,
                     );
 
                     $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -294,7 +299,9 @@ final class GenerateEngine
                         sourceHash: $compile->graph->sourceHash(),
                         error: null,
                         undo: null,
+                        workflowLinkage: $workflowLinkage,
                     ));
+                    $this->observePlanRecord($planRecordObserver, $planRecord);
                     $payload['record'] = $this->historyRecordReference($record);
                     $payload['plan_record'] = $this->planRecordReference($planRecord);
 
@@ -339,6 +346,7 @@ final class GenerateEngine
                     interactive: $this->interactivePayload($plan, $interactiveReview),
                     safetyRouting: $safetyRouting,
                     policy: $policy,
+                    workflowLinkage: $workflowLinkage,
                 );
 
                 $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -359,7 +367,9 @@ final class GenerateEngine
                     sourceHash: $compile->graph->sourceHash(),
                     error: null,
                     undo: null,
+                    workflowLinkage: $workflowLinkage,
                 ));
+                $this->observePlanRecord($planRecordObserver, $planRecord);
                 $payload['record'] = $this->historyRecordReference($record);
                 $payload['plan_record'] = $this->planRecordReference($planRecord);
 
@@ -438,9 +448,9 @@ final class GenerateEngine
                 $packsInstalled,
             );
 
-            $payload = $this->buildPayload(
-                intent: $intent,
-                plan: $executionPlan,
+                $payload = $this->buildPayload(
+                    intent: $intent,
+                    plan: $executionPlan,
                 actionsTaken: $actionsTaken,
                 verificationResults: $verificationResults,
                 outcomeConfidence: $outcomeConfidence,
@@ -461,14 +471,15 @@ final class GenerateEngine
                 architectureDiff: $architectureDiff,
                 postExplain: $postExplain,
                 postExplainRendered: $postExplainRendered,
-                interactive: $this->interactivePayload($plan, $interactiveReview),
-                safetyRouting: $safetyRouting,
-                policy: $policy,
-            );
+                    interactive: $this->interactivePayload($plan, $interactiveReview),
+                    safetyRouting: $safetyRouting,
+                    policy: $policy,
+                    workflowLinkage: $workflowLinkage,
+                );
 
-            $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $postCompile->graph->sourceHash()));
-            $planRecord = $planStore->persist($this->planRecordPayload(
-                planId: $planId,
+                $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $postCompile->graph->sourceHash()));
+                $planRecord = $planStore->persist($this->planRecordPayload(
+                    planId: $planId,
                 status: 'success',
                 intent: $intent,
                 context: $context,
@@ -481,17 +492,19 @@ final class GenerateEngine
                 policy: $policy,
                 frameworkVersion: $frameworkVersion,
                 graphVersion: $graphVersion,
-                sourceHash: $postCompile->graph->sourceHash(),
-                error: null,
-                undo: $this->persistedUndoPayload($fileSnapshots, $fileSnapshotsAfter),
-            ));
-            $payload['record'] = $this->historyRecordReference($record);
-            $payload['plan_record'] = $this->planRecordReference($planRecord);
+                    sourceHash: $postCompile->graph->sourceHash(),
+                    error: null,
+                    undo: $this->persistedUndoPayload($fileSnapshots, $fileSnapshotsAfter),
+                    workflowLinkage: $workflowLinkage,
+                ));
+                $this->observePlanRecord($planRecordObserver, $planRecord);
+                $payload['record'] = $this->historyRecordReference($record);
+                $payload['plan_record'] = $this->planRecordReference($planRecord);
 
             return $payload;
         } catch (\Throwable $error) {
             $this->restoreGenerateState($packSnapshots, $fileSnapshots, $iterationSnapshots);
-            $planStore->persist($this->planRecordPayload(
+            $planRecord = $planStore->persist($this->planRecordPayload(
                 planId: $planId,
                 status: 'failed',
                 intent: $intent,
@@ -508,7 +521,9 @@ final class GenerateEngine
                 sourceHash: $sourceHash,
                 error: $this->publicErrorPayload($error),
                 undo: null,
+                workflowLinkage: $workflowLinkage,
             ));
+            $this->observePlanRecord($planRecordObserver, $planRecord);
 
             throw $error;
         }
@@ -551,12 +566,17 @@ final class GenerateEngine
         $rollbackGuidance = [];
         $verificationSteps = [];
         $error = null;
-
-        foreach ($definition->steps as $stepDefinition) {
+        foreach ($definition->steps as $index => $stepDefinition) {
             $step = $resolver->resolveStep($stepDefinition, $runtimeContext);
+
+            if ($error !== null) {
+                $steps[] = $this->workflowSkippedStepSummary($step, $index);
+                continue;
+            }
+
             foreach ($step->dependencies as $dependency) {
                 $dependencyStatus = (string) ($runtimeContext['steps'][$dependency]['status'] ?? '');
-                if ($dependencyStatus !== 'complete') {
+                if ($dependencyStatus !== 'completed') {
                     $error = [
                         'code' => 'GENERATE_WORKFLOW_DEPENDENCY_UNRESOLVED',
                         'message' => 'Generate workflow dependency did not complete successfully.',
@@ -565,16 +585,15 @@ final class GenerateEngine
                             'dependency' => $dependency,
                         ],
                     ];
-                    $steps[] = [
-                        'id' => $step->id,
-                        'description' => $step->description,
-                        'dependencies' => $step->dependencies,
-                        'status' => 'failed',
-                        'input' => $this->workflowStepInput($step),
-                        'error' => $error,
-                    ];
+                    $steps[] = $this->workflowFailedStepSummary(
+                        step: $step,
+                        index: $index,
+                        failure: $error,
+                        recordId: null,
+                    );
+                    $rollbackGuidance = $this->workflowRollbackGuidance($steps);
 
-                    break 2;
+                    continue 2;
                 }
             }
 
@@ -597,10 +616,18 @@ final class GenerateEngine
                 gitCommitMessage: null,
                 packHints: array_values(array_unique(array_merge($intent->packHints, $step->packHints))),
             );
+            $workflowLinkage = $this->workflowStepLinkage($definition, $step, $index);
+            $stepPlanRecord = null;
 
             try {
-                $stepPayload = $this->runSingle($stepIntent);
-                $stepSummary = $this->workflowStepSummary($step, $stepPayload);
+                $stepPayload = $this->runSingle(
+                    $stepIntent,
+                    $workflowLinkage,
+                    static function (array $record) use (&$stepPlanRecord): void {
+                        $stepPlanRecord = $record;
+                    },
+                );
+                $stepSummary = $this->workflowCompletedStepSummary($step, $index, $stepPayload);
                 $steps[] = $stepSummary;
                 $runtimeContext['steps'][$step->id] = $this->workflowContextExtension($stepSummary);
                 $actionsTaken = array_values(array_merge($actionsTaken, array_values(array_filter((array) ($stepPayload['actions_taken'] ?? []), 'is_array'))));
@@ -613,7 +640,6 @@ final class GenerateEngine
                     'skipped' => (bool) (($stepPayload['verification_results']['skipped'] ?? false) === true),
                 ];
             } catch (\Throwable $stepError) {
-                $rollbackGuidance = $this->workflowRollbackGuidance($steps);
                 $publicError = $this->publicErrorPayload($stepError);
                 $error = $publicError + [
                     'details' => array_merge(
@@ -623,15 +649,13 @@ final class GenerateEngine
                         ['failed_step_id' => $step->id],
                     ),
                 ];
-                $steps[] = [
-                    'id' => $step->id,
-                    'description' => $step->description,
-                    'dependencies' => $step->dependencies,
-                    'status' => 'failed',
-                    'input' => $this->workflowStepInput($step),
-                    'error' => $error,
-                ];
-                break;
+                $steps[] = $this->workflowFailedStepSummary(
+                    step: $step,
+                    index: $index,
+                    failure: $error,
+                    recordId: is_array($stepPlanRecord) ? (string) ($stepPlanRecord['plan_id'] ?? null) : null,
+                );
+                $rollbackGuidance = $this->workflowRollbackGuidance($steps);
             }
         }
 
@@ -641,22 +665,13 @@ final class GenerateEngine
         sort($affectedFiles);
 
         $ok = $error === null;
-        $workflow = [
-            'id' => $definition->id,
-            'path' => $definition->path,
-            'multi_step' => count($definition->steps) > 1,
-            'status' => $ok ? 'success' : 'failed',
-            'shared_context_initial' => $runtimeContext['shared'],
-            'shared_context_final' => $runtimeContext,
-            'step_count' => count($definition->steps),
-            'completed_steps' => count(array_filter(
-                $steps,
-                static fn(array $step): bool => (string) ($step['status'] ?? '') === 'complete',
-            )),
-            'failed_step_id' => $ok ? null : ($steps[count($steps) - 1]['id'] ?? null),
-            'steps' => $steps,
-            'rollback_guidance' => $rollbackGuidance,
-        ];
+        $workflow = $this->workflowPayload(
+            definition: $definition,
+            steps: $steps,
+            sharedContext: $runtimeContext,
+            rollbackGuidance: $rollbackGuidance,
+            failed: !$ok,
+        );
 
         $verificationResults = [
             'ok' => $ok,
@@ -914,8 +929,18 @@ final class GenerateEngine
         ?array $interactive = null,
         ?array $safetyRouting = null,
         ?array $policy = null,
+        ?array $workflowLinkage = null,
     ): array {
         $packsUsed = $plan->extension !== null ? [$plan->extension] : [];
+        $metadata = [
+            'dry_run' => $intent->dryRun,
+            'policy_check' => $intent->policyCheck,
+            'target' => $context->targets[0] ?? null,
+            'context' => $context->toArray(),
+        ];
+        if ($workflowLinkage !== null) {
+            $metadata['workflow'] = $workflowLinkage;
+        }
 
         return [
             'ok' => true,
@@ -927,12 +952,7 @@ final class GenerateEngine
             'actions_taken' => $actionsTaken,
             'verification_results' => $verificationResults,
             'errors' => $errors,
-            'metadata' => [
-                'dry_run' => $intent->dryRun,
-                'policy_check' => $intent->policyCheck,
-                'target' => $context->targets[0] ?? null,
-                'context' => $context->toArray(),
-            ],
+            'metadata' => $metadata,
             'git' => $git,
             'snapshots' => $snapshots,
             'architecture_diff' => $architectureDiff,
@@ -985,6 +1005,9 @@ final class GenerateEngine
                 'dry_run' => $payload['metadata']['dry_run'] ?? false,
                 'policy_check' => $payload['metadata']['policy_check'] ?? false,
                 'target' => $payload['metadata']['target'] ?? null,
+                'workflow' => is_array($payload['metadata']['workflow'] ?? null)
+                    ? $payload['metadata']['workflow']
+                    : null,
             ],
             'snapshots' => $payload['snapshots'] ?? [],
             'architecture_diff' => is_array($payload['architecture_diff'] ?? null)
@@ -1040,8 +1063,22 @@ final class GenerateEngine
         array $packsUsed,
         ?array $error,
     ): array {
+        $stepIds = array_values(array_map(
+            static fn(array $step): string => (string) ($step['step_id'] ?? ''),
+            array_values(array_filter((array) ($workflow['steps'] ?? []), 'is_array')),
+        ));
+
         return [
             'plan_id' => $planId,
+            'schema' => $workflow['schema'] ?? null,
+            'workflow_id' => $workflow['workflow_id'] ?? null,
+            'source' => $workflow['source'] ?? null,
+            'started_at' => $workflow['started_at'] ?? null,
+            'completed_at' => $workflow['completed_at'] ?? null,
+            'steps' => $workflow['steps'] ?? [],
+            'shared_context' => $workflow['shared_context'] ?? [],
+            'result' => $workflow['result'] ?? [],
+            'rollback_guidance' => $workflow['rollback_guidance'] ?? [],
             'timestamp' => null,
             'storage_path' => null,
             'intent' => $intent->raw,
@@ -1049,10 +1086,9 @@ final class GenerateEngine
             'targets' => [],
             'generation_context_packet' => [
                 'workflow' => [
-                    'id' => $workflow['id'] ?? null,
-                    'path' => $workflow['path'] ?? null,
-                    'shared_context_initial' => $workflow['shared_context_initial'] ?? [],
-                    'shared_context_final' => $workflow['shared_context_final'] ?? [],
+                    'id' => $workflow['workflow_id'] ?? null,
+                    'path' => $workflow['source']['path'] ?? null,
+                    'shared_context_final' => $workflow['shared_context'] ?? [],
                 ],
             ],
             'plan_original' => null,
@@ -1064,22 +1100,18 @@ final class GenerateEngine
             'risk_level' => null,
             'policy' => null,
             'verification_results' => $verificationResults,
-            'status' => $error === null ? 'success' : 'failed',
+            'status' => $error === null ? 'completed' : 'failed',
             'error' => $error,
             'undo' => null,
-            'workflow' => $workflow,
             'metadata' => [
                 'requested_intent' => $intent->toArray(),
                 'dry_run' => $intent->dryRun,
                 'policy_check' => $intent->policyCheck,
                 'interactive_requested' => $intent->interactive,
-                'workflow_id' => $workflow['id'] ?? null,
-                'workflow_path' => $workflow['path'] ?? null,
-                'multi_step' => $workflow['multi_step'] ?? false,
-                'step_ids' => array_values(array_map(
-                    static fn(array $step): string => (string) ($step['id'] ?? ''),
-                    array_values(array_filter((array) ($workflow['steps'] ?? []), 'is_array')),
-                )),
+                'workflow_id' => $workflow['workflow_id'] ?? null,
+                'workflow_path' => $workflow['source']['path'] ?? null,
+                'multi_step' => count((array) ($workflow['steps'] ?? [])) > 1,
+                'step_ids' => $stepIds,
                 'packs_used' => $packsUsed,
             ],
         ];
@@ -1099,16 +1131,18 @@ final class GenerateEngine
     }
 
     /**
-     * @param array<string,mixed> $payload
      * @return array<string,mixed>
      */
-    private function workflowStepSummary(GenerateWorkflowStepDefinition $step, array $payload): array
+    private function workflowCompletedStepSummary(GenerateWorkflowStepDefinition $step, int $index, array $payload): array
     {
         return [
-            'id' => $step->id,
+            'step_id' => $step->id,
+            'index' => $index,
             'description' => $step->description,
-            'dependencies' => $step->dependencies,
-            'status' => 'complete',
+            'dependencies' => $this->normalizeWorkflowDependencies($step->dependencies),
+            'status' => 'completed',
+            'record_id' => $payload['plan_record']['plan_id'] ?? null,
+            'failure' => null,
             'input' => $this->workflowStepInput($step),
             'output' => [
                 'plan' => $payload['plan'] ?? null,
@@ -1124,6 +1158,125 @@ final class GenerateEngine
     }
 
     /**
+     * @param array<string,mixed> $failure
+     * @return array<string,mixed>
+     */
+    private function workflowFailedStepSummary(
+        GenerateWorkflowStepDefinition $step,
+        int $index,
+        array $failure,
+        ?string $recordId,
+    ): array {
+        return [
+            'step_id' => $step->id,
+            'index' => $index,
+            'description' => $step->description,
+            'dependencies' => $this->normalizeWorkflowDependencies($step->dependencies),
+            'status' => 'failed',
+            'record_id' => $recordId,
+            'failure' => $failure,
+            'input' => $this->workflowStepInput($step),
+            'output' => [
+                'plan_record' => $recordId !== null ? ['plan_id' => $recordId] : null,
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function workflowSkippedStepSummary(GenerateWorkflowStepDefinition $step, int $index): array
+    {
+        return [
+            'step_id' => $step->id,
+            'index' => $index,
+            'description' => $step->description,
+            'dependencies' => $this->normalizeWorkflowDependencies($step->dependencies),
+            'status' => 'skipped',
+            'record_id' => null,
+            'failure' => null,
+            'input' => $this->workflowStepInput($step),
+            'output' => null,
+        ];
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $steps
+     * @param array<string,mixed> $sharedContext
+     * @return array<string,mixed>
+     */
+    private function workflowPayload(
+        GenerateWorkflowDefinition $definition,
+        array $steps,
+        array $sharedContext,
+        array $rollbackGuidance,
+        bool $failed,
+    ): array {
+        $completedSteps = count(array_filter(
+            $steps,
+            static fn(array $step): bool => (string) ($step['status'] ?? '') === 'completed',
+        ));
+        $failedStep = null;
+        foreach ($steps as $step) {
+            if ((string) ($step['status'] ?? '') === 'failed') {
+                $failedStep = (string) ($step['step_id'] ?? '');
+                break;
+            }
+        }
+
+        return [
+            'schema' => 'foundry.generate.workflow_record.v1',
+            'workflow_id' => $definition->id,
+            'source' => [
+                'type' => 'repository_file',
+                'path' => $definition->path,
+            ],
+            'status' => $failed ? 'failed' : 'completed',
+            'started_at' => null,
+            'completed_at' => null,
+            'steps' => $steps,
+            'shared_context' => $sharedContext,
+            'result' => [
+                'completed_steps' => $completedSteps,
+                'failed_step' => $failedStep !== '' ? $failedStep : null,
+                'skipped_steps' => count(array_filter(
+                    $steps,
+                    static fn(array $step): bool => (string) ($step['status'] ?? '') === 'skipped',
+                )),
+            ],
+            'rollback_guidance' => array_values(array_map('strval', $rollbackGuidance)),
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function workflowStepLinkage(
+        GenerateWorkflowDefinition $definition,
+        GenerateWorkflowStepDefinition $step,
+        int $index,
+    ): array {
+        return [
+            'workflow_id' => $definition->id,
+            'step_id' => $step->id,
+            'step_index' => $index,
+            'is_workflow_step' => true,
+        ];
+    }
+
+    /**
+     * @param list<string> $dependencies
+     * @return list<string>
+     */
+    private function normalizeWorkflowDependencies(array $dependencies): array
+    {
+        $dependencies = array_values(array_unique(array_map('strval', $dependencies)));
+        sort($dependencies);
+
+        return $dependencies;
+    }
+
+    /**
      * @param array<string,mixed> $stepSummary
      * @return array<string,mixed>
      */
@@ -1133,7 +1286,7 @@ final class GenerateEngine
         $target = is_array($stepSummary['output']['target'] ?? null) ? $stepSummary['output']['target'] : null;
 
         return [
-            'status' => $stepSummary['status'] ?? 'complete',
+            'status' => $stepSummary['status'] ?? 'completed',
             'feature' => $plan['metadata']['feature'] ?? null,
             'target' => $target,
             'generator_id' => $plan['generator_id'] ?? null,
@@ -1152,7 +1305,7 @@ final class GenerateEngine
         $guidance = [];
 
         foreach ($steps as $step) {
-            if ((string) ($step['status'] ?? '') !== 'complete') {
+            if ((string) ($step['status'] ?? '') !== 'completed') {
                 continue;
             }
 
@@ -1163,13 +1316,24 @@ final class GenerateEngine
 
             $guidance[] = sprintf(
                 'Review step %s with `foundry plan:show %s` and undo it with `foundry plan:undo %s --dry-run` if needed.',
-                (string) ($step['id'] ?? 'step'),
+                (string) ($step['step_id'] ?? 'step'),
                 $planRecordId,
                 $planRecordId,
             );
         }
 
         return $guidance;
+    }
+
+    /**
+     * @param null|\Closure(array<string,mixed>):void $observer
+     * @param array<string,mixed> $record
+     */
+    private function observePlanRecord(?\Closure $observer, array $record): void
+    {
+        if ($observer instanceof \Closure) {
+            $observer($record);
+        }
     }
 
     private function interactivePayload(GenerationPlan $originalPlan, ?InteractiveGenerateReviewResult $review): ?array
@@ -1234,10 +1398,26 @@ final class GenerateEngine
         ?string $sourceHash,
         ?array $error,
         ?array $undo,
+        ?array $workflowLinkage,
     ): array {
         $effectivePlan = $finalPlan ?? $originalPlan;
         $affectedFiles = $effectivePlan?->affectedFiles ?? [];
         $riskLevel = $this->planRiskLevel($interactiveReview, $safetyRouting);
+        $metadata = [
+            'framework_version' => $frameworkVersion,
+            'graph_version' => $graphVersion,
+            'source_hash' => $sourceHash,
+            'requested_intent' => $intent->toArray(),
+            'dry_run' => $intent->dryRun,
+            'policy_check' => $intent->policyCheck,
+            'interactive_requested' => $intent->interactive,
+            'plan_origin' => $effectivePlan?->origin,
+            'generator_id' => $effectivePlan?->generatorId,
+            'safety_routing' => $safetyRouting,
+        ];
+        if ($workflowLinkage !== null) {
+            $metadata['workflow'] = $workflowLinkage;
+        }
 
         return [
             'plan_id' => $planId,
@@ -1270,18 +1450,7 @@ final class GenerateEngine
             'status' => $status,
             'error' => $error,
             'undo' => $undo,
-            'metadata' => [
-                'framework_version' => $frameworkVersion,
-                'graph_version' => $graphVersion,
-                'source_hash' => $sourceHash,
-                'requested_intent' => $intent->toArray(),
-                'dry_run' => $intent->dryRun,
-                'policy_check' => $intent->policyCheck,
-                'interactive_requested' => $intent->interactive,
-                'plan_origin' => $effectivePlan?->origin,
-                'generator_id' => $effectivePlan?->generatorId,
-                'safety_routing' => $safetyRouting,
-            ],
+            'metadata' => $metadata,
         ];
     }
 

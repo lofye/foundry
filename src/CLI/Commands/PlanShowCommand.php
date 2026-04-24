@@ -59,20 +59,68 @@ final class PlanShowCommand extends Command
      */
     private function renderMessage(array $record): string
     {
-        $lines = [
-            'Plan: ' . (string) ($record['plan_id'] ?? ''),
-            'Timestamp: ' . (string) ($record['timestamp'] ?? ''),
-            'Status: ' . (string) ($record['status'] ?? ''),
-            'Mode: ' . (string) ($record['mode'] ?? ''),
-            'Intent: ' . (string) ($record['intent'] ?? ''),
-            'Risk: ' . (string) ($record['risk_level'] ?? 'unknown'),
-            'Storage path: ' . (string) ($record['storage_path'] ?? ''),
-            'Affected files: ' . count((array) ($record['affected_files'] ?? [])),
-            'Executed actions: ' . count((array) ($record['actions_executed'] ?? [])),
-            '',
-            'Stored record:',
-            Json::encode($record, true),
-        ];
+        $workflowLinkage = is_array($record['metadata']['workflow'] ?? null) ? $record['metadata']['workflow'] : null;
+        $isWorkflowRecord = (string) ($record['schema'] ?? '') === 'foundry.generate.workflow_record.v1';
+
+        $lines = ['Plan: ' . (string) ($record['plan_id'] ?? '')];
+        if ($isWorkflowRecord) {
+            $lines[] = 'Record kind: workflow';
+            $lines[] = 'Workflow: ' . (string) ($record['workflow_id'] ?? '');
+            $lines[] = 'Source: ' . (string) ($record['source']['path'] ?? '');
+        } elseif ($workflowLinkage !== null) {
+            $lines[] = 'Record kind: workflow_step';
+            $lines[] = sprintf(
+                'Workflow step: %s @ %s (%s)',
+                (string) ($workflowLinkage['step_id'] ?? ''),
+                (string) ($workflowLinkage['step_index'] ?? ''),
+                (string) ($workflowLinkage['workflow_id'] ?? ''),
+            );
+        } else {
+            $lines[] = 'Record kind: generate';
+        }
+
+        $lines[] = 'Timestamp: ' . (string) ($record['timestamp'] ?? '');
+        $lines[] = 'Status: ' . (string) ($record['status'] ?? '');
+        $lines[] = 'Mode: ' . (string) ($record['mode'] ?? '');
+        $lines[] = 'Intent: ' . (string) ($record['intent'] ?? '');
+        $lines[] = 'Risk: ' . (string) ($record['risk_level'] ?? 'unknown');
+        $lines[] = 'Storage path: ' . (string) ($record['storage_path'] ?? '');
+        $lines[] = 'Affected files: ' . count((array) ($record['affected_files'] ?? []));
+        $lines[] = 'Executed actions: ' . count((array) ($record['actions_executed'] ?? []));
+
+        if ($isWorkflowRecord) {
+            $lines[] = '';
+            $lines[] = sprintf(
+                'Workflow result: completed=%d failed_step=%s skipped=%d',
+                (int) ($record['result']['completed_steps'] ?? 0),
+                (string) (($record['result']['failed_step'] ?? null) ?? 'none'),
+                (int) ($record['result']['skipped_steps'] ?? 0),
+            );
+            $lines[] = 'Workflow steps:';
+            foreach (array_values(array_filter((array) ($record['steps'] ?? []), 'is_array')) as $step) {
+                $recordId = trim((string) ($step['record_id'] ?? ''));
+                $suffix = $recordId !== '' ? ' ' . $recordId : '';
+                $lines[] = sprintf(
+                    '  step %s %s %s%s',
+                    (string) ($step['index'] ?? '?'),
+                    (string) ($step['step_id'] ?? 'step'),
+                    (string) ($step['status'] ?? 'unknown'),
+                    $suffix,
+                );
+            }
+
+            $rollbackGuidance = array_values(array_filter(array_map('strval', (array) ($record['rollback_guidance'] ?? []))));
+            if ($rollbackGuidance !== []) {
+                $lines[] = 'Rollback guidance:';
+                foreach ($rollbackGuidance as $guidance) {
+                    $lines[] = '  ' . $guidance;
+                }
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = 'Stored record:';
+        $lines[] = Json::encode($record, true);
 
         return implode(PHP_EOL, $lines);
     }

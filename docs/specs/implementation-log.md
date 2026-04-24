@@ -213,3 +213,10 @@
 - note: fail-fast behavior
 - note: grouped plan records
 - note: strict coverage passing
+
+## 2026-04-24 14:20:00 -0400
+- spec: generate-engine/007-workflow-record-contracts.md
+- note: Canonicalized grouped workflow parent records under schema `foundry.generate.workflow_record.v1` with deterministic workflow ids, ordered step summaries, final shared context, compact result fields, and rollback guidance.
+- note: Linked workflow child generate records back to their parent workflow through explicit `metadata.workflow` fields (`workflow_id`, `step_id`, `step_index`, `is_workflow_step`) while preserving standalone generate record behavior.
+- note: Hardened `.foundry/plans/` inspection by validating malformed workflow parents, orphaned workflow child records, mismatched step linkage, and inconsistent workflow result/status combinations before records are listed or shown.
+- note: Updated plan inspection output plus focused unit and integration coverage for workflow record inspection and integrity failures.

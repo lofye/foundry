@@ -387,6 +387,12 @@ final class BuildArtifactStore
             ],
             'generate' => [
                 'mode' => (string) (($payload['intent']['mode'] ?? 'new')),
+                'record_kind' => (string) (($payload['workflow']['schema'] ?? null) === 'foundry.generate.workflow_record.v1'
+                    ? 'workflow'
+                    : ((((array) ($payload['metadata']['workflow'] ?? []))['is_workflow_step'] ?? false) === true ? 'workflow_step' : 'generate')),
+                'workflow_id' => ($payload['workflow']['schema'] ?? null) === 'foundry.generate.workflow_record.v1'
+                    ? ($payload['workflow']['workflow_id'] ?? null)
+                    : (((array) ($payload['metadata']['workflow'] ?? []))['workflow_id'] ?? null),
                 'affected_files' => count((array) ($payload['plan']['affected_files'] ?? [])),
                 'actions' => count((array) ($payload['actions_taken'] ?? [])),
                 'dry_run' => (bool) (($payload['metadata']['dry_run'] ?? false)),

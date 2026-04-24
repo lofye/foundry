@@ -615,18 +615,18 @@ final class GenerateCommand extends Command
         $steps = array_values(array_filter((array) ($workflow['steps'] ?? []), 'is_array'));
         $completed = count(array_filter(
             $steps,
-            static fn(array $step): bool => (string) ($step['status'] ?? '') === 'complete',
+            static fn(array $step): bool => (string) ($step['status'] ?? '') === 'completed',
         ));
 
         $lines = [
             ($payload['ok'] ?? false) === true ? 'Generate workflow completed.' : 'Generate workflow failed.',
-            'Workflow: ' . (string) ($workflow['id'] ?? ''),
-            'Source: ' . (string) ($workflow['path'] ?? ''),
-            'Status: ' . (string) ($workflow['status'] ?? (($payload['ok'] ?? false) === true ? 'success' : 'failed')),
-            sprintf('Steps: %d/%d complete', $completed, count($steps)),
+            'Workflow: ' . (string) ($workflow['workflow_id'] ?? ''),
+            'Source: ' . (string) ($workflow['source']['path'] ?? ''),
+            'Status: ' . (string) ($workflow['status'] ?? (($payload['ok'] ?? false) === true ? 'completed' : 'failed')),
+            sprintf('Steps: %d/%d completed', $completed, count($steps)),
         ];
 
-        $failedStepId = trim((string) ($workflow['failed_step_id'] ?? ''));
+        $failedStepId = trim((string) ($workflow['result']['failed_step'] ?? ''));
         if ($failedStepId !== '') {
             $lines[] = 'Failed step: ' . $failedStepId;
         }
@@ -637,7 +637,7 @@ final class GenerateCommand extends Command
             $lines[] = sprintf(
                 '- [%s] %s: %s',
                 (string) ($step['status'] ?? 'pending'),
-                (string) ($step['id'] ?? 'step'),
+                (string) ($step['step_id'] ?? 'step'),
                 (string) ($step['description'] ?? 'Generate workflow step'),
             );
         }

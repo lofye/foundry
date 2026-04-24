@@ -454,3 +454,44 @@ Timestamp: 2026-04-24T11:15:00-04:00
 - Requirements
 - CLI Behavior
 - Acceptance Criteria
+
+### Decision: enforce a canonical persisted workflow-record contract for grouped generate runs
+
+Timestamp: 2026-04-24T14:20:00-04:00
+
+**Context**
+
+- `007-workflow-record-contracts` required the earlier multi-step generate workflow implementation to stop persisting ad hoc parent workflow records and to define explicit parent-child linkage between grouped workflow runs and the underlying per-step generate records.
+- The repository already persisted one parent workflow record plus one normal generate plan record per step, but the parent payload shape, step statuses, and linkage metadata were not yet strict enough for deterministic inspection or validation.
+- The existing `.foundry/plans/` plan store and `plan:list` / `plan:show` surfaces were already the narrowest stable place to enforce grouped record integrity without inventing a second persistence or verification subsystem.
+
+**Decision**
+
+- Persist workflow parent records with a canonical `foundry.generate.workflow_record.v1` contract that carries deterministic workflow ids, repository-relative source paths, ordered step summaries, final shared context, compact result data, and rollback guidance.
+- Keep workflow child records as ordinary persisted generate plan records, but add explicit `metadata.workflow` linkage (`workflow_id`, `step_id`, `step_index`, `is_workflow_step`) whenever a step record is produced inside a grouped workflow run.
+- Treat plan-store loading and inspection as integrity gates for grouped records by validating canonical parent shape, ordered step indexes, required record ids, parent-child linkage, and workflow result/status consistency before records are listed or shown.
+
+**Reasoning**
+
+- Reusing the existing persisted plan store keeps grouped workflow history in one place and avoids a parallel workflow-history subsystem that would drift from replay, undo, and inspect behavior.
+- Canonical parent records plus linked child records preserve both grouped visibility and step-level rollback handles without hiding partial-success details.
+- Failing inspection on malformed or orphaned grouped records is safer than silently accepting broken history artifacts that could mislead later replay, undo, or agent inspection work.
+
+**Alternatives Considered**
+
+- Keep the ad hoc parent workflow payload and rely on documentation alone instead of enforcing a strict canonical contract.
+- Collapse grouped workflows into a single synthetic step record and remove per-step persisted plan artifacts.
+- Add a dedicated workflow-history validator or second storage path outside the existing `.foundry/plans/` store.
+
+**Impact**
+
+- `foundry generate --workflow=...` now persists parent workflow records with an explicit canonical contract and step records with explicit linkage metadata.
+- `plan:list` and `plan:show` can now distinguish standalone generate records, workflow parents, and workflow child records clearly in both JSON and text output.
+- Broken grouped workflow history now fails inspection deterministically instead of remaining latent repository-local debt.
+
+**Spec Reference**
+
+- Canonical Workflow Record Shape
+- Step Record Relationship
+- Inspect Surface Requirements
+- Verify Surface Requirements

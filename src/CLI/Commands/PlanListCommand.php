@@ -45,13 +45,29 @@ final class PlanListCommand extends Command
 
         $lines = ['Persisted plans:'];
         foreach ($plans as $plan) {
+            $recordKind = (string) ($plan['record_kind'] ?? 'generate');
+            $workflowBits = [];
+            if (is_string($plan['workflow_id'] ?? null) && (string) ($plan['workflow_id'] ?? '') !== '') {
+                $workflowBits[] = 'workflow=' . (string) $plan['workflow_id'];
+            }
+            if (is_string($plan['workflow_step_id'] ?? null) && (string) ($plan['workflow_step_id'] ?? '') !== '') {
+                $workflowBits[] = sprintf(
+                    'step=%s@%s',
+                    (string) $plan['workflow_step_id'],
+                    (string) ($plan['workflow_step_index'] ?? '?'),
+                );
+            }
+
+            $suffix = $workflowBits !== [] ? ' | ' . implode(' | ', $workflowBits) : '';
             $lines[] = sprintf(
-                '- %s | %s | %s | %s | %s',
+                '- %s | %s | %s | %s | %s | %s%s',
                 (string) ($plan['plan_id'] ?? ''),
                 (string) ($plan['timestamp'] ?? ''),
                 (string) ($plan['status'] ?? ''),
                 (string) ($plan['mode'] ?? ''),
+                $recordKind,
                 (string) ($plan['intent'] ?? ''),
+                $suffix,
             );
         }
 

@@ -49,10 +49,31 @@ final class PlanCommandsTest extends TestCase
         $this->assertSame(0, $result['status']);
         $this->assertStringContainsString('Persisted plans:', (string) $result['message']);
         $this->assertStringContainsString(
-            '11111111-1111-4111-8111-111111111111 | 2026-04-23T01:02:03Z | success | new | Create comments',
+            '11111111-1111-4111-8111-111111111111 | 2026-04-23T01:02:03Z | success | new | generate | Create comments',
             (string) $result['message'],
         );
         $this->assertNull($result['payload']);
+    }
+
+    public function test_plan_list_renders_workflow_linkage_in_human_mode(): void
+    {
+        $this->store('2026-04-23T01:02:03Z')->persist($this->workflowStepRecord(
+            '11111111-1111-4111-8111-111111111111',
+            'workflow-abc',
+            'create_comments',
+            0,
+        ));
+        $this->store('2026-04-23T01:02:04Z')->persist($this->workflowRecord(
+            '22222222-2222-4222-8222-222222222222',
+            'workflow-abc',
+            '11111111-1111-4111-8111-111111111111',
+        ));
+
+        $result = (new PlanListCommand())->run(['plan:list'], new CommandContext($this->project->root));
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('workflow | Workflow generate comments | workflow=workflow-abc', (string) $result['message']);
+        $this->assertStringContainsString('workflow_step | Create comments from workflow | workflow=workflow-abc | step=create_comments@0', (string) $result['message']);
     }
 
     public function test_plan_show_requires_plan_id(): void
@@ -124,6 +145,88 @@ final class PlanCommandsTest extends TestCase
         $this->assertStringContainsString('Executed actions: 1', (string) $result['message']);
         $this->assertStringContainsString('"intent": "Create comments"', (string) $result['message']);
         $this->assertNull($result['payload']);
+    }
+
+    public function test_plan_show_renders_workflow_hierarchy_for_parent_records(): void
+    {
+        $this->store('2026-04-23T01:02:03Z')->persist($this->workflowStepRecord(
+            '11111111-1111-4111-8111-111111111111',
+            'workflow-abc',
+            'create_comments',
+            0,
+        ));
+        $this->store('2026-04-23T01:02:04Z')->persist($this->workflowRecord(
+            '22222222-2222-4222-8222-222222222222',
+            'workflow-abc',
+            '11111111-1111-4111-8111-111111111111',
+        ));
+
+        $result = (new PlanShowCommand())->run(
+            ['plan:show', '22222222-2222-4222-8222-222222222222'],
+            new CommandContext($this->project->root),
+        );
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('Record kind: workflow', (string) $result['message']);
+        $this->assertStringContainsString('Workflow: workflow-abc', (string) $result['message']);
+        $this->assertStringContainsString('Workflow steps:', (string) $result['message']);
+        $this->assertStringContainsString('step 0 create_comments completed 11111111-1111-4111-8111-111111111111', (string) $result['message']);
+    }
+
+    public function test_plan_show_renders_workflow_step_metadata_for_child_records(): void
+    {
+        $this->store('2026-04-23T01:02:03Z')->persist($this->workflowStepRecord(
+            '11111111-1111-4111-8111-111111111111',
+            'workflow-abc',
+            'create_comments',
+            0,
+        ));
+        $this->store('2026-04-23T01:02:04Z')->persist($this->workflowRecord(
+            '22222222-2222-4222-8222-222222222222',
+            'workflow-abc',
+            '11111111-1111-4111-8111-111111111111',
+        ));
+
+        $result = (new PlanShowCommand())->run(
+            ['plan:show', '11111111-1111-4111-8111-111111111111'],
+            new CommandContext($this->project->root),
+        );
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('Record kind: workflow_step', (string) $result['message']);
+        $this->assertStringContainsString('Workflow step: create_comments @ 0 (workflow-abc)', (string) $result['message']);
+    }
+
+    public function test_plan_show_renders_workflow_rollback_guidance_for_failed_parent_records(): void
+    {
+        $record = $this->workflowRecord(
+            '22222222-2222-4222-8222-222222222222',
+            'workflow-abc',
+            '11111111-1111-4111-8111-111111111111',
+        );
+        $record['status'] = 'failed';
+        $record['steps'][0]['status'] = 'failed';
+        $record['steps'][0]['failure'] = ['code' => 'GENERATE_FAILED', 'message' => 'Workflow failed.'];
+        $record['result']['completed_steps'] = 0;
+        $record['result']['failed_step'] = 'create_comments';
+        $record['rollback_guidance'] = ['Review the failed step record.'];
+
+        $this->store('2026-04-23T01:02:03Z')->persist($record);
+        $this->store('2026-04-23T01:02:04Z')->persist($this->workflowStepRecord(
+            '11111111-1111-4111-8111-111111111111',
+            'workflow-abc',
+            'create_comments',
+            0,
+        ));
+
+        $result = (new PlanShowCommand())->run(
+            ['plan:show', '22222222-2222-4222-8222-222222222222'],
+            new CommandContext($this->project->root),
+        );
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('Rollback guidance:', (string) $result['message']);
+        $this->assertStringContainsString('Review the failed step record.', (string) $result['message']);
     }
 
     public function test_plan_replay_renders_human_readable_dry_run_with_drift_notices(): void
@@ -378,6 +481,90 @@ final class PlanCommandsTest extends TestCase
             'extension' => null,
             'confidence' => ['band' => 'high', 'score' => 0.91],
             'metadata' => ['marker' => $marker],
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function workflowStepRecord(string $planId, string $workflowId, string $stepId, int $stepIndex): array
+    {
+        $record = $this->record($planId, 'Create comments from workflow');
+        $record['metadata']['workflow'] = [
+            'workflow_id' => $workflowId,
+            'step_id' => $stepId,
+            'step_index' => $stepIndex,
+            'is_workflow_step' => true,
+        ];
+
+        return $record;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function workflowRecord(string $planId, string $workflowId, string $stepRecordId): array
+    {
+        return [
+            'plan_id' => $planId,
+            'schema' => 'foundry.generate.workflow_record.v1',
+            'workflow_id' => $workflowId,
+            'source' => [
+                'type' => 'repository_file',
+                'path' => 'generate-workflow.json',
+            ],
+            'started_at' => null,
+            'completed_at' => null,
+            'steps' => [[
+                'step_id' => 'create_comments',
+                'index' => 0,
+                'status' => 'completed',
+                'record_id' => $stepRecordId,
+                'dependencies' => [],
+                'failure' => null,
+            ]],
+            'shared_context' => [
+                'shared' => ['resource' => 'comments'],
+                'steps' => ['create_comments' => ['feature' => 'comments']],
+                'workflow' => ['id' => $workflowId, 'path' => 'generate-workflow.json'],
+            ],
+            'result' => [
+                'completed_steps' => 1,
+                'failed_step' => null,
+                'skipped_steps' => 0,
+            ],
+            'rollback_guidance' => [],
+            'intent' => 'Workflow generate comments',
+            'mode' => 'workflow',
+            'targets' => [],
+            'generation_context_packet' => ['workflow' => ['id' => $workflowId, 'path' => 'generate-workflow.json']],
+            'plan_original' => null,
+            'plan_final' => null,
+            'interactive' => null,
+            'user_decisions' => [],
+            'actions_executed' => [],
+            'affected_files' => ['app/features/comments/feature.yaml'],
+            'risk_level' => null,
+            'verification_results' => ['skipped' => true, 'ok' => true],
+            'status' => 'completed',
+            'error' => null,
+            'undo' => null,
+            'metadata' => [
+                'requested_intent' => [
+                    'raw' => 'Workflow generate comments',
+                    'mode' => 'new',
+                    'workflow_path' => 'generate-workflow.json',
+                    'multi_step' => false,
+                ],
+                'dry_run' => true,
+                'policy_check' => false,
+                'interactive_requested' => false,
+                'workflow_id' => $workflowId,
+                'workflow_path' => 'generate-workflow.json',
+                'multi_step' => false,
+                'step_ids' => ['create_comments'],
+                'packs_used' => [],
+            ],
         ];
     }
 }

@@ -12,7 +12,8 @@
 - Generate now optionally loads `.foundry/policies/generate.json`, evaluates deterministic V1 repository-local policy rules against validated plans before execution, and returns policy status, matched rules, warnings, violations, and override metadata in both human and JSON output.
 - `foundry generate --policy-check` now evaluates planning, validation, and repository policy without executing feature-file writes, and `--allow-policy-violations` now acts as an explicit visible override for blocking policy results.
 - `foundry generate --workflow=<file> [--multi-step]` now loads repository-local JSON workflow definitions, executes steps sequentially through the existing single-step generate engine, resolves `{{shared.*}}` and `{{steps.<id>.*}}` placeholders deterministically, and emits per-step input/output/status plus explicit rollback guidance on fail-fast workflow errors.
-- Workflow runs now persist a parent workflow plan record in addition to the underlying per-step generate plan records so grouped workflow execution remains inspectable without hiding step-level rollback artifacts.
+- Workflow runs now persist a canonical parent workflow plan record with schema `foundry.generate.workflow_record.v1`, deterministic workflow IDs, ordered step summaries, final shared context, compact result fields, and explicit rollback guidance in addition to the underlying per-step generate plan records.
+- Generate plan records produced inside workflow runs now remain normal step-level generate records while persisting explicit `metadata.workflow` linkage (`workflow_id`, `step_id`, `step_index`, `is_workflow_step`) so parent and child records stay inspectable and verifiable together.
 - `foundry generate --interactive` and `foundry generate -i` now render a plan summary, per-action detail, and file diffs before mutation.
 - Interactive generate now supports approve, reject, and minimal plan modification by excluding actions or files and by toggling risky actions before execution.
 - Interactive generate now surfaces policy warnings and violations during review, re-evaluates policy after plan modifications, and requires explicit confirmation before executing a policy-denied plan with an override.
@@ -21,7 +22,8 @@
 - Human and JSON generate output now capture the original plan, modified plan when applicable, user decisions, executed actions, and verification results for interactive runs.
 - Every terminal generate run now persists a canonical plan record under `.foundry/plans/` with a UUID plan id, timestamp, original/final plan data, context packet, execution outcome, verification data, and explicit storage version metadata.
 - `foundry plan:list` now returns a deterministic repository-local listing of persisted generate plan summaries.
-- `foundry plan:show <plan_id>` now resolves one canonical persisted plan record by plan id.
+- `foundry plan:show <plan_id>` now resolves one canonical persisted plan record by plan id and renders workflow hierarchy explicitly for parent workflow records.
+- Persisted plan inspection now fails fast on malformed workflow parents, orphaned workflow step records, mismatched step indexes or record IDs, and inconsistent workflow result/status combinations instead of silently accepting broken grouped history.
 - `foundry plan:replay <plan_id>` now replays a persisted plan artifact by selecting the approved final plan when present and otherwise the original executable plan.
 - `foundry plan:undo <plan_id>` now previews or applies deterministic snapshot- or patch-backed rollback from persisted plan artifacts and requires `--yes` before deleting generated files.
 - Replay now supports adaptive replay by default, strict drift failure through `--strict`, and validation-only dry runs through `--dry-run`.
