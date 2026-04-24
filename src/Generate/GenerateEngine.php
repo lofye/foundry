@@ -36,6 +36,7 @@ final class GenerateEngine
     private readonly ExplainDiffService $diffService;
     private readonly ConfidenceEngine $confidenceEngine;
     private readonly GenerateSafetyRouter $safetyRouter;
+    private readonly GenerateUnifiedDiffApplier $diffApplier;
 
     public function __construct(
         private readonly Paths $paths,
@@ -46,6 +47,7 @@ final class GenerateEngine
         ?ExplainDiffService $diffService = null,
         private readonly ?InteractiveGenerateReviewer $interactiveReviewer = null,
         ?GenerateSafetyRouter $safetyRouter = null,
+        ?GenerateUnifiedDiffApplier $diffApplier = null,
     ) {
         $this->packManager = $packManager ?? new PackManager($paths);
         $this->codeWriter = $codeWriter ?? new CodeWriter();
@@ -54,6 +56,7 @@ final class GenerateEngine
         $this->diffService = $diffService ?? new ExplainDiffService($paths, $this->snapshotService);
         $this->confidenceEngine = new ConfidenceEngine();
         $this->safetyRouter = $safetyRouter ?? new GenerateSafetyRouter();
+        $this->diffApplier = $diffApplier ?? new GenerateUnifiedDiffApplier();
     }
 
     /**
@@ -63,8 +66,10 @@ final class GenerateEngine
     {
         $gitInspector = new GitRepositoryInspector($this->paths->root());
         $planStore = new PlanRecordStore($this->paths);
+        $policyEngine = new GeneratePolicyEngine($this->paths);
         $planId = Uuid::v4();
         $gitBefore = $gitInspector->inspect();
+        $noWriteMode = $intent->dryRun || $intent->policyCheck;
         $gitWarnings = [];
         $gitCommit = $intent->gitCommit
             ? ['requested' => true, 'created' => false, 'message' => $this->defaultGitCommitMessage($intent), 'files' => []]
@@ -74,21 +79,23 @@ final class GenerateEngine
         $preSnapshot = null;
 
         $packsInstalled = [];
-        $packSnapshots = $intent->dryRun
+        $packSnapshots = $noWriteMode
             ? []
             : $this->codeWriter->snapshot([$this->paths->join('.foundry/packs/installed.json')]);
-        $iterationSnapshots = $intent->dryRun
+        $iterationSnapshots = $noWriteMode
             ? []
             : $this->codeWriter->snapshot([
                 $this->snapshotService->snapshotPath('post-generate'),
                 $this->diffService->lastDiffPath(),
             ]);
         $fileSnapshots = [];
+        $fileSnapshotsAfter = [];
         $context = null;
         $plan = null;
         $executionPlan = null;
         $interactiveReview = null;
         $safetyRouting = null;
+        $policy = null;
         $actionsTaken = [];
         $verificationResults = null;
         $frameworkVersion = null;
@@ -97,7 +104,7 @@ final class GenerateEngine
 
         try {
             $initialRequirements = $requirementResolver->resolve($intent, $initialExtensions->packRegistry());
-            if (!$intent->dryRun) {
+            if (!$noWriteMode) {
                 $initialCompiler = new GraphCompiler($this->paths, $initialExtensions);
                 $initialCompile = $initialCompiler->compile(new CompileOptions(emit: true));
                 $preSnapshot = $this->snapshotService->capture(
@@ -110,7 +117,7 @@ final class GenerateEngine
             }
 
             if ($initialRequirements['suggested_packs'] !== []) {
-                if ($intent->dryRun || !$intent->allowPackInstall) {
+                if ($noWriteMode || !$intent->allowPackInstall) {
                     throw new FoundryError(
                         'GENERATE_PACK_INSTALL_REQUIRED',
                         'validation',
@@ -181,6 +188,13 @@ final class GenerateEngine
             $validator->validate($plan, $intent, $intent->interactive);
             $plan = $plan->withConfidence($this->confidenceEngine->plan($context, $plan));
             $safetyRouting = $this->safetyRouter->route($intent, $plan);
+            $policy = $policyEngine->evaluate(
+                $plan,
+                $intent,
+                $context,
+                $intent->allowPolicyViolations,
+                $intent->allowPolicyViolations ? 'flag' : null,
+            );
             $this->assertGitPlanSafe($gitBefore, $plan, $intent, $gitWarnings);
 
             $executionPlan = $plan;
@@ -202,9 +216,25 @@ final class GenerateEngine
                     plan: $plan,
                     context: $context,
                     explainRendered: $preExplain?->rendered,
+                    policy: $policy,
                 ));
                 $executionPlan = $interactiveReview->plan;
-                $executionIntent = $interactiveReview->allowRisky ? $intent->withAllowRisky(true) : $intent;
+                $executionIntent = $intent;
+                if ($interactiveReview->allowRisky) {
+                    $executionIntent = $executionIntent->withAllowRisky(true);
+                }
+                if ($interactiveReview->allowPolicyViolations) {
+                    $executionIntent = $executionIntent->withAllowPolicyViolations(true);
+                }
+                $policy = $policyEngine->evaluate(
+                    $executionPlan,
+                    $executionIntent,
+                    $context,
+                    $executionIntent->allowPolicyViolations,
+                    $executionIntent->allowPolicyViolations
+                        ? ($intent->allowPolicyViolations ? 'flag' : 'interactive_confirmation')
+                        : null,
+                );
 
                 if (!$interactiveReview->approved) {
                     $outcomeConfidence = $this->confidenceEngine->outcome(
@@ -231,6 +261,7 @@ final class GenerateEngine
                         ),
                         interactive: $this->interactivePayload($plan, $interactiveReview),
                         safetyRouting: $safetyRouting,
+                        policy: $policy,
                     );
 
                     $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -245,6 +276,7 @@ final class GenerateEngine
                         actionsTaken: [],
                         verificationResults: ['skipped' => true, 'ok' => true],
                         safetyRouting: $safetyRouting,
+                        policy: $policy,
                         frameworkVersion: $frameworkVersion,
                         graphVersion: $graphVersion,
                         sourceHash: $compile->graph->sourceHash(),
@@ -260,7 +292,16 @@ final class GenerateEngine
                 $validator->validate($executionPlan, $executionIntent);
             }
 
-            if ($executionIntent->dryRun) {
+            if (($policy['blocking'] ?? false) === true && !$executionIntent->dryRun && !$executionIntent->policyCheck) {
+                throw new FoundryError(
+                    'GENERATE_POLICY_VIOLATION',
+                    'validation',
+                    ['policy' => $policy],
+                    'Generate plan violates repository policy. Re-run with --allow-policy-violations or use --policy-check to inspect the policy result without writing files.',
+                );
+            }
+
+            if ($executionIntent->dryRun || $executionIntent->policyCheck) {
                 $outcomeConfidence = $this->confidenceEngine->outcome(
                     $intent,
                     $executionPlan,
@@ -285,6 +326,7 @@ final class GenerateEngine
                     ),
                     interactive: $this->interactivePayload($plan, $interactiveReview),
                     safetyRouting: $safetyRouting,
+                    policy: $policy,
                 );
 
                 $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -299,6 +341,7 @@ final class GenerateEngine
                     actionsTaken: [],
                     verificationResults: ['skipped' => true, 'ok' => true],
                     safetyRouting: $safetyRouting,
+                    policy: $policy,
                     frameworkVersion: $frameworkVersion,
                     graphVersion: $graphVersion,
                     sourceHash: $compile->graph->sourceHash(),
@@ -328,6 +371,8 @@ final class GenerateEngine
                     'Generation was rolled back because verification failed.',
                 );
             }
+
+            $fileSnapshotsAfter = $this->codeWriter->snapshot($this->absolutePaths($executionPlan->affectedFiles));
 
             $postExtensions = ExtensionRegistry::forPaths($this->paths);
             $postCompiler = new GraphCompiler($this->paths, $postExtensions);
@@ -406,6 +451,7 @@ final class GenerateEngine
                 postExplainRendered: $postExplainRendered,
                 interactive: $this->interactivePayload($plan, $interactiveReview),
                 safetyRouting: $safetyRouting,
+                policy: $policy,
             );
 
             $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $postCompile->graph->sourceHash()));
@@ -420,11 +466,12 @@ final class GenerateEngine
                 actionsTaken: $actionsTaken,
                 verificationResults: $verificationResults,
                 safetyRouting: $safetyRouting,
+                policy: $policy,
                 frameworkVersion: $frameworkVersion,
                 graphVersion: $graphVersion,
                 sourceHash: $postCompile->graph->sourceHash(),
                 error: null,
-                undo: $this->persistedUndoPayload($fileSnapshots),
+                undo: $this->persistedUndoPayload($fileSnapshots, $fileSnapshotsAfter),
             ));
             $payload['record'] = $this->historyRecordReference($record);
             $payload['plan_record'] = $this->planRecordReference($planRecord);
@@ -443,6 +490,7 @@ final class GenerateEngine
                 actionsTaken: $actionsTaken,
                 verificationResults: $verificationResults,
                 safetyRouting: $safetyRouting,
+                policy: $policy,
                 frameworkVersion: $frameworkVersion,
                 graphVersion: $graphVersion,
                 sourceHash: $sourceHash,
@@ -621,6 +669,7 @@ final class GenerateEngine
             $analysis['status'] = 'confirmation_required';
             $analysis['dry_run'] = false;
             $analysis['reversed_actions'] = [];
+            $analysis['files_recovered'] = [];
             $analysis['warnings'][] = 'Destructive undo requires explicit confirmation. Re-run with --yes to delete generated files.';
             $analysis['warnings'] = array_values(array_unique(array_map('strval', $analysis['warnings'])));
 
@@ -630,6 +679,10 @@ final class GenerateEngine
         $reversedActions = $this->applyUndoOperations($operations);
         $analysis['dry_run'] = false;
         $analysis['reversed_actions'] = $reversedActions;
+        $analysis['files_recovered'] = array_values(array_unique(array_map(
+            static fn(array $action): string => (string) ($action['path'] ?? ''),
+            $reversedActions,
+        )));
         $analysis['status'] = $this->undoStatus(
             $reversedActions,
             $analysis['irreversible_actions'],
@@ -658,6 +711,7 @@ final class GenerateEngine
         ?string $postExplainRendered = null,
         ?array $interactive = null,
         ?array $safetyRouting = null,
+        ?array $policy = null,
     ): array {
         $packsUsed = $plan->extension !== null ? [$plan->extension] : [];
 
@@ -673,6 +727,7 @@ final class GenerateEngine
             'errors' => $errors,
             'metadata' => [
                 'dry_run' => $intent->dryRun,
+                'policy_check' => $intent->policyCheck,
                 'target' => $context->targets[0] ?? null,
                 'context' => $context->toArray(),
             ],
@@ -685,6 +740,7 @@ final class GenerateEngine
             'packs_installed' => $packsInstalled,
             'interactive' => $interactive,
             'safety_routing' => $safetyRouting,
+            'policy' => $policy,
         ];
     }
 
@@ -725,6 +781,7 @@ final class GenerateEngine
             'verification_results' => $payload['verification_results'] ?? [],
             'metadata' => [
                 'dry_run' => $payload['metadata']['dry_run'] ?? false,
+                'policy_check' => $payload['metadata']['policy_check'] ?? false,
                 'target' => $payload['metadata']['target'] ?? null,
             ],
             'snapshots' => $payload['snapshots'] ?? [],
@@ -736,6 +793,7 @@ final class GenerateEngine
             'packs_installed' => $payload['packs_installed'] ?? [],
             'interactive' => $payload['interactive'] ?? null,
             'safety_routing' => $payload['safety_routing'] ?? null,
+            'policy' => $payload['policy'] ?? null,
             'source_hash' => $sourceHash,
         ];
     }
@@ -796,6 +854,7 @@ final class GenerateEngine
         array $actionsTaken,
         ?array $verificationResults,
         ?array $safetyRouting,
+        ?array $policy,
         ?string $frameworkVersion,
         ?int $graphVersion,
         ?string $sourceHash,
@@ -823,6 +882,7 @@ final class GenerateEngine
                     'rejected' => !$interactiveReview->approved,
                     'modified' => $interactiveReview->modified,
                     'allow_risky' => $interactiveReview->allowRisky,
+                    'allow_policy_violations' => $interactiveReview->allowPolicyViolations,
                     'preview' => $interactiveReview->preview,
                     'risk' => $interactiveReview->risk,
                 ]
@@ -831,6 +891,7 @@ final class GenerateEngine
             'actions_executed' => $actionsTaken,
             'affected_files' => $affectedFiles,
             'risk_level' => $riskLevel,
+            'policy' => $policy,
             'verification_results' => $verificationResults,
             'status' => $status,
             'error' => $error,
@@ -841,6 +902,7 @@ final class GenerateEngine
                 'source_hash' => $sourceHash,
                 'requested_intent' => $intent->toArray(),
                 'dry_run' => $intent->dryRun,
+                'policy_check' => $intent->policyCheck,
                 'interactive_requested' => $intent->interactive,
                 'plan_origin' => $effectivePlan?->origin,
                 'generator_id' => $effectivePlan?->generatorId,
@@ -862,30 +924,77 @@ final class GenerateEngine
     }
 
     /**
-     * @param array<string,array{exists:bool,content:?string}> $snapshots
+     * @param array<string,array{exists:bool,content:?string}> $beforeSnapshots
+     * @param array<string,array{exists:bool,content:?string}> $afterSnapshots
      * @return array<string,mixed>|null
      */
-    private function persistedUndoPayload(array $snapshots): ?array
+    private function persistedUndoPayload(array $beforeSnapshots, array $afterSnapshots): ?array
     {
-        if ($snapshots === []) {
+        if ($beforeSnapshots === [] && $afterSnapshots === []) {
             return null;
         }
 
-        $fileSnapshots = [];
-        foreach ($snapshots as $path => $snapshot) {
-            $fileSnapshots[] = [
-                'path' => $this->relativePath((string) $path),
-                'exists' => ($snapshot['exists'] ?? false) === true,
-                'content' => array_key_exists('content', $snapshot) ? $snapshot['content'] : null,
+        $paths = array_values(array_unique(array_merge(array_keys($beforeSnapshots), array_keys($afterSnapshots))));
+        sort($paths);
+
+        $renderer = new GenerateUnifiedDiffRenderer();
+        $before = [];
+        $after = [];
+        $patches = [];
+
+        foreach ($paths as $path) {
+            $beforeSnapshot = $beforeSnapshots[$path] ?? ['exists' => false, 'content' => null];
+            $afterSnapshot = $afterSnapshots[$path] ?? ['exists' => false, 'content' => null];
+            $relativePath = $this->relativePath((string) $path);
+
+            $before[] = $this->normalizedRollbackSnapshot($relativePath, $beforeSnapshot);
+            $after[] = $this->normalizedRollbackSnapshot($relativePath, $afterSnapshot);
+            $patches[] = [
+                'path' => $relativePath,
+                'format' => 'unified_diff',
+                'before_exists' => ($beforeSnapshot['exists'] ?? false) === true,
+                'after_exists' => ($afterSnapshot['exists'] ?? false) === true,
+                'before_hash' => $this->contentHash(($beforeSnapshot['exists'] ?? false) === true ? ($beforeSnapshot['content'] ?? '') : null),
+                'after_hash' => $this->contentHash(($afterSnapshot['exists'] ?? false) === true ? ($afterSnapshot['content'] ?? '') : null),
+                'patch' => $renderer->render(
+                    $relativePath,
+                    ($beforeSnapshot['exists'] ?? false) === true ? (string) ($beforeSnapshot['content'] ?? '') : null,
+                    ($afterSnapshot['exists'] ?? false) === true ? (string) ($afterSnapshot['content'] ?? '') : null,
+                ),
             ];
         }
 
-        usort(
-            $fileSnapshots,
-            static fn(array $left, array $right): int => strcmp((string) ($left['path'] ?? ''), (string) ($right['path'] ?? '')),
-        );
+        return [
+            'file_snapshots_before' => $before,
+            'file_snapshots_after' => $after,
+            'patches' => $patches,
+        ];
+    }
 
-        return ['file_snapshots' => $fileSnapshots];
+    /**
+     * @param array{exists:bool,content:?string} $snapshot
+     * @return array<string,mixed>
+     */
+    private function normalizedRollbackSnapshot(string $relativePath, array $snapshot): array
+    {
+        $exists = ($snapshot['exists'] ?? false) === true;
+        $content = $exists ? (string) ($snapshot['content'] ?? '') : null;
+
+        return [
+            'path' => $relativePath,
+            'exists' => $exists,
+            'content' => $content,
+            'hash' => $this->contentHash($content),
+        ];
+    }
+
+    private function contentHash(?string $content): ?string
+    {
+        if ($content === null) {
+            return null;
+        }
+
+        return hash('sha256', $content);
     }
 
     /**
@@ -898,12 +1007,18 @@ final class GenerateEngine
             'plan_id' => (string) ($record['plan_id'] ?? ''),
             'status' => $status,
             'dry_run' => false,
+            'rollback_mode' => 'snapshot',
             'fully_reversible' => false,
+            'reversible' => false,
             'requires_confirmation' => false,
+            'confidence_level' => 'low',
             'reversible_actions' => [],
             'reversed_actions' => [],
             'irreversible_actions' => [],
             'skipped_actions' => [],
+            'files_recovered' => [],
+            'files_unrecoverable' => [],
+            'integrity_warnings' => [],
             'warnings' => [$warning],
             'source_record' => [
                 'status' => $record['status'] ?? null,
@@ -920,8 +1035,9 @@ final class GenerateEngine
      */
     private function analyzeUndo(array $record, GenerationPlan $plan, Intent $intent, string $selectedPlanName): array
     {
-        $afterContents = (new GeneratePlanPreviewBuilder($this->paths))->afterContents($plan, $intent);
-        $snapshots = $this->undoSnapshotMap($record);
+        $beforeSnapshots = $this->undoSnapshotMap($record, 'file_snapshots_before', 'file_snapshots');
+        $afterSnapshots = $this->undoSnapshotMap($record, 'file_snapshots_after');
+        $patches = $this->undoPatchMap($record);
         $executedByAction = [];
 
         foreach ((array) ($record['actions_executed'] ?? []) as $action) {
@@ -941,6 +1057,7 @@ final class GenerateEngine
         $reversibleActions = [];
         $irreversibleActions = [];
         $skippedActions = [];
+        $integrityWarnings = [];
         $operations = [];
         $requiresConfirmation = false;
 
@@ -961,19 +1078,24 @@ final class GenerateEngine
                 continue;
             }
 
-            $snapshot = is_array($snapshots[$path] ?? null) ? $snapshots[$path] : null;
+            $beforeSnapshot = is_array($beforeSnapshots[$path] ?? null) ? $beforeSnapshots[$path] : null;
+            $afterSnapshot = is_array($afterSnapshots[$path] ?? null) ? $afterSnapshots[$path] : null;
+            $patchRecord = is_array($patches[$path] ?? null) ? $patches[$path] : null;
             $absolutePath = $this->absolutePath($path);
             $exists = is_file($absolutePath);
             $current = $exists ? (string) (file_get_contents($absolutePath) ?: '') : null;
-            $expected = array_key_exists($path, $afterContents) ? $afterContents[$path] : null;
+            $actualHash = $this->contentHash($current);
+            $expectedAfterExists = ($afterSnapshot['exists'] ?? false) === true;
+            $expectedAfterContent = $expectedAfterExists ? (string) ($afterSnapshot['content'] ?? '') : null;
+            $expectedAfterHash = $patchRecord['after_hash'] ?? ($afterSnapshot['hash'] ?? null);
 
             if (in_array($type, ['create_file', 'add_test'], true)) {
-                if ($snapshot === null) {
+                if ($beforeSnapshot === null) {
                     $irreversibleActions[] = $this->undoIssue($index, $type, $path, 'missing_prechange_snapshot', 'Pre-change file snapshot is missing, so create-file undo cannot prove the path was newly created.');
                     continue;
                 }
 
-                if (($snapshot['exists'] ?? false) === true) {
+                if (($beforeSnapshot['exists'] ?? false) === true) {
                     $skippedActions[] = $this->undoIssue($index, $type, $path, 'preexisting_path', 'Undo skipped because the path existed before generate and deleting it would be unsafe.');
                     continue;
                 }
@@ -983,7 +1105,13 @@ final class GenerateEngine
                     continue;
                 }
 
-                if (!is_string($expected) || $current !== $expected) {
+                if ($expectedAfterHash !== null && $actualHash !== $expectedAfterHash) {
+                    $integrityWarnings[] = $this->integrityWarning($path, $expectedAfterHash, $actualHash, 'Current file hash no longer matches the stored generated hash.');
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'integrity_mismatch', 'Undo skipped because the current file hash differs from the stored generated hash.');
+                    continue;
+                }
+
+                if (!$expectedAfterExists || $current !== $expectedAfterContent) {
                     $skippedActions[] = $this->undoIssue($index, $type, $path, 'current_state_differs', 'Undo skipped because the current file contents differ from the stored generated contents.');
                     continue;
                 }
@@ -992,6 +1120,7 @@ final class GenerateEngine
                     'action_index' => $index,
                     'type' => $type,
                     'path' => $path,
+                    'rollback_mode' => 'snapshot',
                     'strategy' => 'delete_created_file',
                     'recorded_status' => $recordedStatus,
                 ];
@@ -999,31 +1128,71 @@ final class GenerateEngine
                 $operations[] = $publicAction + [
                     'absolute_path' => $absolutePath,
                     'destructive' => true,
-                    'snapshot' => $snapshot,
+                    'before_snapshot' => $beforeSnapshot,
                 ];
                 $requiresConfirmation = true;
 
                 continue;
             }
 
-            if (in_array($type, ['update_file', 'update_docs'], true)) {
-                if ($snapshot === null || ($snapshot['exists'] ?? false) !== true) {
-                    $irreversibleActions[] = $this->undoIssue($index, $type, $path, 'missing_prior_contents', 'Undo cannot restore this updated file because prior contents were not persisted.');
+            if (in_array($type, ['update_file', 'update_docs', 'delete_file'], true)) {
+                if ($expectedAfterHash !== null && $actualHash !== $expectedAfterHash) {
+                    $integrityWarnings[] = $this->integrityWarning($path, $expectedAfterHash, $actualHash, 'Current file hash no longer matches the stored generated hash.');
+                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'integrity_mismatch', 'Undo skipped because the current file hash differs from the stored generated hash.');
                     continue;
                 }
 
-                if (!$exists) {
+                $patchOperation = $this->patchUndoOperation($path, $current, $patchRecord);
+                if ($patchOperation !== null) {
+                    $publicAction = [
+                        'action_index' => $index,
+                        'type' => $type,
+                        'path' => $path,
+                        'rollback_mode' => 'patch',
+                        'strategy' => $type === 'delete_file' ? 'restore_deleted_file' : 'restore_previous_contents',
+                        'recorded_status' => $recordedStatus,
+                    ];
+                    $reversibleActions[] = $publicAction;
+                    $operations[] = $publicAction + [
+                        'absolute_path' => $absolutePath,
+                        'destructive' => false,
+                        'restored_content' => $patchOperation['restored_content'],
+                        'restore_exists' => $patchOperation['restore_exists'],
+                    ];
+
+                    continue;
+                }
+
+                if ($beforeSnapshot === null || ($beforeSnapshot['exists'] ?? false) !== true) {
+                    $irreversibleActions[] = $this->undoIssue($index, $type, $path, 'missing_prior_contents', 'Undo cannot restore this file because prior contents were not persisted.');
+                    continue;
+                }
+
+                if ($type !== 'delete_file' && !$exists) {
                     $skippedActions[] = $this->undoIssue($index, $type, $path, 'missing_current_file', 'Undo skipped because the updated file is now missing.');
                     continue;
                 }
 
-                if ($current === (string) ($snapshot['content'] ?? '')) {
+                if ($exists && $current === (string) ($beforeSnapshot['content'] ?? '')) {
                     $skippedActions[] = $this->undoIssue($index, $type, $path, 'already_reversed', 'Undo skipped because the file already matches the persisted pre-change contents.');
                     continue;
                 }
 
-                if (!is_string($expected) || $current !== $expected) {
-                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'current_state_differs', 'Undo skipped because the current file contents differ from the stored generated contents.');
+                if ($type === 'delete_file' && !$exists) {
+                    $publicAction = [
+                        'action_index' => $index,
+                        'type' => $type,
+                        'path' => $path,
+                        'rollback_mode' => 'snapshot',
+                        'strategy' => 'restore_deleted_file',
+                        'recorded_status' => $recordedStatus,
+                    ];
+                    $reversibleActions[] = $publicAction;
+                    $operations[] = $publicAction + [
+                        'absolute_path' => $absolutePath,
+                        'destructive' => false,
+                        'before_snapshot' => $beforeSnapshot,
+                    ];
                     continue;
                 }
 
@@ -1031,47 +1200,15 @@ final class GenerateEngine
                     'action_index' => $index,
                     'type' => $type,
                     'path' => $path,
-                    'strategy' => 'restore_previous_contents',
+                    'rollback_mode' => 'snapshot',
+                    'strategy' => $type === 'delete_file' ? 'restore_deleted_file' : 'restore_previous_contents',
                     'recorded_status' => $recordedStatus,
                 ];
                 $reversibleActions[] = $publicAction;
                 $operations[] = $publicAction + [
                     'absolute_path' => $absolutePath,
                     'destructive' => false,
-                    'snapshot' => $snapshot,
-                ];
-
-                continue;
-            }
-
-            if ($type === 'delete_file') {
-                if ($snapshot === null || ($snapshot['exists'] ?? false) !== true) {
-                    $irreversibleActions[] = $this->undoIssue($index, $type, $path, 'missing_prior_contents', 'Undo cannot restore this deleted file because prior contents were not persisted.');
-                    continue;
-                }
-
-                if ($exists && $current !== (string) ($snapshot['content'] ?? '')) {
-                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'current_state_differs', 'Undo skipped because a different file now exists at the deleted path.');
-                    continue;
-                }
-
-                if ($exists) {
-                    $skippedActions[] = $this->undoIssue($index, $type, $path, 'already_reversed', 'Undo skipped because the deleted file already matches the persisted pre-change contents.');
-                    continue;
-                }
-
-                $publicAction = [
-                    'action_index' => $index,
-                    'type' => $type,
-                    'path' => $path,
-                    'strategy' => 'restore_deleted_file',
-                    'recorded_status' => $recordedStatus,
-                ];
-                $reversibleActions[] = $publicAction;
-                $operations[] = $publicAction + [
-                    'absolute_path' => $absolutePath,
-                    'destructive' => false,
-                    'snapshot' => $snapshot,
+                    'before_snapshot' => $beforeSnapshot,
                 ];
 
                 continue;
@@ -1090,20 +1227,39 @@ final class GenerateEngine
         if ($skippedActions !== []) {
             $warnings[] = 'Some reversible actions were skipped because the current filesystem state is unsafe or already reverted.';
         }
+        if ($integrityWarnings !== []) {
+            $warnings[] = 'Some rollback inputs failed integrity checks and were refused.';
+        }
         if ($requiresConfirmation) {
             $warnings[] = 'Deleting generated files is considered destructive and requires explicit confirmation.';
         }
+
+        $rollbackMode = $this->rollbackMode($reversibleActions);
+        $filesRecovered = array_values(array_unique(array_map(
+            static fn(array $action): string => (string) ($action['path'] ?? ''),
+            $reversibleActions,
+        )));
+        $filesUnrecoverable = array_values(array_unique(array_filter(array_merge(
+            array_map(static fn(array $action): string => (string) ($action['path'] ?? ''), $irreversibleActions),
+            array_map(static fn(array $action): string => (string) ($action['path'] ?? ''), $skippedActions),
+        ))));
 
         return [
             'plan_id' => (string) ($record['plan_id'] ?? ''),
             'status' => 'planned',
             'dry_run' => false,
+            'rollback_mode' => $rollbackMode,
             'fully_reversible' => $irreversibleActions === [] && $skippedActions === [],
+            'reversible' => $irreversibleActions === [] && $skippedActions === [],
             'requires_confirmation' => $requiresConfirmation,
+            'confidence_level' => $this->undoConfidenceLevel($irreversibleActions, $skippedActions, $integrityWarnings),
             'reversible_actions' => $reversibleActions,
             'reversed_actions' => [],
             'irreversible_actions' => $irreversibleActions,
             'skipped_actions' => $skippedActions,
+            'files_recovered' => $filesRecovered,
+            'files_unrecoverable' => $filesUnrecoverable,
+            'integrity_warnings' => $integrityWarnings,
             'warnings' => $warnings,
             'source_record' => [
                 'status' => $record['status'] ?? null,
@@ -1117,13 +1273,18 @@ final class GenerateEngine
 
     /**
      * @param array<string,mixed> $record
-     * @return array<string,array{exists:bool,content:?string}>
+     * @return array<string,array<string,mixed>>
      */
-    private function undoSnapshotMap(array $record): array
+    private function undoSnapshotMap(array $record, string $primaryKey, ?string $legacyKey = null): array
     {
         $snapshots = [];
 
-        foreach ((array) ($record['undo']['file_snapshots'] ?? []) as $snapshot) {
+        $source = (array) ($record['undo'][$primaryKey] ?? []);
+        if ($source === [] && $legacyKey !== null) {
+            $source = (array) ($record['undo'][$legacyKey] ?? []);
+        }
+
+        foreach ($source as $snapshot) {
             if (!is_array($snapshot)) {
                 continue;
             }
@@ -1136,12 +1297,39 @@ final class GenerateEngine
             $snapshots[$path] = [
                 'exists' => ($snapshot['exists'] ?? false) === true,
                 'content' => array_key_exists('content', $snapshot) ? $snapshot['content'] : null,
+                'hash' => $snapshot['hash'] ?? $this->contentHash(($snapshot['exists'] ?? false) === true ? (string) ($snapshot['content'] ?? '') : null),
             ];
         }
 
         ksort($snapshots);
 
         return $snapshots;
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     * @return array<string,array<string,mixed>>
+     */
+    private function undoPatchMap(array $record): array
+    {
+        $patches = [];
+
+        foreach ((array) ($record['undo']['patches'] ?? []) as $patch) {
+            if (!is_array($patch)) {
+                continue;
+            }
+
+            $path = trim((string) ($patch['path'] ?? ''));
+            if ($path === '') {
+                continue;
+            }
+
+            $patches[$path] = $patch;
+        }
+
+        ksort($patches);
+
+        return $patches;
     }
 
     /**
@@ -1156,6 +1344,47 @@ final class GenerateEngine
             'reason' => $reason,
             'message' => $message,
         ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function integrityWarning(string $path, ?string $expectedHash, ?string $actualHash, string $message): array
+    {
+        return [
+            'path' => $path,
+            'expected_hash' => $expectedHash,
+            'actual_hash' => $actualHash,
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed>|null $patchRecord
+     * @return array<string,mixed>|null
+     */
+    private function patchUndoOperation(string $path, ?string $current, ?array $patchRecord): ?array
+    {
+        if ($patchRecord === null || trim((string) ($patchRecord['patch'] ?? '')) === '') {
+            return null;
+        }
+
+        try {
+            $restoreExists = ($patchRecord['before_exists'] ?? false) === true;
+            $restoredContent = $this->diffApplier->reverse(
+                $current,
+                (string) $patchRecord['patch'],
+                $restoreExists,
+            );
+
+            return [
+                'path' => $path,
+                'restore_exists' => $restoreExists,
+                'restored_content' => $restoredContent,
+            ];
+        } catch (FoundryError) {
+            return null;
+        }
     }
 
     /**
@@ -1203,16 +1432,54 @@ final class GenerateEngine
                 continue;
             }
 
-            $snapshot = is_array($operation['snapshot'] ?? null) ? $operation['snapshot'] : null;
+            if (array_key_exists('restore_exists', $operation)) {
+                $restoreExists = ($operation['restore_exists'] ?? false) === true;
+                $restoreContent = $restoreExists ? (string) ($operation['restored_content'] ?? '') : null;
+
+                if (!$restoreExists) {
+                    if (is_file($absolutePath) && !unlink($absolutePath)) {
+                        throw new FoundryError(
+                            'PLAN_UNDO_DELETE_FAILED',
+                            'filesystem',
+                            ['path' => $this->relativePath($absolutePath)],
+                            'Unable to delete generated file during undo.',
+                        );
+                    }
+                } else {
+                    $directory = dirname($absolutePath);
+                    if (!is_dir($directory)) {
+                        mkdir($directory, 0777, true);
+                    }
+
+                    file_put_contents($absolutePath, $restoreContent);
+                }
+
+                $reversed[] = [
+                    'action_index' => $operation['action_index'] ?? null,
+                    'type' => $operation['type'] ?? null,
+                    'path' => $operation['path'] ?? null,
+                    'rollback_mode' => $operation['rollback_mode'] ?? 'patch',
+                    'strategy' => $strategy,
+                    'status' => 'restored',
+                ];
+
+                continue;
+            }
+
+            $snapshot = is_array($operation['before_snapshot'] ?? null) ? $operation['before_snapshot'] : null;
             if ($snapshot === null) {
                 continue;
             }
 
-            $restoreSnapshots[$absolutePath] = $snapshot;
+            $restoreSnapshots[$absolutePath] = [
+                'exists' => ($snapshot['exists'] ?? false) === true,
+                'content' => array_key_exists('content', $snapshot) ? $snapshot['content'] : null,
+            ];
             $reversed[] = [
                 'action_index' => $operation['action_index'] ?? null,
                 'type' => $operation['type'] ?? null,
                 'path' => $operation['path'] ?? null,
+                'rollback_mode' => $operation['rollback_mode'] ?? 'snapshot',
                 'strategy' => $strategy,
                 'status' => 'restored',
             ];
@@ -1225,6 +1492,42 @@ final class GenerateEngine
         $this->rebuildAfterRestore();
 
         return $reversed;
+    }
+
+    /**
+     * @param list<array<string,mixed>> $reversibleActions
+     */
+    private function rollbackMode(array $reversibleActions): string
+    {
+        if ($reversibleActions === []) {
+            return 'snapshot';
+        }
+
+        foreach ($reversibleActions as $action) {
+            if (($action['rollback_mode'] ?? 'snapshot') !== 'patch') {
+                return 'snapshot';
+            }
+        }
+
+        return 'patch';
+    }
+
+    /**
+     * @param list<array<string,mixed>> $irreversibleActions
+     * @param list<array<string,mixed>> $skippedActions
+     * @param list<array<string,mixed>> $integrityWarnings
+     */
+    private function undoConfidenceLevel(array $irreversibleActions, array $skippedActions, array $integrityWarnings): string
+    {
+        if ($integrityWarnings !== [] || $irreversibleActions !== []) {
+            return 'low';
+        }
+
+        if ($skippedActions !== []) {
+            return 'medium';
+        }
+
+        return 'high';
     }
 
     /**

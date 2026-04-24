@@ -10,6 +10,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
 {
     private readonly GeneratePlanPreviewBuilder $previewBuilder;
     private readonly GeneratePlanRiskAnalyzer $riskAnalyzer;
+    private readonly GeneratePolicyEngine $policyEngine;
     private readonly PlanValidator $validator;
 
     public function __construct(
@@ -18,10 +19,13 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
         private readonly ?bool $interactive = null,
         ?GeneratePlanPreviewBuilder $previewBuilder = null,
         ?GeneratePlanRiskAnalyzer $riskAnalyzer = null,
+        ?GeneratePolicyEngine $policyEngine = null,
         ?PlanValidator $validator = null,
     ) {
-        $this->previewBuilder = $previewBuilder ?? new GeneratePlanPreviewBuilder(\Foundry\Support\Paths::fromCwd());
+        $paths = \Foundry\Support\Paths::fromCwd();
+        $this->previewBuilder = $previewBuilder ?? new GeneratePlanPreviewBuilder($paths);
         $this->riskAnalyzer = $riskAnalyzer ?? new GeneratePlanRiskAnalyzer();
+        $this->policyEngine = $policyEngine ?? new GeneratePolicyEngine($paths, $this->riskAnalyzer);
         $this->validator = $validator ?? new PlanValidator();
     }
 
@@ -42,13 +46,16 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
         $excludedActionIndexes = [];
         $decisions = [];
         $renderPlan = true;
+        $currentPolicy = is_array($request->policy ?? null)
+            ? $request->policy
+            : $this->policyEngine->evaluate($currentPlan, $request->intent, $request->context);
 
         while (true) {
             $preview = $this->previewBuilder->build($currentPlan, $request->intent);
             $risk = $this->riskAnalyzer->analyze($currentPlan);
 
             if ($renderPlan) {
-                $this->renderPlan($request, $currentPlan, $risk, $preview);
+                $this->renderPlan($request, $currentPlan, $risk, $preview, $currentPolicy);
                 $renderPlan = false;
             }
 
@@ -61,6 +68,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
 
             if (in_array($normalized, ['approve', 'a', 'yes', 'y'], true)) {
                 $allowRisky = (bool) $request->intent->allowRisky;
+                $allowPolicyViolations = (bool) $request->intent->allowPolicyViolations;
                 if ($risk['level'] === 'HIGH') {
                     $decisions[] = ['type' => 'approve_attempt', 'risk_level' => 'HIGH'];
                     if (!$this->confirm('High-risk actions remain. Approve risky execution? [y/N]: ')) {
@@ -73,7 +81,40 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
                     $decisions[] = ['type' => 'risk_confirmation', 'approved' => true];
                 }
 
-                $executionIntent = $allowRisky ? $request->intent->withAllowRisky(true) : $request->intent;
+                if (($currentPolicy['blocking'] ?? false) === true) {
+                    if (($currentPolicy['override_available'] ?? false) !== true) {
+                        $this->writeLine('Blocking policy violations remain and cannot be overridden.');
+                        continue;
+                    }
+
+                    if (!$this->confirm('Blocking policy violations remain. Override policy and execute anyway? [y/N]: ')) {
+                        $decisions[] = ['type' => 'policy_override', 'approved' => false];
+                        $this->writeLine('Policy override not approved. Review continues.');
+                        continue;
+                    }
+
+                    $allowPolicyViolations = true;
+                    $decisions[] = [
+                        'type' => 'policy_override',
+                        'approved' => true,
+                        'matched_rule_ids' => $currentPolicy['matched_rule_ids'] ?? [],
+                    ];
+                }
+
+                $executionIntent = $request->intent;
+                if ($allowRisky) {
+                    $executionIntent = $executionIntent->withAllowRisky(true);
+                }
+                if ($allowPolicyViolations) {
+                    $executionIntent = $executionIntent->withAllowPolicyViolations(true);
+                    $currentPolicy = $this->policyEngine->evaluate(
+                        $currentPlan,
+                        $executionIntent,
+                        $request->context,
+                        true,
+                        'interactive_confirmation',
+                    );
+                }
                 $this->validator->validate($currentPlan, $executionIntent);
                 $decisions[] = ['type' => 'approve', 'risk_level' => $risk['level']];
 
@@ -81,10 +122,11 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
                     approved: true,
                     plan: $currentPlan,
                     userDecisions: $decisions,
-                    preview: $this->interactivePayload($request, $currentPlan, $preview, $risk),
+                    preview: $this->interactivePayload($request, $currentPlan, $preview, $risk, $currentPolicy),
                     risk: $risk,
                     allowRisky: $allowRisky,
                     modified: $this->planFingerprint($currentPlan) !== $this->planFingerprint($originalPlan),
+                    allowPolicyViolations: $allowPolicyViolations,
                 );
             }
 
@@ -95,7 +137,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
                     approved: false,
                     plan: $currentPlan,
                     userDecisions: $decisions,
-                    preview: $this->interactivePayload($request, $currentPlan, $preview, $risk),
+                    preview: $this->interactivePayload($request, $currentPlan, $preview, $risk, $currentPolicy),
                     risk: $risk,
                     allowRisky: false,
                     modified: $this->planFingerprint($currentPlan) !== $this->planFingerprint($originalPlan),
@@ -150,6 +192,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
 
                 $this->validator->validate($candidate, $request->intent, true);
                 $currentPlan = $candidate;
+                $currentPolicy = $this->policyEngine->evaluate($currentPlan, $request->intent, $request->context);
                 $renderPlan = true;
                 $this->writeLine('Excluded action ' . ($index + 1) . '.');
 
@@ -186,6 +229,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
 
                 $this->validator->validate($candidate, $request->intent, true);
                 $currentPlan = $candidate;
+                $currentPolicy = $this->policyEngine->evaluate($currentPlan, $request->intent, $request->context);
                 $renderPlan = true;
                 $this->writeLine('Excluded file `' . $path . '`.');
 
@@ -226,6 +270,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
 
                 $this->validator->validate($candidate, $request->intent, true);
                 $currentPlan = $candidate;
+                $currentPolicy = $this->policyEngine->evaluate($currentPlan, $request->intent, $request->context);
                 $renderPlan = true;
                 $this->writeLine($allExcluded ? 'Restored risky actions.' : 'Excluded risky actions.');
 
@@ -245,6 +290,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
         GenerationPlan $plan,
         array $risk,
         array $preview,
+        array $policy,
     ): void {
         $targets = array_values(array_filter(array_map(
             static function (array $target): ?string {
@@ -270,7 +316,31 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
         $this->writeLine('  Affected files: ' . count($plan->affectedFiles));
         $this->writeLine('  Risk level: ' . (string) ($risk['level'] ?? 'LOW'));
         $this->writeLine('  Verification: ' . implode(', ', $plan->validations !== [] ? $plan->validations : $request->context->validationSteps));
+        $this->writeLine('  Policy status: ' . strtoupper((string) ($policy['status'] ?? 'pass')));
+        if (($policy['override_used'] ?? false) === true) {
+            $this->writeLine('  Policy override: applied');
+        } elseif (($policy['override_available'] ?? false) === true) {
+            $this->writeLine('  Policy override: available');
+        }
+        $matchedRules = array_values(array_filter(array_map('strval', (array) ($policy['matched_rule_ids'] ?? []))));
+        if ($matchedRules !== []) {
+            $this->writeLine('  Policy rules: ' . implode(', ', $matchedRules));
+        }
         $this->writeLine('');
+
+        $warnings = array_values(array_filter((array) ($policy['warnings'] ?? []), 'is_array'));
+        $violations = array_values(array_filter((array) ($policy['violations'] ?? []), 'is_array'));
+        if ($warnings !== [] || $violations !== []) {
+            $this->writeLine('Policy:');
+            foreach ($violations as $violation) {
+                $this->writeLine('  Violation: ' . (string) ($violation['message'] ?? $violation['description'] ?? 'Blocking policy violation.'));
+            }
+            foreach ($warnings as $warning) {
+                $this->writeLine('  Warning: ' . (string) ($warning['message'] ?? $warning['description'] ?? 'Policy warning.'));
+            }
+            $this->writeLine('');
+        }
+
         $this->writeLine('Detail:');
 
         foreach ($plan->actions as $index => $action) {
@@ -515,6 +585,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
     /**
      * @param array{files:list<array<string,mixed>>} $preview
      * @param array<string,mixed> $risk
+     * @param array<string,mixed> $policy
      * @return array<string,mixed>
      */
     private function interactivePayload(
@@ -522,6 +593,7 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
         GenerationPlan $plan,
         array $preview,
         array $risk,
+        array $policy,
     ): array {
         $targets = array_values(array_filter(array_map(
             static fn(array $target): ?string => trim((string) ($target['resolved'] ?? $target['requested'] ?? '')) ?: null,
@@ -548,6 +620,9 @@ final class TerminalInteractiveGenerateReviewer implements InteractiveGenerateRe
                 'total_actions' => count($plan->actions),
                 'affected_files' => count($plan->affectedFiles),
                 'risk_level' => $risk['level'] ?? 'LOW',
+                'policy_status' => $policy['status'] ?? 'pass',
+                'policy_matched_rules' => $policy['matched_rule_ids'] ?? [],
+                'policy_override_used' => ($policy['override_used'] ?? false) === true,
                 'verification_steps' => $plan->validations !== [] ? $plan->validations : $request->context->validationSteps,
             ],
             'actions' => $actions,

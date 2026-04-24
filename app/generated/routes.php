@@ -7,6 +7,13 @@ declare(strict_types=1);
  * Regenerate with: foundry compile graph
  */
 return array (
+  'POST /context-persistence' => 
+  array (
+    'feature' => 'context-persistence',
+    'kind' => 'http',
+    'input_schema' => 'app/features/context-persistence/input.schema.json',
+    'output_schema' => 'app/features/context-persistence/output.schema.json',
+  ),
   'POST /posts' => 
   array (
     'feature' => 'publish_post',

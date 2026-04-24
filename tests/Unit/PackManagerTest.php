@@ -292,7 +292,7 @@ final class PackManagerTest extends TestCase
 
     private function copyDirectory(string $source, string $target): void
     {
-        @mkdir($target, 0777, true);
+        $this->ensureDirectory($target);
 
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS),
@@ -309,13 +309,22 @@ final class PackManagerTest extends TestCase
             $destination = $target . '/' . $relative;
 
             if ($fileInfo->isDir()) {
-                @mkdir($destination, 0777, true);
+                $this->ensureDirectory($destination);
                 continue;
             }
 
-            @mkdir(dirname($destination), 0777, true);
+            $this->ensureDirectory(dirname($destination));
             copy($pathname, $destination);
         }
+    }
+
+    private function ensureDirectory(string $path): void
+    {
+        if (is_dir($path)) {
+            return;
+        }
+
+        mkdir($path, 0777, true);
     }
 
     private function deleteDirectory(string $path): void

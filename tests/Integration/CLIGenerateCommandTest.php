@@ -259,6 +259,313 @@ final class CLIGenerateCommandTest extends TestCase
         );
     }
 
+    public function test_generate_policy_deny_blocks_execution_before_file_writes(): void
+    {
+        $this->writeGeneratePolicy([
+            'version' => 1,
+            'rules' => [[
+                'id' => 'protect-features',
+                'type' => 'deny',
+                'description' => 'Prevent feature file creation.',
+                'match' => [
+                    'actions' => ['create_file'],
+                    'paths' => ['app/features/**'],
+                ],
+            ]],
+        ]);
+
+        $result = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('GENERATE_POLICY_VIOLATION', $result['payload']['error']['code']);
+        $this->assertSame('deny', $result['payload']['error']['details']['policy']['status']);
+        $this->assertSame(['protect-features'], $result['payload']['error']['details']['policy']['matched_rule_ids']);
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/comments_system/feature.yaml');
+    }
+
+    public function test_generate_policy_warnings_surface_without_blocking_execution(): void
+    {
+        $this->writeGeneratePolicy([
+            'version' => 1,
+            'rules' => [[
+                'id' => 'warn-feature-creation',
+                'type' => 'warn',
+                'description' => 'Warn on feature file creation.',
+                'match' => [
+                    'actions' => ['create_file'],
+                    'paths' => ['app/features/**'],
+                ],
+            ]],
+        ]);
+
+        $result = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertSame('warn', $result['payload']['policy']['status']);
+        $this->assertFalse($result['payload']['policy']['blocking']);
+        $this->assertSame('warn-feature-creation', $result['payload']['policy']['warnings'][0]['rule_id']);
+    }
+
+    public function test_generate_policy_check_evaluates_without_execution(): void
+    {
+        $this->writeGeneratePolicy([
+            'version' => 1,
+            'rules' => [[
+                'id' => 'protect-features',
+                'type' => 'deny',
+                'description' => 'Prevent feature file creation.',
+                'match' => [
+                    'actions' => ['create_file'],
+                    'paths' => ['app/features/**'],
+                ],
+            ]],
+        ]);
+
+        $result = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--policy-check',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertTrue($result['payload']['metadata']['policy_check']);
+        $this->assertSame('deny', $result['payload']['policy']['status']);
+        $this->assertTrue($result['payload']['policy']['blocking']);
+        $this->assertTrue($result['payload']['verification_results']['skipped']);
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/comments_system/feature.yaml');
+    }
+
+    public function test_generate_can_explicitly_override_policy_violations_and_persist_policy_result(): void
+    {
+        $this->writeGeneratePolicy([
+            'version' => 1,
+            'rules' => [[
+                'id' => 'protect-features',
+                'type' => 'deny',
+                'description' => 'Prevent feature file creation.',
+                'match' => [
+                    'actions' => ['create_file'],
+                    'paths' => ['app/features/**'],
+                ],
+            ]],
+        ]);
+
+        $generate = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--allow-policy-violations',
+            '--json',
+        ]);
+        $show = $this->runCommand(new Application(), [
+            'foundry',
+            'plan:show',
+            $generate['payload']['plan_record']['plan_id'],
+            '--json',
+        ]);
+
+        $this->assertSame(0, $generate['status']);
+        $this->assertSame('deny', $generate['payload']['policy']['status']);
+        $this->assertTrue($generate['payload']['policy']['override_requested']);
+        $this->assertTrue($generate['payload']['policy']['override_used']);
+        $this->assertSame('flag', $generate['payload']['policy']['override_source']);
+        $this->assertFileExists($this->project->root . '/app/features/comments_system/feature.yaml');
+        $this->assertSame(0, $show['status']);
+        $this->assertSame('deny', $show['payload']['policy']['status']);
+        $this->assertTrue($show['payload']['policy']['override_used']);
+    }
+
+    public function test_generate_interactive_can_explicitly_override_policy_violations(): void
+    {
+        $this->writeGeneratePolicy([
+            'version' => 1,
+            'rules' => [[
+                'id' => 'protect-features',
+                'type' => 'deny',
+                'description' => 'Prevent feature file creation.',
+                'match' => [
+                    'actions' => ['create_file'],
+                    'paths' => ['app/features/**'],
+                ],
+            ]],
+        ]);
+
+        $app = $this->interactiveApplication(
+            static fn(InteractiveGenerateReviewRequest $request): InteractiveGenerateReviewResult => new InteractiveGenerateReviewResult(
+                approved: true,
+                plan: $request->plan,
+                userDecisions: [
+                    ['type' => 'policy_override', 'approved' => true],
+                    ['type' => 'approve'],
+                ],
+                preview: ['summary' => [], 'actions' => [], 'diffs' => []],
+                risk: ['level' => 'LOW', 'reasons' => ['Plan is additive only.'], 'risky_action_indexes' => [], 'risky_paths' => []],
+                allowPolicyViolations: true,
+            ),
+        );
+
+        $result = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--interactive',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertTrue($result['payload']['interactive']['allow_policy_violations']);
+        $this->assertSame('deny', $result['payload']['policy']['status']);
+        $this->assertTrue($result['payload']['policy']['override_used']);
+        $this->assertSame('interactive_confirmation', $result['payload']['policy']['override_source']);
+        $this->assertFileExists($this->project->root . '/app/features/comments_system/feature.yaml');
+    }
+
+    public function test_generate_human_output_includes_policy_summary(): void
+    {
+        $this->writeGeneratePolicy([
+            'version' => 1,
+            'rules' => [[
+                'id' => 'warn-feature-creation',
+                'type' => 'warn',
+                'description' => 'Warn on feature file creation.',
+                'match' => [
+                    'actions' => ['create_file'],
+                    'paths' => ['app/features/**'],
+                ],
+            ]],
+        ]);
+
+        $result = $this->runPlainCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('Policy: WARN', $result['output']);
+        $this->assertStringContainsString('Policy rules: warn-feature-creation', $result['output']);
+        $this->assertStringContainsString('Policy warning: Warn on feature file creation.', $result['output']);
+    }
+
+    public function test_generate_human_output_reports_missing_policy_file(): void
+    {
+        $result = $this->runPlainCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--dry-run',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('Policy: PASS', $result['output']);
+        $this->assertStringContainsString('Policy file: not loaded', $result['output']);
+    }
+
+    public function test_generate_human_output_reports_applied_policy_override(): void
+    {
+        $this->writeGeneratePolicy([
+            'version' => 1,
+            'rules' => [[
+                'id' => 'protect-features',
+                'type' => 'deny',
+                'description' => 'Prevent feature file creation.',
+                'match' => [
+                    'actions' => ['create_file'],
+                    'paths' => ['app/features/**'],
+                ],
+            ]],
+        ]);
+
+        $result = $this->runPlainCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--allow-policy-violations',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('Policy: DENY', $result['output']);
+        $this->assertStringContainsString('Policy override: applied', $result['output']);
+        $this->assertStringContainsString('Policy file: .foundry/policies/generate.json', $result['output']);
+    }
+
+    public function test_generate_policy_check_human_output_reports_required_override(): void
+    {
+        $this->writeGeneratePolicy([
+            'version' => 1,
+            'rules' => [[
+                'id' => 'protect-features',
+                'type' => 'deny',
+                'description' => 'Prevent feature file creation.',
+                'match' => [
+                    'actions' => ['create_file'],
+                    'paths' => ['app/features/**'],
+                ],
+            ]],
+        ]);
+
+        $result = $this->runPlainCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--policy-check',
+        ]);
+
+        $this->assertSame(0, $result['status']);
+        $this->assertStringContainsString('Generate policy check completed.', $result['output']);
+        $this->assertStringContainsString('Policy: DENY', $result['output']);
+        $this->assertStringContainsString('Policy override: required for execution', $result['output']);
+    }
+
+    public function test_generate_rejects_git_commit_with_policy_check(): void
+    {
+        $result = $this->runCommand(new Application(), [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--policy-check',
+            '--git-commit',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('GENERATE_GIT_COMMIT_DRY_RUN_INVALID', $result['payload']['error']['code']);
+    }
+
     public function test_plan_list_and_show_return_persisted_generate_plan_records_deterministically(): void
     {
         $app = new Application();
@@ -446,9 +753,13 @@ final class CLIGenerateCommandTest extends TestCase
 
         $this->assertSame(0, $undo['status']);
         $this->assertSame('dry_run', $undo['payload']['status']);
+        $this->assertSame('snapshot', $undo['payload']['rollback_mode']);
         $this->assertTrue($undo['payload']['fully_reversible']);
+        $this->assertTrue($undo['payload']['reversible']);
+        $this->assertSame('high', $undo['payload']['confidence_level']);
         $this->assertNotEmpty($undo['payload']['reversible_actions']);
         $this->assertSame([], $undo['payload']['reversed_actions']);
+        $this->assertSame([], $undo['payload']['integrity_warnings']);
         $this->assertFileExists($featurePath);
     }
 
@@ -474,6 +785,7 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame('confirmation_required', $undo['payload']['status']);
         $this->assertTrue($undo['payload']['requires_confirmation']);
         $this->assertSame([], $undo['payload']['reversed_actions']);
+        $this->assertSame([], $undo['payload']['files_recovered']);
         $this->assertFileExists($featurePath);
     }
 
@@ -495,15 +807,33 @@ final class CLIGenerateCommandTest extends TestCase
         $recordPath = $this->project->root . '/' . $generate['payload']['plan_record']['storage_path'];
         $record = json_decode((string) file_get_contents($recordPath), true, 512, JSON_THROW_ON_ERROR);
 
-        $this->assertSame(false, $record['undo']['file_snapshots'][0]['exists']);
+        $this->assertFalse(
+            in_array(
+                true,
+                array_values(array_map(
+                    static fn(array $snapshot): bool => ($snapshot['exists'] ?? true) === true,
+                    $record['undo']['file_snapshots_before'],
+                )),
+                true,
+            ),
+        );
+        $this->assertContains(
+            'app/features/' . $feature . '/feature.yaml',
+            array_values(array_map(
+                static fn(array $patch): string => (string) ($patch['path'] ?? ''),
+                $record['undo']['patches'],
+            )),
+        );
         $this->assertFileExists($featurePath);
 
         $undo = $this->runCommand($app, ['foundry', 'plan:undo', $planId, '--yes', '--json']);
 
         $this->assertSame(0, $undo['status']);
         $this->assertSame('undone', $undo['payload']['status']);
+        $this->assertSame('snapshot', $undo['payload']['rollback_mode']);
         $this->assertTrue($undo['payload']['fully_reversible']);
         $this->assertNotEmpty($undo['payload']['reversed_actions']);
+        $this->assertContains('app/features/' . $feature . '/feature.yaml', $undo['payload']['files_recovered']);
         $this->assertFileDoesNotExist($featurePath);
     }
 
@@ -845,9 +1175,38 @@ final class CLIGenerateCommandTest extends TestCase
         return ['status' => $status, 'payload' => $payload];
     }
 
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,output:string}
+     */
+    private function runPlainCommand(Application $app, array $argv): array
+    {
+        ob_start();
+        $status = $app->run($argv);
+        $output = trim((string) ob_get_clean());
+
+        return ['status' => $status, 'output' => $output];
+    }
+
     private function fixturePath(string $name): string
     {
         return dirname(__DIR__) . '/Fixtures/Packs/' . $name;
+    }
+
+    /**
+     * @param array<string,mixed> $policy
+     */
+    private function writeGeneratePolicy(array $policy): void
+    {
+        $dir = $this->project->root . '/.foundry/policies';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        file_put_contents(
+            $dir . '/generate.json',
+            json_encode($policy, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL,
+        );
     }
 
     /**

@@ -11,5 +11,6 @@ final readonly class InteractiveGenerateReviewRequest
         public GenerationPlan $plan,
         public GenerationContextPacket $context,
         public ?string $explainRendered = null,
+        public ?array $policy = null,
     ) {}
 }

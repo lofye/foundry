@@ -773,7 +773,6 @@ MD);
     private function canonicalConflictFor(ExecutionSpec $executionSpec): ?array
     {
         $method = new \ReflectionMethod(ContextExecutionService::class, 'canonicalConflictForExecutionSpec');
-        $method->setAccessible(true);
 
         /** @var array{issue:array<string,mixed>,required_actions:list<string>}|null $result */
         $result = $method->invoke($this->service(), $executionSpec);
@@ -791,7 +790,6 @@ MD);
         array $actionsTaken,
     ): \Foundry\Context\ExecutionResult {
         $method = new \ReflectionMethod(ContextExecutionService::class, 'finalizeExecutionResult');
-        $method->setAccessible(true);
 
         /** @var \Foundry\Context\ExecutionResult $result */
         $result = $method->invoke(

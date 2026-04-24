@@ -356,7 +356,7 @@ PHP);
         try {
             $this->copyDirectory(dirname(__DIR__) . '/Fixtures/Packs/foundry-blog', $project->root . '/.foundry/packs/foundry/blog/1.0.0');
             $this->copyDirectory(dirname(__DIR__) . '/Fixtures/Packs/acme-zeta', $project->root . '/.foundry/packs/acme/zeta/1.0.0');
-            @mkdir($project->root . '/.foundry/packs', 0777, true);
+            $this->ensureDirectory($project->root . '/.foundry/packs');
             file_put_contents($project->root . '/.foundry/packs/installed.json', json_encode([
                 'foundry/blog' => [
                     'active_version' => '1.0.0',
@@ -825,7 +825,7 @@ PHP);
 
     private function copyDirectory(string $source, string $target): void
     {
-        @mkdir($target, 0777, true);
+        $this->ensureDirectory($target);
 
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS),
@@ -842,12 +842,21 @@ PHP);
             $destination = $target . '/' . $relative;
 
             if ($fileInfo->isDir()) {
-                @mkdir($destination, 0777, true);
+                $this->ensureDirectory($destination);
                 continue;
             }
 
-            @mkdir(dirname($destination), 0777, true);
+            $this->ensureDirectory(dirname($destination));
             copy($pathname, $destination);
         }
+    }
+
+    private function ensureDirectory(string $path): void
+    {
+        if (is_dir($path)) {
+            return;
+        }
+
+        mkdir($path, 0777, true);
     }
 }

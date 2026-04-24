@@ -10,7 +10,7 @@ use Foundry\Support\Paths;
 
 final class PlanRecordStore
 {
-    private const int STORAGE_VERSION = 2;
+    private const int STORAGE_VERSION = 3;
 
     /**
      * @param null|\Closure():\DateTimeImmutable $clock
@@ -52,7 +52,7 @@ final class PlanRecordStore
         $this->ensureDirectory();
         $absolutePath = $this->paths->join($storagePath);
         $encoded = Json::encode($record, true) . PHP_EOL;
-        if (file_put_contents($absolutePath, $encoded) === false) {
+        if ($this->writeRecord($absolutePath, $encoded) === false) {
             throw new FoundryError(
                 'PLAN_RECORD_WRITE_FAILED',
                 'filesystem',
@@ -189,7 +189,11 @@ final class PlanRecordStore
     private function ensureDirectory(): void
     {
         $dir = $this->plansDir();
-        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+        if (is_dir($dir)) {
+            return;
+        }
+
+        if ($this->hasNonDirectoryAncestor($dir) || !$this->createDirectory($dir)) {
             throw new FoundryError(
                 'PLAN_RECORD_DIRECTORY_CREATE_FAILED',
                 'filesystem',
@@ -197,6 +201,44 @@ final class PlanRecordStore
                 'Unable to create the persisted plan directory.',
             );
         }
+    }
+
+    private function createDirectory(string $path): bool
+    {
+        return $this->withoutFilesystemWarnings(
+            static fn(): bool => mkdir($path, 0777, true) || is_dir($path),
+        );
+    }
+
+    private function writeRecord(string $path, string $encoded): bool
+    {
+        if (is_dir($path)) {
+            return false;
+        }
+
+        return $this->withoutFilesystemWarnings(
+            static fn(): bool => file_put_contents($path, $encoded) !== false,
+        );
+    }
+
+    private function hasNonDirectoryAncestor(string $path): bool
+    {
+        $current = dirname($path);
+
+        while ($current !== '.' && $current !== '/' && $current !== '') {
+            if (file_exists($current) && !is_dir($current)) {
+                return true;
+            }
+
+            $parent = dirname($current);
+            if ($parent === $current) {
+                break;
+            }
+
+            $current = $parent;
+        }
+
+        return false;
     }
 
     private function now(): \DateTimeImmutable
@@ -247,5 +289,19 @@ final class PlanRecordStore
         return str_starts_with($normalized, $root)
             ? substr($normalized, strlen($root))
             : $normalized;
+    }
+
+    /**
+     * @param \Closure():bool $operation
+     */
+    private function withoutFilesystemWarnings(\Closure $operation): bool
+    {
+        set_error_handler(static fn(): bool => true);
+
+        try {
+            return $operation();
+        } finally {
+            restore_error_handler();
+        }
     }
 }

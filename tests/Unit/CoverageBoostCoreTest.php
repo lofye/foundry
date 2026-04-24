@@ -180,7 +180,7 @@ final class CoverageBoostCoreTest extends TestCase
     public function test_runtime_factory_connection_and_http_kernel_factory_work_without_prebuilt_indexes(): void
     {
         $paths = Paths::fromCwd($this->project->root);
-        @rmdir($this->project->root . '/storage');
+        $this->deleteDirectory($this->project->root . '/storage');
 
         $connection = $this->invokeRuntimeFactory('connection', $paths);
         $this->assertInstanceOf(Connection::class, $connection);
@@ -313,5 +313,32 @@ final class CoverageBoostCoreTest extends TestCase
         );
 
         return $invoker($methodName, $args);
+    }
+
+    private function deleteDirectory(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($iterator as $fileInfo) {
+            if (!$fileInfo instanceof \SplFileInfo) {
+                continue;
+            }
+
+            if ($fileInfo->isDir()) {
+                rmdir($fileInfo->getPathname());
+                continue;
+            }
+
+            unlink($fileInfo->getPathname());
+        }
+
+        rmdir($path);
     }
 }

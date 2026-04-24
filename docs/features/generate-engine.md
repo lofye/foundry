@@ -9,8 +9,11 @@
 - `foundry generate` already plans work from the current explain-derived model using explicit `new`, `modify`, and `repair` modes with deterministic target resolution.
 - The existing non-interactive generate workflow already supports dry runs, confidence reporting, git safety checks, pack requirement handling, architectural snapshots and diffs, and post-apply verification.
 - Generate JSON payloads and default human output now include a deterministic `safety_routing` recommendation for the `generate-with-safety-routing` skill contract.
+- Generate now optionally loads `.foundry/policies/generate.json`, evaluates deterministic V1 repository-local policy rules against validated plans before execution, and returns policy status, matched rules, warnings, violations, and override metadata in both human and JSON output.
+- `foundry generate --policy-check` now evaluates planning, validation, and repository policy without executing feature-file writes, and `--allow-policy-violations` now acts as an explicit visible override for blocking policy results.
 - `foundry generate --interactive` and `foundry generate -i` now render a plan summary, per-action detail, and file diffs before mutation.
 - Interactive generate now supports approve, reject, and minimal plan modification by excluding actions or files and by toggling risky actions before execution.
+- Interactive generate now surfaces policy warnings and violations during review, re-evaluates policy after plan modifications, and requires explicit confirmation before executing a policy-denied plan with an override.
 - Interactive generate now surfaces risk classification in the plan summary, requires additional confirmation for risky work, requires stronger confirmations for deletions, schema changes, and contract-affecting work, and records user decisions in the result payload.
 - Interactive generate now reuses the existing plan, validator, and verification pipeline, and filtered reviewed plans now execute only the approved file actions.
 - Human and JSON generate output now capture the original plan, modified plan when applicable, user decisions, executed actions, and verification results for interactive runs.
@@ -36,6 +39,7 @@
 - How far should interactive preview support go for future custom generate execution strategies beyond the current file-action-oriented flows?
 - Should interactive review gain richer inspection affordances than the current action, graph, and explain commands?
 - Should future CLI work add an explicit `--no-interactive` override once a concrete non-interactive forcing use case appears?
+- Should future generate policy work add non-overrideable blocking rules, or keep V1-style explicit overrides as the only enforcement escape hatch?
 - Should future undo support grow beyond single-plan snapshot and patch rollback into richer graph-aware or git-assisted restoration without weakening the current deterministic contract?
 - Should replay eventually persist its own execution history separately from the original generate plan record, or remain a read-and-apply operation only?
 
@@ -44,5 +48,6 @@
 - Decide whether a future `--no-interactive` CLI override should surface the non-interactive recommendation explicitly once the need is proven.
 - Expand interactive preview support for future custom execution strategies that cannot yet provide full file diffs through the current preview builder.
 - Refine the interactive inspection surface if richer graph or explain navigation becomes necessary.
+- Decide whether future policy iterations need non-overrideable rules, starter policy templates, or broader scoped matching beyond the current repository-local V1 contract.
 - Decide how undo commands should layer on top of the new `.foundry/plans/` record contract without introducing divergent history state.
 - Decide whether replay should eventually emit its own persisted operational history in addition to reusing the stored plan artifact contract.

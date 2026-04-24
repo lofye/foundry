@@ -326,10 +326,26 @@ final class PlanCommandsTest extends TestCase
             'status' => $status,
             'error' => null,
             'undo' => [
-                'file_snapshots' => [[
+                'file_snapshots_before' => [[
                     'path' => 'app/features/comments/feature.yaml',
                     'exists' => false,
                     'content' => null,
+                    'hash' => null,
+                ]],
+                'file_snapshots_after' => [[
+                    'path' => 'app/features/comments/feature.yaml',
+                    'exists' => true,
+                    'content' => "feature: comments\n",
+                    'hash' => hash('sha256', "feature: comments\n"),
+                ]],
+                'patches' => [[
+                    'path' => 'app/features/comments/feature.yaml',
+                    'format' => 'unified_diff',
+                    'before_exists' => false,
+                    'after_exists' => true,
+                    'before_hash' => null,
+                    'after_hash' => hash('sha256', "feature: comments\n"),
+                    'patch' => "--- /dev/null\n+++ b/app/features/comments/feature.yaml\n@@ -1,0 +1,1 @@\n+feature: comments\n",
                 ]],
             ],
             'metadata' => $metadata,

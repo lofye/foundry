@@ -99,9 +99,11 @@ final class GenerateCommand extends Command
         $target = null;
         $interactive = false;
         $dryRun = false;
+        $policyCheck = false;
         $skipVerify = false;
         $explainAfter = false;
         $allowRisky = false;
+        $allowPolicyViolations = false;
         $allowDirty = false;
         $allowPackInstall = false;
         $gitCommit = false;
@@ -124,6 +126,11 @@ final class GenerateCommand extends Command
                 continue;
             }
 
+            if ($arg === '--policy-check') {
+                $policyCheck = true;
+                continue;
+            }
+
             if ($arg === '--interactive' || $arg === '-i') {
                 $interactive = true;
                 continue;
@@ -141,6 +148,11 @@ final class GenerateCommand extends Command
 
             if ($arg === '--allow-risky') {
                 $allowRisky = true;
+                continue;
+            }
+
+            if ($arg === '--allow-policy-violations') {
+                $allowPolicyViolations = true;
                 continue;
             }
 
@@ -247,12 +259,12 @@ final class GenerateCommand extends Command
             );
         }
 
-        if ($dryRun && $gitCommit) {
+        if (($dryRun || $policyCheck) && $gitCommit) {
             throw new FoundryError(
                 'GENERATE_GIT_COMMIT_DRY_RUN_INVALID',
                 'validation',
                 [],
-                'Generate cannot use --git-commit together with --dry-run.',
+                'Generate cannot use --git-commit together with --dry-run or --policy-check.',
             );
         }
 
@@ -262,9 +274,11 @@ final class GenerateCommand extends Command
             target: $target,
             interactive: $interactive,
             dryRun: $dryRun,
+            policyCheck: $policyCheck,
             skipVerify: $skipVerify,
             explainAfter: $explainAfter,
             allowRisky: $allowRisky,
+            allowPolicyViolations: $allowPolicyViolations,
             allowDirty: $allowDirty,
             allowPackInstall: $allowPackInstall,
             gitCommit: $gitCommit,
@@ -328,9 +342,11 @@ final class GenerateCommand extends Command
         $safetyRouting = is_array($payload['safety_routing'] ?? null) ? $payload['safety_routing'] : [];
 
         $lines = [
-            $interactiveRejected
+            ($payload['metadata']['policy_check'] ?? false) === true
+                ? 'Generate policy check completed.'
+                : ($interactiveRejected
                 ? 'Generate aborted before execution.'
-                : (($payload['metadata']['dry_run'] ?? false) ? 'Generate plan prepared.' : 'Generate completed.'),
+                : (($payload['metadata']['dry_run'] ?? false) ? 'Generate plan prepared.' : 'Generate completed.')),
             'Mode: ' . (string) ($payload['mode'] ?? 'new'),
             'Generator: ' . $generator,
             'Files affected: ' . $files,
@@ -347,6 +363,37 @@ final class GenerateCommand extends Command
             $riskLevel = trim((string) ($interactive['risk']['level'] ?? ''));
             if ($riskLevel !== '') {
                 $lines[] = 'Interactive risk: ' . $riskLevel;
+            }
+        }
+
+        $policy = is_array($payload['policy'] ?? null) ? $payload['policy'] : [];
+        if ($policy !== []) {
+            $status = strtoupper((string) ($policy['status'] ?? 'pass'));
+            $lines[] = 'Policy: ' . $status;
+            if (($policy['loaded'] ?? false) === true) {
+                $lines[] = 'Policy file: ' . (string) ($policy['path'] ?? '.foundry/policies/generate.json');
+            } else {
+                $lines[] = 'Policy file: not loaded';
+            }
+
+            $matchedRules = array_values(array_filter(array_map('strval', (array) ($policy['matched_rule_ids'] ?? []))));
+            if ($matchedRules !== []) {
+                $lines[] = 'Policy rules: ' . implode(', ', $matchedRules);
+            }
+
+            if (($policy['override_used'] ?? false) === true) {
+                $lines[] = 'Policy override: applied';
+            } elseif (($policy['override_available'] ?? false) === true) {
+                $lines[] = 'Policy override: required for execution';
+            }
+
+            $violations = array_values(array_filter((array) ($policy['violations'] ?? []), 'is_array'));
+            $warnings = array_values(array_filter((array) ($policy['warnings'] ?? []), 'is_array'));
+            if ($violations !== []) {
+                $lines[] = 'Policy violation: ' . (string) ($violations[0]['message'] ?? $violations[0]['description'] ?? 'Blocking policy violation.');
+            }
+            if ($warnings !== []) {
+                $lines[] = 'Policy warning: ' . (string) ($warnings[0]['message'] ?? $warnings[0]['description'] ?? 'Policy warning.');
             }
         }
 
@@ -421,7 +468,9 @@ final class GenerateCommand extends Command
             $lines[] = $postExplainRendered;
         }
 
-        if (($payload['metadata']['dry_run'] ?? false) !== true && !$interactiveRejected) {
+        if (($payload['metadata']['dry_run'] ?? false) !== true
+            && ($payload['metadata']['policy_check'] ?? false) !== true
+            && !$interactiveRejected) {
             $lines[] = '';
             $lines[] = 'Next:';
             $lines[] = '- Inspect architectural changes:';

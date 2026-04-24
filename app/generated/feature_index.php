@@ -7,6 +7,120 @@ declare(strict_types=1);
  * Regenerate with: foundry compile graph
  */
 return array (
+  'context-persistence' => 
+  array (
+    'kind' => 'http',
+    'description' => 'Preserve feature intent, implementation state, and decision history across sessions.',
+    'route' => 
+    array (
+      'method' => 'POST',
+      'path' => '/context-persistence',
+    ),
+    'input_schema' => 'app/features/context-persistence/input.schema.json',
+    'output_schema' => 'app/features/context-persistence/output.schema.json',
+    'auth' => 
+    array (
+      'required' => false,
+      'strategies' => 
+      array (
+      ),
+      'permissions' => 
+      array (
+      ),
+      'public' => false,
+    ),
+    'database' => 
+    array (
+      'reads' => 
+      array (
+      ),
+      'writes' => 
+      array (
+      ),
+      'transactions' => 'optional',
+      'queries' => 
+      array (
+      ),
+    ),
+    'cache' => 
+    array (
+      'reads' => 
+      array (
+      ),
+      'writes' => 
+      array (
+      ),
+      'invalidate' => 
+      array (
+      ),
+      'entries' => 
+      array (
+      ),
+    ),
+    'events' => 
+    array (
+      'emit' => 
+      array (
+      ),
+      'emit_definitions' => 
+      array (
+      ),
+      'subscribe' => 
+      array (
+      ),
+    ),
+    'jobs' => 
+    array (
+      'dispatch' => 
+      array (
+      ),
+      'definitions' => 
+      array (
+      ),
+    ),
+    'rate_limit' => 
+    array (
+      'bucket' => 'context-persistence',
+      'cost' => 1,
+      'strategy' => 'user',
+    ),
+    'csrf' => 
+    array (
+    ),
+    'resource' => 
+    array (
+    ),
+    'listing' => 
+    array (
+    ),
+    'uploads' => 
+    array (
+    ),
+    'ui' => 
+    array (
+    ),
+    'tests' => 
+    array (
+      'required' => 
+      array (
+        0 => 'contract',
+        1 => 'feature',
+      ),
+      'files' => 
+      array (
+        0 => 'app/features/context-persistence/tests/context_persistence_contract_test.php',
+        1 => 'app/features/context-persistence/tests/context_persistence_feature_test.php',
+      ),
+    ),
+    'llm' => 
+    array (
+      'editable' => true,
+      'risk_level' => 'medium',
+      'notes_file' => 'prompts.md',
+    ),
+    'base_path' => 'app/features/context-persistence',
+    'action_class' => 'App\\Features\\ContextPersistence\\Action',
+  ),
   'publish_post' => 
   array (
     'kind' => 'http',

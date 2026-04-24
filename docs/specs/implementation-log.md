@@ -192,3 +192,12 @@
 - spec: generate-engine/004-plan-snapshot-and-patch-based-undo.md
 - note: Upgraded persisted generate plan rollback data to store before/after snapshots, unified-diff patches, and integrity hashes so undo can use structured rollback inputs instead of snapshot-only best effort.
 - note: Extended `plan:undo` to select snapshot or patch rollback deterministically, surface `rollback_mode`, `reversible`, `files_recovered`, `files_unrecoverable`, `integrity_warnings`, and `confidence_level`, and added focused patch, deleted-file, integrity-mismatch, and determinism coverage.
+
+## 2026-04-23 23:12:43 -0400
+- spec: generate-engine/005-generate-policies.md
+- note: Implemented repository-local generate policy system with deterministic V1 evaluation (deny, warn, require, limit) against validated plans.
+- note: Integrated policy evaluation into GenerateEngine and CLI, including `--policy-check` and explicit violation override flows.
+- note: Added interactive policy confirmation and persisted policy results in plan history and plan-record artifacts.
+- note: Updated generate-engine feature docs and decision ledger.
+- note: Added focused unit and integration coverage.
+- note: Resolved test warnings/deprecations to satisfy strict coverage gate (now exits 0 at 90.02% line coverage).

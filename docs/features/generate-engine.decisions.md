@@ -119,6 +119,47 @@ Timestamp: 2026-04-21T15:05:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 
+### Decision: add repository-local generate policy evaluation as an explicit pre-execution gate
+
+Timestamp: 2026-04-23T23:12:43-04:00
+
+**Context**
+
+- `005-generate-policies` required generate plans to become policy-aware without replacing the existing planner, validator, interactive review layer, or persisted plan history contract.
+- The existing generate engine already had deterministic plan validation, safety routing, interactive review, and append-only persisted plan records that could carry the new policy state.
+- The first policy step needed to stay machine-enforced, repository-local, and deterministic instead of introducing prose interpretation or a large policy DSL.
+
+**Decision**
+
+- Add `.foundry/policies/generate.json` as the repository-local V1 generate policy file and evaluate it through one dedicated generate policy engine after plan validation.
+- Keep V1 policy matching explicit and small: action type, path globbing, mode, risk level, feature or module name when available, and graph node type when available.
+- Make V1 blocking policy results overrideable only through an explicit CLI flag or explicit interactive confirmation, and persist the full evaluated policy result with each terminal generate plan record.
+
+**Reasoning**
+
+- A single policy engine preserves determinism and avoids scattering implicit policy checks across unrelated generate code paths.
+- Repository-local policy storage keeps governance close to the project state that generate is mutating and avoids introducing remote dependencies or organization-wide infrastructure prematurely.
+- Explicit override visibility protects user trust by making policy bypass a conscious, persisted decision instead of a hidden implementation detail.
+
+**Alternatives Considered**
+
+- Add lightweight policy checks directly inside `GenerateEngine`, `PlanValidator`, and the interactive reviewer instead of introducing a dedicated policy engine.
+- Delay policy persistence until a future plan-history revision and only expose policy results in immediate command output.
+- Introduce non-overrideable policy outcomes in V1.
+
+**Impact**
+
+- `foundry generate` now supports deterministic repository-local policy evaluation, `--policy-check`, visible override reporting, and interactive policy confirmation without changing the existing planning foundation.
+- Human output, JSON payloads, history records, and persisted plan records now all carry policy status and override metadata consistently.
+- Future policy work can extend rule kinds or override semantics on top of a stable persisted result shape instead of retrofitting policy state later.
+
+**Spec Reference**
+
+- Purpose
+- Requested Changes
+- Authority Rule
+- Completion Signals
+
 ### Decision: add conservative persisted-plan undo with explicit rollback inputs and destructive-confirmation gating
 
 Timestamp: 2026-04-23T12:29:29-04:00

@@ -7,6 +7,12 @@ declare(strict_types=1);
  * Regenerate with: foundry compile graph
  */
 return array (
+  'context-persistence' => 
+  array (
+    'permissions' => 
+    array (
+    ),
+  ),
   'publish_post' => 
   array (
     'permissions' => 

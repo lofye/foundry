@@ -72,11 +72,16 @@ final class PlanUndoCommand extends Command
             $headline,
             'Plan: ' . (string) ($payload['plan_id'] ?? ''),
             'Status: ' . $status,
+            'Rollback mode: ' . (string) ($payload['rollback_mode'] ?? 'snapshot'),
             'Fully reversible: ' . (((bool) ($payload['fully_reversible'] ?? false)) ? 'yes' : 'no'),
+            'Reversible: ' . (((bool) ($payload['reversible'] ?? false)) ? 'yes' : 'no'),
             'Requires confirmation: ' . (((bool) ($payload['requires_confirmation'] ?? false)) ? 'yes' : 'no'),
+            'Confidence: ' . (string) ($payload['confidence_level'] ?? 'unknown'),
             'Reversible actions: ' . count((array) ($payload['reversible_actions'] ?? [])),
             'Irreversible actions: ' . count((array) ($payload['irreversible_actions'] ?? [])),
             'Skipped actions: ' . count((array) ($payload['skipped_actions'] ?? [])),
+            'Files recovered: ' . count((array) ($payload['files_recovered'] ?? [])),
+            'Files unrecoverable: ' . count((array) ($payload['files_unrecoverable'] ?? [])),
         ];
 
         $source = is_array($payload['source_record'] ?? null) ? $payload['source_record'] : [];
@@ -90,6 +95,19 @@ final class PlanUndoCommand extends Command
             $lines[] = 'Warnings:';
             foreach ($warnings as $warning) {
                 $lines[] = '- ' . $warning;
+            }
+        }
+
+        $integrityWarnings = is_array($payload['integrity_warnings'] ?? null) ? $payload['integrity_warnings'] : [];
+        if ($integrityWarnings !== []) {
+            $lines[] = '';
+            $lines[] = 'Integrity warnings:';
+            foreach ($integrityWarnings as $warning) {
+                if (!is_array($warning)) {
+                    continue;
+                }
+
+                $lines[] = '- ' . (string) ($warning['path'] ?? '') . ': ' . (string) ($warning['message'] ?? 'Integrity mismatch detected.');
             }
         }
 

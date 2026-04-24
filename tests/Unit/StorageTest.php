@@ -24,9 +24,12 @@ final class StorageTest extends TestCase
         $driver->delete('foo/bar.txt');
         $this->assertFalse($driver->exists('foo/bar.txt'));
 
-        @unlink($root . '/foo/bar.txt');
-        @rmdir($root . '/foo');
-        @rmdir($root);
+        if (is_dir($root . '/foo')) {
+            rmdir($root . '/foo');
+        }
+        if (is_dir($root)) {
+            rmdir($root);
+        }
     }
 
     public function test_in_memory_storage_read_write_delete(): void

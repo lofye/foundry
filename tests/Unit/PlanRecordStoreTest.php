@@ -30,15 +30,17 @@ final class PlanRecordStoreTest extends TestCase
 
         $record = $store->persist($this->record('11111111-1111-4111-8111-111111111111', 'Create comments'));
 
-        $this->assertSame(2, $record['storage_version']);
+        $this->assertSame(3, $record['storage_version']);
         $this->assertSame('2026-04-23T01:02:03Z', $record['timestamp']);
         $this->assertSame(
             '.foundry/plans/20260423T010203Z_11111111-1111-4111-8111-111111111111.json',
             $record['storage_path'],
         );
-        $this->assertSame(2, $record['metadata']['storage_version']);
+        $this->assertSame(3, $record['metadata']['storage_version']);
         $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', (string) $record['metadata']['integrity_hash']);
-        $this->assertSame('app/features/comments/feature.yaml', $record['undo']['file_snapshots'][0]['path']);
+        $this->assertSame('app/features/comments/feature.yaml', $record['undo']['file_snapshots_before'][0]['path']);
+        $this->assertSame('app/features/comments/feature.yaml', $record['undo']['file_snapshots_after'][0]['path']);
+        $this->assertSame('app/features/comments/feature.yaml', $record['undo']['patches'][0]['path']);
         $this->assertFileExists($this->project->root . '/' . $record['storage_path']);
     }
 
@@ -203,10 +205,26 @@ final class PlanRecordStoreTest extends TestCase
             'status' => $status,
             'error' => null,
             'undo' => [
-                'file_snapshots' => [[
+                'file_snapshots_before' => [[
                     'path' => 'app/features/comments/feature.yaml',
                     'exists' => false,
                     'content' => null,
+                    'hash' => null,
+                ]],
+                'file_snapshots_after' => [[
+                    'path' => 'app/features/comments/feature.yaml',
+                    'exists' => true,
+                    'content' => "feature: comments\n",
+                    'hash' => hash('sha256', "feature: comments\n"),
+                ]],
+                'patches' => [[
+                    'path' => 'app/features/comments/feature.yaml',
+                    'format' => 'unified_diff',
+                    'before_exists' => false,
+                    'after_exists' => true,
+                    'before_hash' => null,
+                    'after_hash' => hash('sha256', "feature: comments\n"),
+                    'patch' => "--- /dev/null\n+++ b/app/features/comments/feature.yaml\n@@ -1,0 +1,1 @@\n+feature: comments\n",
                 ]],
             ],
             'metadata' => [
