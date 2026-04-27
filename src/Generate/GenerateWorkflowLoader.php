@@ -46,6 +46,15 @@ final class GenerateWorkflowLoader
             );
         }
 
+        return $this->loadDefinition($payload, $relativePath);
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    public function loadDefinition(array $payload, string $path): GenerateWorkflowDefinition
+    {
+        $relativePath = $this->normalizePath($path);
         $sharedContext = is_array($payload['shared_context'] ?? null) ? $payload['shared_context'] : [];
         $rawSteps = array_values(array_filter((array) ($payload['steps'] ?? []), 'is_array'));
         if ($rawSteps === []) {

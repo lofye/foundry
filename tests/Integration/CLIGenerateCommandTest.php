@@ -402,6 +402,446 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertSame('GENERATE_WORKFLOW_MULTI_STEP_MINIMUM', $multiStepMinimum['payload']['error']['code']);
     }
 
+    public function test_generate_template_executes_single_template_and_persists_template_metadata(): void
+    {
+        $this->writeGenerateTemplate('single.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'feature.recipe',
+            'description' => 'Create one feature from params.',
+            'parameters' => [
+                'name' => ['type' => 'string', 'required' => true],
+            ],
+            'generate' => [
+                'type' => 'single',
+                'definition' => [
+                    'intent' => 'Create {{parameters.name}}',
+                    'mode' => 'new',
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=feature.recipe',
+            '--param',
+            'name=comments',
+            '--json',
+        ]);
+        $show = $this->runCommand($app, [
+            'foundry',
+            'plan:show',
+            (string) $generate['payload']['plan_record']['plan_id'],
+            '--json',
+        ]);
+
+        $this->assertSame(0, $generate['status']);
+        $this->assertSame('feature.recipe', $generate['payload']['metadata']['template']['template_id']);
+        $this->assertSame('.foundry/templates/single.json', $generate['payload']['metadata']['template']['path']);
+        $this->assertSame(['name' => 'comments'], $generate['payload']['metadata']['template']['resolved_parameters']);
+        $this->assertSame('Create comments', $generate['payload']['intent']);
+        $this->assertFileExists($this->project->root . '/app/features/comments_system/feature.yaml');
+        $this->assertSame(0, $show['status']);
+        $this->assertSame('feature.recipe', $show['payload']['metadata']['template']['template_id']);
+    }
+
+    public function test_generate_template_executes_workflow_template_and_links_template_metadata_into_parent_and_steps(): void
+    {
+        $this->writeGenerateTemplate('workflow.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'workflow.recipe',
+            'description' => 'Create a two-step workflow from params.',
+            'parameters' => [
+                'resource' => ['type' => 'string', 'required' => true],
+                'suffix' => ['type' => 'string', 'default' => 'audit'],
+            ],
+            'generate' => [
+                'type' => 'workflow',
+                'definition' => [
+                    'shared_context' => [
+                        'resource' => '{{parameters.resource}}',
+                        'suffix' => '{{parameters.suffix}}',
+                    ],
+                    'steps' => [
+                        [
+                            'id' => 'create_resource',
+                            'intent' => 'Create {{shared.resource}}',
+                            'mode' => 'new',
+                        ],
+                        [
+                            'id' => 'create_follow_up',
+                            'intent' => 'Create {{steps.create_resource.feature}} {{shared.suffix}}',
+                            'mode' => 'new',
+                            'dependencies' => ['create_resource'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=workflow.recipe',
+            '--param',
+            'resource=comments',
+            '--json',
+        ]);
+        $workflowPlanId = (string) $generate['payload']['plan_record']['plan_id'];
+        $firstStepPlanId = (string) $generate['payload']['workflow']['steps'][0]['record_id'];
+        $workflowShow = $this->runCommand($app, ['foundry', 'plan:show', $workflowPlanId, '--json']);
+        $stepShow = $this->runCommand($app, ['foundry', 'plan:show', $firstStepPlanId, '--json']);
+
+        $this->assertSame(0, $generate['status']);
+        $this->assertSame('completed', $generate['payload']['workflow']['status']);
+        $this->assertSame('.foundry/templates/workflow.json', $generate['payload']['workflow']['source']['path']);
+        $this->assertSame('workflow.recipe', $generate['payload']['metadata']['template']['template_id']);
+        $this->assertSame(['resource' => 'comments', 'suffix' => 'audit'], $generate['payload']['metadata']['template']['resolved_parameters']);
+        $this->assertSame(0, $workflowShow['status']);
+        $this->assertSame('workflow.recipe', $workflowShow['payload']['metadata']['template']['template_id']);
+        $this->assertSame(0, $stepShow['status']);
+        $this->assertSame('workflow.recipe', $stepShow['payload']['metadata']['template']['template_id']);
+        $this->assertSame('create_resource', $stepShow['payload']['metadata']['workflow']['step_id']);
+    }
+
+    public function test_generate_template_rejects_invalid_argument_combinations_and_parameter_failures(): void
+    {
+        $this->writeGenerateTemplate('single.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'feature.recipe',
+            'description' => 'Create one feature from params.',
+            'parameters' => [
+                'name' => ['type' => 'string', 'required' => true],
+                'enabled' => ['type' => 'boolean', 'required' => true],
+            ],
+            'generate' => [
+                'type' => 'single',
+                'definition' => [
+                    'intent' => 'Create {{parameters.name}}',
+                    'mode' => 'new',
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+
+        $intentConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--template=feature.recipe',
+            '--json',
+        ]);
+        $this->assertSame(1, $intentConflict['status']);
+        $this->assertSame('GENERATE_TEMPLATE_INTENT_CONFLICT', $intentConflict['payload']['error']['code']);
+
+        $modeConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=feature.recipe',
+            '--mode=new',
+            '--json',
+        ]);
+        $this->assertSame(1, $modeConflict['status']);
+        $this->assertSame('GENERATE_TEMPLATE_MODE_CONFLICT', $modeConflict['payload']['error']['code']);
+
+        $missingRequired = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=feature.recipe',
+            '--json',
+        ]);
+        $this->assertSame(1, $missingRequired['status']);
+        $this->assertSame('GENERATE_TEMPLATE_PARAMETER_REQUIRED', $missingRequired['payload']['error']['code']);
+
+        $invalidType = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=feature.recipe',
+            '--param',
+            'name=comments',
+            '--param',
+            'enabled=yes',
+            '--json',
+        ]);
+        $this->assertSame(1, $invalidType['status']);
+        $this->assertSame('GENERATE_TEMPLATE_PARAMETER_VALUE_INVALID', $invalidType['payload']['error']['code']);
+    }
+
+    public function test_generate_template_reports_plain_text_template_summary_and_plan_list_template_metadata(): void
+    {
+        $this->writeGenerateTemplate('single.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'feature.recipe',
+            'description' => 'Create one feature from params.',
+            'parameters' => [
+                'name' => ['type' => 'string', 'required' => true],
+            ],
+            'generate' => [
+                'type' => 'single',
+                'definition' => [
+                    'intent' => 'Create {{parameters.name}}',
+                    'mode' => 'new',
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+        $plain = $this->runPlainCommand($app, [
+            'foundry',
+            'generate',
+            '--template=feature.recipe',
+            '--param',
+            'name=comments',
+        ]);
+        $list = $this->runCommand($app, ['foundry', 'plan:list', '--json']);
+
+        $this->assertSame(0, $plain['status']);
+        $this->assertStringContainsString('Template: feature.recipe', $plain['output']);
+        $this->assertStringContainsString('Template file: .foundry/templates/single.json', $plain['output']);
+        $this->assertStringContainsString('Template params: {"name":"comments"}', $plain['output']);
+        $this->assertSame(0, $list['status']);
+        $this->assertContains('feature.recipe', array_column($list['payload']['plans'], 'template_id'));
+    }
+
+    public function test_generate_template_rejects_invalid_param_syntax_duplicates_unknown_template_and_workflow_specific_conflicts(): void
+    {
+        $this->writeGenerateTemplate('workflow.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'workflow.recipe',
+            'description' => 'Create a workflow from params.',
+            'parameters' => [
+                'resource' => ['type' => 'string', 'required' => true],
+            ],
+            'generate' => [
+                'type' => 'workflow',
+                'definition' => [
+                    'shared_context' => ['resource' => '{{parameters.resource}}'],
+                    'steps' => [
+                        ['id' => 'create_resource', 'intent' => 'Create {{shared.resource}}', 'mode' => 'new'],
+                        ['id' => 'create_follow_up', 'intent' => 'Create {{steps.create_resource.feature}} audit', 'mode' => 'new', 'dependencies' => ['create_resource']],
+                    ],
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+
+        $invalidParam = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=workflow.recipe',
+            '--param',
+            'broken',
+            '--json',
+        ]);
+        $this->assertSame(1, $invalidParam['status']);
+        $this->assertSame('GENERATE_TEMPLATE_PARAM_INVALID', $invalidParam['payload']['error']['code']);
+
+        $duplicateParam = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=workflow.recipe',
+            '--param',
+            'resource=comments',
+            '--param',
+            'resource=posts',
+            '--json',
+        ]);
+        $this->assertSame(1, $duplicateParam['status']);
+        $this->assertSame('GENERATE_TEMPLATE_PARAM_DUPLICATE', $duplicateParam['payload']['error']['code']);
+
+        $notFound = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=missing.recipe',
+            '--json',
+        ]);
+        $this->assertSame(1, $notFound['status']);
+        $this->assertSame('GENERATE_TEMPLATE_NOT_FOUND', $notFound['payload']['error']['code']);
+
+        $gitCommitConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=workflow.recipe',
+            '--param',
+            'resource=comments',
+            '--git-commit',
+            '--json',
+        ]);
+        $this->assertSame(1, $gitCommitConflict['status']);
+        $this->assertSame('GENERATE_WORKFLOW_GIT_COMMIT_UNSUPPORTED', $gitCommitConflict['payload']['error']['code']);
+
+        $explainConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=workflow.recipe',
+            '--param',
+            'resource=comments',
+            '--explain',
+            '--json',
+        ]);
+        $this->assertSame(1, $explainConflict['status']);
+        $this->assertSame('GENERATE_WORKFLOW_EXPLAIN_UNSUPPORTED', $explainConflict['payload']['error']['code']);
+    }
+
+    public function test_generate_template_supports_split_template_flag_and_inline_param_assignment_and_rejects_additional_conflicts(): void
+    {
+        $this->writeGenerateTemplate('single.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'feature.recipe',
+            'description' => 'Create one feature from params.',
+            'parameters' => [
+                'name' => ['type' => 'string', 'required' => true],
+                'enabled' => ['type' => 'boolean', 'required' => true],
+            ],
+            'generate' => [
+                'type' => 'single',
+                'definition' => [
+                    'intent' => 'Create {{parameters.name}}',
+                    'mode' => 'new',
+                    'enabled' => '{{parameters.enabled}}',
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template',
+            'feature.recipe',
+            '--param=name=comments',
+            '--param=enabled=true',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $generate['status']);
+        $this->assertSame('feature.recipe', $generate['payload']['metadata']['template']['template_id']);
+        $this->assertSame(['enabled' => true, 'name' => 'comments'], $generate['payload']['metadata']['template']['resolved_parameters']);
+
+        $workflowConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=feature.recipe',
+            '--workflow=generate-workflow.json',
+            '--json',
+        ]);
+        $this->assertSame(1, $workflowConflict['status']);
+        $this->assertSame('GENERATE_TEMPLATE_WORKFLOW_CONFLICT', $workflowConflict['payload']['error']['code']);
+
+        $targetConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=feature.recipe',
+            '--target=comments_system',
+            '--json',
+        ]);
+        $this->assertSame(1, $targetConflict['status']);
+        $this->assertSame('GENERATE_TEMPLATE_TARGET_CONFLICT', $targetConflict['payload']['error']['code']);
+
+        $multiStepConflict = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=feature.recipe',
+            '--multi-step',
+            '--json',
+        ]);
+        $this->assertSame(1, $multiStepConflict['status']);
+        $this->assertSame('GENERATE_TEMPLATE_MULTI_STEP_CONFLICT', $multiStepConflict['payload']['error']['code']);
+    }
+
+    public function test_generate_template_rejects_unknown_parameters_and_invalid_single_template_shapes(): void
+    {
+        $this->writeGenerateTemplate('unknown.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'unknown.recipe',
+            'description' => 'Template for unknown param validation.',
+            'parameters' => [
+                'name' => ['type' => 'string', 'required' => true],
+            ],
+            'generate' => [
+                'type' => 'single',
+                'definition' => [
+                    'intent' => 'Create {{parameters.name}}',
+                    'mode' => 'new',
+                ],
+            ],
+        ]);
+
+        $this->writeGenerateTemplate('invalid-mode.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'invalid.mode.recipe',
+            'description' => 'Invalid mode template.',
+            'parameters' => [
+                'name' => ['type' => 'string', 'required' => true],
+            ],
+            'generate' => [
+                'type' => 'single',
+                'definition' => [
+                    'intent' => 'Create {{parameters.name}}',
+                    'mode' => 'ship',
+                ],
+            ],
+        ]);
+
+        $this->writeGenerateTemplate('missing-target.json', [
+            'schema' => 'foundry.generate.template.v1',
+            'template_id' => 'missing.target.recipe',
+            'description' => 'Missing target template.',
+            'parameters' => [
+                'name' => ['type' => 'string', 'required' => true],
+            ],
+            'generate' => [
+                'type' => 'single',
+                'definition' => [
+                    'intent' => 'Repair {{parameters.name}}',
+                    'mode' => 'repair',
+                ],
+            ],
+        ]);
+
+        $app = new Application();
+
+        $unknownParam = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=unknown.recipe',
+            '--param',
+            'name=comments',
+            '--param',
+            'extra=1',
+            '--json',
+        ]);
+        $this->assertSame(1, $unknownParam['status']);
+        $this->assertSame('GENERATE_TEMPLATE_PARAMETER_UNKNOWN', $unknownParam['payload']['error']['code']);
+
+        $invalidMode = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=invalid.mode.recipe',
+            '--param',
+            'name=comments',
+            '--json',
+        ]);
+        $this->assertSame(1, $invalidMode['status']);
+        $this->assertSame('GENERATE_TEMPLATE_MODE_INVALID', $invalidMode['payload']['error']['code']);
+
+        $missingTarget = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--template=missing.target.recipe',
+            '--param',
+            'name=comments',
+            '--json',
+        ]);
+        $this->assertSame(1, $missingTarget['status']);
+        $this->assertSame('GENERATE_TEMPLATE_TARGET_REQUIRED', $missingTarget['payload']['error']['code']);
+    }
+
     public function test_generate_records_architectural_snapshots_diff_and_post_explain(): void
     {
         $app = new Application();
@@ -1488,6 +1928,22 @@ final class CLIGenerateCommandTest extends TestCase
         file_put_contents(
             $this->project->root . '/generate-workflow.json',
             json_encode($workflow, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL,
+        );
+    }
+
+    /**
+     * @param array<string,mixed> $template
+     */
+    private function writeGenerateTemplate(string $filename, array $template): void
+    {
+        $dir = $this->project->root . '/.foundry/templates';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        file_put_contents(
+            $dir . '/' . $filename,
+            json_encode($template, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL,
         );
     }
 

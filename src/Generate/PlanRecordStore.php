@@ -191,6 +191,11 @@ final class PlanRecordStore
             'mode' => (string) ($record['mode'] ?? ''),
             'status' => (string) ($record['status'] ?? ''),
             'record_kind' => $this->recordKind($record),
+            'template_id' => is_array($record['metadata']['template'] ?? null)
+                ? (($record['metadata']['template']['template_id'] ?? null) !== null
+                    ? (string) $record['metadata']['template']['template_id']
+                    : null)
+                : null,
             'workflow_id' => $this->workflowRecord($record)
                 ? (string) ($record['workflow_id'] ?? '')
                 : ($workflowLinkage['workflow_id'] ?? null),

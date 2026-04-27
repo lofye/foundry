@@ -220,3 +220,10 @@
 - note: Linked workflow child generate records back to their parent workflow through explicit `metadata.workflow` fields (`workflow_id`, `step_id`, `step_index`, `is_workflow_step`) while preserving standalone generate record behavior.
 - note: Hardened `.foundry/plans/` inspection by validating malformed workflow parents, orphaned workflow child records, mismatched step linkage, and inconsistent workflow result/status combinations before records are listed or shown.
 - note: Updated plan inspection output plus focused unit and integration coverage for workflow record inspection and integrity failures.
+
+## 2026-04-24 16:05:00 -0400
+- spec: generate-engine/008-generate-templates-and-recipes.md
+- note: Added repository-local generate templates under `.foundry/templates/*.json` with canonical schema `foundry.generate.template.v1`, deterministic parameter typing/default handling, and explicit `{{parameters.*}}` placeholder resolution.
+- note: Routed template-backed single-step and workflow definitions through the existing generate and workflow engine paths instead of introducing a separate template executor.
+- note: Persisted template provenance (`template_id`, path, generate type, resolved parameters) across immediate generate output, history records, workflow parent/child records, and persisted plan inspection surfaces.
+- note: Added focused unit and integration coverage for template loading, parameter validation, deterministic resolution, CLI execution, and plan inspection.

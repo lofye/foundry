@@ -495,3 +495,45 @@ Timestamp: 2026-04-24T14:20:00-04:00
 - Step Record Relationship
 - Inspect Surface Requirements
 - Verify Surface Requirements
+
+### Decision: implement generate templates as a deterministic registry and route them through the existing single-step and workflow engine paths
+
+Timestamp: 2026-04-24T16:05:00-04:00
+
+**Context**
+
+- `008-generate-templates-and-recipes` required reusable parameterized generate templates without introducing a second planning pipeline or weakening the existing validation, policy, workflow, persistence, and inspection contracts.
+- The repository already had two stable execution seams: direct single-step generate execution and multi-step workflow execution backed by repository-local workflow definitions.
+- Template support needed to remain deterministic, repository-local, and inspectable, including clear provenance in persisted plan artifacts.
+
+**Decision**
+
+- Add `.foundry/templates/*.json` as the V1 repository-local generate template registry with canonical schema `foundry.generate.template.v1`.
+- Resolve declared `{{parameters.*}}` placeholders deterministically into either a single-step generate definition or an in-memory workflow definition.
+- Route resolved single templates through the existing `runSingle()` path and resolved workflow templates through the existing workflow execution path, while persisting explicit `metadata.template` provenance on standalone generate records and workflow parent/child records.
+
+**Reasoning**
+
+- Reusing the existing execution seams preserves the current planner, validator, policy engine, interactive review, verification loop, and persisted plan record behavior instead of creating a parallel template-specific execution stack.
+- A repository-local JSON registry keeps template discovery deterministic and easy to inspect, while declared parameter types and defaults make resolution predictable for both humans and agents.
+- Persisting template provenance alongside plan records makes template-driven execution auditable and keeps `generate`, `plan:list`, and `plan:show` aligned.
+
+**Alternatives Considered**
+
+- Add template execution as a separate planning DSL and executor.
+- Store templates in framework-owned global locations or remote registries in V1.
+- Resolve templates into ad hoc shell arguments or temporary workflow files instead of in-memory definitions.
+
+**Impact**
+
+- `foundry generate --template=<template_id> [--param <name=value>]` now supports deterministic repository-local recipes for both single-step and workflow-backed generation.
+- Invalid template schemas, unknown or missing parameters, type mismatches, and unresolved parameter references now fail explicitly before any generate execution occurs.
+- Persisted generate and workflow records now expose template id, template file path, generate type, and resolved parameters as first-class inspection metadata.
+
+**Spec Reference**
+
+- Purpose
+- Goals
+- Constraints
+- Expected Behavior
+- Acceptance Criteria

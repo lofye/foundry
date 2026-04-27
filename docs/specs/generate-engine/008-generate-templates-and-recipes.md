@@ -1,4 +1,4 @@
-# 008-generate-templates-and-recipes
+# Execution Spec: 008-generate-templates-and-recipes
 
 ## Purpose
 

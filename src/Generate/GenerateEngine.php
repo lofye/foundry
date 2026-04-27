@@ -64,6 +64,10 @@ final class GenerateEngine
      */
     public function run(Intent $intent): array
     {
+        if ($intent->isTemplate()) {
+            return $this->runTemplate($intent);
+        }
+
         if ($intent->isWorkflow()) {
             return $this->runWorkflow($intent);
         }
@@ -77,6 +81,7 @@ final class GenerateEngine
     private function runSingle(
         Intent $intent,
         ?array $workflowLinkage = null,
+        ?array $templateMetadata = null,
         ?\Closure $planRecordObserver = null,
     ): array
     {
@@ -279,6 +284,7 @@ final class GenerateEngine
                         safetyRouting: $safetyRouting,
                         policy: $policy,
                         workflowLinkage: $workflowLinkage,
+                        templateMetadata: $templateMetadata,
                     );
 
                     $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -300,6 +306,7 @@ final class GenerateEngine
                         error: null,
                         undo: null,
                         workflowLinkage: $workflowLinkage,
+                        templateMetadata: $templateMetadata,
                     ));
                     $this->observePlanRecord($planRecordObserver, $planRecord);
                     $payload['record'] = $this->historyRecordReference($record);
@@ -347,6 +354,7 @@ final class GenerateEngine
                     safetyRouting: $safetyRouting,
                     policy: $policy,
                     workflowLinkage: $workflowLinkage,
+                    templateMetadata: $templateMetadata,
                 );
 
                 $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $compile->graph->sourceHash()));
@@ -368,6 +376,7 @@ final class GenerateEngine
                     error: null,
                     undo: null,
                     workflowLinkage: $workflowLinkage,
+                    templateMetadata: $templateMetadata,
                 ));
                 $this->observePlanRecord($planRecordObserver, $planRecord);
                 $payload['record'] = $this->historyRecordReference($record);
@@ -475,6 +484,7 @@ final class GenerateEngine
                     safetyRouting: $safetyRouting,
                     policy: $policy,
                     workflowLinkage: $workflowLinkage,
+                    templateMetadata: $templateMetadata,
                 );
 
                 $record = $artifactStore->persistGenerateRecord($this->historyPayload($payload, $postCompile->graph->sourceHash()));
@@ -496,6 +506,7 @@ final class GenerateEngine
                     error: null,
                     undo: $this->persistedUndoPayload($fileSnapshots, $fileSnapshotsAfter),
                     workflowLinkage: $workflowLinkage,
+                    templateMetadata: $templateMetadata,
                 ));
                 $this->observePlanRecord($planRecordObserver, $planRecord);
                 $payload['record'] = $this->historyRecordReference($record);
@@ -522,6 +533,7 @@ final class GenerateEngine
                 error: $this->publicErrorPayload($error),
                 undo: null,
                 workflowLinkage: $workflowLinkage,
+                templateMetadata: $templateMetadata,
             ));
             $this->observePlanRecord($planRecordObserver, $planRecord);
 
@@ -535,8 +547,122 @@ final class GenerateEngine
     private function runWorkflow(Intent $intent): array
     {
         $loader = new GenerateWorkflowLoader($this->paths);
-        $resolver = new GenerateWorkflowContextResolver();
         $definition = $loader->load((string) $intent->workflowPath);
+
+        return $this->runWorkflowDefinition($intent, $definition);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function runTemplate(Intent $intent): array
+    {
+        $template = (new GenerateTemplateLoader($this->paths))->load((string) $intent->templateId);
+        $resolution = (new GenerateTemplateResolver())->resolve($template, $intent->templateParameters);
+        $templateMetadata = $resolution->metadata();
+
+        if ($template->generateType === 'single') {
+            $definition = $resolution->resolvedDefinition;
+            $mode = trim((string) ($definition['mode'] ?? ''));
+            if (!in_array($mode, Intent::supportedModes(), true)) {
+                throw new FoundryError(
+                    'GENERATE_TEMPLATE_MODE_INVALID',
+                    'validation',
+                    ['template_id' => $template->templateId, 'path' => $template->path, 'mode' => $mode],
+                    'Generate template single definitions must resolve to mode new, modify, or repair.',
+                );
+            }
+
+            $rawIntent = trim((string) ($definition['intent'] ?? ''));
+            if ($rawIntent === '') {
+                throw new FoundryError(
+                    'GENERATE_TEMPLATE_INTENT_REQUIRED',
+                    'validation',
+                    ['template_id' => $template->templateId, 'path' => $template->path],
+                    'Generate template single definitions must resolve to an intent.',
+                );
+            }
+
+            $target = is_string($definition['target'] ?? null) ? trim((string) $definition['target']) : null;
+            if (in_array($mode, ['modify', 'repair'], true) && ($target === null || $target === '')) {
+                throw new FoundryError(
+                    'GENERATE_TEMPLATE_TARGET_REQUIRED',
+                    'validation',
+                    ['template_id' => $template->templateId, 'path' => $template->path, 'mode' => $mode],
+                    'Generate template single definitions require a target for modify and repair modes.',
+                );
+            }
+
+            $packHints = array_values(array_filter(array_map(
+                static fn(mixed $pack): string => trim((string) $pack),
+                (array) ($definition['packs'] ?? []),
+            ), static fn(string $pack): bool => $pack !== ''));
+            $packHints = array_values(array_unique(array_merge($intent->packHints, $packHints)));
+            sort($packHints);
+
+            return $this->runSingle(
+                new Intent(
+                    raw: $rawIntent,
+                    mode: $mode,
+                    target: $target !== '' ? $target : null,
+                    workflowPath: null,
+                    templateId: $template->templateId,
+                    templateParameters: $intent->templateParameters,
+                    multiStep: false,
+                    interactive: $intent->interactive,
+                    dryRun: $intent->dryRun,
+                    policyCheck: $intent->policyCheck,
+                    skipVerify: $intent->skipVerify,
+                    explainAfter: $intent->explainAfter,
+                    allowRisky: $intent->allowRisky,
+                    allowPolicyViolations: $intent->allowPolicyViolations,
+                    allowDirty: $intent->allowDirty,
+                    allowPackInstall: $intent->allowPackInstall,
+                    gitCommit: $intent->gitCommit,
+                    gitCommitMessage: $intent->gitCommitMessage,
+                    packHints: $packHints,
+                ),
+                workflowLinkage: null,
+                templateMetadata: $templateMetadata,
+            );
+        }
+
+        if ($intent->gitCommit) {
+            throw new FoundryError(
+                'GENERATE_WORKFLOW_GIT_COMMIT_UNSUPPORTED',
+                'validation',
+                [],
+                'Generate workflow does not support top-level --git-commit yet.',
+            );
+        }
+
+        if ($intent->explainAfter) {
+            throw new FoundryError(
+                'GENERATE_WORKFLOW_EXPLAIN_UNSUPPORTED',
+                'validation',
+                [],
+                'Generate workflow does not support top-level --explain yet.',
+            );
+        }
+
+        $workflow = (new GenerateWorkflowLoader($this->paths))->loadDefinition(
+            $resolution->resolvedDefinition,
+            $template->path,
+        );
+
+        return $this->runWorkflowDefinition($intent, $workflow, $templateMetadata);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function runWorkflowDefinition(
+        Intent $intent,
+        GenerateWorkflowDefinition $definition,
+        ?array $templateMetadata = null,
+    ): array
+    {
+        $resolver = new GenerateWorkflowContextResolver();
         if ($intent->multiStep && count($definition->steps) < 2) {
             throw new FoundryError(
                 'GENERATE_WORKFLOW_MULTI_STEP_MINIMUM',
@@ -602,6 +728,8 @@ final class GenerateEngine
                 mode: $step->mode,
                 target: $step->target,
                 workflowPath: null,
+                templateId: $intent->templateId,
+                templateParameters: $intent->templateParameters,
                 multiStep: false,
                 interactive: $intent->interactive,
                 dryRun: $intent->dryRun,
@@ -623,6 +751,7 @@ final class GenerateEngine
                 $stepPayload = $this->runSingle(
                     $stepIntent,
                     $workflowLinkage,
+                    $templateMetadata,
                     static function (array $record) use (&$stepPlanRecord): void {
                         $stepPlanRecord = $record;
                     },
@@ -696,6 +825,7 @@ final class GenerateEngine
                 'workflow_path' => $definition->path,
                 'multi_step' => $intent->multiStep || count($definition->steps) > 1,
                 'context' => $runtimeContext,
+                'template' => $templateMetadata,
             ],
             'packs_used' => $packsUsed,
             'packs_installed' => $packsInstalled,
@@ -712,6 +842,7 @@ final class GenerateEngine
             affectedFiles: $affectedFiles,
             packsUsed: $packsUsed,
             error: $error,
+            templateMetadata: $templateMetadata,
         ));
         $payload['record'] = $this->historyRecordReference($record);
         $payload['plan_record'] = $this->planRecordReference($planRecord);
@@ -930,6 +1061,7 @@ final class GenerateEngine
         ?array $safetyRouting = null,
         ?array $policy = null,
         ?array $workflowLinkage = null,
+        ?array $templateMetadata = null,
     ): array {
         $packsUsed = $plan->extension !== null ? [$plan->extension] : [];
         $metadata = [
@@ -940,6 +1072,9 @@ final class GenerateEngine
         ];
         if ($workflowLinkage !== null) {
             $metadata['workflow'] = $workflowLinkage;
+        }
+        if ($templateMetadata !== null) {
+            $metadata['template'] = $templateMetadata;
         }
 
         return [
@@ -1008,6 +1143,9 @@ final class GenerateEngine
                 'workflow' => is_array($payload['metadata']['workflow'] ?? null)
                     ? $payload['metadata']['workflow']
                     : null,
+                'template' => is_array($payload['metadata']['template'] ?? null)
+                    ? $payload['metadata']['template']
+                    : null,
             ],
             'snapshots' => $payload['snapshots'] ?? [],
             'architecture_diff' => is_array($payload['architecture_diff'] ?? null)
@@ -1043,6 +1181,9 @@ final class GenerateEngine
                 'policy_check' => $payload['metadata']['policy_check'] ?? false,
                 'workflow_path' => $payload['metadata']['workflow_path'] ?? null,
                 'multi_step' => $payload['metadata']['multi_step'] ?? false,
+                'template' => is_array($payload['metadata']['template'] ?? null)
+                    ? $payload['metadata']['template']
+                    : null,
             ],
             'packs_used' => $payload['packs_used'] ?? [],
             'packs_installed' => $payload['packs_installed'] ?? [],
@@ -1062,6 +1203,7 @@ final class GenerateEngine
         array $affectedFiles,
         array $packsUsed,
         ?array $error,
+        ?array $templateMetadata,
     ): array {
         $stepIds = array_values(array_map(
             static fn(array $step): string => (string) ($step['step_id'] ?? ''),
@@ -1113,6 +1255,7 @@ final class GenerateEngine
                 'multi_step' => count((array) ($workflow['steps'] ?? [])) > 1,
                 'step_ids' => $stepIds,
                 'packs_used' => $packsUsed,
+                'template' => $templateMetadata,
             ],
         ];
     }
@@ -1399,6 +1542,7 @@ final class GenerateEngine
         ?array $error,
         ?array $undo,
         ?array $workflowLinkage,
+        ?array $templateMetadata,
     ): array {
         $effectivePlan = $finalPlan ?? $originalPlan;
         $affectedFiles = $effectivePlan?->affectedFiles ?? [];
@@ -1417,6 +1561,9 @@ final class GenerateEngine
         ];
         if ($workflowLinkage !== null) {
             $metadata['workflow'] = $workflowLinkage;
+        }
+        if ($templateMetadata !== null) {
+            $metadata['template'] = $templateMetadata;
         }
 
         return [

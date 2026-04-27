@@ -147,6 +147,34 @@ final class PlanCommandsTest extends TestCase
         $this->assertNull($result['payload']);
     }
 
+    public function test_plan_list_and_show_render_template_metadata_when_present(): void
+    {
+        $this->store('2026-04-23T01:02:03Z')->persist($this->record(
+            '11111111-1111-4111-8111-111111111111',
+            'Create comments',
+            metadataOverrides: [
+                'template' => [
+                    'template_id' => 'feature.recipe',
+                    'path' => '.foundry/templates/single.json',
+                    'resolved_parameters' => ['name' => 'comments'],
+                ],
+            ],
+        ));
+
+        $list = (new PlanListCommand())->run(['plan:list'], new CommandContext($this->project->root));
+        $show = (new PlanShowCommand())->run(
+            ['plan:show', '11111111-1111-4111-8111-111111111111'],
+            new CommandContext($this->project->root),
+        );
+
+        $this->assertSame(0, $list['status']);
+        $this->assertStringContainsString('template=feature.recipe', (string) $list['message']);
+        $this->assertSame(0, $show['status']);
+        $this->assertStringContainsString('Template: feature.recipe', (string) $show['message']);
+        $this->assertStringContainsString('Template file: .foundry/templates/single.json', (string) $show['message']);
+        $this->assertStringContainsString('Template params: {"name":"comments"}', (string) $show['message']);
+    }
+
     public function test_plan_show_renders_workflow_hierarchy_for_parent_records(): void
     {
         $this->store('2026-04-23T01:02:03Z')->persist($this->workflowStepRecord(

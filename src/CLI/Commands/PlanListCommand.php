@@ -57,6 +57,9 @@ final class PlanListCommand extends Command
                     (string) ($plan['workflow_step_index'] ?? '?'),
                 );
             }
+            if (is_string($plan['template_id'] ?? null) && (string) ($plan['template_id'] ?? '') !== '') {
+                $workflowBits[] = 'template=' . (string) $plan['template_id'];
+            }
 
             $suffix = $workflowBits !== [] ? ' | ' . implode(' | ', $workflowBits) : '';
             $lines[] = sprintf(

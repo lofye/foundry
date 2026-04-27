@@ -58,6 +58,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $explain = $registry->classifyCliCommand(['explain', 'publish_post']);
         $generatePrompt = $registry->classifyCliCommand(['generate', 'Add', 'bookmarks']);
         $generateWorkflow = $registry->classifyCliCommand(['generate', '--workflow=generate-workflow.json']);
+        $generateTemplate = $registry->classifyCliCommand(['generate', '--template=feature.recipe']);
         $licenseStatus = $registry->classifyCliCommand(['license', 'status']);
         $features = $registry->classifyCliCommand(['features']);
         $inspectContext = $registry->classifyCliCommand(['inspect', 'context', 'event-bus']);
@@ -100,6 +101,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($explain);
         $this->assertNotNull($generatePrompt);
         $this->assertNotNull($generateWorkflow);
+        $this->assertNotNull($generateTemplate);
         $this->assertNotNull($licenseStatus);
         $this->assertNotNull($features);
         $this->assertNotNull($inspectContext);
@@ -160,8 +162,10 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertStringContainsString('explain [<target>]', $explain['usage']);
         $this->assertSame('generate <intent>', $generatePrompt['signature']);
         $this->assertSame('generate <intent>', $generateWorkflow['signature']);
+        $this->assertSame('generate <intent>', $generateTemplate['signature']);
         $this->assertStringContainsString('--mode=<new|modify|repair>', $generatePrompt['usage']);
         $this->assertStringContainsString('--workflow=<file>', $generateWorkflow['usage']);
+        $this->assertStringContainsString('--template=<template_id>', $generateTemplate['usage']);
         $this->assertStringContainsString('--explain', $generatePrompt['usage']);
         $this->assertStringContainsString('--allow-dirty', $generatePrompt['usage']);
         $this->assertStringContainsString('--allow-pack-install', $generatePrompt['usage']);

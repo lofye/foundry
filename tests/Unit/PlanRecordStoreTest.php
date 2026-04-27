@@ -81,6 +81,22 @@ final class PlanRecordStoreTest extends TestCase
         $this->assertSame([null, 'create_comments'], array_column($summaries, 'workflow_step_id'));
     }
 
+    public function test_list_includes_template_id_when_present(): void
+    {
+        $record = $this->record('11111111-1111-4111-8111-111111111111', 'Create comments');
+        $record['metadata']['template'] = [
+            'template_id' => 'feature.recipe',
+            'path' => '.foundry/templates/single.json',
+            'resolved_parameters' => ['name' => 'comments'],
+        ];
+
+        $this->store('2026-04-23T01:02:03Z')->persist($record);
+
+        $summaries = $this->store('2026-04-23T01:02:04Z')->list();
+
+        $this->assertSame('feature.recipe', $summaries[0]['template_id']);
+    }
+
     public function test_load_resolves_plan_by_primary_plan_id(): void
     {
         $store = $this->store('2026-04-23T01:02:03Z');

@@ -60,6 +60,7 @@ final class PlanShowCommand extends Command
     private function renderMessage(array $record): string
     {
         $workflowLinkage = is_array($record['metadata']['workflow'] ?? null) ? $record['metadata']['workflow'] : null;
+        $template = is_array($record['metadata']['template'] ?? null) ? $record['metadata']['template'] : null;
         $isWorkflowRecord = (string) ($record['schema'] ?? '') === 'foundry.generate.workflow_record.v1';
 
         $lines = ['Plan: ' . (string) ($record['plan_id'] ?? '')];
@@ -87,6 +88,11 @@ final class PlanShowCommand extends Command
         $lines[] = 'Storage path: ' . (string) ($record['storage_path'] ?? '');
         $lines[] = 'Affected files: ' . count((array) ($record['affected_files'] ?? []));
         $lines[] = 'Executed actions: ' . count((array) ($record['actions_executed'] ?? []));
+        if ($template !== null) {
+            $lines[] = 'Template: ' . (string) ($template['template_id'] ?? '');
+            $lines[] = 'Template file: ' . (string) ($template['path'] ?? '');
+            $lines[] = 'Template params: ' . Json::encode($template['resolved_parameters'] ?? []);
+        }
 
         if ($isWorkflowRecord) {
             $lines[] = '';

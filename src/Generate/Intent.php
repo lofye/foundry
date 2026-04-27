@@ -8,12 +8,15 @@ final readonly class Intent
 {
     /**
      * @param array<int,string> $packHints
+     * @param array<string,string> $templateParameters
      */
     public function __construct(
         public string $raw,
         public string $mode,
         public ?string $target = null,
         public ?string $workflowPath = null,
+        public ?string $templateId = null,
+        public array $templateParameters = [],
         public bool $multiStep = false,
         public bool $interactive = false,
         public bool $dryRun = false,
@@ -59,6 +62,8 @@ final readonly class Intent
             'mode' => $this->mode,
             'target' => $this->target,
             'workflow_path' => $this->workflowPath,
+            'template_id' => $this->templateId,
+            'template_parameters' => $this->templateParameters,
             'multi_step' => $this->multiStep,
             'interactive' => $this->interactive,
             'dry_run' => $this->dryRun,
@@ -96,6 +101,10 @@ final readonly class Intent
             workflowPath: is_string($data['workflow_path'] ?? null) && trim((string) ($data['workflow_path'] ?? null)) !== ''
                 ? trim((string) $data['workflow_path'])
                 : null,
+            templateId: is_string($data['template_id'] ?? null) && trim((string) ($data['template_id'] ?? null)) !== ''
+                ? trim((string) $data['template_id'])
+                : null,
+            templateParameters: self::normalizeTemplateParameters((array) ($data['template_parameters'] ?? [])),
             multiStep: ($data['multi_step'] ?? false) === true,
             interactive: ($data['interactive'] ?? false) === true,
             dryRun: ($data['dry_run'] ?? false) === true,
@@ -121,6 +130,8 @@ final readonly class Intent
             mode: $this->mode,
             target: $this->target,
             workflowPath: $this->workflowPath,
+            templateId: $this->templateId,
+            templateParameters: $this->templateParameters,
             multiStep: $this->multiStep,
             interactive: $this->interactive,
             dryRun: $this->dryRun,
@@ -144,6 +155,8 @@ final readonly class Intent
             mode: $this->mode,
             target: $this->target,
             workflowPath: $this->workflowPath,
+            templateId: $this->templateId,
+            templateParameters: $this->templateParameters,
             multiStep: $this->multiStep,
             interactive: $this->interactive,
             dryRun: $this->dryRun,
@@ -163,5 +176,31 @@ final readonly class Intent
     public function isWorkflow(): bool
     {
         return $this->workflowPath !== null && $this->workflowPath !== '';
+    }
+
+    public function isTemplate(): bool
+    {
+        return $this->templateId !== null && $this->templateId !== '';
+    }
+
+    /**
+     * @param array<string,mixed> $parameters
+     * @return array<string,string>
+     */
+    private static function normalizeTemplateParameters(array $parameters): array
+    {
+        $normalized = [];
+        foreach ($parameters as $name => $value) {
+            $parameterName = trim((string) $name);
+            if ($parameterName === '') {
+                continue;
+            }
+
+            $normalized[$parameterName] = (string) $value;
+        }
+
+        ksort($normalized);
+
+        return $normalized;
     }
 }

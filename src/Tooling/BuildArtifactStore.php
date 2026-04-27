@@ -390,6 +390,7 @@ final class BuildArtifactStore
                 'record_kind' => (string) (($payload['workflow']['schema'] ?? null) === 'foundry.generate.workflow_record.v1'
                     ? 'workflow'
                     : ((((array) ($payload['metadata']['workflow'] ?? []))['is_workflow_step'] ?? false) === true ? 'workflow_step' : 'generate')),
+                'template_id' => (((array) ($payload['metadata']['template'] ?? []))['template_id'] ?? null),
                 'workflow_id' => ($payload['workflow']['schema'] ?? null) === 'foundry.generate.workflow_record.v1'
                     ? ($payload['workflow']['workflow_id'] ?? null)
                     : (((array) ($payload['metadata']['workflow'] ?? []))['workflow_id'] ?? null),

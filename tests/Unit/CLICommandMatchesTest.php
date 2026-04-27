@@ -168,6 +168,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new PackCommand())->matches(['pack', 'info', 'foundry/blog']));
         $this->assertTrue((new PromptGenerateCommand())->matches(['generate', 'add', 'bookmark', 'support']));
         $this->assertTrue((new PromptGenerateCommand())->matches(['generate', '--workflow=generate-workflow.json']));
+        $this->assertTrue((new PromptGenerateCommand())->matches(['generate', '--template=feature.recipe']));
         $this->assertTrue((new PromptGenerateCommand())->matches(['generate', '--multi-step']));
         $this->assertTrue((new UpgradeCheckCommand())->matches(['upgrade-check']));
         $this->assertTrue((new GraphVisualizeCommand())->matches(['graph', 'visualize']));

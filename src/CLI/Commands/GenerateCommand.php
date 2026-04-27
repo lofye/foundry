@@ -67,6 +67,10 @@ final class GenerateCommand extends Command
             return true;
         }
 
+        if ($this->hasTemplateFlag($args)) {
+            return true;
+        }
+
         $target = trim((string) ($args[1] ?? ''));
         if ($target === '' || str_starts_with($target, '--')) {
             return false;
@@ -102,6 +106,8 @@ final class GenerateCommand extends Command
         $mode = null;
         $target = null;
         $workflowPath = null;
+        $templateId = null;
+        $templateParameters = [];
         $multiStep = false;
         $interactive = false;
         $dryRun = false;
@@ -203,8 +209,19 @@ final class GenerateCommand extends Command
                 continue;
             }
 
+            if (str_starts_with($arg, '--template=')) {
+                $templateId = trim(substr($arg, strlen('--template=')));
+                continue;
+            }
+
             if ($arg === '--workflow') {
                 $workflowPath = trim((string) ($args[$index + 1] ?? ''));
+                $skipNext = true;
+                continue;
+            }
+
+            if ($arg === '--template') {
+                $templateId = trim((string) ($args[$index + 1] ?? ''));
                 $skipNext = true;
                 continue;
             }
@@ -237,6 +254,17 @@ final class GenerateCommand extends Command
                 continue;
             }
 
+            if (str_starts_with($arg, '--param=')) {
+                $this->storeTemplateParameter(substr($arg, strlen('--param=')), $templateParameters);
+                continue;
+            }
+
+            if ($arg === '--param') {
+                $this->storeTemplateParameter((string) ($args[$index + 1] ?? ''), $templateParameters);
+                $skipNext = true;
+                continue;
+            }
+
             if (str_starts_with($arg, '--')) {
                 continue;
             }
@@ -245,6 +273,84 @@ final class GenerateCommand extends Command
         }
 
         $rawIntent = trim(implode(' ', $parts));
+        if ($templateId !== null && $templateId !== '') {
+            if ($workflowPath !== null && $workflowPath !== '') {
+                throw new FoundryError(
+                    'GENERATE_TEMPLATE_WORKFLOW_CONFLICT',
+                    'validation',
+                    [],
+                    'Generate template runs do not accept --workflow.',
+                );
+            }
+
+            if ($rawIntent !== '') {
+                throw new FoundryError(
+                    'GENERATE_TEMPLATE_INTENT_CONFLICT',
+                    'validation',
+                    [],
+                    'Generate template runs do not accept a free-form top-level intent.',
+                );
+            }
+
+            if ($mode !== null && $mode !== '') {
+                throw new FoundryError(
+                    'GENERATE_TEMPLATE_MODE_CONFLICT',
+                    'validation',
+                    [],
+                    'Generate template runs declare their own mode; omit top-level --mode.',
+                );
+            }
+
+            if ($target !== null && $target !== '') {
+                throw new FoundryError(
+                    'GENERATE_TEMPLATE_TARGET_CONFLICT',
+                    'validation',
+                    [],
+                    'Generate template runs declare their own target; omit top-level --target.',
+                );
+            }
+
+            if ($multiStep) {
+                throw new FoundryError(
+                    'GENERATE_TEMPLATE_MULTI_STEP_CONFLICT',
+                    'validation',
+                    [],
+                    'Generate template runs do not accept top-level --multi-step.',
+                );
+            }
+
+            if (($dryRun || $policyCheck) && $gitCommit) {
+                throw new FoundryError(
+                    'GENERATE_GIT_COMMIT_DRY_RUN_INVALID',
+                    'validation',
+                    [],
+                    'Generate cannot use --git-commit together with --dry-run or --policy-check.',
+                );
+            }
+
+            return new Intent(
+                raw: 'template ' . $templateId,
+                mode: 'template',
+                target: null,
+                workflowPath: null,
+                templateId: $templateId,
+                templateParameters: $templateParameters,
+                multiStep: false,
+                interactive: $interactive,
+                dryRun: $dryRun,
+                policyCheck: $policyCheck,
+                skipVerify: $skipVerify,
+                explainAfter: $explainAfter,
+                allowRisky: $allowRisky,
+                allowPolicyViolations: $allowPolicyViolations,
+                allowDirty: $allowDirty,
+                allowPackInstall: $allowPackInstall,
+                gitCommit: $gitCommit,
+                gitCommitMessage: $gitCommitMessage !== '' ? $gitCommitMessage : null,
+                packHints: $packHints,
+            );
+        }
+
         if ($workflowPath !== null && $workflowPath !== '') {
             if ($rawIntent !== '') {
                 throw new FoundryError(
@@ -296,6 +402,8 @@ final class GenerateCommand extends Command
                 mode: 'workflow',
                 target: null,
                 workflowPath: $workflowPath,
+                templateId: null,
+                templateParameters: [],
                 multiStep: $multiStep,
                 interactive: $interactive,
                 dryRun: $dryRun,
@@ -371,6 +479,8 @@ final class GenerateCommand extends Command
             mode: $mode,
             target: $target,
             workflowPath: null,
+            templateId: null,
+            templateParameters: [],
             multiStep: false,
             interactive: $interactive,
             dryRun: $dryRun,
@@ -446,6 +556,63 @@ final class GenerateCommand extends Command
     }
 
     /**
+     * @param array<int,string> $args
+     */
+    private function hasTemplateFlag(array $args): bool
+    {
+        foreach ($args as $index => $arg) {
+            if ($index === 0) {
+                continue;
+            }
+
+            if ($arg === '--template' || str_starts_with($arg, '--template=')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string,string> $parameters
+     */
+    private function storeTemplateParameter(string $input, array &$parameters): void
+    {
+        $input = trim($input);
+        if ($input === '' || !str_contains($input, '=')) {
+            throw new FoundryError(
+                'GENERATE_TEMPLATE_PARAM_INVALID',
+                'validation',
+                ['input' => $input],
+                'Generate template parameters must use name=value.',
+            );
+        }
+
+        [$name, $value] = explode('=', $input, 2);
+        $name = trim($name);
+        if ($name === '') {
+            throw new FoundryError(
+                'GENERATE_TEMPLATE_PARAM_INVALID',
+                'validation',
+                ['input' => $input],
+                'Generate template parameters must use name=value.',
+            );
+        }
+
+        if (array_key_exists($name, $parameters)) {
+            throw new FoundryError(
+                'GENERATE_TEMPLATE_PARAM_DUPLICATE',
+                'validation',
+                ['parameter' => $name],
+                'Generate template parameters may only be provided once.',
+            );
+        }
+
+        $parameters[$name] = $value;
+        ksort($parameters);
+    }
+
+    /**
      * @param array<string,mixed> $payload
      */
     private function renderMessage(array $payload): string
@@ -474,6 +641,13 @@ final class GenerateCommand extends Command
             'Files affected: ' . $files,
             'Packs: ' . $packSummary,
         ];
+
+        $template = is_array($payload['metadata']['template'] ?? null) ? $payload['metadata']['template'] : [];
+        if ($template !== []) {
+            $lines[] = 'Template: ' . (string) ($template['template_id'] ?? '');
+            $lines[] = 'Template file: ' . (string) ($template['path'] ?? '');
+            $lines[] = 'Template params: ' . json_encode($template['resolved_parameters'] ?? [], JSON_UNESCAPED_SLASHES);
+        }
 
         if ($safetyRouting !== []) {
             $recommendedMode = str_replace('_', '-', (string) ($safetyRouting['recommended_mode'] ?? 'non_interactive'));

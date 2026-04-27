@@ -12,8 +12,10 @@
 - Generate now optionally loads `.foundry/policies/generate.json`, evaluates deterministic V1 repository-local policy rules against validated plans before execution, and returns policy status, matched rules, warnings, violations, and override metadata in both human and JSON output.
 - `foundry generate --policy-check` now evaluates planning, validation, and repository policy without executing feature-file writes, and `--allow-policy-violations` now acts as an explicit visible override for blocking policy results.
 - `foundry generate --workflow=<file> [--multi-step]` now loads repository-local JSON workflow definitions, executes steps sequentially through the existing single-step generate engine, resolves `{{shared.*}}` and `{{steps.<id>.*}}` placeholders deterministically, and emits per-step input/output/status plus explicit rollback guidance on fail-fast workflow errors.
+- `foundry generate --template=<template_id> [--param <name=value>]` now loads repository-local JSON templates from `.foundry/templates/*.json`, validates declared parameter contracts, resolves deterministic `{{parameters.*}}` placeholders, and routes the resolved definition into the existing single-step or workflow execution path.
 - Workflow runs now persist a canonical parent workflow plan record with schema `foundry.generate.workflow_record.v1`, deterministic workflow IDs, ordered step summaries, final shared context, compact result fields, and explicit rollback guidance in addition to the underlying per-step generate plan records.
 - Generate plan records produced inside workflow runs now remain normal step-level generate records while persisting explicit `metadata.workflow` linkage (`workflow_id`, `step_id`, `step_index`, `is_workflow_step`) so parent and child records stay inspectable and verifiable together.
+- Template-backed generate runs now persist `metadata.template` with `template_id`, repository-relative template path, generate type, and resolved parameters on both standalone generate records and workflow parent/child records so `plan:list`, `plan:show`, and immediate JSON output expose the same provenance.
 - `foundry generate --interactive` and `foundry generate -i` now render a plan summary, per-action detail, and file diffs before mutation.
 - Interactive generate now supports approve, reject, and minimal plan modification by excluding actions or files and by toggling risky actions before execution.
 - Interactive generate now surfaces policy warnings and violations during review, re-evaluates policy after plan modifications, and requires explicit confirmation before executing a policy-denied plan with an override.
@@ -48,6 +50,7 @@
 - Should replay eventually persist its own execution history separately from the original generate plan record, or remain a read-and-apply operation only?
 - Should workflow runs eventually gain first-class replay and grouped undo semantics on top of the parent workflow plan record instead of relying on the persisted per-step plan records?
 - Should workflow mode eventually support top-level `--explain` and `--git-commit`, or should those remain follow-on work until grouped semantics are specified?
+- Should template support eventually grow beyond repository-local JSON files into framework-provided starter templates or pack-contributed template registries without weakening the current deterministic local-registry rule?
 
 ## Next Steps
 
@@ -59,3 +62,4 @@
 - Decide whether replay should eventually emit its own persisted operational history in addition to reusing the stored plan artifact contract.
 - Decide whether workflow runs should add grouped replay and undo semantics beyond the current parent-record inspection plus per-step rollback guidance.
 - Decide whether workflow mode should grow explicit top-level explain or git-commit support once grouped output and commit semantics are specified.
+- Decide whether future template work should add richer starter or pack-distributed registries while preserving the current repository-local deterministic contract.
