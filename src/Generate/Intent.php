@@ -30,6 +30,8 @@ final readonly class Intent
         public bool $gitCommit = false,
         public ?string $gitCommitMessage = null,
         public array $packHints = [],
+        public bool $requireApproval = false,
+        public int $minApprovals = 1,
     ) {}
 
     /**
@@ -77,6 +79,8 @@ final readonly class Intent
             'git_commit' => $this->gitCommit,
             'git_commit_message' => $this->gitCommitMessage,
             'packs' => $this->packHints,
+            'require_approval' => $this->requireApproval,
+            'min_approvals' => $this->minApprovals,
         ];
     }
 
@@ -120,6 +124,8 @@ final readonly class Intent
                 ? trim((string) $data['git_commit_message'])
                 : null,
             packHints: $packs,
+            requireApproval: ($data['require_approval'] ?? false) === true,
+            minApprovals: max(1, (int) ($data['min_approvals'] ?? 1)),
         );
     }
 
@@ -145,6 +151,8 @@ final readonly class Intent
             gitCommit: $this->gitCommit,
             gitCommitMessage: $this->gitCommitMessage,
             packHints: $this->packHints,
+            requireApproval: $this->requireApproval,
+            minApprovals: $this->minApprovals,
         );
     }
 
@@ -170,6 +178,8 @@ final readonly class Intent
             gitCommit: $this->gitCommit,
             gitCommitMessage: $this->gitCommitMessage,
             packHints: $this->packHints,
+            requireApproval: $this->requireApproval,
+            minApprovals: $this->minApprovals,
         );
     }
 

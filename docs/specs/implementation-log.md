@@ -227,3 +227,10 @@
 - note: Routed template-backed single-step and workflow definitions through the existing generate and workflow engine paths instead of introducing a separate template executor.
 - note: Persisted template provenance (`template_id`, path, generate type, resolved parameters) across immediate generate output, history records, workflow parent/child records, and persisted plan inspection surfaces.
 - note: Added focused unit and integration coverage for template loading, parameter validation, deterministic resolution, CLI execution, and plan inspection.
+
+## 2026-04-29 13:55:00 -0400
+- spec: generate-engine/009-team-collaboration-and-approvals.md
+- note: Added deterministic repository-local plan approval records (`foundry.generate.approval_record.v1`) with explicit user-attributed approve/reject/comment actions, append-only digest-chain validation, and threshold-based status resolution.
+- note: Added generate approval gating flags (`--require-approval`, `--min-approvals`) and approval actions (`--approve|--reject --plan-id --user [--comment]`) so approval-gated plans persist as pending and execute only after approvals satisfy configured requirements.
+- note: Extended persisted plan payloads and inspection output with approval state, and blocked `plan:replay` when required approvals are pending or rejected.
+- note: Added integration coverage for pending approval blocking, multi-approval threshold transition to approved, and reject-state recording.

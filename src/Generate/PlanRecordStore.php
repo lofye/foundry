@@ -205,6 +205,8 @@ final class PlanRecordStore
             'workflow_step_id' => $workflowLinkage['step_id'] ?? null,
             'workflow_step_index' => $workflowLinkage['step_index'] ?? null,
             'risk_level' => $record['risk_level'] ?? null,
+            'approval_required' => ($record['approval']['required'] ?? false) === true,
+            'approval_status' => is_array($record['approval'] ?? null) ? (string) ($record['approval']['status'] ?? '') : null,
             'interactive' => (bool) (($record['interactive']['enabled'] ?? false) === true),
             'affected_files' => count((array) ($record['affected_files'] ?? [])),
             'storage_path' => (string) ($record['storage_path'] ?? ''),
@@ -219,6 +221,7 @@ final class PlanRecordStore
         if ($this->workflowRecordCandidate($record)) {
             $this->validateWorkflowRecordShape($record, $path);
         }
+        $this->validateApprovalShape($record, $path);
 
         $workflowLinkage = $this->workflowStepLinkage($record);
         if ($workflowLinkage !== null) {
@@ -592,6 +595,80 @@ final class PlanRecordStore
                 'validation',
                 ['path' => $path, 'plan_id' => (string) ($record['plan_id'] ?? '')],
                 'Workflow step plan records must include workflow_id, step_id, and integer step_index linkage.',
+            );
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $record
+     */
+    private function validateApprovalShape(array $record, ?string $path): void
+    {
+        $approval = $record['approval'] ?? null;
+        if ($approval === null) {
+            return;
+        }
+
+        if (!is_array($approval)) {
+            throw new FoundryError(
+                'PLAN_RECORD_APPROVAL_INVALID',
+                'validation',
+                ['path' => $path, 'plan_id' => (string) ($record['plan_id'] ?? '')],
+                'Plan record approval must be an object when present.',
+            );
+        }
+
+        $required = ($approval['required'] ?? false) === true;
+        $minApprovals = (int) ($approval['min_approvals'] ?? 0);
+        $status = (string) ($approval['status'] ?? '');
+        if (!in_array($status, ['pending', 'approved', 'rejected'], true)) {
+            throw new FoundryError(
+                'PLAN_RECORD_APPROVAL_INVALID',
+                'validation',
+                ['path' => $path, 'plan_id' => (string) ($record['plan_id'] ?? '')],
+                'Plan record approval status must be pending, approved, or rejected.',
+            );
+        }
+
+        if ($required && $minApprovals < 1) {
+            throw new FoundryError(
+                'PLAN_RECORD_APPROVAL_INVALID',
+                'validation',
+                ['path' => $path, 'plan_id' => (string) ($record['plan_id'] ?? '')],
+                'Plan record approval min_approvals must be >= 1 when approval is required.',
+            );
+        }
+
+        $actions = array_values(array_filter((array) ($approval['approvals'] ?? []), 'is_array'));
+        $approveCount = 0;
+        $hasReject = false;
+        foreach ($actions as $action) {
+            $actionName = (string) ($action['action'] ?? '');
+            if ($actionName === 'approve') {
+                $approveCount++;
+            }
+            if ($actionName === 'reject') {
+                $hasReject = true;
+            }
+        }
+
+        $expectedStatus = 'approved';
+        if ($required) {
+            if ($hasReject) {
+                $expectedStatus = 'rejected';
+            } elseif ($approveCount >= max(1, $minApprovals)) {
+                $expectedStatus = 'approved';
+            } else {
+                $expectedStatus = 'pending';
+            }
+        }
+
+        if ($expectedStatus !== $status) {
+            throw new FoundryError(
+                'PLAN_RECORD_APPROVAL_INVALID',
+                'validation',
+                ['path' => $path, 'plan_id' => (string) ($record['plan_id'] ?? ''), 'expected' => $expectedStatus],
+                'Plan record approval status does not match approval actions.',
             );
         }
     }

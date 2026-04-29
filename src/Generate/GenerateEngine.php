@@ -87,6 +87,7 @@ final class GenerateEngine
     {
         $gitInspector = new GitRepositoryInspector($this->paths->root());
         $planStore = new PlanRecordStore($this->paths);
+        $approvalStore = new ApprovalRecordStore($this->paths);
         $policyEngine = new GeneratePolicyEngine($this->paths);
         $planId = Uuid::v4();
         $gitBefore = $gitInspector->inspect();
@@ -117,6 +118,7 @@ final class GenerateEngine
         $interactiveReview = null;
         $safetyRouting = null;
         $policy = null;
+        $approval = null;
         $actionsTaken = [];
         $verificationResults = null;
         $frameworkVersion = null;
@@ -283,6 +285,7 @@ final class GenerateEngine
                         interactive: $this->interactivePayload($plan, $interactiveReview),
                         safetyRouting: $safetyRouting,
                         policy: $policy,
+                        approval: $approval,
                         workflowLinkage: $workflowLinkage,
                         templateMetadata: $templateMetadata,
                     );
@@ -305,6 +308,7 @@ final class GenerateEngine
                         sourceHash: $compile->graph->sourceHash(),
                         error: null,
                         undo: null,
+                        approval: $approval,
                         workflowLinkage: $workflowLinkage,
                         templateMetadata: $templateMetadata,
                     ));
@@ -325,6 +329,75 @@ final class GenerateEngine
                     ['policy' => $policy],
                     'Generate plan violates repository policy. Re-run with --allow-policy-violations or use --policy-check to inspect the policy result without writing files.',
                 );
+            }
+
+            if ($executionIntent->requireApproval) {
+                $approval = $approvalStore->ensure($planId, true, $executionIntent->minApprovals);
+                if (($approval['status'] ?? 'pending') !== 'approved') {
+                    $outcomeConfidence = $this->confidenceEngine->outcome(
+                        $intent,
+                        $executionPlan,
+                        [],
+                        ['skipped' => true, 'ok' => true],
+                    );
+                    $payload = $this->buildPayload(
+                        intent: $intent,
+                        plan: $executionPlan,
+                        actionsTaken: [],
+                        verificationResults: ['skipped' => true, 'ok' => true],
+                        outcomeConfidence: $outcomeConfidence,
+                        errors: [[
+                            'code' => 'GENERATE_APPROVAL_REQUIRED',
+                            'category' => 'validation',
+                            'message' => 'Generate plan requires approval before execution.',
+                            'details' => [
+                                'plan_id' => $planId,
+                                'approval' => $approval,
+                            ],
+                        ]],
+                        context: $context,
+                        packsInstalled: $packsInstalled,
+                        git: $this->gitPayload(
+                            before: $gitBefore,
+                            after: null,
+                            warnings: $gitWarnings,
+                            commit: $gitCommit,
+                        ),
+                        interactive: $this->interactivePayload($plan, $interactiveReview),
+                        safetyRouting: $safetyRouting,
+                        policy: $policy,
+                        approval: $approval,
+                        workflowLinkage: $workflowLinkage,
+                        templateMetadata: $templateMetadata,
+                    );
+                    $payload['ok'] = false;
+                    $payload['error'] = $payload['errors'][0];
+                    $planRecord = $planStore->persist($this->planRecordPayload(
+                        planId: $planId,
+                        status: 'pending_approval',
+                        intent: $intent,
+                        context: $context,
+                        originalPlan: $plan,
+                        finalPlan: $interactiveReview?->modified === true ? $interactiveReview->plan : null,
+                        interactiveReview: $interactiveReview,
+                        actionsTaken: [],
+                        verificationResults: ['skipped' => true, 'ok' => true],
+                        safetyRouting: $safetyRouting,
+                        policy: $policy,
+                        frameworkVersion: $frameworkVersion,
+                        graphVersion: $graphVersion,
+                        sourceHash: $compile->graph->sourceHash(),
+                        error: $payload['error'],
+                        undo: null,
+                        approval: $approval,
+                        workflowLinkage: $workflowLinkage,
+                        templateMetadata: $templateMetadata,
+                    ));
+                    $this->observePlanRecord($planRecordObserver, $planRecord);
+                    $payload['plan_record'] = $this->planRecordReference($planRecord);
+
+                    return $payload;
+                }
             }
 
             if ($executionIntent->dryRun || $executionIntent->policyCheck) {
@@ -353,6 +426,7 @@ final class GenerateEngine
                     interactive: $this->interactivePayload($plan, $interactiveReview),
                     safetyRouting: $safetyRouting,
                     policy: $policy,
+                    approval: $approval,
                     workflowLinkage: $workflowLinkage,
                     templateMetadata: $templateMetadata,
                 );
@@ -375,6 +449,7 @@ final class GenerateEngine
                     sourceHash: $compile->graph->sourceHash(),
                     error: null,
                     undo: null,
+                    approval: $approval,
                     workflowLinkage: $workflowLinkage,
                     templateMetadata: $templateMetadata,
                 ));
@@ -483,6 +558,7 @@ final class GenerateEngine
                     interactive: $this->interactivePayload($plan, $interactiveReview),
                     safetyRouting: $safetyRouting,
                     policy: $policy,
+                    approval: $approval,
                     workflowLinkage: $workflowLinkage,
                     templateMetadata: $templateMetadata,
                 );
@@ -505,6 +581,7 @@ final class GenerateEngine
                     sourceHash: $postCompile->graph->sourceHash(),
                     error: null,
                     undo: $this->persistedUndoPayload($fileSnapshots, $fileSnapshotsAfter),
+                    approval: $approval,
                     workflowLinkage: $workflowLinkage,
                     templateMetadata: $templateMetadata,
                 ));
@@ -532,6 +609,7 @@ final class GenerateEngine
                 sourceHash: $sourceHash,
                 error: $this->publicErrorPayload($error),
                 undo: null,
+                approval: $approval,
                 workflowLinkage: $workflowLinkage,
                 templateMetadata: $templateMetadata,
             ));
@@ -621,6 +699,8 @@ final class GenerateEngine
                     gitCommit: $intent->gitCommit,
                     gitCommitMessage: $intent->gitCommitMessage,
                     packHints: $packHints,
+                    requireApproval: $intent->requireApproval,
+                    minApprovals: $intent->minApprovals,
                 ),
                 workflowLinkage: null,
                 templateMetadata: $templateMetadata,
@@ -675,6 +755,7 @@ final class GenerateEngine
         $compiler = new GraphCompiler($this->paths, ExtensionRegistry::forPaths($this->paths));
         $artifactStore = new BuildArtifactStore($compiler->buildLayout());
         $planStore = new PlanRecordStore($this->paths);
+        $approvalStore = new ApprovalRecordStore($this->paths);
         $planId = Uuid::v4();
         $runtimeContext = [
             'shared' => $definition->sharedContext,
@@ -692,6 +773,71 @@ final class GenerateEngine
         $rollbackGuidance = [];
         $verificationSteps = [];
         $error = null;
+
+        if ($intent->requireApproval) {
+            $approval = $approvalStore->ensure($planId, true, $intent->minApprovals);
+            if (($approval['status'] ?? 'pending') !== 'approved') {
+                $workflow = [
+                    'schema' => 'foundry.generate.workflow_record.v1',
+                    'workflow_id' => $definition->id,
+                    'source' => ['type' => 'repository_file', 'path' => $definition->path],
+                    'status' => 'pending_approval',
+                    'started_at' => null,
+                    'completed_at' => null,
+                    'steps' => [],
+                    'shared_context' => $runtimeContext,
+                    'result' => ['completed_steps' => 0, 'failed_step' => null, 'skipped_steps' => 0],
+                    'rollback_guidance' => [],
+                ];
+                $payload = [
+                    'ok' => false,
+                    'intent' => $intent->raw,
+                    'mode' => 'workflow',
+                    'actions_taken' => [],
+                    'verification_results' => ['ok' => true, 'skipped' => true, 'steps' => []],
+                    'errors' => [[
+                        'code' => 'GENERATE_APPROVAL_REQUIRED',
+                        'category' => 'validation',
+                        'message' => 'Generate workflow requires approval before execution.',
+                        'details' => ['plan_id' => $planId, 'approval' => $approval],
+                    ]],
+                    'error' => [
+                        'code' => 'GENERATE_APPROVAL_REQUIRED',
+                        'category' => 'validation',
+                        'message' => 'Generate workflow requires approval before execution.',
+                        'details' => ['plan_id' => $planId, 'approval' => $approval],
+                    ],
+                    'metadata' => [
+                        'dry_run' => $intent->dryRun,
+                        'policy_check' => $intent->policyCheck,
+                        'workflow_path' => $definition->path,
+                        'multi_step' => $intent->multiStep || count($definition->steps) > 1,
+                        'context' => $runtimeContext,
+                        'template' => $templateMetadata,
+                        'approval' => $approval,
+                    ],
+                    'packs_used' => [],
+                    'packs_installed' => [],
+                    'workflow' => $workflow,
+                    'approval' => $approval,
+                ];
+                $planRecord = $planStore->persist($this->workflowPlanRecordPayload(
+                    planId: $planId,
+                    intent: $intent,
+                    workflow: $workflow,
+                    actionsTaken: [],
+                    verificationResults: ['ok' => true, 'skipped' => true, 'steps' => []],
+                    affectedFiles: [],
+                    packsUsed: [],
+                    error: $payload['error'],
+                    templateMetadata: $templateMetadata,
+                    approval: $approval,
+                ));
+                $payload['plan_record'] = $this->planRecordReference($planRecord);
+
+                return $payload;
+            }
+        }
         foreach ($definition->steps as $index => $stepDefinition) {
             $step = $resolver->resolveStep($stepDefinition, $runtimeContext);
 
@@ -843,6 +989,7 @@ final class GenerateEngine
             packsUsed: $packsUsed,
             error: $error,
             templateMetadata: $templateMetadata,
+            approval: null,
         ));
         $payload['record'] = $this->historyRecordReference($record);
         $payload['plan_record'] = $this->planRecordReference($planRecord);
@@ -863,6 +1010,18 @@ final class GenerateEngine
                 ['plan_id' => $planId],
                 'Persisted plan record not found.',
             );
+        }
+        $approval = is_array($record['approval'] ?? null) ? $record['approval'] : null;
+        if (is_array($approval) && (($approval['required'] ?? false) === true)) {
+            $status = (string) ($approval['status'] ?? 'pending');
+            if ($status !== 'approved') {
+                throw new FoundryError(
+                    'PLAN_REPLAY_APPROVAL_REQUIRED',
+                    'validation',
+                    ['plan_id' => $planId, 'approval' => $approval],
+                    'Replay is blocked because this plan requires approval.',
+                );
+            }
         }
 
         [$selectedPlan, $selectedPlanName] = $this->selectPersistedPlan(
@@ -1060,6 +1219,7 @@ final class GenerateEngine
         ?array $interactive = null,
         ?array $safetyRouting = null,
         ?array $policy = null,
+        ?array $approval = null,
         ?array $workflowLinkage = null,
         ?array $templateMetadata = null,
     ): array {
@@ -1075,6 +1235,9 @@ final class GenerateEngine
         }
         if ($templateMetadata !== null) {
             $metadata['template'] = $templateMetadata;
+        }
+        if ($approval !== null) {
+            $metadata['approval'] = $approval;
         }
 
         return [
@@ -1098,6 +1261,7 @@ final class GenerateEngine
             'interactive' => $interactive,
             'safety_routing' => $safetyRouting,
             'policy' => $policy,
+            'approval' => $approval,
         ];
     }
 
@@ -1146,6 +1310,9 @@ final class GenerateEngine
                 'template' => is_array($payload['metadata']['template'] ?? null)
                     ? $payload['metadata']['template']
                     : null,
+                'approval' => is_array($payload['metadata']['approval'] ?? null)
+                    ? $payload['metadata']['approval']
+                    : null,
             ],
             'snapshots' => $payload['snapshots'] ?? [],
             'architecture_diff' => is_array($payload['architecture_diff'] ?? null)
@@ -1157,6 +1324,7 @@ final class GenerateEngine
             'interactive' => $payload['interactive'] ?? null,
             'safety_routing' => $payload['safety_routing'] ?? null,
             'policy' => $payload['policy'] ?? null,
+            'approval' => $payload['approval'] ?? null,
             'source_hash' => $sourceHash,
         ];
     }
@@ -1204,6 +1372,7 @@ final class GenerateEngine
         array $packsUsed,
         ?array $error,
         ?array $templateMetadata,
+        ?array $approval,
     ): array {
         $stepIds = array_values(array_map(
             static fn(array $step): string => (string) ($step['step_id'] ?? ''),
@@ -1256,7 +1425,9 @@ final class GenerateEngine
                 'step_ids' => $stepIds,
                 'packs_used' => $packsUsed,
                 'template' => $templateMetadata,
+                'approval' => $approval,
             ],
+            'approval' => $approval,
         ];
     }
 
@@ -1541,6 +1712,7 @@ final class GenerateEngine
         ?string $sourceHash,
         ?array $error,
         ?array $undo,
+        ?array $approval,
         ?array $workflowLinkage,
         ?array $templateMetadata,
     ): array {
@@ -1564,6 +1736,9 @@ final class GenerateEngine
         }
         if ($templateMetadata !== null) {
             $metadata['template'] = $templateMetadata;
+        }
+        if ($approval !== null) {
+            $metadata['approval'] = $approval;
         }
 
         return [
@@ -1593,6 +1768,7 @@ final class GenerateEngine
             'affected_files' => $affectedFiles,
             'risk_level' => $riskLevel,
             'policy' => $policy,
+            'approval' => $approval,
             'verification_results' => $verificationResults,
             'status' => $status,
             'error' => $error,

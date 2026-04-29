@@ -6,9 +6,11 @@ namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
+use Foundry\Generate\ApprovalRecordStore;
 use Foundry\Generate\GenerateEngine;
 use Foundry\Generate\InteractiveGenerateReviewer;
 use Foundry\Generate\Intent;
+use Foundry\Generate\PlanRecordStore;
 use Foundry\Generate\TerminalInteractiveGenerateReviewer;
 use Foundry\Packs\PackManager;
 use Foundry\Support\FoundryError;
@@ -71,6 +73,10 @@ final class GenerateCommand extends Command
             return true;
         }
 
+        if ($this->hasApprovalActionFlag($args)) {
+            return true;
+        }
+
         $target = trim((string) ($args[1] ?? ''));
         if ($target === '' || str_starts_with($target, '--')) {
             return false;
@@ -82,7 +88,18 @@ final class GenerateCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $intent = $this->parse($args);
+        $parsed = $this->parse($args);
+        if (($parsed['approval_action'] ?? null) !== null) {
+            $payload = $this->handleApprovalAction($parsed, $context);
+
+            return [
+                'status' => ($payload['ok'] ?? false) === true ? 0 : 1,
+                'message' => $context->expectsJson() ? null : $this->renderApprovalMessage($payload),
+                'payload' => $context->expectsJson() ? $payload : null,
+            ];
+        }
+
+        $intent = $parsed['intent'];
         $payload = (new GenerateEngine(
             $context->paths(),
             $this->packManager,
@@ -100,7 +117,7 @@ final class GenerateCommand extends Command
     /**
      * @param array<int,string> $args
      */
-    private function parse(array $args): Intent
+    private function parse(array $args): array
     {
         $parts = [];
         $mode = null;
@@ -121,6 +138,12 @@ final class GenerateCommand extends Command
         $gitCommit = false;
         $gitCommitMessage = null;
         $packHints = [];
+        $requireApproval = false;
+        $minApprovals = 1;
+        $approvalAction = null;
+        $approvalUser = null;
+        $approvalPlanId = null;
+        $approvalComment = null;
         $skipNext = false;
 
         foreach ($args as $index => $arg) {
@@ -185,6 +208,41 @@ final class GenerateCommand extends Command
 
             if ($arg === '--git-commit') {
                 $gitCommit = true;
+                continue;
+            }
+
+            if ($arg === '--require-approval') {
+                $requireApproval = true;
+                continue;
+            }
+
+            if ($arg === '--approve') {
+                $approvalAction = 'approve';
+                continue;
+            }
+
+            if ($arg === '--reject') {
+                $approvalAction = 'reject';
+                continue;
+            }
+
+            if (str_starts_with($arg, '--min-approvals=')) {
+                $minApprovals = (int) trim(substr($arg, strlen('--min-approvals=')));
+                continue;
+            }
+
+            if (str_starts_with($arg, '--user=')) {
+                $approvalUser = trim(substr($arg, strlen('--user=')));
+                continue;
+            }
+
+            if (str_starts_with($arg, '--plan-id=')) {
+                $approvalPlanId = trim(substr($arg, strlen('--plan-id=')));
+                continue;
+            }
+
+            if (str_starts_with($arg, '--comment=')) {
+                $approvalComment = trim(substr($arg, strlen('--comment=')));
                 continue;
             }
 
@@ -254,6 +312,30 @@ final class GenerateCommand extends Command
                 continue;
             }
 
+            if ($arg === '--min-approvals') {
+                $minApprovals = (int) trim((string) ($args[$index + 1] ?? '1'));
+                $skipNext = true;
+                continue;
+            }
+
+            if ($arg === '--user') {
+                $approvalUser = trim((string) ($args[$index + 1] ?? ''));
+                $skipNext = true;
+                continue;
+            }
+
+            if ($arg === '--plan-id') {
+                $approvalPlanId = trim((string) ($args[$index + 1] ?? ''));
+                $skipNext = true;
+                continue;
+            }
+
+            if ($arg === '--comment') {
+                $approvalComment = trim((string) ($args[$index + 1] ?? ''));
+                $skipNext = true;
+                continue;
+            }
+
             if (str_starts_with($arg, '--param=')) {
                 $this->storeTemplateParameter(substr($arg, strlen('--param=')), $templateParameters);
                 continue;
@@ -270,6 +352,43 @@ final class GenerateCommand extends Command
             }
 
             $parts[] = $arg;
+        }
+
+        if ($approvalAction !== null) {
+            if ($approvalPlanId === null || $approvalPlanId === '') {
+                throw new FoundryError(
+                    'GENERATE_APPROVAL_PLAN_ID_REQUIRED',
+                    'validation',
+                    [],
+                    'Plan approval actions require --plan-id.',
+                );
+            }
+
+            if ($approvalUser === null || $approvalUser === '') {
+                throw new FoundryError(
+                    'GENERATE_APPROVAL_USER_REQUIRED',
+                    'validation',
+                    [],
+                    'Plan approval actions require --user.',
+                );
+            }
+
+            return [
+                'intent' => null,
+                'approval_action' => $approvalAction,
+                'approval_user' => $approvalUser,
+                'approval_plan_id' => $approvalPlanId,
+                'approval_comment' => $approvalComment,
+            ];
+        }
+
+        if ($minApprovals < 1) {
+            throw new FoundryError(
+                'GENERATE_APPROVAL_MIN_INVALID',
+                'validation',
+                ['min_approvals' => $minApprovals],
+                'Generate --min-approvals must be at least 1.',
+            );
         }
 
         $rawIntent = trim(implode(' ', $parts));
@@ -328,7 +447,7 @@ final class GenerateCommand extends Command
                 );
             }
 
-            return new Intent(
+            return ['intent' => new Intent(
                 raw: 'template ' . $templateId,
                 mode: 'template',
                 target: null,
@@ -348,7 +467,9 @@ final class GenerateCommand extends Command
                 gitCommit: $gitCommit,
                 gitCommitMessage: $gitCommitMessage !== '' ? $gitCommitMessage : null,
                 packHints: $packHints,
-            );
+                requireApproval: $requireApproval,
+                minApprovals: $minApprovals,
+            )];
         }
 
         if ($workflowPath !== null && $workflowPath !== '') {
@@ -397,7 +518,7 @@ final class GenerateCommand extends Command
                 );
             }
 
-            return new Intent(
+            return ['intent' => new Intent(
                 raw: 'workflow ' . $workflowPath,
                 mode: 'workflow',
                 target: null,
@@ -417,7 +538,9 @@ final class GenerateCommand extends Command
                 gitCommit: false,
                 gitCommitMessage: null,
                 packHints: $packHints,
-            );
+                requireApproval: $requireApproval,
+                minApprovals: $minApprovals,
+            )];
         }
 
         if ($multiStep) {
@@ -474,7 +597,7 @@ final class GenerateCommand extends Command
             );
         }
 
-        return new Intent(
+        return ['intent' => new Intent(
             raw: $rawIntent,
             mode: $mode,
             target: $target,
@@ -494,6 +617,58 @@ final class GenerateCommand extends Command
             gitCommit: $gitCommit,
             gitCommitMessage: $gitCommitMessage !== '' ? $gitCommitMessage : null,
             packHints: $packHints,
+            requireApproval: $requireApproval,
+            minApprovals: $minApprovals,
+        )];
+    }
+
+    /**
+     * @param array<string,mixed> $parsed
+     * @return array<string,mixed>
+     */
+    private function handleApprovalAction(array $parsed, CommandContext $context): array
+    {
+        $planId = (string) ($parsed['approval_plan_id'] ?? '');
+        $action = (string) ($parsed['approval_action'] ?? '');
+        $user = (string) ($parsed['approval_user'] ?? '');
+        $comment = is_string($parsed['approval_comment'] ?? null) ? (string) $parsed['approval_comment'] : null;
+        $plan = (new PlanRecordStore($context->paths()))->load($planId);
+        if (!is_array($plan)) {
+            throw new FoundryError(
+                'PLAN_RECORD_NOT_FOUND',
+                'not_found',
+                ['plan_id' => $planId],
+                'Persisted plan record not found.',
+            );
+        }
+
+        $approvalStore = new ApprovalRecordStore($context->paths());
+        $required = (($plan['approval']['required'] ?? false) === true);
+        $minApprovals = max(1, (int) ($plan['approval']['min_approvals'] ?? 1));
+        $approvalStore->ensure($planId, $required, $minApprovals);
+        $approval = $approvalStore->append($planId, $user, $action, $comment);
+
+        return [
+            'ok' => true,
+            'plan_id' => $planId,
+            'action' => $action,
+            'user' => $user,
+            'status' => $approval['status'] ?? null,
+            'approval' => $approval,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    private function renderApprovalMessage(array $payload): string
+    {
+        return sprintf(
+            'Plan %s: %s by %s. Status is now %s.',
+            (string) ($payload['plan_id'] ?? ''),
+            (string) ($payload['action'] ?? ''),
+            (string) ($payload['user'] ?? ''),
+            (string) ($payload['status'] ?? 'unknown'),
         );
     }
 
@@ -566,6 +741,24 @@ final class GenerateCommand extends Command
             }
 
             if ($arg === '--template' || str_starts_with($arg, '--template=')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<int,string> $args
+     */
+    private function hasApprovalActionFlag(array $args): bool
+    {
+        foreach ($args as $index => $arg) {
+            if ($index === 0) {
+                continue;
+            }
+
+            if ($arg === '--approve' || $arg === '--reject') {
                 return true;
             }
         }

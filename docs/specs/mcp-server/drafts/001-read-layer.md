@@ -1,4 +1,4 @@
-# 001-foundry-mcp-server-read-only
+# Execution Spec: 001-read-layer
 
 ## Purpose
 

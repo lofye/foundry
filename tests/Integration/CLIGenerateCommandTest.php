@@ -61,6 +61,79 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertFileDoesNotExist($this->project->root . '/.foundry/diffs/last.json');
     }
 
+    public function test_generate_can_require_approval_and_block_execution_until_reviewed(): void
+    {
+        $app = new Application();
+
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'comments',
+            '--mode=new',
+            '--require-approval',
+            '--min-approvals=2',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $generate['status']);
+        $this->assertFalse($generate['payload']['ok']);
+        $this->assertSame('GENERATE_APPROVAL_REQUIRED', $generate['payload']['error']['code']);
+        $this->assertSame('pending_approval', $generate['payload']['plan_record']['status']);
+        $this->assertFileDoesNotExist($this->project->root . '/app/features/comments/feature.yaml');
+
+        $approveA = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--approve',
+            '--plan-id=' . (string) $generate['payload']['plan_record']['plan_id'],
+            '--user=alice',
+            '--json',
+        ]);
+        $approveB = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--approve',
+            '--plan-id=' . (string) $generate['payload']['plan_record']['plan_id'],
+            '--user=bob',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $approveA['status']);
+        $this->assertSame('pending', $approveA['payload']['status']);
+        $this->assertSame(0, $approveB['status']);
+        $this->assertSame('approved', $approveB['payload']['status']);
+    }
+
+    public function test_generate_reject_action_sets_rejected_state(): void
+    {
+        $app = new Application();
+
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'approvals',
+            '--mode=new',
+            '--require-approval',
+            '--json',
+        ]);
+        $planId = (string) $generate['payload']['plan_record']['plan_id'];
+        $reject = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            '--reject',
+            '--plan-id=' . $planId,
+            '--user=maintainer',
+            '--json',
+        ]);
+
+        $show = $this->runCommand($app, ['foundry', 'plan:show', $planId, '--json']);
+        $this->assertSame(0, $reject['status']);
+        $this->assertSame('rejected', $reject['payload']['status']);
+        $this->assertSame('pending_approval', $show['payload']['status']);
+    }
+
     public function test_generate_uses_installed_pack_generator_when_pack_is_available(): void
     {
         $app = new Application();

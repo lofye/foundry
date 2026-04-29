@@ -6,6 +6,7 @@ namespace Foundry\CLI\Commands;
 
 use Foundry\CLI\Command;
 use Foundry\CLI\CommandContext;
+use Foundry\Generate\ApprovalRecordStore;
 use Foundry\Generate\PlanRecordStore;
 use Foundry\Support\FoundryError;
 use Foundry\Support\Json;
@@ -46,6 +47,10 @@ final class PlanShowCommand extends Command
                 'Persisted plan record not found.',
             );
         }
+        $approval = (new ApprovalRecordStore($context->paths()))->load($planId);
+        if (is_array($approval)) {
+            $record['approval'] = $approval;
+        }
 
         return [
             'status' => 0,
@@ -61,6 +66,7 @@ final class PlanShowCommand extends Command
     {
         $workflowLinkage = is_array($record['metadata']['workflow'] ?? null) ? $record['metadata']['workflow'] : null;
         $template = is_array($record['metadata']['template'] ?? null) ? $record['metadata']['template'] : null;
+        $approval = is_array($record['approval'] ?? null) ? $record['approval'] : null;
         $isWorkflowRecord = (string) ($record['schema'] ?? '') === 'foundry.generate.workflow_record.v1';
 
         $lines = ['Plan: ' . (string) ($record['plan_id'] ?? '')];
@@ -88,6 +94,15 @@ final class PlanShowCommand extends Command
         $lines[] = 'Storage path: ' . (string) ($record['storage_path'] ?? '');
         $lines[] = 'Affected files: ' . count((array) ($record['affected_files'] ?? []));
         $lines[] = 'Executed actions: ' . count((array) ($record['actions_executed'] ?? []));
+        if ($approval !== null) {
+            $lines[] = sprintf(
+                'Approval: required=%s min=%d status=%s actions=%d',
+                (($approval['required'] ?? false) === true) ? 'yes' : 'no',
+                max(1, (int) ($approval['min_approvals'] ?? 1)),
+                (string) ($approval['status'] ?? 'unknown'),
+                count((array) ($approval['approvals'] ?? [])),
+            );
+        }
         if ($template !== null) {
             $lines[] = 'Template: ' . (string) ($template['template_id'] ?? '');
             $lines[] = 'Template file: ' . (string) ($template['path'] ?? '');
