@@ -1,4 +1,4 @@
-# Execution Spec: 011-extension-marketplace-integration
+# Execution Spec: 002-extension-marketplace-integration
 
 ## Purpose
 
