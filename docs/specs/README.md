@@ -47,10 +47,15 @@ Example:
 `# Execution Spec: 001-hierarchical-spec-ids-with-padded-segments`
 
 Do not include the feature path in the heading.
+Do not use filename-only headings such as `# 001-my-spec`.
 
 Invalid example:
 
 `# Execution Spec: execution-spec-system/001-hierarchical-spec-ids-with-padded-segments`
+
+Invalid example:
+
+`# 001-hierarchical-spec-ids-with-padded-segments`
 
 ## ID rules
 

@@ -106,6 +106,13 @@ MD,
         );
         $this->assertSame(
             [
+                'expected_heading' => '# Execution Spec: 002-bad-heading',
+                'actual_heading' => '# Execution Spec: execution-spec-system/002-bad-heading',
+            ],
+            $result['violations'][1]['details'],
+        );
+        $this->assertSame(
+            [
                 'feature' => 'execution-spec-system',
                 'id' => '001',
                 'paths' => [
@@ -116,6 +123,57 @@ MD,
             $result['violations'][0]['details'],
         );
         $this->assertSame(['field' => 'status', 'line' => 3], $result['violations'][2]['details']);
+    }
+
+    public function test_validate_reports_filename_only_heading_as_invalid(): void
+    {
+        $this->writeSpec('execution-spec-system', '015.002.001-grandchild', '# 015.002.001-grandchild');
+        $this->writeImplementationLogEntry('execution-spec-system/015.002.001-grandchild.md');
+
+        $result = $this->service()->validate();
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('EXECUTION_SPEC_INVALID_HEADING', $result['violations'][0]['code']);
+        $this->assertSame(
+            [
+                'expected_heading' => '# Execution Spec: 015.002.001-grandchild',
+                'actual_heading' => '# 015.002.001-grandchild',
+            ],
+            $result['violations'][0]['details'],
+        );
+    }
+
+    public function test_validate_reports_malformed_execution_spec_prefix_as_invalid(): void
+    {
+        $this->writeSpec('execution-spec-system', '015.002.001-grandchild', '# ExecutionSpec: 015.002.001-grandchild');
+        $this->writeImplementationLogEntry('execution-spec-system/015.002.001-grandchild.md');
+
+        $result = $this->service()->validate();
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('EXECUTION_SPEC_INVALID_HEADING', $result['violations'][0]['code']);
+        $this->assertSame(
+            [
+                'expected_heading' => '# Execution Spec: 015.002.001-grandchild',
+                'actual_heading' => '# ExecutionSpec: 015.002.001-grandchild',
+            ],
+            $result['violations'][0]['details'],
+        );
+    }
+
+    public function test_validate_accepts_hierarchical_heading_with_execution_spec_prefix(): void
+    {
+        $this->writeSpec(
+            'execution-spec-system',
+            '015.002.001-grandchild',
+            '# Execution Spec: 015.002.001-grandchild',
+        );
+        $this->writeImplementationLogEntry('execution-spec-system/015.002.001-grandchild.md');
+
+        $result = $this->service()->validate();
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame([], $result['violations']);
     }
 
     public function test_validate_ignores_forbidden_metadata_inside_fenced_code_blocks(): void

@@ -303,6 +303,7 @@ Key rules:
 - If asked to implement a draft spec, refuse and require promotion to the active spec path first
 - active executable specs live in `docs/specs/<feature-name>/`
 - the spec heading must mirror the filename only
+- filename-only headings are forbidden; required format is `# Execution Spec: <id>-<slug>`
 
 Agents MUST:
 

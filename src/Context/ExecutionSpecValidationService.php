@@ -83,10 +83,16 @@ final class ExecutionSpecValidationService
             }
 
             if ($this->firstLine($contents) !== ExecutionSpecFilename::heading($parsedName['name'])) {
+                $expectedHeading = ExecutionSpecFilename::heading($parsedName['name']);
+                $actualHeading = $this->firstLine($contents);
                 $violations[] = $this->violation(
                     'EXECUTION_SPEC_INVALID_HEADING',
                     $relativePath,
                     'Execution spec heading must mirror the filename only.',
+                    [
+                        'expected_heading' => $expectedHeading,
+                        'actual_heading' => $actualHeading,
+                    ],
                 );
             }
 

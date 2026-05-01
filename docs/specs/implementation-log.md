@@ -234,3 +234,9 @@
 - note: Added generate approval gating flags (`--require-approval`, `--min-approvals`) and approval actions (`--approve|--reject --plan-id --user [--comment]`) so approval-gated plans persist as pending and execute only after approvals satisfy configured requirements.
 - note: Extended persisted plan payloads and inspection output with approval state, and blocked `plan:replay` when required approvals are pending or rejected.
 - note: Added integration coverage for pending approval blocking, multi-approval threshold transition to approved, and reject-state recording.
+
+## 2026-04-30 08:22:13 -0400
+- spec: execution-spec-system/006.001-enforce-execution-spec-heading-prefix.md
+- note: Kept the draft execution-spec stub on canonical prefixed heading format (`# Execution Spec: <id>-<slug>`), tightened validation details for heading mismatches with deterministic `expected_heading` and `actual_heading` fields, and extended CLI rendering to surface those details in plain output.
+- note: Added heading-format coverage proving valid prefixed hierarchical headings pass while filename-only and malformed-prefix headings fail deterministically.
+- note: Updated `docs/specs/README.md` and `AGENTS.md` to explicitly forbid filename-only headings and require the canonical prefixed heading format.

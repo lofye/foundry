@@ -95,6 +95,8 @@ TEXT . "\n", $raw['output']);
         $this->assertStringContainsString('EXECUTION_SPEC_DUPLICATE_ID', $raw['output']);
         $this->assertStringContainsString('paths=docs/specs/execution-spec-system/001-first-active.md, docs/specs/execution-spec-system/drafts/001-second-draft.md', $raw['output']);
         $this->assertStringContainsString('EXECUTION_SPEC_INVALID_HEADING', $raw['output']);
+        $this->assertStringContainsString('expected_heading=# Execution Spec: 002-bad-heading', $raw['output']);
+        $this->assertStringContainsString('actual_heading=# Execution Spec: execution-spec-system/002-bad-heading', $raw['output']);
         $this->assertStringContainsString('EXECUTION_SPEC_FORBIDDEN_METADATA', $raw['output']);
         $this->assertStringContainsString('field=status; line=3', $raw['output']);
         $this->assertStringContainsString('EXECUTION_SPEC_INVALID_FILENAME', $raw['output']);
