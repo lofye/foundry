@@ -240,3 +240,9 @@
 - note: Kept the draft execution-spec stub on canonical prefixed heading format (`# Execution Spec: <id>-<slug>`), tightened validation details for heading mismatches with deterministic `expected_heading` and `actual_heading` fields, and extended CLI rendering to surface those details in plain output.
 - note: Added heading-format coverage proving valid prefixed hierarchical headings pass while filename-only and malformed-prefix headings fail deterministically.
 - note: Updated `docs/specs/README.md` and `AGENTS.md` to explicitly forbid filename-only headings and require the canonical prefixed heading format.
+
+## 2026-05-01 08:51:42 -0400
+- spec: generate-engine/010-generate-metrics-and-insights.md
+- note: Added an opt-in, repository-local generate metrics system backed by deterministic records under `.foundry/metrics/generate-metrics.json`, with explicit enablement from `.foundry/config/metrics.json` and no collection when disabled.
+- note: Added `generate:metrics` CLI inspection/export support with deterministic aggregates (total runs, failures, failure rate, average workflow steps, template usage, approval usage, policy violations) and validation that fails on invalid or order-corrupted records.
+- note: Integrated metrics collection into single and workflow generate execution paths without changing behavior when metrics are disabled, and added focused unit and integration coverage for disabled/enabled collection, aggregation correctness, CLI output, and invalid-record detection.

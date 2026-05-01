@@ -24,6 +24,7 @@ use Foundry\CLI\Commands\GenerateCommand as PromptGenerateCommand;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
 use Foundry\CLI\Commands\GenerateIntegrationCommand;
+use Foundry\CLI\Commands\GenerateMetricsCommand;
 use Foundry\CLI\Commands\GeneratePlatformCommand;
 use Foundry\CLI\Commands\GenerateScaffoldCommand;
 use Foundry\CLI\Commands\GraphVisualizeCommand;
@@ -145,6 +146,7 @@ final class Application
             new FeaturesCommand(),
             new PackCommand(),
             new PromptGenerateCommand(),
+            new GenerateMetricsCommand(),
             new GenerateScaffoldCommand(),
             new GenerateIntegrationCommand(),
             new GeneratePlatformCommand(),

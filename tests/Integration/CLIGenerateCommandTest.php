@@ -61,6 +61,54 @@ final class CLIGenerateCommandTest extends TestCase
         $this->assertFileDoesNotExist($this->project->root . '/.foundry/diffs/last.json');
     }
 
+    public function test_generate_metrics_disabled_by_default_writes_no_metrics_records(): void
+    {
+        $app = new Application();
+
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'metrics',
+            'disabled',
+            '--mode=new',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $generate['status']);
+        $this->assertFileDoesNotExist($this->project->root . '/.foundry/metrics/generate-metrics.json');
+    }
+
+    public function test_generate_metrics_enabled_writes_deterministic_metrics_record(): void
+    {
+        $this->writeJsonFile('.foundry/config/metrics.json', ['metrics' => ['enabled' => true]]);
+        $app = new Application();
+
+        $generate = $this->runCommand($app, [
+            'foundry',
+            'generate',
+            'Create',
+            'metrics',
+            'enabled',
+            '--mode=new',
+            '--json',
+        ]);
+
+        $this->assertSame(0, $generate['status']);
+        $path = $this->project->root . '/.foundry/metrics/generate-metrics.json';
+        $this->assertFileExists($path);
+        $payload = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('foundry.generate.metrics_store.v1', $payload['schema']);
+        $this->assertIsArray($payload['records']);
+        $this->assertCount(1, $payload['records']);
+        $record = $payload['records'][0];
+        $this->assertSame('foundry.generate.metrics_record.v1', $record['schema']);
+        $this->assertSame('single', $record['type']);
+        $this->assertSame('completed', $record['status']);
+        $this->assertSame(0, $record['entry_index']);
+        $this->assertNull($record['timestamp']);
+    }
+
     public function test_generate_can_require_approval_and_block_execution_until_reviewed(): void
     {
         $app = new Application();
@@ -2017,6 +2065,23 @@ final class CLIGenerateCommandTest extends TestCase
         file_put_contents(
             $dir . '/' . $filename,
             json_encode($template, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL,
+        );
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    private function writeJsonFile(string $relativePath, array $payload): void
+    {
+        $absolutePath = $this->project->root . '/' . ltrim($relativePath, '/');
+        $directory = dirname($absolutePath);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents(
+            $absolutePath,
+            json_encode($payload, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL,
         );
     }
 

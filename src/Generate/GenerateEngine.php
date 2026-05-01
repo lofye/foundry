@@ -87,6 +87,7 @@ final class GenerateEngine
     {
         $gitInspector = new GitRepositoryInspector($this->paths->root());
         $planStore = new PlanRecordStore($this->paths);
+        $metricsStore = new GenerateMetricsStore($this->paths);
         $approvalStore = new ApprovalRecordStore($this->paths);
         $policyEngine = new GeneratePolicyEngine($this->paths);
         $planId = Uuid::v4();
@@ -315,6 +316,7 @@ final class GenerateEngine
                     $this->observePlanRecord($planRecordObserver, $planRecord);
                     $payload['record'] = $this->historyRecordReference($record);
                     $payload['plan_record'] = $this->planRecordReference($planRecord);
+                    $this->recordSingleMetrics($metricsStore, $planId, 'failed', $payload, $workflowLinkage);
 
                     return $payload;
                 }
@@ -395,6 +397,7 @@ final class GenerateEngine
                     ));
                     $this->observePlanRecord($planRecordObserver, $planRecord);
                     $payload['plan_record'] = $this->planRecordReference($planRecord);
+                    $this->recordSingleMetrics($metricsStore, $planId, 'completed', $payload, $workflowLinkage);
 
                     return $payload;
                 }
@@ -588,6 +591,7 @@ final class GenerateEngine
                 $this->observePlanRecord($planRecordObserver, $planRecord);
                 $payload['record'] = $this->historyRecordReference($record);
                 $payload['plan_record'] = $this->planRecordReference($planRecord);
+                $this->recordSingleMetrics($metricsStore, $planId, 'completed', $payload, $workflowLinkage);
 
             return $payload;
         } catch (\Throwable $error) {
@@ -614,6 +618,17 @@ final class GenerateEngine
                 templateMetadata: $templateMetadata,
             ));
             $this->observePlanRecord($planRecordObserver, $planRecord);
+            $this->recordSingleMetrics(
+                $metricsStore,
+                $planId,
+                'failed',
+                [
+                    'metadata' => ['template' => $templateMetadata],
+                    'policy' => $policy,
+                    'approval' => $approval,
+                ],
+                $workflowLinkage,
+            );
 
             throw $error;
         }
@@ -756,6 +771,7 @@ final class GenerateEngine
         $artifactStore = new BuildArtifactStore($compiler->buildLayout());
         $planStore = new PlanRecordStore($this->paths);
         $approvalStore = new ApprovalRecordStore($this->paths);
+        $metricsStore = new GenerateMetricsStore($this->paths);
         $planId = Uuid::v4();
         $runtimeContext = [
             'shared' => $definition->sharedContext,
@@ -834,6 +850,7 @@ final class GenerateEngine
                     approval: $approval,
                 ));
                 $payload['plan_record'] = $this->planRecordReference($planRecord);
+                $this->recordWorkflowMetrics($metricsStore, $planId, 'failed', $payload, $definition->id);
 
                 return $payload;
             }
@@ -993,6 +1010,7 @@ final class GenerateEngine
         ));
         $payload['record'] = $this->historyRecordReference($record);
         $payload['plan_record'] = $this->planRecordReference($planRecord);
+        $this->recordWorkflowMetrics($metricsStore, $planId, $ok ? 'completed' : 'failed', $payload, $definition->id);
 
         return $payload;
     }
@@ -2591,6 +2609,71 @@ final class GenerateEngine
     private function defaultGitCommitMessage(Intent $intent): string
     {
         return sprintf('foundry generate (%s): %s', $intent->mode, $intent->raw);
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @param array<string,mixed>|null $workflowLinkage
+     */
+    private function recordSingleMetrics(
+        GenerateMetricsStore $store,
+        string $planId,
+        string $status,
+        array $payload,
+        ?array $workflowLinkage,
+    ): void {
+        if (!$store->enabled() || $workflowLinkage !== null) {
+            return;
+        }
+
+        $policyViolations = count(array_values(array_filter((array) ($payload['policy']['violations'] ?? []), 'is_array')));
+        $approval = is_array($payload['approval'] ?? null) ? $payload['approval'] : null;
+        $template = is_array($payload['metadata']['template'] ?? null) ? $payload['metadata']['template'] : null;
+
+        $store->append([
+            'record_id' => $planId,
+            'type' => 'single',
+            'template_id' => is_array($template) ? ($template['template_id'] ?? null) : null,
+            'workflow_id' => null,
+            'steps' => 0,
+            'status' => $status === 'completed' ? 'completed' : 'failed',
+            'policy_violations' => $policyViolations,
+            'approval_required' => ($approval['required'] ?? false) === true,
+            'approval_status' => $approval['status'] ?? null,
+            'timestamp' => null,
+        ]);
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    private function recordWorkflowMetrics(
+        GenerateMetricsStore $store,
+        string $planId,
+        string $status,
+        array $payload,
+        string $workflowId,
+    ): void {
+        if (!$store->enabled()) {
+            return;
+        }
+
+        $template = is_array($payload['metadata']['template'] ?? null) ? $payload['metadata']['template'] : null;
+        $approval = is_array($payload['approval'] ?? null) ? $payload['approval'] : null;
+        $steps = count(array_values(array_filter((array) ($payload['workflow']['steps'] ?? []), 'is_array')));
+
+        $store->append([
+            'record_id' => $planId,
+            'type' => 'workflow',
+            'template_id' => is_array($template) ? ($template['template_id'] ?? null) : null,
+            'workflow_id' => $workflowId,
+            'steps' => $steps,
+            'status' => $status === 'completed' ? 'completed' : 'failed',
+            'policy_violations' => 0,
+            'approval_required' => ($approval['required'] ?? false) === true,
+            'approval_status' => $approval['status'] ?? null,
+            'timestamp' => null,
+        ]);
     }
 
     /**

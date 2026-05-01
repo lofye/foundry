@@ -590,7 +590,10 @@ final class PlanRecordStoreTest extends TestCase
      */
     private function writeRawRecord(string $suffix, array $record): void
     {
-        mkdir($this->project->root . '/.foundry/plans', 0777, true);
+        $plansDir = $this->project->root . '/.foundry/plans';
+        if (!is_dir($plansDir)) {
+            mkdir($plansDir, 0777, true);
+        }
         file_put_contents(
             $this->project->root . '/.foundry/plans/20260423T010203Z_' . $suffix . '.json',
             json_encode($record, JSON_THROW_ON_ERROR),

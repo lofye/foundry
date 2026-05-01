@@ -22,6 +22,7 @@ use Foundry\CLI\Commands\GenerateCommand as PromptGenerateCommand;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
 use Foundry\CLI\Commands\GenerateIntegrationCommand;
+use Foundry\CLI\Commands\GenerateMetricsCommand;
 use Foundry\CLI\Commands\GeneratePlatformCommand;
 use Foundry\CLI\Commands\GenerateScaffoldCommand;
 use Foundry\CLI\Commands\GraphVisualizeCommand;
@@ -170,6 +171,7 @@ final class CLICommandMatchesTest extends TestCase
         $this->assertTrue((new PromptGenerateCommand())->matches(['generate', '--workflow=generate-workflow.json']));
         $this->assertTrue((new PromptGenerateCommand())->matches(['generate', '--template=feature.recipe']));
         $this->assertTrue((new PromptGenerateCommand())->matches(['generate', '--multi-step']));
+        $this->assertTrue((new GenerateMetricsCommand())->matches(['generate:metrics']));
         $this->assertTrue((new UpgradeCheckCommand())->matches(['upgrade-check']));
         $this->assertTrue((new GraphVisualizeCommand())->matches(['graph', 'visualize']));
         $this->assertTrue((new PromptCommand())->matches(['prompt', 'add', 'feature']));
