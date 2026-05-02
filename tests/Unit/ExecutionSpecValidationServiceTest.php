@@ -258,6 +258,8 @@ MD,
         $gap = array_values(array_filter($result['violations'], static fn(array $violation): bool => $violation['code'] === 'EXECUTION_SPEC_ID_GAP'))[0];
         $this->assertSame('002', $gap['details']['missing_id']);
         $this->assertSame('003', $gap['details']['next_observed_id']);
+        $this->assertSame('active', $gap['details']['location']);
+        $this->assertSame('top-level', $gap['details']['parent_id']);
         $this->assertSame('docs/features/execution-spec-system/specs/003-third.md', $gap['file_path']);
     }
 
@@ -277,22 +279,46 @@ MD,
 
         $gaps = array_values(array_filter($result['violations'], static fn(array $violation): bool => $violation['code'] === 'EXECUTION_SPEC_ID_GAP'));
         $this->assertNotEmpty($gaps);
-        $serialized = array_map(static fn(array $violation): string => json_encode($violation['details'], JSON_THROW_ON_ERROR), $gaps);
-        $this->assertContains('{"feature":"execution-spec-system","missing_id":"007.002","next_observed_id":"007.003","path":"docs\/features\/execution-spec-system\/specs\/007.003-child-c.md"}', $serialized);
-        $this->assertContains('{"feature":"execution-spec-system","missing_id":"009","next_observed_id":"009.001","path":"docs\/features\/execution-spec-system\/specs\/009.001-orphan-child.md"}', $serialized);
+        $this->assertTrue($this->containsGap($gaps, '007.002', '007.003', 'docs/features/execution-spec-system/specs/007.003-child-c.md'));
+        $this->assertTrue($this->containsGap($gaps, '009', '009.001', 'docs/features/execution-spec-system/specs/009.001-orphan-child.md'));
     }
 
-    public function test_validate_checks_active_and_draft_continuity_together(): void
+    public function test_validate_checks_active_and_draft_continuity_separately(): void
     {
         $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
         $this->writeSpec('execution-spec-system', '003-third', '# Execution Spec: 003-third', 'drafts');
         $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
 
         $result = $this->service()->validate();
+        $this->assertTrue($result['ok']);
+    }
+
+    public function test_validate_enforces_active_and_draft_continuity_separately(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-active-a', '# Execution Spec: 001-active-a');
+        $this->writeSpec('execution-spec-system', '002-active-b', '# Execution Spec: 002-active-b');
+        $this->writeSpec('execution-spec-system', '001-draft-a', '# Execution Spec: 001-draft-a', 'drafts');
+        $this->writeSpec('execution-spec-system', '003-draft-c', '# Execution Spec: 003-draft-c', 'drafts');
+        $this->writeImplementationLogEntry('execution-spec-system/001-active-a.md');
+        $this->writeImplementationLogEntry('execution-spec-system/002-active-b.md');
+
+        $result = $this->service()->validate();
         $this->assertFalse($result['ok']);
         $gap = array_values(array_filter($result['violations'], static fn(array $violation): bool => $violation['code'] === 'EXECUTION_SPEC_ID_GAP'))[0];
+        $this->assertSame('drafts', $gap['details']['location']);
         $this->assertSame('002', $gap['details']['missing_id']);
         $this->assertSame('003', $gap['details']['next_observed_id']);
+    }
+
+    public function test_validate_does_not_enforce_global_sequence_across_features(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+        $this->writeSpec('generate-engine', '001-first', '# Execution Spec: 001-first');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+        $this->writeImplementationLogEntry('generate-engine/001-first.md');
+
+        $result = $this->service()->validate();
+        $this->assertTrue($result['ok']);
     }
 
     public function test_validate_rejects_implementation_log_entries_with_skipped_ids(): void
@@ -305,6 +331,118 @@ MD,
         $this->assertFalse($result['ok']);
         $codes = array_map(static fn(array $violation): string => (string) $violation['code'], $result['violations']);
         $this->assertContains('EXECUTION_SPEC_IMPLEMENTATION_LOG_SKIPPED_ID', $codes);
+    }
+
+    public function test_validate_ignores_noncanonical_implementation_log_references_for_continuity(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+        $this->writeImplementationLogEntry('not-a-canonical-reference');
+        $this->writeImplementationLogEntry('execution-spec-system/not-a-spec.md');
+
+        $result = $this->service()->validate();
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame([], $result['violations']);
+    }
+
+    public function test_validate_reports_invalid_directory_for_legacy_spec_paths(): void
+    {
+        $this->writeRawFile(
+            'docs/specs/001-legacy.md',
+            "# Execution Spec: 001-legacy\n",
+        );
+
+        $result = $this->service()->validate();
+        $this->assertFalse($result['ok']);
+        $this->assertSame('EXECUTION_SPEC_INVALID_DIRECTORY', $result['violations'][0]['code']);
+    }
+
+    public function test_validate_reports_invalid_plan_directory_and_filename(): void
+    {
+        $this->writeRawFile(
+            'docs/specs/plans/not-a-spec.md',
+            "# Implementation Plan: not-a-spec\n",
+        );
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/not-a-spec.md',
+            "# Implementation Plan: not-a-spec\n",
+        );
+
+        $result = $this->service()->validate();
+        $codes = array_map(static fn(array $violation): string => (string) $violation['code'], $result['violations']);
+        $this->assertContains('EXECUTION_SPEC_PLAN_INVALID_DIRECTORY', $codes);
+        $this->assertContains('EXECUTION_SPEC_PLAN_INVALID_FILENAME', $codes);
+    }
+
+    public function test_validate_reports_forbidden_plan_metadata_and_duplicate_plan_ids(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/001-first.md',
+            "# Implementation Plan: 001-first\n\nstatus: draft\n",
+        );
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/archive/001-first.md',
+            "# Implementation Plan: 001-first\n",
+        );
+
+        $result = $this->service()->validate();
+        $codes = array_map(static fn(array $violation): string => (string) $violation['code'], $result['violations']);
+        $this->assertContains('EXECUTION_SPEC_PLAN_FORBIDDEN_METADATA', $codes);
+        $this->assertContains('EXECUTION_SPEC_PLAN_INVALID_DIRECTORY', $codes);
+    }
+
+    public function test_validate_reports_duplicate_plan_ids_with_deterministic_details(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/001-first.md',
+            "# Implementation Plan: 001-first\n",
+        );
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/001-second.md',
+            "# Implementation Plan: 001-second\n",
+        );
+
+        $result = $this->service()->validate();
+
+        $this->assertFalse($result['ok']);
+        $duplicate = array_values(array_filter(
+            $result['violations'],
+            static fn(array $violation): bool => $violation['code'] === 'EXECUTION_SPEC_PLAN_DUPLICATE_ID',
+        ))[0];
+        $this->assertSame(
+            [
+                'feature' => 'execution-spec-system',
+                'id' => '001',
+                'paths' => [
+                    'docs/features/execution-spec-system/plans/001-first.md',
+                    'docs/features/execution-spec-system/plans/001-second.md',
+                ],
+            ],
+            $duplicate['details'],
+        );
+    }
+
+    public function test_validate_reports_invalid_implementation_log_when_path_is_directory(): void
+    {
+        $absolutePath = $this->project->root . '/docs/features/implementation-log.md';
+        if (!is_dir(dirname($absolutePath))) {
+            mkdir(dirname($absolutePath), 0777, true);
+        }
+        mkdir($absolutePath, 0777, true);
+
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+
+        $result = $this->service()->validate();
+        $this->assertFalse($result['ok']);
+        $this->assertContains(
+            'EXECUTION_SPEC_IMPLEMENTATION_LOG_INVALID',
+            array_map(static fn(array $violation): string => (string) $violation['code'], $result['violations']),
+        );
     }
 
     public function test_validate_accepts_valid_plan_file_in_canonical_location(): void
@@ -320,6 +458,22 @@ MD,
 
         $this->assertTrue($result['ok']);
         $this->assertSame([], $result['violations']);
+    }
+
+    public function test_validate_skips_directories_that_match_spec_and_plan_globs(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+        mkdir($this->project->root . '/docs/features/execution-spec-system/specs/002-directory.md', 0777, true);
+        mkdir($this->project->root . '/docs/features/execution-spec-system/plans/001-plan-directory.md', 0777, true);
+
+        $result = $this->service()->validate();
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(
+            ['checked_files' => 1, 'features' => 1, 'violations' => 0],
+            $result['summary'],
+        );
     }
 
     public function test_validate_rejects_orphan_plan_and_bad_heading(): void
@@ -358,6 +512,28 @@ MD,
         $this->assertSame(
             'docs/features/execution-spec-system/plans/001-active-missing-plan.md',
             $strict['violations'][0]['details']['plan_path'],
+        );
+    }
+
+    public function test_validate_require_plans_continues_past_specs_that_already_have_plans(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-has-plan', '# Execution Spec: 001-has-plan');
+        $this->writeSpec('execution-spec-system', '002-missing-plan', '# Execution Spec: 002-missing-plan');
+        $this->writeImplementationLogEntry('execution-spec-system/001-has-plan.md');
+        $this->writeImplementationLogEntry('execution-spec-system/002-missing-plan.md');
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/001-has-plan.md',
+            "# Implementation Plan: 001-has-plan\n",
+        );
+
+        $result = $this->service()->validate(true);
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame(1, $result['summary']['violations']);
+        $this->assertSame('EXECUTION_SPEC_PLAN_REQUIRED_MISSING', $result['violations'][0]['code']);
+        $this->assertSame(
+            'docs/features/execution-spec-system/plans/002-missing-plan.md',
+            $result['violations'][0]['details']['plan_path'],
         );
     }
 
@@ -415,5 +591,28 @@ MD,
         $contents = $existing === '' ? $entry : rtrim($existing, "\n") . "\n\n" . $entry;
 
         file_put_contents($absolutePath, $contents);
+    }
+
+    /**
+     * @param list<array<string,mixed>> $gaps
+     */
+    private function containsGap(array $gaps, string $missingId, string $nextObservedId, string $path): bool
+    {
+        foreach ($gaps as $gap) {
+            $details = $gap['details'] ?? [];
+            if (!is_array($details)) {
+                continue;
+            }
+
+            if (
+                ($details['missing_id'] ?? null) === $missingId
+                && ($details['next_observed_id'] ?? null) === $nextObservedId
+                && ($details['path'] ?? null) === $path
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

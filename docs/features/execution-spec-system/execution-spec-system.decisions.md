@@ -587,3 +587,36 @@ Timestamp: 2026-05-02T16:10:00-04:00
 - ID Continuity Model
 - Required Command Behavior
 - Acceptance Criteria
+
+### Decision: enforce gapless IDs per feature with active/draft continuity separation
+Timestamp: 2026-05-02T16:08:00-04:00
+
+**Context**
+- Active execution spec `010-enforce-feature-scoped-gapless-spec-ids` requires ID continuity to remain feature-scoped and sibling-scoped while validating active and draft sequences independently.
+- Prior continuity enforcement treated active and draft specs as one combined continuity set, which could hide draft-only gaps behind active history.
+
+**Decision**
+- Enforce gapless sequencing per feature and sibling group with independent continuity checks for `active` and `drafts` locations.
+- Keep hierarchical missing-parent and sibling-gap detection deterministic.
+- Keep command behavior fail-closed for ID-allocation and spec lifecycle commands when continuity is invalid.
+
+**Reasoning**
+- Feature-scoped isolation prevents unrelated features from influencing ID validation.
+- Location-separated continuity keeps draft quality strict without coupling it to active implementation history.
+- Deterministic details make repair workflows automatable and unambiguous.
+
+**Alternatives Considered**
+- Keep active and draft continuity coupled in one sequence.
+- Enforce a repository-global sequence across features.
+- Auto-renumber invalid sequences.
+
+**Impact**
+- `spec:validate` now reports deterministic gap details including feature, location, parent group, missing ID, next observed ID, and offending path.
+- `spec:new` and related spec lifecycle flows continue to fail closed when continuity is invalid.
+- Context docs now explicitly state active-vs-draft continuity separation.
+
+**Spec Reference**
+- Rules
+- Required System Behavior
+- Tests
+- Acceptance Criteria

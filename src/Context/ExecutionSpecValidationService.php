@@ -70,7 +70,8 @@ final class ExecutionSpecValidationService
             }
 
             $seenIds[$placement['feature']][$parsedName['id']][] = $relativePath;
-            $continuityCandidates[$placement['feature']][] = [
+            $location = $placement['status'] === 'draft' ? 'drafts' : 'active';
+            $continuityCandidates[$placement['feature']][$location][] = [
                 'id' => $parsedName['id'],
                 'segments' => $parsedName['segments'],
                 'path' => $relativePath,
@@ -140,19 +141,24 @@ final class ExecutionSpecValidationService
         }
 
         $continuity = new ExecutionSpecIdContinuity();
-        foreach ($continuityCandidates as $feature => $entries) {
-            foreach ($continuity->gaps($entries) as $gap) {
-                $violations[] = $this->violation(
-                    'EXECUTION_SPEC_ID_GAP',
-                    (string) $gap['path'],
-                    'Execution spec IDs must be contiguous. Skipping numbers violates execution-spec-system rules.',
-                    [
-                        'feature' => $feature,
-                        'missing_id' => (string) $gap['missing_id'],
-                        'next_observed_id' => (string) $gap['next_observed_id'],
-                        'path' => (string) $gap['path'],
-                    ],
-                );
+        foreach ($continuityCandidates as $feature => $byLocation) {
+            foreach ($byLocation as $location => $entries) {
+                foreach ($continuity->gaps($entries) as $gap) {
+                    $violations[] = $this->violation(
+                        'EXECUTION_SPEC_ID_GAP',
+                        (string) $gap['path'],
+                        'Execution spec IDs must be contiguous. Skipping numbers violates execution-spec-system rules.',
+                        [
+                            'feature' => $feature,
+                            'location' => $location,
+                            'parent_id' => (string) ($gap['parent_id'] ?? 'top-level'),
+                            'missing_id' => (string) $gap['missing_id'],
+                            'expected_missing_id' => (string) $gap['missing_id'],
+                            'next_observed_id' => (string) $gap['next_observed_id'],
+                            'path' => (string) $gap['path'],
+                        ],
+                    );
+                }
             }
         }
 

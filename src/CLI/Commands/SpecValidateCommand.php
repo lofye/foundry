@@ -96,7 +96,7 @@ final class SpecValidateCommand extends Command
 
         $parts = [];
 
-        foreach (['feature', 'id', 'field', 'line', 'expected_heading', 'actual_heading', 'missing_id', 'next_observed_id', 'plan_path'] as $key) {
+        foreach (['feature', 'location', 'parent_id', 'id', 'field', 'line', 'expected_heading', 'actual_heading', 'missing_id', 'expected_missing_id', 'next_observed_id', 'plan_path'] as $key) {
             if (!array_key_exists($key, $details)) {
                 continue;
             }

@@ -15,7 +15,8 @@ final class ExecutionSpecIdContinuity
      * @return list<array{
      *     missing_id:string,
      *     next_observed_id:string,
-     *     path:string
+     *     path:string,
+     *     parent_id:string
      * }>
      */
     public function gaps(array $entries): array
@@ -61,11 +62,12 @@ final class ExecutionSpecIdContinuity
                     'missing_id' => $parentId,
                     'next_observed_id' => $next,
                     'path' => (string) ($pathsById[$next] ?? ''),
+                    'parent_id' => $parentId === '' ? 'top-level' : $parentId,
                 ];
                 continue;
             }
 
-            $expected = 1;
+            $expected = (int) ($siblings[0]['ordinal'] ?? 1);
             foreach ($siblings as $sibling) {
                 $observed = (int) $sibling['ordinal'];
                 if ($observed < $expected) {
@@ -81,6 +83,7 @@ final class ExecutionSpecIdContinuity
                         'missing_id' => $missingId,
                         'next_observed_id' => $next,
                         'path' => (string) ($pathsById[$next] ?? ''),
+                        'parent_id' => $parentId === '' ? 'top-level' : $parentId,
                     ];
                 }
 
@@ -98,4 +101,3 @@ final class ExecutionSpecIdContinuity
         return $gaps;
     }
 }
-

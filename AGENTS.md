@@ -243,23 +243,44 @@ Stable outputs must not depend on timestamps, randomness, or unstable ordering.
 
 ## Testing Discipline
 
-- Every framework behavior change needs PHPUnit coverage
-- Prefer focused test runs while iterating, then finish with the broader relevant suite
-- The full PHPUnit suite must run before implementation completion is reported as final
-- Coverage must run before implementation completion is reported as final
-- The canonical completion quality gate is:
+- Every framework behavior change must have PHPUnit coverage
+- Prefer focused test runs while iterating, then finish with the full suite
+- The full PHPUnit suite must pass before implementation is considered complete
+- Coverage must run and be valid before implementation is considered complete
+
+### Canonical quality gate:
 
 ```bash
 php vendor/bin/phpunit
 php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text
 ```
-
-- Implementations are not complete unless the quality gate passes
-- Global test coverage of lines must be at or above 90% for final implementation completion
-- If the full suite fails, the coverage run fails, coverage output is missing or unparseable, or coverage is below threshold, do not report final success
-- Do not weaken assertions, delete failing coverage, or edit generated output to hide regressions
+- Implementation is not complete unless the quality gate passes
+- Global line coverage must be ≥ 90%
+- If tests fail, coverage fails, coverage output is missing/unparseable, or coverage is below threshold, do not report success
+- Do not weaken assertions, delete tests, or alter outputs to hide regressions
 - When changing CLI scaffolding or textual contracts, assert generated files and key content in integration tests
-- When a bug is encountered, create a failing test first, then change the non-test code so that the test passes
+- When a bug is found, write a failing test first, then fix the code
+
+## Test Quality Requirements
+
+Do not write tautological or vacuous tests.
+
+A test must fail if the underlying behavior is incorrect. Tests that always pass regardless of implementation are forbidden.
+
+### Invalid examples:
+
+- expect(true).toBe(true)
+- asserting existence without correctness
+- mirroring implementation without validating outcomes
+
+### Requirements:
+
+- Tests must assert observable, meaningful behavior
+- Tests must verify outputs, side effects, or contract guarantees
+- Tests must fail when behavior deviates from the spec
+- Avoid assertions that do not constrain correctness
+
+If a test cannot fail under incorrect behavior, it must be rewritten or removed.
 
 ---
 

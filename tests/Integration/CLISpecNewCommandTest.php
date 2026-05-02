@@ -142,14 +142,27 @@ TEXT . "\n", $result['output']);
 
     public function test_spec_new_refuses_when_feature_has_skipped_ids(): void
     {
-        $this->writeSpec('execution-spec-system', '001-first');
-        $this->writeSpec('execution-spec-system', '003-third', 'drafts');
+        $this->writeSpec('execution-spec-system', '001-draft-first', 'drafts');
+        $this->writeSpec('execution-spec-system', '003-draft-third', 'drafts');
 
         $result = $this->runRawCommand(['foundry', 'spec:new', 'execution-spec-system', 'add-cli-command']);
 
         $this->assertSame(1, $result['status']);
         $this->assertStringContainsString('Reason: could not allocate next spec ID', $result['output']);
         $this->assertStringContainsString('Resolve duplicate, invalid, or skipped execution spec IDs in this feature', $result['output']);
+    }
+
+    public function test_spec_new_refuses_when_active_sequence_has_gap_even_if_drafts_are_contiguous(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-active-first');
+        $this->writeSpec('execution-spec-system', '003-active-third');
+        $this->writeSpec('execution-spec-system', '001-draft-first', 'drafts');
+
+        $result = $this->runCommand(['foundry', 'spec:new', 'execution-spec-system', 'add-cli-command', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertFalse($result['payload']['success']);
+        $this->assertSame('could not allocate next spec ID', $result['payload']['reason']);
     }
 
     /**

@@ -58,8 +58,8 @@
 - Human-facing and scaffolded documentation contracts now treat `docs/specs/*`, `docs/<feature>/*`, and `<id>-<slug>` feature-context stems as invalid active canonical feature-context paths.
 - `spec:plan <feature> <id>` now creates deterministic implementation plan files under `docs/features/<feature>/plans/<id>-<slug>.md` and preserves exact execution-spec filename stems.
 - `spec:validate` now validates implementation plan files, and `spec:validate --require-plans` enforces plan coverage for active execution specs while excluding draft specs from that requirement.
-- `spec:validate` now enforces sequential execution-spec ID continuity across active and draft specs, including top-level gaps, child-segment gaps, and missing-parent detection.
-- `spec:validate` now reports deterministic continuity details (`missing_id`, `next_observed_id`, and triggering path) and rejects implementation-log sequences that skip execution-spec IDs.
+- `spec:validate` now enforces sequential execution-spec ID continuity per feature and sibling group, with active and draft sequences validated independently, including top-level gaps, child-segment gaps, and missing-parent detection.
+- `spec:validate` now reports deterministic continuity details (`feature`, `location`, `parent_id`, `missing_id`, `next_observed_id`, and triggering path) and rejects implementation-log sequences that skip execution-spec IDs.
 - ID-allocation and execution-spec command workflows (`spec:new`, `spec:plan`, `spec:log-entry`) now refuse to proceed when feature continuity has numeric gaps.
 
 ## Open Questions

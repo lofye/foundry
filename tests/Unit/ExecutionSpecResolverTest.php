@@ -212,6 +212,14 @@ MD);
         $this->assertSame('EXECUTION_SPEC_FEATURE_NOT_FOUND', $error->errorCode);
     }
 
+    public function test_feature_and_id_shorthand_rejects_invalid_feature_name(): void
+    {
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolveWithinFeature('Bad Feature', '001'));
+
+        $this->assertSame('EXECUTION_SPEC_FEATURE_INVALID', $error->errorCode);
+        $this->assertSame('Bad Feature', $error->details['feature']);
+    }
+
     public function test_feature_and_id_shorthand_rejects_malformed_id(): void
     {
         $this->writeExecutionSpec('blog', '001-initial', 'blog');
@@ -234,6 +242,21 @@ MD);
         $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('docs/features/blog-1.md'));
 
         $this->assertSame('EXECUTION_SPEC_PATH_NON_CANONICAL', $error->errorCode);
+    }
+
+    public function test_noncanonical_unique_shorthand_is_rejected_before_searching(): void
+    {
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('not-a-spec'));
+
+        $this->assertSame('EXECUTION_SPEC_PATH_NON_CANONICAL', $error->errorCode);
+    }
+
+    public function test_unique_shorthand_with_markdown_extension_reports_not_found_deterministically(): void
+    {
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('001-missing.md'));
+
+        $this->assertSame('EXECUTION_SPEC_NOT_FOUND', $error->errorCode);
+        $this->assertSame('001-missing.md', $error->details['spec_id']);
     }
 
     public function test_heading_must_match_filename_only(): void
@@ -290,6 +313,66 @@ MD);
         $this->assertNotContains('before implementation succeeds', $spec->requestedChanges);
         $this->assertNotContains('for draft specs', $spec->requestedChanges);
         $this->assertNotContains('for failed or partial implementations', $spec->requestedChanges);
+    }
+
+    public function test_resolve_rejects_empty_spec_id(): void
+    {
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('   '));
+        $this->assertSame('EXECUTION_SPEC_ID_REQUIRED', $error->errorCode);
+    }
+
+    public function test_resolve_rejects_noncanonical_nested_path_input(): void
+    {
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('docs/features/blog/specs/extra/001-initial.md'));
+        $this->assertSame('EXECUTION_SPEC_PATH_NON_CANONICAL', $error->errorCode);
+    }
+
+    public function test_resolve_requires_feature_section(): void
+    {
+        $this->writeRawExecutionSpec('blog', '001-initial', <<<MD
+# Execution Spec: 001-initial
+
+## Purpose
+
+- Missing feature section.
+MD);
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('blog/001-initial'));
+        $this->assertSame('EXECUTION_SPEC_FEATURE_SECTION_MISSING', $error->errorCode);
+    }
+
+    public function test_resolve_treats_empty_feature_section_as_missing(): void
+    {
+        $this->writeRawExecutionSpec('blog', '001-initial', <<<MD
+# Execution Spec: 001-initial
+
+## Feature
+
+## Purpose
+
+- Empty feature sections are not executable.
+MD);
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('blog/001-initial'));
+        $this->assertSame('EXECUTION_SPEC_FEATURE_SECTION_MISSING', $error->errorCode);
+    }
+
+    public function test_resolve_rejects_invalid_feature_name_in_feature_section(): void
+    {
+        $this->writeRawExecutionSpec('blog', '001-initial', <<<MD
+# Execution Spec: 001-initial
+
+## Feature
+
+- Blog Invalid
+
+## Purpose
+
+- Invalid feature value.
+MD);
+
+        $error = $this->expectFoundryError(fn() => $this->resolver()->resolve('blog/001-initial'));
+        $this->assertSame('EXECUTION_SPEC_FEATURE_INVALID', $error->errorCode);
     }
 
     private function resolver(): ExecutionSpecResolver

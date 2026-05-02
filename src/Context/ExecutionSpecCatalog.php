@@ -153,32 +153,40 @@ final class ExecutionSpecCatalog
     public function assertContiguous(string $featureName, array $entries): void
     {
         $continuity = new ExecutionSpecIdContinuity();
-        $gaps = $continuity->gaps(array_map(
-            static fn(array $entry): array => [
+        $byLocation = ['active' => [], 'drafts' => []];
+        foreach ($entries as $entry) {
+            $status = (string) ($entry['status'] ?? '');
+            $location = $status === 'draft' ? 'drafts' : 'active';
+            $byLocation[$location][] = [
                 'id' => (string) $entry['id'],
                 'segments' => (array) $entry['segments'],
                 'path' => (string) $entry['path'],
-            ],
-            $entries,
-        ));
-
-        if ($gaps === []) {
-            return;
+            ];
         }
 
-        $firstGap = $gaps[0];
-        throw new FoundryError(
-            'EXECUTION_SPEC_ID_SEQUENCE_INVALID',
-            'validation',
-            [
-                'feature' => $featureName,
-                'missing_id' => (string) $firstGap['missing_id'],
-                'next_observed_id' => (string) $firstGap['next_observed_id'],
-                'path' => (string) $firstGap['path'],
-                'gaps' => $gaps,
-            ],
-            'Execution spec IDs must be contiguous. Skipping numbers violates execution-spec-system rules.',
-        );
+        foreach ($byLocation as $location => $locationEntries) {
+            $gaps = $continuity->gaps($locationEntries);
+            if ($gaps === []) {
+                continue;
+            }
+
+            $firstGap = $gaps[0];
+            throw new FoundryError(
+                'EXECUTION_SPEC_ID_SEQUENCE_INVALID',
+                'validation',
+                [
+                    'feature' => $featureName,
+                    'location' => $location,
+                    'parent_id' => (string) ($firstGap['parent_id'] ?? 'top-level'),
+                    'missing_id' => (string) $firstGap['missing_id'],
+                    'expected_missing_id' => (string) $firstGap['missing_id'],
+                    'next_observed_id' => (string) $firstGap['next_observed_id'],
+                    'path' => (string) $firstGap['path'],
+                    'gaps' => $gaps,
+                ],
+                'Execution spec IDs must be contiguous. Skipping numbers violates execution-spec-system rules.',
+            );
+        }
     }
 
     /**

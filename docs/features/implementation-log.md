@@ -267,3 +267,6 @@
 
 ## 2026-05-02 19:54:11 +0000
 - spec: execution-spec-system/009-enforce-sequential-execution-spec-ids.md
+
+## 2026-05-02 20:06:01 +0000
+- spec: execution-spec-system/010-enforce-feature-scoped-gapless-spec-ids.md

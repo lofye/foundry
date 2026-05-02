@@ -92,6 +92,62 @@ final class CLISpecPlanCommandTest extends TestCase
         $this->assertSame('003', $result['payload']['details']['error_details']['next_observed_id']);
     }
 
+    public function test_spec_plan_raw_success_and_failure_messages_are_deterministic(): void
+    {
+        $this->writeActiveSpec('execution-spec-system', '001-first');
+
+        $success = $this->runRawCommand(['foundry', 'spec:plan', 'execution-spec-system', '001']);
+        $this->assertSame(0, $success['status']);
+        $this->assertStringContainsString('Created implementation plan', $success['output']);
+        $this->assertStringContainsString('Feature: execution-spec-system', $success['output']);
+
+        $failure = $this->runRawCommand(['foundry', 'spec:plan', 'execution-spec-system', 'not-an-id']);
+        $this->assertSame(1, $failure['status']);
+        $this->assertStringContainsString('Could not create implementation plan', $failure['output']);
+        $this->assertStringContainsString('Reason: spec_id_invalid', $failure['output']);
+    }
+
+    public function test_spec_plan_force_overwrites_when_target_exists_as_directory_and_returns_write_failed(): void
+    {
+        $this->writeActiveSpec('execution-spec-system', '001-first');
+        $planPath = $this->project->root . '/docs/features/execution-spec-system/plans/001-first.md';
+        mkdir(dirname($planPath), 0777, true);
+        mkdir($planPath, 0777, true);
+
+        $result = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '001', '--force', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('plan_write_failed', $result['payload']['error']);
+    }
+
+    public function test_spec_plan_reports_directory_create_failure_when_plans_path_is_blocked(): void
+    {
+        $this->writeActiveSpec('execution-spec-system', '001-first');
+        $blocked = $this->project->root . '/docs/features/execution-spec-system/plans';
+        if (!is_dir(dirname($blocked))) {
+            mkdir(dirname($blocked), 0777, true);
+        }
+        file_put_contents($blocked, 'blocked');
+
+        $result = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '001', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('plan_directory_create_failed', $result['payload']['error']);
+    }
+
+    public function test_spec_plan_returns_draft_only_error_for_draft_match(): void
+    {
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/specs/drafts/001-draft-only.md',
+            "# Execution Spec: 001-draft-only\n\n## Feature\n\n- execution-spec-system\n",
+        );
+
+        $result = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '001', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('spec_draft_only', $result['payload']['error']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
@@ -106,6 +162,19 @@ final class CLISpecPlanCommandTest extends TestCase
         $payload = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
         return ['status' => $status, 'payload' => $payload];
+    }
+
+    /**
+     * @param array<int,string> $argv
+     * @return array{status:int,output:string}
+     */
+    private function runRawCommand(array $argv): array
+    {
+        ob_start();
+        $status = (new Application())->run($argv);
+        $output = ob_get_clean() ?: '';
+
+        return ['status' => $status, 'output' => $output];
     }
 
     private function writeActiveSpec(string $feature, string $name): void

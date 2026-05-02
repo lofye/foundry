@@ -91,14 +91,57 @@ MD . "\n", (string) file_get_contents($this->project->root . '/' . (string) $res
 
     public function test_allocation_failure_is_reported_when_feature_has_skipped_ids(): void
     {
-        $this->writeSpec('execution-spec-system', '001-first');
-        $this->writeSpec('execution-spec-system', '003-third', 'drafts');
+        $this->writeSpec('execution-spec-system', '001-draft-first', 'drafts');
+        $this->writeSpec('execution-spec-system', '003-draft-third', 'drafts');
 
         $result = $this->service()->createDraft('execution-spec-system', 'add-cli-command');
 
         $this->assertFalse($result['success']);
         $this->assertSame('could not allocate next spec ID', $result['reason']);
         $this->assertContains('Resolve duplicate, invalid, or skipped execution spec IDs in this feature', $result['required_actions']);
+    }
+
+    public function test_create_draft_fails_when_active_sequence_has_gap_even_if_drafts_are_contiguous(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-active-first');
+        $this->writeSpec('execution-spec-system', '003-active-third');
+        $this->writeSpec('execution-spec-system', '001-draft-first', 'drafts');
+
+        $result = $this->service()->createDraft('execution-spec-system', 'add-cli-command');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('could not allocate next spec ID', $result['reason']);
+    }
+
+    public function test_create_draft_rejects_invalid_feature_name(): void
+    {
+        $result = $this->service()->createDraft('Execution Spec System', 'add-cli-command');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('invalid feature name', $result['reason']);
+    }
+
+    public function test_create_draft_rejects_invalid_slug(): void
+    {
+        $result = $this->service()->createDraft('execution-spec-system', 'draft');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('invalid slug', $result['reason']);
+    }
+
+    public function test_create_draft_reports_target_file_collision(): void
+    {
+        $path = $this->project->root . '/docs/features/execution-spec-system/specs/drafts/001-add-cli-command.md';
+        if (!is_dir(dirname($path))) {
+            mkdir(dirname($path), 0777, true);
+        }
+        mkdir($path, 0777, true);
+
+        $result = $this->service()->createDraft('execution-spec-system', 'add-cli-command');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('target file already exists', $result['reason']);
+        $this->assertSame('001', $result['id']);
     }
 
     private function service(): ExecutionSpecDraftService

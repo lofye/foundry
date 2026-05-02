@@ -19,7 +19,7 @@
 - Keep human-facing READMEs, feature-doc policy docs, examples, and scaffold-facing documentation aligned to canonical feature-doc paths and feature-context filename stems.
 - Keep tests, fixtures, snapshots, and contract expectations aligned to canonical feature-doc path contracts, including deterministic invalid-path coverage boundaries.
 - Add first-class implementation plan files for active execution specs with deterministic creation, validation, and strict enforcement support.
-- Enforce contiguous execution-spec ID sequences across active and draft specs at every hierarchy level.
+- Enforce contiguous execution-spec ID sequences per feature and sibling group, with active and draft sequences validated independently at every hierarchy level.
 
 ## Non-Goals
 - Do not introduce filesystem-specific natural-sort dependencies.
@@ -71,6 +71,7 @@
 - `spec:plan <feature> <id>` creates deterministic implementation plan files at `docs/features/<feature>/plans/<id>-<slug>.md` with canonical heading `# Implementation Plan: <id>-<slug>`.
 - `spec:validate` validates implementation plan placement, heading, filename correspondence, duplicates, and forbidden metadata, and `spec:validate --require-plans` enforces active-spec plan coverage without requiring draft-spec plans.
 - `spec:validate` detects missing parent IDs and skipped IDs across active and draft specs, reports deterministic gap details, and rejects implementation-log entries that skip IDs.
+- `spec:validate` reports continuity details that include feature, location (`active` or `drafts`), parent group (`top-level` or parent ID), expected missing ID, next observed ID, and offending path.
 - Commands that allocate, plan, log, or otherwise operate on execution specs refuse to proceed when feature ID continuity is broken.
 
 ## Acceptance Criteria

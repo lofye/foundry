@@ -109,6 +109,34 @@ final class CLISpecLogEntryCommandTest extends TestCase
         $this->assertStringContainsString('Skipping numbers violates execution-spec-system rules', $result['payload']['error']['message']);
     }
 
+    public function test_spec_log_entry_requires_target_argument(): void
+    {
+        $result = $this->runCommand($this->fixedClockApp('2026-04-17 12:30:45 -0400'), ['foundry', 'spec:log-entry', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('CLI_SPEC_LOG_ENTRY_TARGET_REQUIRED', $result['payload']['error']['code']);
+    }
+
+    public function test_spec_log_entry_rejects_too_many_arguments(): void
+    {
+        $result = $this->runCommand(
+            $this->fixedClockApp('2026-04-17 12:30:45 -0400'),
+            ['foundry', 'spec:log-entry', 'execution-spec-system', '001', 'extra', '--json'],
+        );
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('CLI_SPEC_LOG_ENTRY_ARGUMENTS_INVALID', $result['payload']['error']['code']);
+    }
+
+    public function test_spec_log_entry_rejects_feature_without_id_in_single_argument_form(): void
+    {
+        $this->writeExecutionSpec('execution-spec-system', '001-first', 'execution-spec-system');
+        $result = $this->runCommand($this->fixedClockApp('2026-04-17 12:30:45 -0400'), ['foundry', 'spec:log-entry', 'execution-spec-system', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('CLI_SPEC_LOG_ENTRY_ID_REQUIRED', $result['payload']['error']['code']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}

@@ -132,19 +132,21 @@ Use `foundry context repair --feature=<feature> --json` when context verificatio
 
 ## Testing And Quality Gate
 
-- Focused tests may be used during development, but they are not the source of truth for final implementation completion
-- The full PHPUnit suite must run before implementation completion is reported as final
-- Coverage must run before implementation completion is reported as final
-- The canonical completion quality gate is:
+- Focused tests may be used during development, but final completion must be validated against the full suite
+- The full PHPUnit suite must pass before implementation is considered complete
+- Coverage must run and be valid before implementation is considered complete
+
+### Canonical quality gate:
 
 ```bash
 php vendor/bin/phpunit
 php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text
 ```
 
-- Implementations are not complete unless the quality gate passes
-- Global line coverage must be at or above 90% for final implementation completion
-- If the full suite fails, the coverage run fails, coverage output is missing or unparseable, or coverage is below threshold, do not report final success
+- Implementation is not complete unless the quality gate passes
+- Global line coverage must be ≥ 90%
+- If tests fail, coverage fails, coverage output is missing/unparseable, or coverage is below threshold, do not report success
+- Do not weaken assertions, delete tests, or alter outputs to hide regressions
 
 ## Context Anchoring (MANDATORY)
 

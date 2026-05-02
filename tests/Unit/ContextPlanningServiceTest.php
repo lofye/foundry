@@ -44,14 +44,15 @@ final class ContextPlanningServiceTest extends TestCase
         $this->writeExistingSpec('event-bus', '001-initial');
         $this->writeExistingSpec('event-bus', '002-second');
         $this->writeExistingSpec('event-bus', '003-parent');
-        $this->writeExistingSpec('event-bus', '003.001-draft-follow-up', 'drafts');
+        $this->writeExistingSpec('event-bus', '004-draft-parent', 'drafts');
+        $this->writeExistingSpec('event-bus', '004.001-draft-follow-up', 'drafts');
 
         $result = $this->service()->plan('event-bus')->toArray();
 
         $this->assertSame('planned', $result['status']);
-        $this->assertSame('event-bus/004-contract-test-coverage', $result['spec_id']);
-        $this->assertFileExists($this->project->root . '/docs/features/event-bus/specs/drafts/004-contract-test-coverage.md');
-        $this->assertFileDoesNotExist($this->project->root . '/docs/features/event-bus/specs/004-contract-test-coverage.md');
+        $this->assertSame('event-bus/005-contract-test-coverage', $result['spec_id']);
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/specs/drafts/005-contract-test-coverage.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/features/event-bus/specs/005-contract-test-coverage.md');
     }
 
     public function test_planning_writes_exactly_one_draft_spec_and_reports_it_truthfully(): void
@@ -71,6 +72,18 @@ final class ContextPlanningServiceTest extends TestCase
         $this->assertSame('event-bus/001-contract-test-coverage', $result['spec_id']);
         $this->assertFileExists($this->project->root . '/' . (string) $result['spec_path']);
         $this->assertFileDoesNotExist($this->project->root . '/docs/features/event-bus/specs/001-contract-test-coverage.md');
+    }
+
+    public function test_planning_ignores_directory_matches_when_snapshotting_spec_markdown_paths(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        mkdir($this->project->root . '/docs/features/event-bus/specs/099-directory.md', 0777, true);
+        mkdir($this->project->root . '/docs/features/event-bus/specs/drafts/098-directory.md', 0777, true);
+
+        $result = $this->service()->plan('event-bus')->toArray();
+
+        $this->assertSame('planned', $result['status']);
+        $this->assertSame('event-bus/001-contract-test-coverage', $result['spec_id']);
     }
 
     public function test_generated_execution_spec_matches_stub_structure_exactly(): void
@@ -140,6 +153,75 @@ MD . "\n", $contents);
 
         $this->assertSame($firstResult, $secondResult);
         $this->assertSame($firstContents, $secondContents);
+    }
+
+    public function test_planning_normalizes_decision_entries_before_rendering(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.decisions.md', <<<'MD'
+# Decisions: event-bus
+
+### Decision: zebra choice
+
+Timestamp: 2026-04-19T12:00:00-04:00
+
+**Context**
+
+- Later context.
+
+**Decision**
+
+- Later decision.
+
+**Reasoning**
+
+- Later reasoning.
+
+**Alternatives Considered**
+
+- Later alternative.
+
+**Impact**
+
+- Later impact.
+
+**Spec Reference**
+
+- Later reference.
+
+### Decision: alpha choice
+
+Timestamp: 2026-04-18T12:00:00-04:00
+
+**Context**
+
+- Earlier context.
+
+**Decision**
+
+- Earlier decision.
+
+**Reasoning**
+
+- Earlier reasoning.
+
+**Alternatives Considered**
+
+- Earlier alternative.
+
+**Impact**
+
+- Earlier impact.
+
+**Spec Reference**
+
+- Earlier reference.
+MD);
+
+        $result = $this->service()->plan('event-bus')->toArray();
+
+        $this->assertSame('planned', $result['status']);
+        $this->assertFileExists($this->project->root . '/' . (string) $result['spec_path']);
     }
 
     public function test_stub_changes_propagate_without_planner_changes(): void

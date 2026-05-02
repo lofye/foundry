@@ -59,6 +59,17 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertContains('Update the feature state to reflect current implementation.', $result['required_actions']);
     }
 
+    public function test_execution_rejects_invalid_feature_names_before_context_inspection(): void
+    {
+        $result = $this->service()->execute('Not Valid')->toArray();
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_repair']);
+        $this->assertSame('Not Valid', $result['feature']);
+        $this->assertContains('Use a lowercase kebab-case feature name.', $result['required_actions']);
+    }
+
     public function test_execution_proceeds_when_context_is_valid(): void
     {
         $this->writeMeaningfulContext('event-bus');
@@ -141,6 +152,35 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertContains('Fixed malformed spec heading: docs/features/event-bus/event-bus.spec.md', $result['actions_taken']);
     }
 
+    public function test_auto_repair_prepends_missing_spec_heading_when_no_heading_exists(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $path = $this->project->root . '/docs/features/event-bus/event-bus.spec.md';
+        file_put_contents($path, preg_replace('/^# Feature Spec: event-bus\R\R/', '', (string) file_get_contents($path), 1));
+
+        $result = $this->service()->execute('event-bus', autoRepair: true)->toArray();
+        $spec = (string) file_get_contents($path);
+
+        $this->assertSame('repaired', $result['status']);
+        $this->assertContains('Fixed malformed spec heading: docs/features/event-bus/event-bus.spec.md', $result['actions_taken']);
+        $this->assertStringStartsWith("# Feature Spec: event-bus\n", $spec);
+        $this->assertStringContainsString("## Purpose\n\nTBD.", $spec);
+    }
+
+    public function test_auto_repair_fixes_malformed_state_heading(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $path = $this->project->root . '/docs/features/event-bus/event-bus.md';
+        file_put_contents($path, str_replace('# Feature: event-bus', '# State: event-bus', (string) file_get_contents($path)));
+
+        $result = $this->service()->execute('event-bus', autoRepair: true)->toArray();
+        $state = (string) file_get_contents($path);
+
+        $this->assertSame('repaired', $result['status']);
+        $this->assertContains('Fixed malformed state heading: docs/features/event-bus/event-bus.md', $result['actions_taken']);
+        $this->assertStringStartsWith("# Feature: event-bus\n", $state);
+    }
+
     public function test_spec_repair_write_path_normalizes_existing_feature_spec_noise(): void
     {
         $this->writeMeaningfulContext('event-bus');
@@ -188,6 +228,48 @@ MD);
         $this->assertGreaterThanOrEqual(1, substr_count($spec, "- Event bus feature scaffolding exists in the app.\n"));
     }
 
+    public function test_auto_repair_adds_missing_scalar_spec_section(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $path = $this->project->root . '/docs/features/event-bus/event-bus.spec.md';
+        $contents = (string) file_get_contents($path);
+        $contents = preg_replace('/\R## Purpose\R\RIntroduce event bus handling\.\R/', "\n", $contents, 1);
+        file_put_contents($path, (string) $contents);
+
+        $result = $this->service()->execute('event-bus', autoRepair: true)->toArray();
+        $spec = (string) file_get_contents($path);
+
+        $this->assertSame('repaired', $result['status']);
+        $this->assertContains('Added missing section: docs/features/event-bus/event-bus.spec.md :: Purpose', $result['actions_taken']);
+        $this->assertStringContainsString("## Purpose\n\nTBD.", $spec);
+    }
+
+    public function test_auto_repair_normalizes_decision_timestamps_and_missing_subsections(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $path = $this->project->root . '/docs/features/event-bus/event-bus.decisions.md';
+        file_put_contents($path, <<<'MD'
+# Decisions: event-bus
+
+### Decision: keep event bus deterministic
+
+Timestamp: yesterday
+
+**Context**
+
+- Event bus context must stay resumable.
+MD);
+
+        $result = $this->service()->execute('event-bus', autoRepair: true)->toArray();
+        $decisions = (string) file_get_contents($path);
+
+        $this->assertSame('repaired', $result['status']);
+        $this->assertContains('Fixed decision timestamps: docs/features/event-bus/event-bus.decisions.md', $result['actions_taken']);
+        $this->assertContains('Added missing decision subsection: docs/features/event-bus/event-bus.decisions.md :: Decision', $result['actions_taken']);
+        $this->assertStringContainsString('Timestamp: <ISO-8601>', $decisions);
+        $this->assertStringContainsString("**Decision**\n\nTBD.", $decisions);
+    }
+
     public function test_execution_input_is_deterministic(): void
     {
         $this->writeMeaningfulContext('event-bus');
@@ -198,6 +280,48 @@ MD);
         $this->assertSame($first, $second);
         $this->assertSame('event-bus', $first['feature']);
         $this->assertSame('app/features/event-bus', $first['paths']['feature_base']);
+    }
+
+    public function test_execution_input_uses_fallback_description_when_spec_has_only_placeholders(): void
+    {
+        $this->initService()->init('event-bus');
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md', <<<MD
+# Feature Spec: event-bus
+
+## Purpose
+
+TBD.
+
+## Goals
+
+- TBD.
+
+## Non-Goals
+
+- TBD.
+
+## Constraints
+
+- TBD.
+
+## Expected Behavior
+
+- TBD.
+
+## Acceptance Criteria
+
+- TBD.
+
+## Assumptions
+
+- TBD.
+MD);
+
+        $input = $this->service()->buildExecutionInput('event-bus');
+
+        $this->assertSame('Implement event-bus.', $input['description']);
+        $this->assertSame('Implement event-bus.', $input['execution_summary']);
+        $this->assertSame([], $input['spec_tracking_items']);
     }
 
     public function test_execution_normalizes_underscore_input_but_keeps_code_safe_identifiers_snake_case(): void
@@ -726,6 +850,55 @@ MD);
         $this->assertStringNotContainsString("- Event bus feature scaffolding exists in the app.\n", $state);
     }
 
+    public function test_repair_utility_branches_remain_deterministic_and_idempotent(): void
+    {
+        $this->writeMeaningfulContext('event-bus');
+        $service = $this->service();
+
+        $this->assertNull($this->invokePrivate(
+            $service,
+            'applyRepairAction',
+            ['event-bus', 'Create missing spec file: docs/features/event-bus/event-bus.spec.md'],
+        ));
+
+        $logAction = $this->invokePrivate(
+            $service,
+            'applyRepairAction',
+            ['event-bus', 'Log divergence in the decision ledger.'],
+        );
+        $this->assertSame('Appended decision entry: docs/features/event-bus/event-bus.decisions.md', $logAction);
+
+        $timestampAction = $this->invokePrivate(
+            $service,
+            'applyRepairAction',
+            ['event-bus', 'Add missing decision timestamp line to docs/features/event-bus/event-bus.decisions.md.'],
+        );
+        $this->assertSame('Added missing decision timestamps: docs/features/event-bus/event-bus.decisions.md', $timestampAction);
+
+        $notesPath = 'docs/features/event-bus/notes.md';
+        file_put_contents($this->project->root . '/' . $notesPath, "# Notes\n\n## Already There\n\nBody.\n");
+        $this->invokePrivate($service, 'appendMissingSection', [$notesPath, 'Already There']);
+        $this->invokePrivate($service, 'appendMissingSection', [$notesPath, 'Custom Appendix']);
+        $notes = (string) file_get_contents($this->project->root . '/' . $notesPath);
+        $this->assertSame(1, substr_count($notes, '## Already There'));
+        $this->assertStringContainsString("## Custom Appendix\n\nTBD.", $notes);
+
+        $touchedFiles = $this->invokePrivate($service, 'qualityGateTouchedFiles', [[
+            'Generated feature files',
+            'Updated: ',
+            'Touched file: docs/features/event-bus/event-bus.md | segment without path',
+        ]]);
+        $this->assertSame(['docs/features/event-bus/event-bus.md'], $touchedFiles);
+
+        $prompts = $this->invokePrivate($service, 'updatedPrompts', [
+            $this->project->root . '/app/features/event-bus/prompts.md',
+            'event-bus',
+            'Summarize context execution.',
+        ]);
+        $this->assertStringStartsWith("# EventBus\n", $prompts);
+        $this->assertStringContainsString('Latest context execution: Summarize context execution.', $prompts);
+    }
+
     private function service(): ContextExecutionService
     {
         return new ContextExecutionService(new Paths($this->project->root));
@@ -749,6 +922,16 @@ MD);
     private function frameworkService(): ContextExecutionService
     {
         return new ContextExecutionService(new Paths($this->project->root, $this->project->root));
+    }
+
+    /**
+     * @param list<mixed> $args
+     */
+    private function invokePrivate(object $target, string $method, array $args): mixed
+    {
+        $reflection = new \ReflectionMethod($target, $method);
+
+        return $reflection->invokeArgs($target, $args);
     }
 
     /**

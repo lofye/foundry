@@ -170,10 +170,15 @@ TEXT . "\n", $raw['output']);
         ))[0];
         $this->assertSame('002', $gap['details']['missing_id']);
         $this->assertSame('003', $gap['details']['next_observed_id']);
+        $this->assertSame('active', $gap['details']['location']);
+        $this->assertSame('top-level', $gap['details']['parent_id']);
 
         $this->assertSame(1, $raw['status']);
         $this->assertStringContainsString('EXECUTION_SPEC_ID_GAP', $raw['output']);
+        $this->assertStringContainsString('location=active', $raw['output']);
+        $this->assertStringContainsString('parent_id=top-level', $raw['output']);
         $this->assertStringContainsString('missing_id=002', $raw['output']);
+        $this->assertStringContainsString('expected_missing_id=002', $raw['output']);
         $this->assertStringContainsString('next_observed_id=003', $raw['output']);
     }
 
