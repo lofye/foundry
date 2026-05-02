@@ -40,6 +40,9 @@ Canonical feature context remains separate from execution specs:
 - `docs/features/<feature>/<feature>.md` → current state
 - `docs/features/<feature>/<feature>.decisions.md` → append-only decision history
 - `docs/features/<feature>/specs/*.md` → execution specs (planning artifacts, non-authoritative after implementation)
+- `docs/features/<feature>/specs/drafts/*.md` → draft execution specs (non-executable planning artifacts)
+- `docs/features/<feature>/plans/*.md` → implementation plans (planning artifacts)
+- `docs/features/implementation-log.md` → completed execution-spec ledger
 
 ## Heading rules
 

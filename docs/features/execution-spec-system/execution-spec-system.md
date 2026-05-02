@@ -52,6 +52,7 @@
 - Agent-facing instruction surfaces now include canonical draft-spec, plan, and implementation-log paths: `docs/features/<feature>/specs/drafts/*.md`, `docs/features/<feature>/plans/*.md`, and `docs/features/implementation-log.md`.
 - Repository-local implementation skills now reference canonical spec and implementation-log paths under `docs/features/*` instead of legacy `docs/specs/*`.
 - Agent-facing framework, app, and skill instruction surfaces reflect only the canonical feature-doc path contract, and stale-path references are retained only in explicitly historical or migration contexts.
+- Human-facing README surfaces and `docs/features/README.md` now use the canonical feature-context stem (`<feature>`) and explicitly distinguish active specs, draft specs, implementation plans, and the global `docs/features/implementation-log.md` ledger.
 
 ## Open Questions
 

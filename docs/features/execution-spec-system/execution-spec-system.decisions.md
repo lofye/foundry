@@ -455,3 +455,34 @@ Timestamp: 2026-05-02T14:01:00-04:00
 - Invalid Active Path Patterns
 - Required Rules
 - Acceptance Criteria
+
+### Decision: align README and public documentation path contracts to canonical feature docs layout
+Timestamp: 2026-05-02T14:10:00-04:00
+
+**Context**
+- Active execution spec `007.002-readmes-stubs-and-public-docs-path-contracts` requires human-facing docs and scaffold-oriented documentation to use canonical feature-doc paths.
+- The repository still needed explicit canonical path distinctions in `docs/features/README.md` for draft specs, implementation plans, and the global implementation log.
+
+**Decision**
+- Align human-facing README/policy surfaces with canonical feature context stems (`docs/features/<feature>/<feature>.*`).
+- Keep execution-spec examples under `docs/features/<feature>/specs/` and draft-spec examples under `docs/features/<feature>/specs/drafts/`.
+- Ensure docs explicitly distinguish feature-local plans (`docs/features/<feature>/plans/*.md`) from the global implementation ledger (`docs/features/implementation-log.md`).
+
+**Reasoning**
+- Human-facing docs are frequently copied into new app and contributor workflows, so stale examples can propagate invalid path contracts.
+- Explicitly separating specs, drafts, plans, and the implementation log reduces ambiguity for both manual and agent-assisted workflows.
+
+**Alternatives Considered**
+- Update only top-level README files and defer `docs/features/README.md`.
+- Leave implicit distinctions and rely on agent-specific instructions only.
+
+**Impact**
+- Human-facing active guidance now mirrors the canonical feature-doc contract used by agent-facing instructions.
+- Remaining stale-path references stay limited to explicit historical, migration, or invalid-path contexts.
+- Verification and context alignment remain deterministic and clean.
+
+**Spec Reference**
+- Purpose
+- Canonical Path Contract
+- Required Corrections
+- Acceptance Criteria

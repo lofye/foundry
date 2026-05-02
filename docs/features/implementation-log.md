@@ -255,3 +255,6 @@
 
 ## 2026-05-02 17:58:07 +0000
 - spec: execution-spec-system/007.001-agent-facing-doc-path-contracts.md
+
+## 2026-05-02 18:08:50 +0000
+- spec: execution-spec-system/007.002-readmes-stubs-and-public-docs-path-contracts.md
