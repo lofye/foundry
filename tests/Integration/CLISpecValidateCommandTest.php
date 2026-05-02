@@ -131,6 +131,27 @@ TEXT . "\n", $raw['output']);
         $this->assertStringContainsString('docs/features/execution-spec-system/specs/001-active-missing-log.md', $raw['output']);
     }
 
+    public function test_spec_validate_require_plans_enforces_missing_active_plan_only_when_enabled(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-active-without-plan');
+        $this->writeSpec('execution-spec-system', '002-draft-without-plan', 'drafts');
+        $this->writeImplementationLogEntry('execution-spec-system/001-active-without-plan.md');
+
+        $default = $this->runCommand(['foundry', 'spec:validate', '--json']);
+        $strict = $this->runCommand(['foundry', 'spec:validate', '--require-plans', '--json']);
+
+        $this->assertSame(0, $default['status']);
+        $this->assertTrue($default['payload']['ok']);
+
+        $this->assertSame(1, $strict['status']);
+        $this->assertFalse($strict['payload']['ok']);
+        $this->assertSame('EXECUTION_SPEC_PLAN_REQUIRED_MISSING', $strict['payload']['violations'][0]['code']);
+        $this->assertSame(
+            'docs/features/execution-spec-system/plans/001-active-without-plan.md',
+            $strict['payload']['violations'][0]['details']['plan_path'],
+        );
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}

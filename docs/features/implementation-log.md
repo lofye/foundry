@@ -251,13 +251,16 @@
 - spec: execution-spec-system/007-modular-docs-feature-layout.md
 
 ## 2026-05-01 17:29:12 +0000
-- spec: execution-spec-system/009-correct-feature-docs-layout.md
+- spec: execution-spec-system/007.001-correct-feature-docs-layout.md
 
 ## 2026-05-02 17:58:07 +0000
-- spec: execution-spec-system/007.001-agent-facing-doc-path-contracts.md
+- spec: execution-spec-system/007.002-agent-facing-doc-path-contracts.md
 
 ## 2026-05-02 18:08:50 +0000
-- spec: execution-spec-system/007.002-readmes-stubs-and-public-docs-path-contracts.md
+- spec: execution-spec-system/007.003-readmes-stubs-and-public-docs-path-contracts.md
 
 ## 2026-05-02 18:28:28 +0000
-- spec: execution-spec-system/007.003-path-fixtures-tests-and-contract-cleanup.md
+- spec: execution-spec-system/007.004-path-fixtures-tests-and-contract-cleanup.md
+
+## 2026-05-02 18:54:35 +0000
+- spec: execution-spec-system/008-implementation-plan-files.md

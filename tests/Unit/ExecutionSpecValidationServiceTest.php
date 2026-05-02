@@ -233,6 +233,60 @@ MD,
         );
     }
 
+    public function test_validate_accepts_valid_plan_file_in_canonical_location(): void
+    {
+        $this->writeSpec('execution-spec-system', '008-implementation-plan-files', '# Execution Spec: 008-implementation-plan-files');
+        $this->writeImplementationLogEntry('execution-spec-system/008-implementation-plan-files.md');
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/008-implementation-plan-files.md',
+            "# Implementation Plan: 008-implementation-plan-files\n",
+        );
+
+        $result = $this->service()->validate();
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame([], $result['violations']);
+    }
+
+    public function test_validate_rejects_orphan_plan_and_bad_heading(): void
+    {
+        $this->writeSpec('execution-spec-system', '008-implementation-plan-files', '# Execution Spec: 008-implementation-plan-files');
+        $this->writeImplementationLogEntry('execution-spec-system/008-implementation-plan-files.md');
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/009-orphan.md',
+            "# Implementation Plan: 009-orphan\n",
+        );
+        $this->writeRawFile(
+            'docs/features/execution-spec-system/plans/008-implementation-plan-files.md',
+            "# Implementation Plan: execution-spec-system/008-implementation-plan-files\n",
+        );
+
+        $result = $this->service()->validate();
+
+        $this->assertFalse($result['ok']);
+        $codes = array_map(static fn(array $violation): string => (string) $violation['code'], $result['violations']);
+        $this->assertContains('EXECUTION_SPEC_PLAN_ORPHAN', $codes);
+        $this->assertContains('EXECUTION_SPEC_PLAN_INVALID_HEADING', $codes);
+    }
+
+    public function test_validate_require_plans_only_enforces_active_specs(): void
+    {
+        $this->writeSpec('execution-spec-system', '008-active-missing-plan', '# Execution Spec: 008-active-missing-plan');
+        $this->writeSpec('execution-spec-system', '009-draft-missing-plan', '# Execution Spec: 009-draft-missing-plan', 'drafts');
+        $this->writeImplementationLogEntry('execution-spec-system/008-active-missing-plan.md');
+
+        $default = $this->service()->validate();
+        $strict = $this->service()->validate(true);
+
+        $this->assertTrue($default['ok']);
+        $this->assertFalse($strict['ok']);
+        $this->assertSame('EXECUTION_SPEC_PLAN_REQUIRED_MISSING', $strict['violations'][0]['code']);
+        $this->assertSame(
+            'docs/features/execution-spec-system/plans/008-active-missing-plan.md',
+            $strict['violations'][0]['details']['plan_path'],
+        );
+    }
+
     public function test_validate_matches_implementation_log_entries_exactly_and_stably(): void
     {
         $this->writeSpec('execution-spec-system', '001-exact-match-required', '# Execution Spec: 001-exact-match-required');

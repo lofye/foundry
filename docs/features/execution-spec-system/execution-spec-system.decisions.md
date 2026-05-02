@@ -427,7 +427,7 @@ Timestamp: 2026-04-17T13:00:00-04:00
 Timestamp: 2026-05-02T14:01:00-04:00
 
 **Context**
-- Active execution spec `007.001-agent-facing-doc-path-contracts` requires agent-facing guidance to use the canonical feature-doc path layout and reject stale active path guidance.
+- Active execution spec `007.002-agent-facing-doc-path-contracts` requires agent-facing guidance to use the canonical feature-doc path layout and reject stale active path guidance.
 - Several agent-facing files still referenced legacy `docs/specs/*` locations or omitted canonical draft-spec, plan, and implementation-log path guidance.
 
 **Decision**
@@ -460,7 +460,7 @@ Timestamp: 2026-05-02T14:01:00-04:00
 Timestamp: 2026-05-02T14:10:00-04:00
 
 **Context**
-- Active execution spec `007.002-readmes-stubs-and-public-docs-path-contracts` requires human-facing docs and scaffold-oriented documentation to use canonical feature-doc paths.
+- Active execution spec `007.003-readmes-stubs-and-public-docs-path-contracts` requires human-facing docs and scaffold-oriented documentation to use canonical feature-doc paths.
 - The repository still needed explicit canonical path distinctions in `docs/features/README.md` for draft specs, implementation plans, and the global implementation log.
 
 **Decision**
@@ -491,7 +491,7 @@ Timestamp: 2026-05-02T14:10:00-04:00
 Timestamp: 2026-05-02T14:30:00-04:00
 
 **Context**
-- Active execution spec `007.003-path-fixtures-tests-and-contract-cleanup` requires test and fixture contracts to reflect canonical feature-doc paths and to limit stale-path usage to explicit invalid-path coverage.
+- Active execution spec `007.004-path-fixtures-tests-and-contract-cleanup` requires test and fixture contracts to reflect canonical feature-doc paths and to limit stale-path usage to explicit invalid-path coverage.
 - Several planning-related tests still described generated execution specs under `docs/features/<feature>/specs/<id>-<slug>.md` instead of the canonical planner draft path.
 
 **Decision**
@@ -516,4 +516,40 @@ Timestamp: 2026-05-02T14:30:00-04:00
 - Purpose
 - Required Cleanup
 - Invalid Active Test Assumptions
+- Acceptance Criteria
+
+### Decision: add deterministic implementation-plan files and strict active-plan enforcement
+Timestamp: 2026-05-02T15:05:00-04:00
+
+**Context**
+- Active execution spec `008-implementation-plan-files` requires first-class implementation plan files tied to active execution specs before implementation begins.
+- Prior CLI surfaces supported draft spec creation, log-entry suggestion, and spec validation, but did not provide a deterministic command for creating plan files or strict active-plan enforcement in validation.
+
+**Decision**
+- Add `spec:plan <feature> <id>` to create `docs/features/<feature>/plans/<id>-<slug>.md` from active execution specs using a canonical implementation-plan stub.
+- Extend `spec:validate` to validate plan placement, heading, filename/spec correspondence, duplicate plan IDs, and forbidden metadata fields.
+- Add `spec:validate --require-plans` to require plans for active execution specs only, while excluding draft execution specs from required plan coverage.
+
+**Reasoning**
+- Persisted plan files make implementation strategy inspectable and resumable without making plans authoritative over execution specs.
+- Deterministic path and heading validation prevents silent drift between execution specs and their implementation plans.
+- Optional strict enforcement avoids forcing immediate backfill for historical completed specs while enabling tighter gates for new work.
+
+**Alternatives Considered**
+- Keep planning as chat-only guidance without persisted files.
+- Make plan enforcement mandatory by default for all active specs.
+- Reuse draft spec templates instead of a dedicated implementation-plan stub.
+
+**Impact**
+- New active spec workflows can produce deterministic plan artifacts before implementation.
+- Validation now catches orphan, misplaced, malformed, duplicate, and metadata-invalid plan files.
+- Strict mode can enforce active plan coverage when teams opt in.
+
+**Spec Reference**
+- Purpose
+- Plan Contract
+- Tooling
+- Validation Rules
+- Enforcement Mode
+- Tests
 - Acceptance Criteria

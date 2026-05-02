@@ -13,11 +13,11 @@ Plans make the spec execution loop inspectable, resumable, and auditable without
 ## Depends On
 
 - `007-modular-docs-feature-layout.md`
-- `007.001-agent-facing-doc-path-contracts.md`
-- `007.002-readmes-stubs-and-public-docs-path-contracts.md`
-- `007.003-path-fixtures-tests-and-contract-cleanup.md`
+- `007.002-agent-facing-doc-path-contracts.md`
+- `007.003-readmes-stubs-and-public-docs-path-contracts.md`
+- `007.004-path-fixtures-tests-and-contract-cleanup.md`
 
-If `009-correct-feature-docs-layout.md` has already been implemented, treat its corrected `docs/features/<feature>/...` layout as canonical. Do not move feature folders back to any intermediate layout.
+If `007.001-correct-feature-docs-layout.md` has already been implemented, treat its corrected `docs/features/<feature>/...` layout as canonical. Do not move feature folders back to any intermediate layout.
 
 ## Canonical Path Contract
 

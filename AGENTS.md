@@ -122,6 +122,8 @@ The root `app/*` tree is a framework-owned demo and smoke app.
 - docs/features/<feature>/specs/drafts/*.md → draft execution specs (non-executable planning artifacts)
 - docs/features/<feature>/plans/*.md → implementation plans (planning artifacts)
 - docs/features/implementation-log.md → completed execution-spec ledger
+- For new active execution specs, save a plan file before implementation; chat-only plans are not sufficient.
+- Plan files describe implementation strategy only and must not expand or alter execution-spec scope.
 - `docs/policies/*` → repository execution and reasoning policies
 - `README.md` → contributor + onboarding guidance
 - `APP-AGENTS.md`, `APP-README.md` → scaffold defaults

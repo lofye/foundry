@@ -18,6 +18,7 @@
 - Keep agent-facing framework, app, and skill instructions aligned to canonical feature-doc paths, including feature context stems, execution-spec paths, plan paths, and implementation-log path.
 - Keep human-facing READMEs, feature-doc policy docs, examples, and scaffold-facing documentation aligned to canonical feature-doc paths and feature-context filename stems.
 - Keep tests, fixtures, snapshots, and contract expectations aligned to canonical feature-doc path contracts, including deterministic invalid-path coverage boundaries.
+- Add first-class implementation plan files for active execution specs with deterministic creation, validation, and strict enforcement support.
 
 ## Non-Goals
 - Do not introduce filesystem-specific natural-sort dependencies.
@@ -65,6 +66,8 @@
 - Agent-facing instructions do not describe `docs/specs/*`, `docs/<feature>/*`, or `<id>-<slug>` feature-context stems as active canonical locations.
 - Human-facing docs and scaffolded documentation do not describe `docs/specs/*`, `docs/<feature>/*`, or `<id>-<slug>` feature-context stems as active canonical feature-context locations.
 - Tests and fixture helpers treat old doc-path patterns as invalid active paths except in explicitly invalid-path coverage cases.
+- `spec:plan <feature> <id>` creates deterministic implementation plan files at `docs/features/<feature>/plans/<id>-<slug>.md` with canonical heading `# Implementation Plan: <id>-<slug>`.
+- `spec:validate` validates implementation plan placement, heading, filename correspondence, duplicates, and forbidden metadata, and `spec:validate --require-plans` enforces active-spec plan coverage without requiring draft-spec plans.
 
 ## Acceptance Criteria
 - Hierarchical padded execution-spec filenames are accepted and parsed deterministically.
@@ -93,6 +96,7 @@
 - Agent-facing framework, app, and skill instruction surfaces reflect only the canonical feature-doc path contract and preserve historical stale-path references only in explicitly historical or migration contexts.
 - Human-facing README and feature-doc policy surfaces reflect only the canonical feature-doc path contract for active guidance, while stale-path references remain only in explicit historical or invalid-path contexts.
 - Test fixtures and contract expectations reflect canonical feature-doc paths for active behavior and keep stale-path usage limited to explicit invalid-path coverage.
+- `spec:plan` command behavior and `spec:validate --require-plans` enforcement are covered by deterministic CLI and unit tests.
 
 ## Assumptions
 - Feature directories continue to provide context and execution state.

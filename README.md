@@ -44,6 +44,8 @@ These paths mean:
 - `docs/features/<feature>/plans/*.md` → implementation plans (planning artifacts)
 - `docs/features/implementation-log.md` → completed execution-spec ledger
 
+For new active execution specs, save an implementation plan file before implementation begins. Chat-only plans are not sufficient, and plan files must not expand or alter execution-spec scope.
+
 Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If canonical context is missing, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
 
 ## Shell Completion

@@ -44,6 +44,8 @@ Canonical feature context remains separate from execution specs:
 - `docs/features/<feature>/plans/*.md` → implementation plans (planning artifacts)
 - `docs/features/implementation-log.md` → completed execution-spec ledger
 
+For new active execution specs, create the corresponding implementation plan file before implementation begins. Chat-only plans are not sufficient, and plans must not expand or alter execution-spec scope.
+
 ## Heading rules
 
 The first line inside a spec file must mirror the filename only.

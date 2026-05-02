@@ -27,13 +27,15 @@ final class ExecutionSpecValidationService
      *     violations:list<array<string,mixed>>
      * }
      */
-    public function validate(): array
+    public function validate(bool $requirePlans = false): array
     {
         $violations = [];
         $checkedFiles = 0;
         $features = [];
         $seenIds = [];
         $activeSpecReferences = [];
+        $activeSpecNames = [];
+        $activeSpecPathsByFeature = [];
 
         foreach ($this->specFiles() as $relativePath) {
             if (in_array($relativePath, self::IGNORED_ROOT_FILES, true)) {
@@ -106,6 +108,8 @@ final class ExecutionSpecValidationService
 
             if ($placement['status'] === 'active' && !$fileHasViolations) {
                 $activeSpecReferences[$relativePath] = $placement['feature'] . '/' . $parsedName['name'] . '.md';
+                $activeSpecNames[$placement['feature']][$parsedName['name']] = true;
+                $activeSpecPathsByFeature[$placement['feature']][$parsedName['name']] = $relativePath;
             }
         }
 
@@ -148,6 +152,126 @@ final class ExecutionSpecValidationService
             }
         }
 
+        $seenPlanIds = [];
+        $planNamesByFeature = [];
+
+        foreach ($this->planFiles() as $relativePath) {
+            $checkedFiles++;
+            $features[$this->planFeatureHint($relativePath)] = true;
+
+            $placement = $this->classifyPlanPlacement($relativePath);
+            if ($placement === null) {
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_PLAN_INVALID_DIRECTORY',
+                    $relativePath,
+                    'Implementation plans must live at docs/features/<feature>/plans/<id>-<slug>.md.',
+                );
+                continue;
+            }
+
+            $features[$placement['feature']] = true;
+
+            $parsedName = ExecutionSpecFilename::parseName($placement['name']);
+            if ($parsedName === null) {
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_PLAN_INVALID_FILENAME',
+                    $relativePath,
+                    'Implementation plan filenames must use <id>-<slug>.md with one or more dot-separated 3-digit ID segments.',
+                );
+                continue;
+            }
+
+            $seenPlanIds[$placement['feature']][$parsedName['id']][] = $relativePath;
+            $planNamesByFeature[$placement['feature']][$parsedName['name']] = true;
+
+            $contents = file_get_contents($this->paths->join($relativePath));
+            if ($contents === false) {
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_PLAN_FILE_UNREADABLE',
+                    $relativePath,
+                    'Implementation plan file could not be read.',
+                );
+                continue;
+            }
+
+            $fileHasViolations = false;
+            $expectedHeading = '# Implementation Plan: ' . $parsedName['name'];
+            if ($this->firstLine($contents) !== $expectedHeading) {
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_PLAN_INVALID_HEADING',
+                    $relativePath,
+                    'Implementation plan heading must mirror the filename.',
+                    [
+                        'expected_heading' => $expectedHeading,
+                        'actual_heading' => $this->firstLine($contents),
+                    ],
+                );
+                $fileHasViolations = true;
+            }
+
+            $metadataViolations = $this->metadataViolations($relativePath, $contents, 'EXECUTION_SPEC_PLAN_FORBIDDEN_METADATA', 'Implementation plans must not define `%s` metadata inside the file.');
+            foreach ($metadataViolations as $metadataViolation) {
+                $violations[] = $metadataViolation;
+            }
+            if ($metadataViolations !== []) {
+                $fileHasViolations = true;
+            }
+
+            if (!$fileHasViolations && !isset($activeSpecNames[$placement['feature']][$parsedName['name']])) {
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_PLAN_ORPHAN',
+                    $relativePath,
+                    'Implementation plan filename must match an active execution spec filename in the same feature.',
+                    [
+                        'feature' => $placement['feature'],
+                        'id' => $parsedName['id'],
+                    ],
+                );
+            }
+        }
+
+        foreach ($seenPlanIds as $feature => $ids) {
+            foreach ($ids as $id => $paths) {
+                if (count($paths) < 2) {
+                    continue;
+                }
+
+                sort($paths);
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_PLAN_DUPLICATE_ID',
+                    $paths[0],
+                    'Implementation plan IDs must be unique within a feature.',
+                    [
+                        'feature' => $feature,
+                        'id' => $id,
+                        'paths' => $paths,
+                    ],
+                );
+            }
+        }
+
+        if ($requirePlans) {
+            foreach ($activeSpecNames as $feature => $names) {
+                foreach (array_keys($names) as $name) {
+                    if (isset($planNamesByFeature[$feature][$name])) {
+                        continue;
+                    }
+
+                    $specPath = (string) ($activeSpecPathsByFeature[$feature][$name] ?? ('docs/features/' . $feature . '/specs/' . $name . '.md'));
+                    $violations[] = $this->violation(
+                        'EXECUTION_SPEC_PLAN_REQUIRED_MISSING',
+                        $specPath,
+                        'Active execution specs must have a matching implementation plan when --require-plans is enabled.',
+                        [
+                            'feature' => $feature,
+                            'id' => (string) (ExecutionSpecFilename::parseName($name)['id'] ?? ''),
+                            'plan_path' => 'docs/features/' . $feature . '/plans/' . $name . '.md',
+                        ],
+                    );
+                }
+            }
+        }
+
         usort($violations, static function (array $left, array $right): int {
             return strcmp(
                 (string) (($left['file_path'] ?? '') . "\n" . ($left['code'] ?? '')),
@@ -182,6 +306,39 @@ final class ExecutionSpecValidationService
             'docs/*/specs/*.md',
             'docs/*/specs/drafts/*.md',
             'docs/*/specs/*/*.md',
+        ] as $pattern) {
+            foreach (glob($this->paths->join($pattern)) ?: [] as $path) {
+                if (!is_file($path)) {
+                    continue;
+                }
+
+                $relativePath = $this->relativePath($path);
+                if ($relativePath === null) {
+                    continue;
+                }
+
+                $files[] = $relativePath;
+            }
+        }
+
+        sort($files);
+
+        return array_values(array_unique($files));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function planFiles(): array
+    {
+        $files = [];
+
+        foreach ([
+            'docs/features/*/plans/*.md',
+            'docs/features/*/plans/*/*.md',
+            'docs/specs/plans/*.md',
+            'docs/specs/*/plans/*.md',
+            'docs/*/plans/*.md',
         ] as $pattern) {
             foreach (glob($this->paths->join($pattern)) ?: [] as $path) {
                 if (!is_file($path)) {
@@ -275,6 +432,30 @@ final class ExecutionSpecValidationService
         return null;
     }
 
+    /**
+     * @return array{feature:string,name:string}|null
+     */
+    private function classifyPlanPlacement(string $relativePath): ?array
+    {
+        if (preg_match('#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/plans/(?<name>[^/]+)\.md$#', $relativePath, $matches) !== 1) {
+            return null;
+        }
+
+        return [
+            'feature' => (string) $matches['feature'],
+            'name' => (string) $matches['name'],
+        ];
+    }
+
+    private function planFeatureHint(string $relativePath): string
+    {
+        if (preg_match('#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/#', $relativePath, $matches) === 1) {
+            return (string) $matches['feature'];
+        }
+
+        return '_noncanonical';
+    }
+
     private function relativePath(string $absolutePath): ?string
     {
         $root = rtrim($this->paths->root(), '/');
@@ -295,7 +476,12 @@ final class ExecutionSpecValidationService
     /**
      * @return list<array<string,mixed>>
      */
-    private function metadataViolations(string $relativePath, string $contents): array
+    private function metadataViolations(
+        string $relativePath,
+        string $contents,
+        string $code = 'EXECUTION_SPEC_FORBIDDEN_METADATA',
+        string $messageTemplate = 'Execution specs must not define `%s` metadata inside the file.',
+    ): array
     {
         $violations = [];
         $insideFence = false;
@@ -319,9 +505,9 @@ final class ExecutionSpecValidationService
 
             $field = strtolower((string) $matches['field']);
             $violations[] = $this->violation(
-                'EXECUTION_SPEC_FORBIDDEN_METADATA',
+                $code,
                 $relativePath,
-                'Execution specs must not define `' . $field . '` metadata inside the file.',
+                sprintf($messageTemplate, $field),
                 [
                     'field' => $field,
                     'line' => $lineNumber + 1,

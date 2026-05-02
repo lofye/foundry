@@ -25,7 +25,8 @@ final class SpecValidateCommand extends Command
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
-        $payload = (new ExecutionSpecValidationService($context->paths()))->validate();
+        $requirePlans = in_array('--require-plans', $args, true);
+        $payload = (new ExecutionSpecValidationService($context->paths()))->validate($requirePlans);
 
         return [
             'status' => $payload['ok'] ? 0 : 1,

@@ -58,6 +58,7 @@ use Foundry\CLI\Commands\RegressionsCommand;
 use Foundry\CLI\Commands\ScheduleRunCommand;
 use Foundry\CLI\Commands\ServeCommand;
 use Foundry\CLI\Commands\SpecNewCommand;
+use Foundry\CLI\Commands\SpecPlanCommand;
 use Foundry\CLI\Commands\SpecLogEntryCommand;
 use Foundry\CLI\Commands\SpecValidateCommand;
 use Foundry\CLI\Commands\TraceCommand;
@@ -112,6 +113,7 @@ final class Application
             new PlanShowCommand(),
             new PlanUndoCommand(),
             new SpecNewCommand(),
+            new SpecPlanCommand(),
             new SpecLogEntryCommand(),
             new SpecValidateCommand(),
             new CacheInspectCommand(),

@@ -56,6 +56,8 @@
 - Planning-oriented tests and fixtures now use draft execution-spec expectations under `docs/features/<feature>/specs/drafts/<id>-<slug>.md` instead of active-spec paths.
 - Test fixtures and contract expectations now enforce canonical active-path behavior while confining stale-path usage to explicit invalid-path coverage.
 - Human-facing and scaffolded documentation contracts now treat `docs/specs/*`, `docs/<feature>/*`, and `<id>-<slug>` feature-context stems as invalid active canonical feature-context paths.
+- `spec:plan <feature> <id>` now creates deterministic implementation plan files under `docs/features/<feature>/plans/<id>-<slug>.md` and preserves exact execution-spec filename stems.
+- `spec:validate` now validates implementation plan files, and `spec:validate --require-plans` enforces plan coverage for active execution specs while excluding draft specs from that requirement.
 
 ## Open Questions
 

@@ -75,6 +75,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $planShow = $registry->classifyCliCommand(['plan:show', '123e4567-e89b-12d3-a456-426614174000']);
         $planUndo = $registry->classifyCliCommand(['plan:undo', '123e4567-e89b-12d3-a456-426614174000']);
         $specNew = $registry->classifyCliCommand(['spec:new', 'execution-spec-system', 'add-cli-command']);
+        $specPlan = $registry->classifyCliCommand(['spec:plan', 'execution-spec-system', '008']);
         $specLogEntry = $registry->classifyCliCommand(['spec:log-entry', 'execution-spec-system', '004']);
         $specValidate = $registry->classifyCliCommand(['spec:validate']);
         $verifyContext = $registry->classifyCliCommand(['verify', 'context', '--feature=event-bus']);
@@ -235,6 +236,10 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $specNew['stability']);
         $this->assertSame('App Scaffolding', $specNew['category']);
         $this->assertSame('spec:new', $specNew['command_type']);
+        $this->assertSame('stable', $specPlan['stability']);
+        $this->assertSame('App Scaffolding', $specPlan['category']);
+        $this->assertSame('spec:plan', $specPlan['command_type']);
+        $this->assertSame('spec:plan <feature> <id> [--force]', $specPlan['usage']);
         $this->assertSame('stable', $specLogEntry['stability']);
         $this->assertSame('Verification', $specLogEntry['category']);
         $this->assertSame('spec:log-entry', $specLogEntry['command_type']);
@@ -242,7 +247,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $specValidate['stability']);
         $this->assertSame('Verification', $specValidate['category']);
         $this->assertSame('spec:validate', $specValidate['command_type']);
-        $this->assertSame('spec:validate', $specValidate['usage']);
+        $this->assertSame('spec:validate [--require-plans]', $specValidate['usage']);
         $this->assertSame('stable', $verifyContext['stability']);
         $this->assertSame('Verification', $verifyContext['category']);
         $this->assertSame('verify', $verifyContext['command_type']);
