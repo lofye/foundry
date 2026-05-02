@@ -232,7 +232,7 @@ ZSH,
      */
     private function featureNames(): array
     {
-        $directory = $this->paths->join('docs/specs');
+        $directory = $this->paths->join('docs/features');
         if (!is_dir($directory)) {
             return [];
         }
@@ -253,6 +253,11 @@ ZSH,
             }
 
             if (preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $entry) !== 1) {
+                continue;
+            }
+
+            $specsDirectory = $directory . '/' . $entry . '/specs';
+            if (!is_dir($specsDirectory)) {
                 continue;
             }
 

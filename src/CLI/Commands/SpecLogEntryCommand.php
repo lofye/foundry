@@ -105,14 +105,14 @@ final class SpecLogEntryCommand extends Command
             throw $this->draftOnlyError([
                 'feature' => $draftPath['feature'],
                 'id' => $draftPath['id'],
-                'matches' => ['docs/specs/' . $draftPath['feature'] . '/drafts/' . $draftPath['name'] . '.md'],
-                'path' => 'docs/specs/' . $draftPath['feature'] . '/drafts/' . $draftPath['name'] . '.md',
+                'matches' => ['docs/features/' . $draftPath['feature'] . '/specs/drafts/' . $draftPath['name'] . '.md'],
+                'path' => 'docs/features/' . $draftPath['feature'] . '/specs/drafts/' . $draftPath['name'] . '.md',
             ]);
         }
 
         if (
             !str_contains($trimmed, '/')
-            && !str_starts_with($trimmed, 'docs/specs/')
+            && !str_starts_with($trimmed, 'docs/')
             && !ExecutionSpecFilename::isCanonicalName($normalized)
             && (new FeatureNameValidator())->validate(FeatureNaming::canonical($normalized))->valid
         ) {
@@ -162,7 +162,7 @@ final class SpecLogEntryCommand extends Command
     {
         $normalized = str_replace('\\', '/', trim($argument));
 
-        if (!str_starts_with($normalized, 'docs/specs/')) {
+        if (!str_starts_with($normalized, 'docs/')) {
             return null;
         }
 

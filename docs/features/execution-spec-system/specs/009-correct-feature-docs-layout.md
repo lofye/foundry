@@ -1,0 +1,51 @@
+# Execution Spec: 009-correct-feature-docs-layout
+
+## Feature
+
+- execution-spec-system
+
+## Purpose
+
+- Correct the modular feature documentation layout so feature-owned documentation lives under `docs/features/<feature>/` instead of directly under `docs/<feature>/`.
+- Move feature support files into `docs/features/` and re-align tooling, validation, tests, and contributor docs to the corrected contract.
+
+## Scope
+
+- Move feature context directories from `docs/<feature>/` to `docs/features/<feature>/`.
+- Move feature execution specs from `docs/<feature>/specs/` to `docs/features/<feature>/specs/`.
+- Move `docs/specs/implementation-log.md` to `docs/features/implementation-log.md`.
+- Move `docs/specs/README.md` to `docs/features/README.md`.
+- Update feature-context and execution-spec services, validators, CLI helpers, tests, fixtures, and docs to the corrected canonical paths.
+
+## Constraints
+
+- Do not move non-feature directories under `docs/`.
+- Do not add fallback path logic.
+- Old paths must fail validation deterministically or be ignored explicitly.
+- Keep outputs deterministic.
+- Preserve existing feature names, execution-spec ids, filenames, and headings.
+
+## Requested Changes
+
+- Treat `docs/features/<feature>/` as the only canonical home for feature context files.
+- Treat `docs/features/<feature>/specs/` and `docs/features/<feature>/specs/drafts/` as the only canonical homes for feature execution specs.
+- Update all affected services, validators, command helpers, tests, and contributor docs to the corrected feature-docs layout.
+- Ensure `verify context --json`, `spec:validate --json`, PHPUnit, and coverage all pass after the correction.
+
+## Non-Goals
+
+- Do not change execution-spec id semantics.
+- Do not change heading rules.
+- Do not change non-feature docs directories such as `docs/templates/`, `docs/versions/`, `docs/whitepapers/`, `docs/policies/`, `docs/philosophy/`, or `docs/architecture/`.
+
+## Completion Signals
+
+- No feature directories remain directly under `docs/`.
+- Feature context files resolve only from `docs/features/<feature>/`.
+- Feature execution specs resolve only from `docs/features/<feature>/specs/`.
+- `docs/features/implementation-log.md` and `docs/features/README.md` are canonical and referenced consistently.
+- All required verification commands pass cleanly.
+
+## Post-Execution Expectations
+
+- The repository uses one corrected, feature-scoped documentation layout with no silent fallback to the previous `docs/<feature>/` structure.

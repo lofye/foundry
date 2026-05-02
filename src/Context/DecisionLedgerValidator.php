@@ -31,7 +31,7 @@ final class DecisionLedgerValidator
         if (!$this->hasCanonicalPath($filePath, $this->resolver->decisionsPath($featureName))) {
             $issues[] = new ValidationIssue(
                 code: 'CONTEXT_DECISIONS_PATH_NON_CANONICAL',
-                message: sprintf('Decision ledger path must be docs/features/%s.decisions.md.', $featureName),
+                message: sprintf('Decision ledger path must be docs/%1$s/%1$s.decisions.md.', $featureName),
                 file_path: $filePath,
             );
         }

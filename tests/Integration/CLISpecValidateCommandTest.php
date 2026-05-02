@@ -57,15 +57,15 @@ TEXT . "\n", $raw['output']);
         $this->writeSpec('execution-spec-system', '001-first-active');
         $this->writeSpec('execution-spec-system', '001-second-draft', 'drafts');
         $this->writeRawFile(
-            'docs/specs/execution-spec-system/002-bad-heading.md',
+            'docs/features/execution-spec-system/specs/002-bad-heading.md',
             '# Execution Spec: execution-spec-system/002-bad-heading' . "\n",
         );
         $this->writeRawFile(
-            'docs/specs/execution-spec-system/003-with-status.md',
+            'docs/features/execution-spec-system/specs/003-with-status.md',
             "# Execution Spec: 003-with-status\n\nstatus: draft\n",
         );
         $this->writeRawFile(
-            'docs/specs/execution-spec-system/not-a-spec.md',
+            'docs/features/execution-spec-system/specs/not-a-spec.md',
             '# Execution Spec: not-a-spec' . "\n",
         );
         $this->writeImplementationLogEntry('execution-spec-system/001-first-active.md');
@@ -93,7 +93,7 @@ TEXT . "\n", $raw['output']);
         $this->assertSame(1, $raw['status']);
         $this->assertStringContainsString('Spec validation failed', $raw['output']);
         $this->assertStringContainsString('EXECUTION_SPEC_DUPLICATE_ID', $raw['output']);
-        $this->assertStringContainsString('paths=docs/specs/execution-spec-system/001-first-active.md, docs/specs/execution-spec-system/drafts/001-second-draft.md', $raw['output']);
+        $this->assertStringContainsString('paths=docs/features/execution-spec-system/specs/001-first-active.md, docs/features/execution-spec-system/specs/drafts/001-second-draft.md', $raw['output']);
         $this->assertStringContainsString('EXECUTION_SPEC_INVALID_HEADING', $raw['output']);
         $this->assertStringContainsString('expected_heading=# Execution Spec: 002-bad-heading', $raw['output']);
         $this->assertStringContainsString('actual_heading=# Execution Spec: execution-spec-system/002-bad-heading', $raw['output']);
@@ -128,7 +128,7 @@ TEXT . "\n", $raw['output']);
 
         $this->assertSame(1, $raw['status']);
         $this->assertStringContainsString('EXECUTION_SPEC_IMPLEMENTATION_LOG_MISSING', $raw['output']);
-        $this->assertStringContainsString('docs/specs/execution-spec-system/001-active-missing-log.md', $raw['output']);
+        $this->assertStringContainsString('docs/features/execution-spec-system/specs/001-active-missing-log.md', $raw['output']);
     }
 
     /**
@@ -163,7 +163,7 @@ TEXT . "\n", $raw['output']);
     private function writeSpec(string $feature, string $name, string $subdirectory = ''): void
     {
         $this->writeRawFile(
-            'docs/specs/' . $feature . ($subdirectory !== '' ? '/' . $subdirectory : '') . '/' . $name . '.md',
+            'docs/features/' . $feature . '/specs' . ($subdirectory !== '' ? '/' . $subdirectory : '') . '/' . $name . '.md',
             '# Execution Spec: ' . $name . "\n",
         );
     }
@@ -182,7 +182,7 @@ TEXT . "\n", $raw['output']);
 
     private function writeImplementationLogEntry(string $specReference): void
     {
-        $absolutePath = $this->project->root . '/docs/specs/implementation-log.md';
+        $absolutePath = $this->project->root . '/docs/features/implementation-log.md';
         $directory = dirname($absolutePath);
 
         if (!is_dir($directory)) {

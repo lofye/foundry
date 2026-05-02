@@ -32,7 +32,7 @@ final class SpecValidator
         if (!$this->hasCanonicalPath($filePath, $this->resolver->specPath($featureName))) {
             $issues[] = new ValidationIssue(
                 code: 'CONTEXT_SPEC_PATH_NON_CANONICAL',
-                message: sprintf('Spec path must be docs/features/%s.spec.md.', $featureName),
+                message: sprintf('Spec path must be docs/%1$s/%1$s.spec.md.', $featureName),
                 file_path: $filePath,
             );
         }

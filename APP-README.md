@@ -10,11 +10,16 @@ Start with `AGENTS.md`. It defines the repo-local workflow and command rules for
 
 For meaningful feature work, maintain canonical feature context under:
 
-- `docs/features/<feature>.spec.md`
-- `docs/features/<feature>.md`
-- `docs/features/<feature>.decisions.md`
+- `docs/features/<feature>/<feature>.spec.md`
+- `docs/features/<feature>/<feature>.md`
+- `docs/features/<feature>/<feature>.decisions.md`
 
-Execution specs under `docs/specs/*` are optional planning artifacts only. They are never authoritative once canonical feature context exists.
+These paths mean:
+
+- `docs/features/<feature>/<feature>.spec.md` → authoritative feature intent
+- `docs/features/<feature>/<feature>.md` → current state
+- `docs/features/<feature>/<feature>.decisions.md` → append-only decision history
+- `docs/features/<feature>/specs/*.md` → execution specs (planning artifacts, non-authoritative after implementation)
 
 Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If a feature does not have canonical context yet, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
 

@@ -95,7 +95,7 @@ final class ExecutionSpecDraftService
             throw $error;
         }
 
-        $relativeDraftDirectory = 'docs/specs/' . $providedFeature . '/drafts';
+        $relativeDraftDirectory = 'docs/features/' . $providedFeature . '/specs/drafts';
         $absoluteDraftDirectory = $this->paths->join($relativeDraftDirectory);
         if (file_exists($absoluteDraftDirectory) && !is_dir($absoluteDraftDirectory)) {
             return $this->failure(

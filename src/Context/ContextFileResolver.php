@@ -12,21 +12,21 @@ final class ContextFileResolver
     {
         $featureName = FeatureNaming::canonical($featureName);
 
-        return 'docs/features/' . $featureName . '.spec.md';
+        return 'docs/features/' . $featureName . '/' . $featureName . '.spec.md';
     }
 
     public function statePath(string $featureName): string
     {
         $featureName = FeatureNaming::canonical($featureName);
 
-        return 'docs/features/' . $featureName . '.md';
+        return 'docs/features/' . $featureName . '/' . $featureName . '.md';
     }
 
     public function decisionsPath(string $featureName): string
     {
         $featureName = FeatureNaming::canonical($featureName);
 
-        return 'docs/features/' . $featureName . '.decisions.md';
+        return 'docs/features/' . $featureName . '/' . $featureName . '.decisions.md';
     }
 
     /**

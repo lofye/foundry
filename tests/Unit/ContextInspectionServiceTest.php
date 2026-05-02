@@ -115,13 +115,13 @@ final class ContextInspectionServiceTest extends TestCase
                 $this->fixedRule(
                     code: 'BETA_RULE',
                     message: 'Shared issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/pass-feature.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/pass-feature/pass-feature.spec.md')],
                     requiredActions: ['Shared action'],
                 ),
                 $this->fixedRule(
                     code: 'ALPHA_RULE',
                     message: 'Shared issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/pass-feature.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/pass-feature/pass-feature.spec.md')],
                     requiredActions: ['Shared action'],
                 ),
             ],
@@ -135,7 +135,7 @@ final class ContextInspectionServiceTest extends TestCase
                 'source' => 'doctor',
                 'code' => 'ALPHA_RULE',
                 'message' => 'Shared issue.',
-                'file_path' => 'docs/features/pass-feature.spec.md',
+                'file_path' => 'docs/features/pass-feature/pass-feature.spec.md',
             ],
         ], array_slice($result['issues'], 0, 1));
         $this->assertSame(['Shared action'], $result['required_actions']);
@@ -145,7 +145,7 @@ final class ContextInspectionServiceTest extends TestCase
     {
         $this->initService()->init($feature);
 
-        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '/' . $feature . '.spec.md', <<<MD
 # Feature Spec: {$feature}
 
 ## Purpose
@@ -177,7 +177,7 @@ Introduce deterministic event bus handling.
 - Initial implementation may be scaffold-first.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '/' . $feature . '.md', <<<MD
 # Feature: {$feature}
 
 ## Purpose

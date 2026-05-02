@@ -30,11 +30,16 @@ Foundry behaves deterministically:
 
 For meaningful feature work, canonical context lives in:
 
-- `docs/features/<feature>.spec.md`
-- `docs/features/<feature>.md`
-- `docs/features/<feature>.decisions.md`
+- `docs/features/<feature>/<feature>.spec.md`
+- `docs/features/<feature>/<feature>.md`
+- `docs/features/<feature>/<feature>.decisions.md`
 
-Execution specs under `docs/specs/*` are optional planning artifacts only and are never authoritative once canonical feature context exists.
+These paths mean:
+
+- `docs/features/<feature>/<feature>.spec.md` → authoritative feature intent
+- `docs/features/<feature>/<feature>.md` → current state
+- `docs/features/<feature>/<feature>.decisions.md` → append-only decision history
+- `docs/features/<feature>/specs/*.md` → execution specs (planning artifacts, non-authoritative after implementation)
 
 Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If canonical context is missing, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
 
@@ -49,7 +54,7 @@ foundry completion zsh
 
 Static completion comes from the registered CLI surface, so command and subcommand suggestions stay aligned with `help --json` and CLI surface verification.
 
-When completing `foundry implement spec <feature> <id>`, feature names come from `docs/specs/` and execution-spec ids come from active specs under `docs/specs/<feature>/`. Draft specs are excluded by default.
+When completing `foundry implement spec <feature> <id>`, feature names come from `docs/features/` and execution-spec ids come from active specs under `docs/features/<feature>/specs/`. Draft specs are excluded by default.
 
 ## Install And First Run (Packagist)
 

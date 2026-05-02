@@ -275,7 +275,7 @@ final class ContextExecutionService
                 ];
                 $payload['required_actions'] = array_values(array_unique(array_merge(
                     array_map('strval', (array) $payload['required_actions']),
-                    ['Restore write access to docs/specs/implementation-log.md and record the missing implementation entry.'],
+                    ['Restore write access to docs/features/implementation-log.md and record the missing implementation entry.'],
                 )));
             }
         }
@@ -1233,7 +1233,7 @@ final class ContextExecutionService
                             'file_path' => $executionSpec->path,
                         ],
                         'required_actions' => [
-                            'Update the execution spec so it no longer conflicts with docs/features/' . $executionSpec->feature . '.spec.md.',
+                            'Update the execution spec so it no longer conflicts with docs/features/' . $executionSpec->feature . '/' . $executionSpec->feature . '.spec.md.',
                             'If intended behavior changed, update the canonical feature spec and log a decision before rerunning implement spec.',
                         ],
                     ];

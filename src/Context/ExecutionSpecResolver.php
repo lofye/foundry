@@ -95,7 +95,7 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['path' => $relativePath],
-                'Execution spec ids must resolve to docs/specs/<feature>/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+                'Execution spec ids must resolve to docs/features/<feature>/specs/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
@@ -185,7 +185,7 @@ final class ExecutionSpecResolver
     {
         $pathInput = str_replace('\\', '/', $specId);
 
-        if (str_starts_with($pathInput, 'docs/specs/')) {
+        if (str_starts_with($pathInput, 'docs/')) {
             $path = str_ends_with($pathInput, '.md') ? $pathInput : $pathInput . '.md';
             $draftPath = ExecutionSpecFilename::parseDraftPath($path);
             if ($draftPath !== null) {
@@ -212,7 +212,7 @@ final class ExecutionSpecResolver
             [$feature, $name] = explode('/', $trimmed, 2);
             $feature = FeatureNaming::canonical($feature);
             $name = $this->stripMarkdownExtension($name);
-            $path = 'docs/specs/' . $feature . '/' . $name . '.md';
+            $path = 'docs/features/' . $feature . '/specs/' . $name . '.md';
 
             return $this->canonicalPathParts($path);
         }
@@ -222,7 +222,7 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['spec_id' => $specId],
-                'Execution spec ids must resolve to docs/specs/<feature>/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+                'Execution spec ids must resolve to docs/features/<feature>/specs/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
@@ -232,11 +232,11 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['spec_id' => $specId],
-                'Execution spec ids must resolve to docs/specs/<feature>/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+                'Execution spec ids must resolve to docs/features/<feature>/specs/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
-        $matches = glob($this->paths->join('docs/specs/*/' . $basename . '.md')) ?: [];
+        $matches = glob($this->paths->join('docs/features/*/specs/' . $basename . '.md')) ?: [];
         $relativeMatches = [];
 
         foreach ($matches as $match) {
@@ -256,7 +256,7 @@ final class ExecutionSpecResolver
 
         if ($relativeMatches === []) {
             $draftMatches = [];
-            foreach (glob($this->paths->join('docs/specs/*/drafts/' . $basename . '.md')) ?: [] as $match) {
+            foreach (glob($this->paths->join('docs/features/*/specs/drafts/' . $basename . '.md')) ?: [] as $match) {
                 $relative = $this->relativePath($match);
                 if ($relative === null) {
                     continue;
@@ -317,7 +317,7 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['path' => $relativePath],
-                'Execution spec ids must resolve to docs/specs/<feature>/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+                'Execution spec ids must resolve to docs/features/<feature>/specs/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
@@ -355,9 +355,9 @@ final class ExecutionSpecResolver
      */
     private function matchesById(string $feature, string $id, bool $includeDrafts): array
     {
-        $patterns = ['docs/specs/' . $feature . '/*.md'];
+        $patterns = ['docs/features/' . $feature . '/specs/*.md'];
         if ($includeDrafts) {
-            $patterns[] = 'docs/specs/' . $feature . '/drafts/*.md';
+            $patterns[] = 'docs/features/' . $feature . '/specs/drafts/*.md';
         }
 
         $matches = [];
@@ -387,11 +387,11 @@ final class ExecutionSpecResolver
     private function featureExists(string $feature): bool
     {
         $paths = [
-            'docs/specs/' . $feature,
-            'docs/specs/' . $feature . '/drafts',
-            'docs/features/' . $feature . '.spec.md',
-            'docs/features/' . $feature . '.md',
-            'docs/features/' . $feature . '.decisions.md',
+            'docs/features/' . $feature,
+            'docs/features/' . $feature . '/specs/drafts',
+            'docs/features/' . $feature . '/' . $feature . '.spec.md',
+            'docs/features/' . $feature . '/' . $feature . '.md',
+            'docs/features/' . $feature . '/' . $feature . '.decisions.md',
         ];
 
         foreach ($paths as $path) {

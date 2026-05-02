@@ -29,7 +29,7 @@ final class StateValidator
         if (!$this->hasCanonicalPath($filePath, $this->resolver->statePath($featureName))) {
             $issues[] = new ValidationIssue(
                 code: 'CONTEXT_STATE_PATH_NON_CANONICAL',
-                message: sprintf('State path must be docs/features/%s.md.', $featureName),
+                message: sprintf('State path must be docs/%1$s/%1$s.md.', $featureName),
                 file_path: $filePath,
             );
         }

@@ -122,7 +122,7 @@ final class ExecutionSpecPlannerTest extends TestCase
                 'Keep canonical feature context authoritative.',
                 'Keep generated execution specs secondary to canonical feature truth.',
                 'Keep this work deterministic and bounded to one coherent step.',
-                'Respect prior decisions recorded in docs/features/event-bus.decisions.md.',
+                'Respect prior decisions recorded in docs/features/event-bus/event-bus.decisions.md.',
             ],
             'requested_changes' => ['Add contract test coverage for the event bus feature.'],
             'non_goals' => [
@@ -131,11 +131,11 @@ final class ExecutionSpecPlannerTest extends TestCase
             ],
             'completion_signals' => [
                 'Add contract test coverage for the event bus feature.',
-                'docs/features/event-bus.md reflects contract test coverage for the event bus feature.',
+                'docs/features/event-bus/event-bus.md reflects contract test coverage for the event bus feature.',
             ],
             'post_execution_expectations' => [
                 'Current State reflects the completed bounded work.',
-                'Meaningful execution decisions are appended to docs/features/event-bus.decisions.md when needed.',
+                'Meaningful execution decisions are appended to docs/features/event-bus/event-bus.decisions.md when needed.',
                 'Canonical feature context remains authoritative for later work.',
             ],
         ], $planner->plan('event-bus', $input));
@@ -145,10 +145,10 @@ final class ExecutionSpecPlannerTest extends TestCase
     {
         $planner = new ExecutionSpecPlanner();
         $input = $this->executionInput(
-            currentState: ['Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.'],
+            currentState: ['Plan feature generates the next bounded execution spec deterministically under docs/features/<feature>/specs/<id>-<slug>.md.'],
             nextSteps: ['Keep later execution systems safely consumable from canonical feature context files.'],
             specTrackingItems: [
-                'Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.',
+                'Plan feature generates the next bounded execution spec deterministically under docs/features/<feature>/specs/<id>-<slug>.md.',
                 'Later execution systems can consume canonical feature context files safely.',
             ],
         );
@@ -216,7 +216,7 @@ final class ExecutionSpecPlannerTest extends TestCase
         $this->assertIsArray($plan);
         $this->assertSame([
             'Add contract test coverage for the event bus feature.',
-            'docs/features/event-bus.md reflects contract test coverage for the event bus feature.',
+            'docs/features/event-bus/event-bus.md reflects contract test coverage for the event bus feature.',
         ], $plan['completion_signals']);
     }
 
@@ -242,9 +242,9 @@ final class ExecutionSpecPlannerTest extends TestCase
             'feature' => 'blog',
             'mode' => 'new',
             'paths' => [
-                'spec' => 'docs/features/blog.spec.md',
-                'state' => 'docs/features/blog.md',
-                'decisions' => 'docs/features/blog.decisions.md',
+                'spec' => 'docs/features/blog/blog.spec.md',
+                'state' => 'docs/features/blog/blog.md',
+                'decisions' => 'docs/features/blog/blog.decisions.md',
                 'feature_base' => 'app/features/blog',
                 'manifest' => 'app/features/blog/feature.yaml',
                 'prompts' => 'app/features/blog/prompts.md',

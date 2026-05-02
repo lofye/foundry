@@ -133,9 +133,9 @@ final class CLICompletionCommandTest extends TestCase
 
     public function test_dynamic_feature_completion_lists_feature_directories_deterministically(): void
     {
-        mkdir($this->project->root . '/docs/specs/event-bus', 0777, true);
-        mkdir($this->project->root . '/docs/specs/payments/drafts', 0777, true);
-        mkdir($this->project->root . '/docs/specs/Bad.Feature', 0777, true);
+        mkdir($this->project->root . '/docs/features/event-bus/specs', 0777, true);
+        mkdir($this->project->root . '/docs/features/payments/specs/drafts', 0777, true);
+        mkdir($this->project->root . '/docs/features/Bad.Feature', 0777, true);
 
         $result = $this->runCommand([
             'foundry',
@@ -212,7 +212,7 @@ final class CLICompletionCommandTest extends TestCase
 
     private function writeExecutionSpec(string $feature, string $name): void
     {
-        $directory = $this->project->root . '/docs/specs/' . $feature;
+        $directory = $this->project->root . '/docs/features/' . $feature . '/specs';
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }
@@ -244,7 +244,7 @@ MD);
 
     private function writeDraftExecutionSpec(string $feature, string $name): void
     {
-        $directory = $this->project->root . '/docs/specs/' . $feature . '/drafts';
+        $directory = $this->project->root . '/docs/features/' . $feature . '/specs/drafts';
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }

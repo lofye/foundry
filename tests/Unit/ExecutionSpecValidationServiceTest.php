@@ -73,11 +73,11 @@ status: draft
 MD,
         );
         $this->writeRawFile(
-            'docs/specs/execution-spec-system/archive/004-misplaced.md',
+            'docs/features/execution-spec-system/specs/archive/004-misplaced.md',
             '# Execution Spec: 004-misplaced' . "\n",
         );
         $this->writeRawFile(
-            'docs/specs/execution-spec-system/not-a-spec.md',
+            'docs/features/execution-spec-system/specs/not-a-spec.md',
             '# Execution Spec: not-a-spec' . "\n",
         );
         $this->writeImplementationLogEntry('execution-spec-system/001-first-active.md');
@@ -116,8 +116,8 @@ MD,
                 'feature' => 'execution-spec-system',
                 'id' => '001',
                 'paths' => [
-                    'docs/specs/execution-spec-system/001-first-active.md',
-                    'docs/specs/execution-spec-system/drafts/001-second-draft.md',
+                    'docs/features/execution-spec-system/specs/001-first-active.md',
+                    'docs/features/execution-spec-system/specs/drafts/001-second-draft.md',
                 ],
             ],
             $result['violations'][0]['details'],
@@ -223,10 +223,10 @@ MD,
             [
                 'code' => 'EXECUTION_SPEC_IMPLEMENTATION_LOG_MISSING',
                 'message' => 'Active execution specs must have a matching implementation-log entry.',
-                'file_path' => 'docs/specs/execution-spec-system/001-active-missing-log.md',
+                'file_path' => 'docs/features/execution-spec-system/specs/001-active-missing-log.md',
                 'details' => [
                     'spec' => 'execution-spec-system/001-active-missing-log.md',
-                    'log_path' => 'docs/specs/implementation-log.md',
+                    'log_path' => 'docs/features/implementation-log.md',
                 ],
             ],
             $result['violations'][0],
@@ -257,7 +257,7 @@ MD,
 
     private function writeSpec(string $feature, string $name, string $contents, string $subdirectory = ''): void
     {
-        $relativePath = 'docs/specs/' . $feature . ($subdirectory !== '' ? '/' . $subdirectory : '') . '/' . $name . '.md';
+        $relativePath = 'docs/features/' . $feature . '/specs' . ($subdirectory !== '' ? '/' . $subdirectory : '') . '/' . $name . '.md';
         $this->writeRawFile($relativePath, rtrim($contents, "\n") . "\n");
     }
 
@@ -275,7 +275,7 @@ MD,
 
     private function writeImplementationLogEntry(string $specReference): void
     {
-        $absolutePath = $this->project->root . '/docs/specs/implementation-log.md';
+        $absolutePath = $this->project->root . '/docs/features/implementation-log.md';
         $directory = dirname($absolutePath);
 
         if (!is_dir($directory)) {

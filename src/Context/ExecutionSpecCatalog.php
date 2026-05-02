@@ -137,8 +137,8 @@ final class ExecutionSpecCatalog
     private function featureDirectories(string $featureName): array
     {
         return [
-            'active' => 'docs/specs/' . $featureName,
-            'draft' => 'docs/specs/' . $featureName . '/drafts',
+            'active' => 'docs/features/' . $featureName . '/specs',
+            'draft' => 'docs/features/' . $featureName . '/specs/drafts',
         ];
     }
 

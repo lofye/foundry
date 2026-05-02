@@ -31,7 +31,7 @@ final class ExecutionSpecImplementationLogServiceTest extends TestCase
 
         $action = $service->recordIfEligible($this->activeExecutionSpec());
 
-        $this->assertSame('Appended implementation log entry: docs/specs/implementation-log.md', $action);
+        $this->assertSame('Appended implementation log entry: docs/features/implementation-log.md', $action);
         $this->assertSame(<<<'MD'
 ## 2026-04-14 16:05:06 -0400
 - spec: execution-spec-system/004-spec-auto-log-on-implementation.md
@@ -46,8 +46,8 @@ MD . "\n", $this->logContents());
             'spec_id' => 'execution-spec-system/004-spec-auto-log-on-implementation',
             'feature' => 'execution-spec-system',
             'spec_ref' => 'execution-spec-system/004-spec-auto-log-on-implementation.md',
-            'spec_path' => 'docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md',
-            'log_path' => 'docs/specs/implementation-log.md',
+            'spec_path' => 'docs/features/execution-spec-system/specs/004-spec-auto-log-on-implementation.md',
+            'log_path' => 'docs/features/implementation-log.md',
             'timestamp' => '2026-04-14 16:05:06 -0400',
             'timestamp_heading' => '## 2026-04-14 16:05:06 -0400',
             'spec_log_line' => '- spec: execution-spec-system/004-spec-auto-log-on-implementation.md',
@@ -61,7 +61,7 @@ MD . "\n", $this->logContents());
             new ExecutionSpec(
                 specId: 'execution-spec-system/004-spec-auto-log-on-implementation',
                 feature: 'execution-spec-system',
-                path: 'docs/specs/execution-spec-system/drafts/004-spec-auto-log-on-implementation.md',
+                path: 'docs/features/execution-spec-system/specs/drafts/004-spec-auto-log-on-implementation.md',
                 name: '004-spec-auto-log-on-implementation',
                 id: '004',
             ),
@@ -77,7 +77,7 @@ MD . "\n", $this->logContents());
         $first = $service->recordIfEligible($this->activeExecutionSpec());
         $second = $service->recordIfEligible($this->activeExecutionSpec());
 
-        $this->assertSame('Appended implementation log entry: docs/specs/implementation-log.md', $first);
+        $this->assertSame('Appended implementation log entry: docs/features/implementation-log.md', $first);
         $this->assertNull($second);
         $this->assertSame(1, preg_match_all('/^- spec: execution-spec-system\/004-spec-auto-log-on-implementation\.md$/m', $this->logContents()));
     }
@@ -88,19 +88,19 @@ MD . "\n", $this->logContents());
             new ExecutionSpec(
                 specId: 'execution-spec-system/004-spec-auto-log-on-implementation',
                 feature: 'execution-spec-system',
-                path: 'docs/specs/execution-spec-system/drafts/004-spec-auto-log-on-implementation.md',
+                path: 'docs/features/execution-spec-system/specs/drafts/004-spec-auto-log-on-implementation.md',
                 name: '004-spec-auto-log-on-implementation',
                 id: '004',
             ),
         );
 
         $this->assertNull($action);
-        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/implementation-log.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/features/implementation-log.md');
     }
 
     public function test_record_if_eligible_fails_clearly_when_log_path_is_not_writable(): void
     {
-        mkdir($this->project->root . '/docs/specs/implementation-log.md', 0777, true);
+        mkdir($this->project->root . '/docs/features/implementation-log.md', 0777, true);
 
         $this->expectException(FoundryError::class);
         $this->expectExceptionMessage('Execution spec implementation log path must be a file.');
@@ -109,7 +109,7 @@ MD . "\n", $this->logContents());
             $this->serviceAt('2026-04-14 16:05:06 -0400')->recordIfEligible($this->activeExecutionSpec());
         } catch (FoundryError $error) {
             $this->assertSame('EXECUTION_SPEC_IMPLEMENTATION_LOG_WRITE_FAILED', $error->errorCode);
-            $this->assertSame(['path' => 'docs/specs/implementation-log.md'], $error->details);
+            $this->assertSame(['path' => 'docs/features/implementation-log.md'], $error->details);
 
             throw $error;
         }
@@ -128,7 +128,7 @@ MD . "\n", $this->logContents());
         return new ExecutionSpec(
             specId: 'execution-spec-system/004-spec-auto-log-on-implementation',
             feature: 'execution-spec-system',
-            path: 'docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md',
+            path: 'docs/features/execution-spec-system/specs/004-spec-auto-log-on-implementation.md',
             name: '004-spec-auto-log-on-implementation',
             id: '004',
         );
@@ -136,6 +136,6 @@ MD . "\n", $this->logContents());
 
     private function logContents(): string
     {
-        return (string) file_get_contents($this->project->root . '/docs/specs/implementation-log.md');
+        return (string) file_get_contents($this->project->root . '/docs/features/implementation-log.md');
     }
 }

@@ -27,9 +27,9 @@
 - What should be deferred to later execution specs
 
 ## Canonical Context
-- Canonical feature spec: `docs/features/<feature-name>.spec.md`
-- Canonical feature state: `docs/features/<feature-name>.md`
-- Canonical decision ledger: `docs/features/<feature-name>.decisions.md`
+- Canonical feature spec: `docs/<feature-name>/<feature-name>.spec.md`
+- Canonical feature state: `docs/<feature-name>/<feature-name>.md`
+- Canonical decision ledger: `docs/<feature-name>/<feature-name>.decisions.md`
 
 ## Authority Rule
 - This execution spec is a bounded work order only.

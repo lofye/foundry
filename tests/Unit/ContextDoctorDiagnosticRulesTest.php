@@ -49,9 +49,9 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
         );
         $this->assertSame(['spec', 'state', 'decisions'], $result->targetBuckets());
         $this->assertSame([
-            'docs/features/event-bus.spec.md',
-            'docs/features/event-bus.md',
-            'docs/features/event-bus.decisions.md',
+            'docs/features/event-bus/event-bus.spec.md',
+            'docs/features/event-bus/event-bus.md',
+            'docs/features/event-bus/event-bus.decisions.md',
         ], $result->targetFilePaths());
         $this->assertSame([
             'Create or initialize the missing canonical feature context files for event-bus.',
@@ -100,9 +100,9 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
             $result->message,
         );
         $this->assertSame(['decisions'], $result->targetBuckets());
-        $this->assertSame(['docs/features/event-bus.decisions.md'], $result->targetFilePaths());
+        $this->assertSame(['docs/features/event-bus/event-bus.decisions.md'], $result->targetFilePaths());
         $this->assertSame([
-            'Add a decision entry to docs/features/event-bus.decisions.md that explains the spec-state divergence.',
+            'Add a decision entry to docs/features/event-bus/event-bus.decisions.md that explains the spec-state divergence.',
         ], $result->requiredActions);
         $this->assertTrue($result->requiresRepair);
     }
@@ -143,9 +143,9 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
             $result->message,
         );
         $this->assertSame(['state'], $result->targetBuckets());
-        $this->assertSame(['docs/features/event-bus.md'], $result->targetFilePaths());
+        $this->assertSame(['docs/features/event-bus/event-bus.md'], $result->targetFilePaths());
         $this->assertSame([
-            'Remove already implemented work from Next Steps in docs/features/event-bus.md.',
+            'Remove already implemented work from Next Steps in docs/features/event-bus/event-bus.md.',
         ], $result->requiredActions);
         $this->assertTrue($result->requiresRepair);
     }
@@ -174,13 +174,13 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
                 $this->fixedRule(
                     code: 'ZETA_RULE',
                     message: 'Later issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus/event-bus.spec.md')],
                     requiredActions: ['Zeta action'],
                 ),
                 $this->fixedRule(
                     code: 'ALPHA_RULE',
                     message: 'Earlier issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus/event-bus.spec.md')],
                     requiredActions: ['Alpha action'],
                 ),
             ],
@@ -208,19 +208,19 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
                 $this->fixedRule(
                     code: 'BETA_RULE',
                     message: 'Shared issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus/event-bus.spec.md')],
                     requiredActions: ['Shared action'],
                 ),
                 $this->fixedRule(
                     code: 'ALPHA_RULE',
                     message: 'Shared issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus/event-bus.spec.md')],
                     requiredActions: ['Shared action'],
                 ),
                 $this->fixedRule(
                     code: 'ALPHA_RULE',
                     message: 'Shared issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus/event-bus.spec.md')],
                     requiredActions: ['Shared action'],
                 ),
             ],
@@ -236,7 +236,7 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
                 'source' => 'doctor',
                 'code' => 'ALPHA_RULE',
                 'message' => 'Shared issue.',
-                'file_path' => 'docs/features/event-bus.spec.md',
+                'file_path' => 'docs/features/event-bus/event-bus.spec.md',
             ],
         ], $flattened);
     }
@@ -251,13 +251,13 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
                 $this->fixedRule(
                     code: 'ALPHA_RULE',
                     message: 'First issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus/event-bus.spec.md')],
                     requiredActions: ['First action'],
                 ),
                 $this->fixedRule(
                     code: 'BETA_RULE',
                     message: 'Second issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus/event-bus.spec.md')],
                     requiredActions: ['Second action'],
                 ),
             ],
@@ -279,13 +279,13 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
                 $this->fixedRule(
                     code: 'ZETA_RULE',
                     message: 'State issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('state', 'docs/features/event-bus.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('state', 'docs/features/event-bus/event-bus.md')],
                     requiredActions: ['Zeta action'],
                 ),
                 $this->fixedRule(
                     code: 'ALPHA_RULE',
                     message: 'Spec issue.',
-                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus.spec.md')],
+                    targets: [new ContextDoctorDiagnosticTarget('spec', 'docs/features/event-bus/event-bus.spec.md')],
                     requiredActions: ['Alpha action'],
                 ),
             ],
@@ -298,13 +298,13 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
                 'source' => 'doctor',
                 'code' => 'ALPHA_RULE',
                 'message' => 'Spec issue.',
-                'file_path' => 'docs/features/event-bus.spec.md',
+                'file_path' => 'docs/features/event-bus/event-bus.spec.md',
             ],
             [
                 'source' => 'doctor',
                 'code' => 'ZETA_RULE',
                 'message' => 'State issue.',
-                'file_path' => 'docs/features/event-bus.md',
+                'file_path' => 'docs/features/event-bus/event-bus.md',
             ],
         ], $flattened);
     }
@@ -321,21 +321,21 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
     {
         return [
             'spec' => [
-                'path' => 'docs/features/event-bus.spec.md',
+                'path' => 'docs/features/event-bus/event-bus.spec.md',
                 'exists' => false,
                 'valid' => false,
                 'missing_sections' => [],
                 'issues' => [],
             ],
             'state' => [
-                'path' => 'docs/features/event-bus.md',
+                'path' => 'docs/features/event-bus/event-bus.md',
                 'exists' => false,
                 'valid' => false,
                 'missing_sections' => [],
                 'issues' => [],
             ],
             'decisions' => [
-                'path' => 'docs/features/event-bus.decisions.md',
+                'path' => 'docs/features/event-bus/event-bus.decisions.md',
                 'exists' => false,
                 'valid' => false,
                 'issues' => [],
@@ -350,21 +350,21 @@ final class ContextDoctorDiagnosticRulesTest extends TestCase
     {
         return [
             'spec' => [
-                'path' => 'docs/features/event-bus.spec.md',
+                'path' => 'docs/features/event-bus/event-bus.spec.md',
                 'exists' => true,
                 'valid' => true,
                 'missing_sections' => [],
                 'issues' => [],
             ],
             'state' => [
-                'path' => 'docs/features/event-bus.md',
+                'path' => 'docs/features/event-bus/event-bus.md',
                 'exists' => true,
                 'valid' => true,
                 'missing_sections' => [],
                 'issues' => [],
             ],
             'decisions' => [
-                'path' => 'docs/features/event-bus.decisions.md',
+                'path' => 'docs/features/event-bus/event-bus.decisions.md',
                 'exists' => true,
                 'valid' => true,
                 'issues' => [],

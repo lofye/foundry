@@ -94,9 +94,9 @@ final class ContextArtifactModelTest extends TestCase
 
         $paths = $resolver->paths($featureName);
 
-        $this->assertSame('docs/features/blog-posts.spec.md', $paths['spec']);
-        $this->assertSame('docs/features/blog-posts.md', $paths['state']);
-        $this->assertSame('docs/features/blog-posts.decisions.md', $paths['decisions']);
+        $this->assertSame('docs/features/blog-posts/blog-posts.spec.md', $paths['spec']);
+        $this->assertSame('docs/features/blog-posts/blog-posts.md', $paths['state']);
+        $this->assertSame('docs/features/blog-posts/blog-posts.decisions.md', $paths['decisions']);
         $this->assertSame($paths, $resolver->paths($featureName));
         $this->assertSame($original, $featureName);
     }
@@ -105,9 +105,9 @@ final class ContextArtifactModelTest extends TestCase
     {
         $paths = (new ContextFileResolver())->paths('blog_posts');
 
-        $this->assertSame('docs/features/blog-posts.spec.md', $paths['spec']);
-        $this->assertSame('docs/features/blog-posts.md', $paths['state']);
-        $this->assertSame('docs/features/blog-posts.decisions.md', $paths['decisions']);
+        $this->assertSame('docs/features/blog-posts/blog-posts.spec.md', $paths['spec']);
+        $this->assertSame('docs/features/blog-posts/blog-posts.md', $paths['state']);
+        $this->assertSame('docs/features/blog-posts/blog-posts.decisions.md', $paths['decisions']);
     }
 
     public function test_spec_validator_accepts_valid_minimal_spec(): void

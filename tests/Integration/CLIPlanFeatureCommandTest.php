@@ -47,16 +47,16 @@ final class CLIPlanFeatureCommandTest extends TestCase
         ], array_keys($result['payload']));
         $this->assertSame('planned', $result['payload']['status']);
         $this->assertSame('event-bus/001-contract-test-coverage', $result['payload']['spec_id']);
-        $this->assertSame('docs/specs/event-bus/drafts/001-contract-test-coverage.md', $result['payload']['spec_path']);
+        $this->assertSame('docs/features/event-bus/specs/drafts/001-contract-test-coverage.md', $result['payload']['spec_path']);
         $this->assertSame(['generated execution spec'], $result['payload']['actions_taken']);
-        $this->assertFileExists($this->project->root . '/docs/specs/event-bus/drafts/001-contract-test-coverage.md');
-        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/001-contract-test-coverage.md');
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/specs/drafts/001-contract-test-coverage.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/features/event-bus/specs/001-contract-test-coverage.md');
         $this->assertSame(
-            ['docs/specs/event-bus/drafts/001-contract-test-coverage.md'],
+            ['docs/features/event-bus/specs/drafts/001-contract-test-coverage.md'],
             $this->specPaths('event-bus'),
         );
 
-        $contents = (string) file_get_contents($this->project->root . '/docs/specs/event-bus/drafts/001-contract-test-coverage.md');
+        $contents = (string) file_get_contents($this->project->root . '/docs/features/event-bus/specs/drafts/001-contract-test-coverage.md');
         $this->assertStringContainsString('# Execution Spec: 001-contract-test-coverage', $contents);
         $this->assertStringContainsString('## Feature', $contents);
         $this->assertStringContainsString('## Purpose', $contents);
@@ -81,7 +81,7 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertFalse($result['payload']['can_proceed']);
         $this->assertTrue($result['payload']['requires_repair']);
         $this->assertNull($result['payload']['spec_id']);
-        $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $result['payload']['required_actions']);
+        $this->assertContains('Create missing spec file: docs/features/event-bus/event-bus.spec.md', $result['payload']['required_actions']);
     }
 
     public function test_generated_draft_spec_is_not_executable_until_promoted(): void
@@ -143,7 +143,7 @@ final class CLIPlanFeatureCommandTest extends TestCase
         $this->assertSame(1, $result['status']);
         $this->assertSame('blocked', $result['payload']['status']);
         $this->assertSame('PLANNING_NO_BOUNDED_STEP', $result['payload']['issues'][0]['code']);
-        $this->assertFileDoesNotExist($this->project->root . '/docs/specs/event-bus/drafts/001-support.md');
+        $this->assertFileDoesNotExist($this->project->root . '/docs/features/event-bus/specs/drafts/001-support.md');
     }
 
     /**
@@ -164,7 +164,7 @@ final class CLIPlanFeatureCommandTest extends TestCase
 
     private function writeMeaningfulContext(string $feature): void
     {
-        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '/' . $feature . '.spec.md', <<<MD
 # Feature Spec: {$feature}
 
 ## Purpose
@@ -196,7 +196,7 @@ Introduce event bus handling.
 - Initial implementation may be scaffold-first.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '/' . $feature . '.md', <<<MD
 # Feature: {$feature}
 
 ## Purpose
@@ -235,7 +235,7 @@ MD);
 
     private function writeMeaningfulContextInRoot(string $root, string $feature): void
     {
-        file_put_contents($root . '/docs/features/' . $feature . '.spec.md', <<<MD
+        file_put_contents($root . '/docs/features/' . $feature . '/' . $feature . '.spec.md', <<<MD
 # Feature Spec: {$feature}
 
 ## Purpose
@@ -267,7 +267,7 @@ Introduce event bus handling.
 - Initial implementation may be scaffold-first.
 MD);
 
-        file_put_contents($root . '/docs/features/' . $feature . '.md', <<<MD
+        file_put_contents($root . '/docs/features/' . $feature . '/' . $feature . '.md', <<<MD
 # Feature: {$feature}
 
 ## Purpose
@@ -290,7 +290,7 @@ MD);
 
     private function writeGenericPlanningContext(string $feature): void
     {
-        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '/' . $feature . '.spec.md', <<<MD
 # Feature Spec: {$feature}
 
 ## Purpose
@@ -311,7 +311,7 @@ Preserve feature intent across sessions.
 
 ## Expected Behavior
 
-- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.
+- Plan feature generates the next bounded execution spec deterministically under docs/features/<feature>/specs/<id>-<slug>.md.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -323,7 +323,7 @@ Preserve feature intent across sessions.
 - Execution specs remain secondary.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '/' . $feature . '.md', <<<MD
 # Feature: {$feature}
 
 ## Purpose
@@ -332,7 +332,7 @@ Preserve feature intent across sessions.
 
 ## Current State
 
-- Plan feature generates the next bounded execution spec deterministically under docs/specs/<feature>/<id>-<slug>.md.
+- Plan feature generates the next bounded execution spec deterministically under docs/features/<feature>/specs/<id>-<slug>.md.
 - Plan feature returns deterministic planned or blocked results.
 
 ## Open Questions
@@ -353,8 +353,8 @@ MD);
         $paths = [];
 
         foreach ([
-            $this->project->root . '/docs/specs/' . $feature,
-            $this->project->root . '/docs/specs/' . $feature . '/drafts',
+            $this->project->root . '/docs/features/' . $feature . '/specs',
+            $this->project->root . '/docs/features/' . $feature . '/specs/drafts',
         ] as $directory) {
             foreach (glob($directory . '/*.md') ?: [] as $path) {
                 $paths[] = str_replace($this->project->root . '/', '', $path);
@@ -368,7 +368,7 @@ MD);
 
     private function writeGenericFallbackPlanningContext(string $feature): void
     {
-        file_put_contents($this->project->root . '/docs/features/' . $feature . '.spec.md', <<<MD
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '/' . $feature . '.spec.md', <<<MD
 # Feature Spec: {$feature}
 
 ## Purpose
@@ -400,7 +400,7 @@ Introduce event bus handling.
 - Initial implementation may be scaffold-first.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/' . $feature . '.md', <<<MD
+        file_put_contents($this->project->root . '/docs/features/' . $feature . '/' . $feature . '.md', <<<MD
 # Feature: {$feature}
 
 ## Purpose

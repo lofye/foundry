@@ -94,7 +94,7 @@ final class ImplementSpecCommand extends Command
 
         if (
             !str_contains($trimmed, '/')
-            && !str_starts_with($trimmed, 'docs/specs/')
+            && !str_starts_with($trimmed, 'docs/')
             && !ExecutionSpecFilename::isCanonicalName($normalized)
             && (new FeatureNameValidator())->validate(FeatureNaming::canonical($normalized))->valid
         ) {
@@ -236,24 +236,24 @@ final class ImplementSpecCommand extends Command
         $feature = '';
         if (is_string($error->details['feature'] ?? null)) {
             $feature = FeatureNaming::canonical((string) $error->details['feature']);
-        } elseif (preg_match('#^(?:docs/specs/)?([a-z0-9]+(?:-[a-z0-9]+)*)/#', $specId, $matches) === 1) {
+        } elseif (preg_match('#^(?:docs/)?([a-z0-9]+(?:-[a-z0-9]+)*)/#', $specId, $matches) === 1) {
             $feature = FeatureNaming::canonical((string) $matches[1]);
         }
 
         $requiredActions = match ($error->errorCode) {
             'EXECUTION_SPEC_AMBIGUOUS' => array_values(array_map(
-                static fn(string $match): string => 'Use a fully qualified execution spec id: ' . preg_replace('#^docs/specs/|\.md$#', '', $match),
+                static fn(string $match): string => 'Use a fully qualified execution spec id: ' . preg_replace('#^docs/|\.md$#', '', $match),
                 (array) ($error->details['matches'] ?? []),
             )),
             'EXECUTION_SPEC_NOT_FOUND' => [isset($error->details['feature'], $error->details['id'])
-                ? 'Create or promote an active execution spec under docs/specs/<feature>/<id>-<slug>.md, or use a valid active execution spec id for that feature.'
-                : 'Create the execution spec under docs/specs/<feature>/<id>-<slug>.md or use a valid existing execution spec id.'],
-            'EXECUTION_SPEC_FEATURE_NOT_FOUND' => ['Use a valid feature under docs/specs/<feature>/ before invoking implement spec.'],
-            'EXECUTION_SPEC_DRAFT_ONLY' => ['Promote the draft execution spec to docs/specs/<feature>/<id>-<slug>.md before implementing it.'],
+                ? 'Create or promote an active execution spec under docs/features/<feature>/specs/<id>-<slug>.md, or use a valid active execution spec id for that feature.'
+                : 'Create the execution spec under docs/features/<feature>/specs/<id>-<slug>.md or use a valid existing execution spec id.'],
+            'EXECUTION_SPEC_FEATURE_NOT_FOUND' => ['Use a valid feature under docs/features/<feature>/specs/ before invoking implement spec.'],
+            'EXECUTION_SPEC_DRAFT_ONLY' => ['Promote the draft execution spec to docs/features/<feature>/specs/<id>-<slug>.md before implementing it.'],
             'EXECUTION_SPEC_ID_INVALID' => ['Use an execution spec id with one or more dot-separated 3-digit segments, such as 018 or 015.001.'],
             'EXECUTION_SPEC_HEADING_NON_CANONICAL' => ['Make the first line match `# Execution Spec: <id>-<slug>` for this file.'],
             'EXECUTION_SPEC_FEATURE_SECTION_MISSING' => ['Add a ## Feature section naming the canonical feature.'],
-            'EXECUTION_SPEC_FEATURE_MISMATCH' => ['Make the ## Feature section match the docs/specs/<feature>/ directory for this execution spec.'],
+            'EXECUTION_SPEC_FEATURE_MISMATCH' => ['Make the ## Feature section match the docs/features/<feature>/specs/ directory for this execution spec.'],
             'EXECUTION_SPEC_FEATURE_INVALID' => ['Use a lowercase kebab-case feature name in the execution spec ## Feature section.'],
             'EXECUTION_SPEC_PATH_NON_CANONICAL' => ['Use a canonical execution spec id in the form <feature>/<id>-<slug>, <id>-<slug>, or invoke the command as <feature> <id>.'],
             'CLI_IMPLEMENT_SPEC_TARGET_REQUIRED' => ['Use `implement spec <feature>/<id>-<slug>`, `implement spec <id>-<slug>`, or `implement spec <feature> <id>`.'],

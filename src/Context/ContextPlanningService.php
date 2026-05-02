@@ -84,12 +84,12 @@ final class ContextPlanningService
                     'file_path' => $this->resolver->statePath($featureName),
                 ]],
                 requiredActions: [
-                    'Update docs/features/' . $featureName . '.spec.md or docs/features/' . $featureName . '.md so there is a concrete actionable gap between Expected Behavior and Current State.',
+                    'Update docs/features/' . $featureName . '/' . $featureName . '.spec.md or docs/features/' . $featureName . '/' . $featureName . '.md so there is a concrete actionable gap between Expected Behavior and Current State.',
                 ],
             );
         }
 
-        $relativeDirectory = 'docs/specs/' . $featureName . '/drafts';
+        $relativeDirectory = 'docs/features/' . $featureName . '/specs/drafts';
         $absoluteDirectory = $this->paths->join($relativeDirectory);
         if (file_exists($absoluteDirectory) && !is_dir($absoluteDirectory)) {
             throw new FoundryError(
@@ -369,7 +369,7 @@ final class ContextPlanningService
                 'created_paths' => $createdPaths,
             ]],
             requiredActions: [
-                'Inspect docs/specs/' . $featureName . '/ and docs/specs/' . $featureName . '/drafts/ so one planner invocation creates exactly one draft execution spec file.',
+                'Inspect docs/features/' . $featureName . '/specs/ and docs/features/' . $featureName . '/specs/drafts/ so one planner invocation creates exactly one draft execution spec file.',
             ],
         );
     }
@@ -382,8 +382,8 @@ final class ContextPlanningService
         $relativePaths = [];
 
         foreach ([
-            'docs/specs/' . $featureName,
-            'docs/specs/' . $featureName . '/drafts',
+            'docs/features/' . $featureName . '/specs',
+            'docs/features/' . $featureName . '/specs/drafts',
         ] as $directory) {
             $absoluteDirectory = $this->paths->join($directory);
             if (!is_dir($absoluteDirectory)) {

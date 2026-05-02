@@ -29,20 +29,20 @@ final class ContextRepairServiceTest extends TestCase
         $this->writeRepairableConsumableContext();
 
         $result = $this->service()->repairFeature('event-bus');
-        $spec = (string) file_get_contents($this->project->root . '/docs/features/event-bus.spec.md');
-        $state = (string) file_get_contents($this->project->root . '/docs/features/event-bus.md');
+        $spec = (string) file_get_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md');
+        $state = (string) file_get_contents($this->project->root . '/docs/features/event-bus/event-bus.md');
 
         $this->assertSame('repaired', $result['status']);
         $this->assertSame([
-            'docs/features/event-bus.spec.md',
-            'docs/features/event-bus.md',
+            'docs/features/event-bus/event-bus.spec.md',
+            'docs/features/event-bus/event-bus.md',
         ], $result['files_changed']);
         $this->assertTrue($result['can_proceed']);
         $this->assertFalse($result['requires_manual_action']);
         $this->assertSame([], $result['issues_remaining']);
         $this->assertSame([
-            'Normalized docs/features/event-bus.spec.md',
-            'Normalized docs/features/event-bus.md',
+            'Normalized docs/features/event-bus/event-bus.spec.md',
+            'Normalized docs/features/event-bus/event-bus.md',
         ], $result['issues_repaired']);
         $this->assertStringContainsString(<<<'MD'
 ## Goals
@@ -68,21 +68,21 @@ MD, $state);
         $this->writeDivergentSemanticContext();
 
         $result = $this->service()->repairFeature('event-bus');
-        $state = (string) file_get_contents($this->project->root . '/docs/features/event-bus.md');
+        $state = (string) file_get_contents($this->project->root . '/docs/features/event-bus/event-bus.md');
 
         $this->assertSame('blocked', $result['status']);
         $this->assertSame([
-            'docs/features/event-bus.spec.md',
-            'docs/features/event-bus.md',
+            'docs/features/event-bus/event-bus.spec.md',
+            'docs/features/event-bus/event-bus.md',
         ], $result['files_changed']);
         $this->assertFalse($result['can_proceed']);
         $this->assertTrue($result['requires_manual_action']);
         $this->assertContains(
-            'doctor:STALE_COMPLETED_ITEMS_IN_NEXT_STEPS @ docs/features/event-bus.md',
+            'doctor:STALE_COMPLETED_ITEMS_IN_NEXT_STEPS @ docs/features/event-bus/event-bus.md',
             $result['issues_repaired'],
         );
         $this->assertContains(
-            'doctor:DECISION_MISSING_FOR_STATE_DIVERGENCE @ docs/features/event-bus.decisions.md',
+            'doctor:DECISION_MISSING_FOR_STATE_DIVERGENCE @ docs/features/event-bus/event-bus.decisions.md',
             $result['issues_remaining'],
         );
         $this->assertStringNotContainsString('## Next Steps' . "\n\n" . '- Publishes posts immediately in production.', $state);
@@ -91,10 +91,10 @@ MD, $state);
     public function test_repair_fails_closed_when_critical_context_inputs_are_missing(): void
     {
         $this->writeRepairableConsumableContext();
-        unlink($this->project->root . '/docs/features/event-bus.decisions.md');
+        unlink($this->project->root . '/docs/features/event-bus/event-bus.decisions.md');
 
         $result = $this->service()->repairFeature('event-bus');
-        $spec = (string) file_get_contents($this->project->root . '/docs/features/event-bus.spec.md');
+        $spec = (string) file_get_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md');
 
         $this->assertSame('failed', $result['status']);
         $this->assertSame([], $result['files_changed']);
@@ -102,7 +102,7 @@ MD, $state);
         $this->assertTrue($result['requires_manual_action']);
         $this->assertSame('CONTEXT_REPAIR_CRITICAL_INPUT_MISSING', $result['error']['code']);
         $this->assertContains(
-            'doctor:CONTEXT_FILE_MISSING @ docs/features/event-bus.decisions.md',
+            'doctor:CONTEXT_FILE_MISSING @ docs/features/event-bus/event-bus.decisions.md',
             $result['issues_remaining'],
         );
         $this->assertSame(2, substr_count($spec, "- Keep output deterministic.\n"));
@@ -122,7 +122,7 @@ MD, $state);
     {
         $this->initService()->init('event-bus');
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md', <<<'MD'
 # Feature Spec: event-bus
 
 ## Purpose
@@ -155,7 +155,7 @@ Introduce event bus handling.
 - Initial implementation may be scaffold-first.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.md', <<<'MD'
 # Feature: event-bus
 
 ## Purpose
@@ -181,7 +181,7 @@ MD);
     {
         $this->initService()->init('event-bus');
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md', <<<'MD'
 # Feature Spec: event-bus
 
 ## Purpose
@@ -213,7 +213,7 @@ Publish posts safely.
 - Moderation remains the default policy.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.md', <<<'MD'
 # Feature: event-bus
 
 ## Purpose

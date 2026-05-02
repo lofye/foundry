@@ -79,7 +79,7 @@ MD . "\n", (string) file_get_contents($this->project->root . '/' . (string) $res
 
     public function test_allocation_failure_is_reported_when_feature_spec_state_is_invalid(): void
     {
-        $directory = $this->project->root . '/docs/specs/execution-spec-system/drafts';
+        $directory = $this->project->root . '/docs/features/execution-spec-system/specs/drafts';
         mkdir($directory, 0777, true);
         file_put_contents($directory . '/not-a-spec.md', "# Execution Spec: not-a-spec\n");
 
@@ -101,7 +101,7 @@ MD . "\n", (string) file_get_contents($this->project->root . '/' . (string) $res
 
     private function writeSpecForProject(TempProject $project, string $feature, string $name, string $subdirectory = ''): void
     {
-        $directory = $project->root . '/docs/specs/' . $feature . ($subdirectory !== '' ? '/' . $subdirectory : '');
+        $directory = $project->root . '/docs/features/' . $feature . '/specs' . ($subdirectory !== '' ? '/' . $subdirectory : '');
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }

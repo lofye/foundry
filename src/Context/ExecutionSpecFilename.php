@@ -9,8 +9,8 @@ final class ExecutionSpecFilename
     public const ID_PATTERN = '\d{3}(?:\.\d{3})*';
     public const SLUG_PATTERN = '[a-z0-9]+(?:-[a-z0-9]+)*';
     public const NAME_PATTERN = '(?<name>(?<id>' . self::ID_PATTERN . ')-(?<slug>' . self::SLUG_PATTERN . '))';
-    public const ACTIVE_PATH_PATTERN = '#^docs/specs/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/' . self::NAME_PATTERN . '\.md$#';
-    public const DRAFT_PATH_PATTERN = '#^docs/specs/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/drafts/' . self::NAME_PATTERN . '\.md$#';
+    public const ACTIVE_PATH_PATTERN = '#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/specs/' . self::NAME_PATTERN . '\.md$#';
+    public const DRAFT_PATH_PATTERN = '#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/specs/drafts/' . self::NAME_PATTERN . '\.md$#';
 
     /**
      * @return array{

@@ -40,8 +40,8 @@ final class CLISpecLogEntryCommandTest extends TestCase
             'spec_id' => 'execution-spec-system/004-spec-auto-log-on-implementation',
             'feature' => 'execution-spec-system',
             'spec_ref' => 'execution-spec-system/004-spec-auto-log-on-implementation.md',
-            'spec_path' => 'docs/specs/execution-spec-system/004-spec-auto-log-on-implementation.md',
-            'log_path' => 'docs/specs/implementation-log.md',
+            'spec_path' => 'docs/features/execution-spec-system/specs/004-spec-auto-log-on-implementation.md',
+            'log_path' => 'docs/features/implementation-log.md',
             'timestamp' => '2026-04-17 12:30:45 -0400',
             'timestamp_heading' => '## 2026-04-17 12:30:45 -0400',
             'spec_log_line' => '- spec: execution-spec-system/004-spec-auto-log-on-implementation.md',
@@ -146,7 +146,7 @@ final class CLISpecLogEntryCommandTest extends TestCase
     private function writeExecutionSpec(string $feature, string $name, string $declaredFeature): void
     {
         $this->writeRawFile(
-            'docs/specs/' . $feature . '/' . $name . '.md',
+            'docs/features/' . $feature . '/specs/' . $name . '.md',
             <<<MD
 # Execution Spec: {$name}
 
@@ -177,7 +177,7 @@ MD
     private function writeDraftExecutionSpec(string $feature, string $name, string $declaredFeature): void
     {
         $this->writeRawFile(
-            'docs/specs/' . $feature . '/drafts/' . $name . '.md',
+            'docs/features/' . $feature . '/specs/drafts/' . $name . '.md',
             <<<MD
 # Execution Spec: {$name}
 

@@ -37,10 +37,10 @@ final class CLISpecNewCommandTest extends TestCase
         $this->assertSame('002', $result['payload']['id']);
         $this->assertSame('add-cli-command', $result['payload']['slug']);
         $this->assertSame(
-            'docs/specs/execution-spec-system/drafts/002-add-cli-command.md',
+            'docs/features/execution-spec-system/specs/drafts/002-add-cli-command.md',
             $result['payload']['path'],
         );
-        $this->assertFileExists($this->project->root . '/docs/specs/execution-spec-system/drafts/002-add-cli-command.md');
+        $this->assertFileExists($this->project->root . '/docs/features/execution-spec-system/specs/drafts/002-add-cli-command.md');
     }
 
     public function test_spec_new_success_output_matches_required_structure(): void
@@ -56,7 +56,7 @@ Created draft spec
 Feature: execution-spec-system
 ID: 002
 Slug: add-cli-command
-Path: docs/specs/execution-spec-system/drafts/002-add-cli-command.md
+Path: docs/features/execution-spec-system/specs/drafts/002-add-cli-command.md
 
 Next steps:
 - Fill in the spec sections
@@ -101,7 +101,7 @@ TEXT . "\n", $result['output']);
 
     public function test_spec_new_existing_target_collision_fails_without_overwriting(): void
     {
-        $path = $this->project->root . '/docs/specs/execution-spec-system/drafts/001-add-cli-command.md';
+        $path = $this->project->root . '/docs/features/execution-spec-system/specs/drafts/001-add-cli-command.md';
         mkdir($path, 0777, true);
 
         $result = $this->runRawCommand(['foundry', 'spec:new', 'execution-spec-system', 'add-cli-command']);
@@ -111,7 +111,7 @@ TEXT . "\n", $result['output']);
 Could not create draft spec
 
 Reason: target file already exists
-Path: docs/specs/execution-spec-system/drafts/001-add-cli-command.md
+Path: docs/features/execution-spec-system/specs/drafts/001-add-cli-command.md
 
 Required action:
 - Choose a different slug
@@ -121,7 +121,7 @@ TEXT . "\n", $result['output']);
 
     public function test_spec_new_allocation_failure_output_matches_required_structure(): void
     {
-        $directory = $this->project->root . '/docs/specs/execution-spec-system/drafts';
+        $directory = $this->project->root . '/docs/features/execution-spec-system/specs/drafts';
         mkdir($directory, 0777, true);
         file_put_contents($directory . '/not-a-spec.md', "# Execution Spec: not-a-spec\n");
 
@@ -171,7 +171,7 @@ TEXT . "\n", $result['output']);
 
     private function writeSpec(string $feature, string $name, string $subdirectory = ''): void
     {
-        $directory = $this->project->root . '/docs/specs/' . $feature . ($subdirectory !== '' ? '/' . $subdirectory : '');
+        $directory = $this->project->root . '/docs/features/' . $feature . '/specs' . ($subdirectory !== '' ? '/' . $subdirectory : '');
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }

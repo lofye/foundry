@@ -33,30 +33,30 @@ final class ContextServicesTest extends TestCase
         $this->assertSame('event-bus', $result['feature']);
         $this->assertTrue($result['feature_valid']);
         $this->assertSame([
-            'docs/features/event-bus.spec.md',
-            'docs/features/event-bus.md',
-            'docs/features/event-bus.decisions.md',
+            'docs/features/event-bus/event-bus.spec.md',
+            'docs/features/event-bus/event-bus.md',
+            'docs/features/event-bus/event-bus.decisions.md',
         ], $result['created']);
         $this->assertSame([], $result['existing']);
-        $this->assertFileExists($this->project->root . '/docs/features/event-bus.spec.md');
-        $this->assertFileExists($this->project->root . '/docs/features/event-bus.md');
-        $this->assertFileExists($this->project->root . '/docs/features/event-bus.decisions.md');
-        $this->assertStringContainsString('# Feature Spec: event-bus', (string) file_get_contents($this->project->root . '/docs/features/event-bus.spec.md'));
-        $this->assertStringContainsString('Timestamp: <ISO-8601>', (string) file_get_contents($this->project->root . '/docs/features/event-bus.decisions.md'));
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/event-bus.spec.md');
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/event-bus.md');
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/event-bus.decisions.md');
+        $this->assertStringContainsString('# Feature Spec: event-bus', (string) file_get_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md'));
+        $this->assertStringContainsString('Timestamp: <ISO-8601>', (string) file_get_contents($this->project->root . '/docs/features/event-bus/event-bus.decisions.md'));
     }
 
     public function test_init_service_does_not_overwrite_existing_files(): void
     {
-        $path = $this->project->root . '/docs/features/event-bus.spec.md';
+        $path = $this->project->root . '/docs/features/event-bus/event-bus.spec.md';
         $this->writeFile($path, "# Custom Spec\n");
 
         $result = $this->initService()->init('event-bus');
 
         $this->assertSame([
-            'docs/features/event-bus.md',
-            'docs/features/event-bus.decisions.md',
+            'docs/features/event-bus/event-bus.md',
+            'docs/features/event-bus/event-bus.decisions.md',
         ], $result['created']);
-        $this->assertSame(['docs/features/event-bus.spec.md'], $result['existing']);
+        $this->assertSame(['docs/features/event-bus/event-bus.spec.md'], $result['existing']);
         $this->assertSame("# Custom Spec\n", file_get_contents($path));
     }
 
@@ -67,11 +67,11 @@ final class ContextServicesTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertSame('event-bus', $result['feature']);
         $this->assertSame([
-            'docs/features/event-bus.spec.md',
-            'docs/features/event-bus.md',
-            'docs/features/event-bus.decisions.md',
+            'docs/features/event-bus/event-bus.spec.md',
+            'docs/features/event-bus/event-bus.md',
+            'docs/features/event-bus/event-bus.decisions.md',
         ], $result['created']);
-        $this->assertFileExists($this->project->root . '/docs/features/event-bus.spec.md');
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/event-bus.spec.md');
         $this->assertFileDoesNotExist($this->project->root . '/docs/features/event_bus.spec.md');
     }
 
@@ -115,8 +115,8 @@ final class ContextServicesTest extends TestCase
         $this->assertSame('repairable', $result['status']);
         $this->assertFalse($result['can_proceed']);
         $this->assertTrue($result['requires_repair']);
-        $this->assertContains('Fix malformed spec heading in docs/features/event-bus.spec.md.', $result['required_actions']);
-        $this->assertContains('Add missing required section "## Goals" to docs/features/event-bus.spec.md.', $result['required_actions']);
+        $this->assertContains('Fix malformed spec heading in docs/features/event-bus/event-bus.spec.md.', $result['required_actions']);
+        $this->assertContains('Add missing required section "## Goals" to docs/features/event-bus/event-bus.spec.md.', $result['required_actions']);
     }
 
     public function test_doctor_service_does_not_emit_execution_spec_drift_without_execution_specs(): void
@@ -159,9 +159,9 @@ final class ContextServicesTest extends TestCase
         $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->doctorIssueCodes($result, 'state'));
         $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->doctorIssueCodes($result, 'decisions'));
         $this->assertSame([
-            'Create missing spec file: docs/features/event-bus.spec.md',
-            'Create missing state file: docs/features/event-bus.md',
-            'Create missing decision ledger: docs/features/event-bus.decisions.md',
+            'Create missing spec file: docs/features/event-bus/event-bus.spec.md',
+            'Create missing state file: docs/features/event-bus/event-bus.md',
+            'Create missing decision ledger: docs/features/event-bus/event-bus.decisions.md',
             'Create or initialize the missing canonical feature context files for event-bus.',
             'Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.',
             'Do not rely on execution specs as the source of truth for event-bus.',
@@ -172,7 +172,7 @@ final class ContextServicesTest extends TestCase
     {
         $this->initService()->init('event-bus');
         $this->writeExecutionSpec('event-bus', '001-initial', draft: true);
-        unlink($this->project->root . '/docs/features/event-bus.md');
+        unlink($this->project->root . '/docs/features/event-bus/event-bus.md');
 
         $result = $this->doctorService()->checkFeature('event-bus');
 
@@ -181,7 +181,7 @@ final class ContextServicesTest extends TestCase
         $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->doctorIssueCodes($result, 'state'));
         $this->assertSame([], $this->doctorIssueCodes($result, 'decisions'));
         $this->assertSame([
-            'Create missing state file: docs/features/event-bus.md',
+            'Create missing state file: docs/features/event-bus/event-bus.md',
             'Create or initialize the missing canonical feature context files for event-bus.',
             'Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.',
             'Do not rely on execution specs as the source of truth for event-bus.',
@@ -210,7 +210,7 @@ final class ContextServicesTest extends TestCase
 
     private function writeExecutionSpec(string $feature, string $name, bool $draft = false): void
     {
-        $directory = $this->project->root . '/docs/specs/' . $feature . ($draft ? '/drafts' : '');
+        $directory = $this->project->root . '/docs/features/' . $feature . '/specs' . ($draft ? '/drafts' : '');
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }

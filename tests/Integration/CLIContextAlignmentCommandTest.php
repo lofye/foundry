@@ -98,7 +98,7 @@ final class CLIContextAlignmentCommandTest extends TestCase
 
     private function writeFeatureFiles(string $feature, string $spec, string $state, string $decisions): void
     {
-        $directory = $this->project->root . '/docs/features';
+        $directory = $this->project->root . '/docs/features/' . $feature;
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }

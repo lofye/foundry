@@ -115,8 +115,10 @@ The root `app/*` tree is a framework-owned demo and smoke app.
 
 - `src/*` → framework behavior
 - `tests/*` → expected behavior
-- `docs/features/*` → feature intent, state, reasoning
-- `docs/specs/*` → execution planning (non-authoritative after implementation)
+- docs/features/<feature>/<feature>.spec.md → authoritative feature intent
+- docs/features/<feature>/<feature>.md → current state
+- docs/features/<feature>/<feature>.decisions.md → append-only decision history
+- docs/features/<feature>/specs/*.md → execution specs (planning artifacts, non-authoritative after implementation)
 - `docs/policies/*` → repository execution and reasoning policies
 - `README.md` → contributor + onboarding guidance
 - `APP-AGENTS.md`, `APP-README.md` → scaffold defaults
@@ -287,7 +289,7 @@ Never allow:
 
 All specs must follow the canonical naming convention defined in:
 
-`docs/specs/README.md`
+`docs/features/README.md`
 
 Key rules:
 
@@ -297,11 +299,11 @@ Key rules:
 - IDs are immutable
 - IDs must be unique within a feature, not globally
 - slugs are not required to be unique
-- drafts live in `docs/specs/<feature-name>/drafts/`
+- drafts live in `docs/features/<feature-name>/specs/drafts/`
 - Draft specs are non-executable planning artifacts
-- Agents MUST NOT implement specs from `docs/specs/<feature>/drafts/`
+- Agents MUST NOT implement specs from `docs/features/<feature>/specs/drafts/`
 - If asked to implement a draft spec, refuse and require promotion to the active spec path first
-- active executable specs live in `docs/specs/<feature-name>/`
+- active executable specs live in `docs/features/<feature-name>/specs/`
 - the spec heading must mirror the filename only
 - filename-only headings are forbidden; required format is `# Execution Spec: <id>-<slug>`
 
@@ -342,11 +344,11 @@ Foundry uses feature-level context anchoring.
 
 Canonical files:
 
-- `docs/features/<feature>.spec.md` = intent
-- `docs/features/<feature>.md` = state
-- `docs/features/<feature>.decisions.md` = history
+- `docs/features/<feature>/<feature>.spec.md` = intent
+- `docs/features/<feature>/<feature>.md` = state
+- `docs/features/<feature>/<feature>.decisions.md` = history
 
-Execution specs under `docs/specs/*` are:
+Execution specs under `docs/features/<feature>/specs/*.md` are:
 
 - planning artifacts
 - optional

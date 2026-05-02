@@ -33,13 +33,13 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame(0, $result['status']);
         $this->assertTrue($result['payload']['success']);
         $this->assertSame([
-            'docs/features/event-bus.spec.md',
-            'docs/features/event-bus.md',
-            'docs/features/event-bus.decisions.md',
+            'docs/features/event-bus/event-bus.spec.md',
+            'docs/features/event-bus/event-bus.md',
+            'docs/features/event-bus/event-bus.decisions.md',
         ], $result['payload']['created']);
-        $this->assertFileExists($this->project->root . '/docs/features/event-bus.spec.md');
-        $this->assertFileExists($this->project->root . '/docs/features/event-bus.md');
-        $this->assertFileExists($this->project->root . '/docs/features/event-bus.decisions.md');
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/event-bus.spec.md');
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/event-bus.md');
+        $this->assertFileExists($this->project->root . '/docs/features/event-bus/event-bus.decisions.md');
     }
 
     public function test_context_init_with_invalid_feature_name_fails_deterministically(): void
@@ -89,7 +89,7 @@ final class CLIContextCommandsTest extends TestCase
             'valid',
             'issues',
         ], array_keys($result['payload']['files']['decisions']));
-        $this->assertSame('docs/features/event-bus.spec.md', $result['payload']['files']['spec']['path']);
+        $this->assertSame('docs/features/event-bus/event-bus.spec.md', $result['payload']['files']['spec']['path']);
         $this->assertTrue($result['payload']['files']['spec']['exists']);
         $this->assertTrue($result['payload']['files']['spec']['valid']);
     }
@@ -117,7 +117,7 @@ final class CLIContextCommandsTest extends TestCase
     public function test_context_doctor_reports_malformed_docs_correctly(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
-        $specPath = $this->project->root . '/docs/features/event-bus.spec.md';
+        $specPath = $this->project->root . '/docs/features/event-bus/event-bus.spec.md';
         file_put_contents($specPath, str_replace('# Feature Spec: event-bus', '# Spec: event-bus', (string) file_get_contents($specPath)));
 
         $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--json']);
@@ -126,7 +126,7 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame('repairable', $result['payload']['status']);
         $this->assertFalse($result['payload']['can_proceed']);
         $this->assertTrue($result['payload']['requires_repair']);
-        $this->assertContains('Fix malformed spec heading in docs/features/event-bus.spec.md.', $result['payload']['required_actions']);
+        $this->assertContains('Fix malformed spec heading in docs/features/event-bus/event-bus.spec.md.', $result['payload']['required_actions']);
         $this->assertSame('CONTEXT_SPEC_HEADING_INVALID', $result['payload']['files']['spec']['issues'][0]['code']);
     }
 
@@ -138,15 +138,15 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame('repairable', $result['payload']['status']);
         $this->assertFalse($result['payload']['can_proceed']);
         $this->assertTrue($result['payload']['requires_repair']);
-        $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $result['payload']['required_actions']);
-        $this->assertContains('Create missing state file: docs/features/event-bus.md', $result['payload']['required_actions']);
-        $this->assertContains('Create missing decision ledger: docs/features/event-bus.decisions.md', $result['payload']['required_actions']);
+        $this->assertContains('Create missing spec file: docs/features/event-bus/event-bus.spec.md', $result['payload']['required_actions']);
+        $this->assertContains('Create missing state file: docs/features/event-bus/event-bus.md', $result['payload']['required_actions']);
+        $this->assertContains('Create missing decision ledger: docs/features/event-bus/event-bus.decisions.md', $result['payload']['required_actions']);
     }
 
     public function test_context_doctor_missing_state_produces_blocked_readiness(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
-        unlink($this->project->root . '/docs/features/event-bus.md');
+        unlink($this->project->root . '/docs/features/event-bus/event-bus.md');
 
         $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--json']);
 
@@ -154,13 +154,13 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame('repairable', $result['payload']['status']);
         $this->assertFalse($result['payload']['can_proceed']);
         $this->assertTrue($result['payload']['requires_repair']);
-        $this->assertContains('Create missing state file: docs/features/event-bus.md', $result['payload']['required_actions']);
+        $this->assertContains('Create missing state file: docs/features/event-bus/event-bus.md', $result['payload']['required_actions']);
     }
 
     public function test_context_doctor_missing_decisions_produces_blocked_readiness(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
-        unlink($this->project->root . '/docs/features/event-bus.decisions.md');
+        unlink($this->project->root . '/docs/features/event-bus/event-bus.decisions.md');
 
         $result = $this->runCommand(['foundry', 'context', 'doctor', '--feature=event-bus', '--json']);
 
@@ -168,7 +168,7 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame('repairable', $result['payload']['status']);
         $this->assertFalse($result['payload']['can_proceed']);
         $this->assertTrue($result['payload']['requires_repair']);
-        $this->assertContains('Create missing decision ledger: docs/features/event-bus.decisions.md', $result['payload']['required_actions']);
+        $this->assertContains('Create missing decision ledger: docs/features/event-bus/event-bus.decisions.md', $result['payload']['required_actions']);
     }
 
     public function test_context_doctor_reports_execution_spec_drift_using_existing_json_shape(): void
@@ -191,9 +191,9 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->issueCodes($result['payload']['files']['state']['issues']));
         $this->assertSame(['CONTEXT_FILE_MISSING', 'EXECUTION_SPEC_DRIFT'], $this->issueCodes($result['payload']['files']['decisions']['issues']));
         $this->assertSame([
-            'Create missing spec file: docs/features/event-bus.spec.md',
-            'Create missing state file: docs/features/event-bus.md',
-            'Create missing decision ledger: docs/features/event-bus.decisions.md',
+            'Create missing spec file: docs/features/event-bus/event-bus.spec.md',
+            'Create missing state file: docs/features/event-bus/event-bus.md',
+            'Create missing decision ledger: docs/features/event-bus/event-bus.decisions.md',
             'Create or initialize the missing canonical feature context files for event-bus.',
             'Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.',
             'Do not rely on execution specs as the source of truth for event-bus.',
@@ -220,8 +220,8 @@ final class CLIContextCommandsTest extends TestCase
         $this->assertSame(['STALE_COMPLETED_ITEMS_IN_NEXT_STEPS'], $this->issueCodes($result['payload']['files']['state']['issues']));
         $this->assertSame(['DECISION_MISSING_FOR_STATE_DIVERGENCE'], $this->issueCodes($result['payload']['files']['decisions']['issues']));
         $this->assertSame([
-            'Remove already implemented work from Next Steps in docs/features/event-bus.md.',
-            'Add a decision entry to docs/features/event-bus.decisions.md that explains the spec-state divergence.',
+            'Remove already implemented work from Next Steps in docs/features/event-bus/event-bus.md.',
+            'Add a decision entry to docs/features/event-bus/event-bus.decisions.md that explains the spec-state divergence.',
         ], $result['payload']['required_actions']);
     }
 
@@ -313,7 +313,7 @@ final class CLIContextCommandsTest extends TestCase
         $secondInit = $this->runCommandRaw(['foundry', 'context', 'init', 'event-bus']);
         $this->assertSame(0, $secondInit['status']);
         $this->assertStringContainsString('Already existed:', $secondInit['output']);
-        $this->assertStringContainsString('- docs/features/event-bus.spec.md', $secondInit['output']);
+        $this->assertStringContainsString('- docs/features/event-bus/event-bus.spec.md', $secondInit['output']);
 
         $missingRepairTarget = $this->runCommand(['foundry', 'context', 'repair', '--json']);
         $this->assertSame(1, $missingRepairTarget['status']);
@@ -364,7 +364,7 @@ final class CLIContextCommandsTest extends TestCase
 
     private function writeExecutionSpec(string $feature, string $name, bool $draft = false): void
     {
-        $directory = $this->project->root . '/docs/specs/' . $feature . ($draft ? '/drafts' : '');
+        $directory = $this->project->root . '/docs/features/' . $feature . '/specs' . ($draft ? '/drafts' : '');
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }
@@ -381,7 +381,7 @@ MD);
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md', <<<'MD'
 # Feature Spec: event-bus
 
 ## Purpose
@@ -413,7 +413,7 @@ Publish posts safely.
 - Moderation remains the default policy.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.md', <<<'MD'
 # Feature: event-bus
 
 ## Purpose
@@ -433,14 +433,14 @@ Publish posts safely.
 - Publishes posts immediately in production.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.decisions.md', '');
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.decisions.md', '');
     }
 
     private function writeRepairableConsumableContext(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md', <<<'MD'
 # Feature Spec: event-bus
 
 ## Purpose
@@ -473,7 +473,7 @@ Introduce event bus handling.
 - Initial implementation may be scaffold-first.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.md', <<<'MD'
 # Feature: event-bus
 
 ## Purpose

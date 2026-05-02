@@ -117,7 +117,7 @@ final class ExecutionSpecImplementationLogService
 
     private function relativeLogPath(): string
     {
-        return 'docs/specs/implementation-log.md';
+        return 'docs/features/implementation-log.md';
     }
 
     private function absoluteLogPath(): string

@@ -55,13 +55,13 @@ final class ContextInitService
             ];
         }
 
-        $directory = $this->paths->join('docs/features');
+        $directory = $this->paths->join('docs/features/' . $featureName);
         if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
             throw new FoundryError(
                 'CONTEXT_DIRECTORY_CREATE_FAILED',
                 'filesystem',
-                ['path' => 'docs/features'],
-                'Unable to create docs/features directory.',
+                ['path' => 'docs/features/' . $featureName],
+                'Unable to create feature context directory.',
             );
         }
 

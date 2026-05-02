@@ -58,9 +58,11 @@ Execution rules:
 - Treat `app/generated/*` as generated compatibility projections
 - Treat `docs/generated/*` and `docs/inspect-ui/*` as generated documentation output
 - Treat `docs/policies/*` as repository execution and reasoning policy inputs
-- Treat feature context documents under `docs/features/*` as the source of truth for feature intent, recorded implementation state, and reasoning history
+- Treat `docs/features/<feature>/<feature>.spec.md` as authoritative feature intent
+- Treat `docs/features/<feature>/<feature>.md` as current state
+- Treat `docs/features/<feature>/<feature>.decisions.md` as append-only decision history
 - Treat code and tests as the source of truth for actual implementation and runtime behavior
-- Treat execution specs under `docs/specs/*` as optional planning artifacts only and never authoritative once canonical feature context exists
+- Treat `docs/features/<feature>/specs/*.md` as execution specs: planning artifacts that are non-authoritative after implementation
 - Do not hand-edit `app/generated/*`; regenerate instead
 - Do not hand-edit installed pack files under `.foundry/packs/*`; reinstall or replace them from source instead
 
@@ -143,11 +145,11 @@ Foundry uses feature-level context anchoring for meaningful feature work.
 
 Canonical feature context files:
 
-- `docs/features/<feature-name>.spec.md` = intent
-- `docs/features/<feature-name>.md` = current state
-- `docs/features/<feature-name>.decisions.md` = reasoning history
+- `docs/features/<feature-name>/<feature-name>.spec.md` = authoritative feature intent
+- `docs/features/<feature-name>/<feature-name>.md` = current state
+- `docs/features/<feature-name>/<feature-name>.decisions.md` = append-only decision history
 
-Execution specs may exist under `docs/specs/<feature-name>/`, but they are:
+Execution specs live at `docs/features/<feature-name>/specs/*.md`, but they are:
 
 - optional
 - planning artifacts only
@@ -174,8 +176,8 @@ Spec naming rules:
 - IDs are unique within a feature, not globally across the whole project
 - slugs are descriptive only and are not required to be unique
 - headings must mirror the filename only
-- drafts live in `docs/specs/<feature>/drafts/`
-- active specs live in `docs/specs/<feature>/`
+- drafts live in `docs/features/<feature>/specs/drafts/`
+- active specs live in `docs/features/<feature>/specs/`
 - do not rename existing IDs
 - do not add metadata fields like `id`, `parent`, or `status`
 
@@ -187,7 +189,7 @@ Read-before-acting rule:
 - Do not rely on chat history as authoritative context
 - Use `context doctor`, `context check-alignment`, `inspect context`, and `verify context` when context tooling is available
 - Draft specs are non-executable planning artifacts.
-- Agents MUST NOT implement specs from `docs/specs/<feature>/drafts/`.
+- Agents MUST NOT implement specs from `docs/features/<feature>/specs/drafts/`.
 - If asked to implement a draft spec, refuse and require promotion to the active spec path first.
 
 Primary execution gate:
@@ -231,7 +233,7 @@ Repair-first workflow:
 Spec discipline:
 
 - A feature spec must exist before meaningful implementation continues
-- Each feature must have exactly one canonical spec file: `docs/features/<feature-name>.spec.md`
+- Each feature must have exactly one canonical spec file: `docs/<feature-name>/<feature-name>.spec.md`
 - Do not create alternate spec filenames such as `.spec.v2.md`, `.phase2.spec.md`, or `-v2.spec.md`
 
 ## Ask First

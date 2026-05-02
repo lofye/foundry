@@ -90,13 +90,13 @@ final class CLIContextInspectionCommandsTest extends TestCase
         $nonCompliant = $this->runCommand(['foundry', 'verify', 'context', '--feature=Event_Bus', '--json']);
 
         $this->runCommand(['foundry', 'context', 'init', 'blog-comments', '--json']);
-        $specPath = $this->project->root . '/docs/features/blog-comments.spec.md';
+        $specPath = $this->project->root . '/docs/features/blog-comments/blog-comments.spec.md';
         file_put_contents($specPath, str_replace(
             "## Acceptance Criteria\n\n- TBD.\n",
             "## Acceptance Criteria\n\n- Comments are enabled.\n",
             (string) file_get_contents($specPath),
         ));
-        $statePath = $this->project->root . '/docs/features/blog-comments.md';
+        $statePath = $this->project->root . '/docs/features/blog-comments/blog-comments.md';
         file_put_contents($statePath, str_replace(
             "## Current State\n\nTBD.\n",
             "## Current State\n\nReplay support is pending.\n",
@@ -109,7 +109,7 @@ final class CLIContextInspectionCommandsTest extends TestCase
         $this->assertFalse($repairable['payload']['can_proceed']);
         $this->assertTrue($repairable['payload']['requires_repair']);
         $this->assertSame('repairable', $repairable['payload']['doctor_status']);
-        $this->assertContains('Create missing spec file: docs/features/event-bus.spec.md', $repairable['payload']['required_actions']);
+        $this->assertContains('Create missing spec file: docs/features/event-bus/event-bus.spec.md', $repairable['payload']['required_actions']);
 
         $this->assertSame(1, $nonCompliant['status']);
         $this->assertSame('fail', $nonCompliant['payload']['status']);
@@ -160,13 +160,13 @@ final class CLIContextInspectionCommandsTest extends TestCase
         $this->assertTrue($json['payload']['requires_repair']);
         $this->assertStringContainsString('Can proceed: no', $text['output']);
         $this->assertStringContainsString('Requires repair: yes', $text['output']);
-        $this->assertStringContainsString('Create missing spec file: docs/features/event-bus.spec.md', $text['output']);
+        $this->assertStringContainsString('Create missing spec file: docs/features/event-bus/event-bus.spec.md', $text['output']);
     }
 
     public function test_verify_context_surfaces_execution_spec_drift_from_doctor(): void
     {
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
-        unlink($this->project->root . '/docs/features/event-bus.md');
+        unlink($this->project->root . '/docs/features/event-bus/event-bus.md');
         $this->writeExecutionSpec('event-bus', '001-initial', draft: true);
 
         $result = $this->runCommand(['foundry', 'verify', 'context', '--feature=event-bus', '--json']);
@@ -180,13 +180,13 @@ final class CLIContextInspectionCommandsTest extends TestCase
                 'source' => 'doctor',
                 'code' => 'CONTEXT_FILE_MISSING',
                 'message' => 'Context state file is missing.',
-                'file_path' => 'docs/features/event-bus.md',
+                'file_path' => 'docs/features/event-bus/event-bus.md',
             ],
             [
                 'source' => 'doctor',
                 'code' => 'EXECUTION_SPEC_DRIFT',
                 'message' => 'Execution specs exist for this feature, but canonical feature context is missing or incomplete.',
-                'file_path' => 'docs/features/event-bus.md',
+                'file_path' => 'docs/features/event-bus/event-bus.md',
             ],
         ], array_slice($result['payload']['issues'], 0, 2));
         $this->assertContains('Run foundry context init event-bus --json when appropriate to initialize missing canonical context files.', $result['payload']['required_actions']);
@@ -209,17 +209,17 @@ final class CLIContextInspectionCommandsTest extends TestCase
                 'source' => 'doctor',
                 'code' => 'STALE_COMPLETED_ITEMS_IN_NEXT_STEPS',
                 'message' => 'Next Steps contains work that is already reflected as implemented in Current State.',
-                'file_path' => 'docs/features/event-bus.md',
+                'file_path' => 'docs/features/event-bus/event-bus.md',
             ],
             [
                 'source' => 'doctor',
                 'code' => 'DECISION_MISSING_FOR_STATE_DIVERGENCE',
                 'message' => 'Current State diverges from the canonical spec without a supporting decision entry.',
-                'file_path' => 'docs/features/event-bus.decisions.md',
+                'file_path' => 'docs/features/event-bus/event-bus.decisions.md',
             ],
         ], array_slice($result['payload']['issues'], 0, 2));
-        $this->assertContains('Remove already implemented work from Next Steps in docs/features/event-bus.md.', $result['payload']['required_actions']);
-        $this->assertContains('Add a decision entry to docs/features/event-bus.decisions.md that explains the spec-state divergence.', $result['payload']['required_actions']);
+        $this->assertContains('Remove already implemented work from Next Steps in docs/features/event-bus/event-bus.md.', $result['payload']['required_actions']);
+        $this->assertContains('Add a decision entry to docs/features/event-bus/event-bus.decisions.md that explains the spec-state divergence.', $result['payload']['required_actions']);
     }
 
     /**
@@ -253,7 +253,7 @@ final class CLIContextInspectionCommandsTest extends TestCase
 
     private function writeExecutionSpec(string $feature, string $name, bool $draft = false): void
     {
-        $directory = $this->project->root . '/docs/specs/' . $feature . ($draft ? '/drafts' : '');
+        $directory = $this->project->root . '/docs/features/' . $feature . '/specs' . ($draft ? '/drafts' : '');
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }
@@ -268,7 +268,7 @@ MD);
 
     private function writeDivergentSemanticContext(): void
     {
-        file_put_contents($this->project->root . '/docs/features/event-bus.spec.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.spec.md', <<<'MD'
 # Feature Spec: event-bus
 
 ## Purpose
@@ -300,7 +300,7 @@ Publish posts safely.
 - Moderation remains the default policy.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.md', <<<'MD'
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.md', <<<'MD'
 # Feature: event-bus
 
 ## Purpose
@@ -320,6 +320,6 @@ Publish posts safely.
 - Publishes posts immediately in production.
 MD);
 
-        file_put_contents($this->project->root . '/docs/features/event-bus.decisions.md', '');
+        file_put_contents($this->project->root . '/docs/features/event-bus/event-bus.decisions.md', '');
     }
 }

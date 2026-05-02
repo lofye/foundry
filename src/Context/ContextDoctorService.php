@@ -186,12 +186,17 @@ final class ContextDoctorService
             }
 
             $path = $directory . '/' . $item;
-            if (!is_file($path)) {
+            if (!is_dir($path) || !$this->isCanonicalFeatureDirectory($item)) {
                 continue;
             }
 
-            $featureName = $this->featureNameFromCanonicalFilename($item);
-            if ($featureName === null) {
+            $featureName = $item;
+            $contextPaths = $this->resolver->paths($featureName);
+            if (
+                !is_file($this->paths->join($contextPaths['spec']))
+                && !is_file($this->paths->join($contextPaths['state']))
+                && !is_file($this->paths->join($contextPaths['decisions']))
+            ) {
                 continue;
             }
 
@@ -206,7 +211,7 @@ final class ContextDoctorService
      */
     private function discoverExecutionSpecFeatures(): array
     {
-        $directory = $this->paths->join('docs/specs');
+        $directory = $this->paths->join('docs/features');
         if (!is_dir($directory)) {
             return [];
         }
@@ -235,28 +240,6 @@ final class ContextDoctorService
         }
 
         return $features;
-    }
-
-    private function featureNameFromCanonicalFilename(string $filename): ?string
-    {
-        $featureName = null;
-        if (str_ends_with($filename, '.spec.md')) {
-            $featureName = substr($filename, 0, -strlen('.spec.md'));
-        } elseif (str_ends_with($filename, '.decisions.md')) {
-            $featureName = substr($filename, 0, -strlen('.decisions.md'));
-        } elseif (str_ends_with($filename, '.md')) {
-            $featureName = substr($filename, 0, -strlen('.md'));
-        }
-
-        if ($featureName === null || $featureName === '') {
-            return null;
-        }
-
-        if (str_contains($featureName, '.')) {
-            return null;
-        }
-
-        return $featureName;
     }
 
     /**
@@ -562,8 +545,8 @@ final class ContextDoctorService
     {
         $featureName = FeatureNaming::canonical($featureName);
 
-        return $this->directoryContainsMarkdownFiles('docs/specs/' . $featureName)
-            || $this->directoryContainsMarkdownFiles('docs/specs/' . $featureName . '/drafts');
+        return $this->directoryContainsMarkdownFiles('docs/features/' . $featureName . '/specs')
+            || $this->directoryContainsMarkdownFiles('docs/features/' . $featureName . '/specs/drafts');
     }
 
     private function directoryContainsMarkdownFiles(string $relativePath): bool

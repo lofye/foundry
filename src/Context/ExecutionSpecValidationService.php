@@ -12,8 +12,8 @@ final class ExecutionSpecValidationService
      * @var list<string>
      */
     private const IGNORED_ROOT_FILES = [
-        'docs/specs/README.md',
-        'docs/specs/implementation-log.md',
+        'docs/features/README.md',
+        'docs/features/implementation-log.md',
     ];
 
     public function __construct(
@@ -47,7 +47,7 @@ final class ExecutionSpecValidationService
                 $violations[] = $this->violation(
                     'EXECUTION_SPEC_INVALID_DIRECTORY',
                     $relativePath,
-                    'Execution specs must live at docs/specs/<feature>/<id>-<slug>.md or docs/specs/<feature>/drafts/<id>-<slug>.md.',
+                    'Execution specs must live at docs/features/<feature>/specs/<id>-<slug>.md or docs/features/<feature>/specs/drafts/<id>-<slug>.md.',
                 );
 
                 continue;
@@ -67,9 +67,6 @@ final class ExecutionSpecValidationService
             }
 
             $seenIds[$placement['feature']][$parsedName['id']][] = $relativePath;
-            if ($placement['status'] === 'active') {
-                $activeSpecReferences[$relativePath] = $placement['feature'] . '/' . $parsedName['name'] . '.md';
-            }
 
             $contents = file_get_contents($this->paths->join($relativePath));
             if ($contents === false) {
@@ -81,6 +78,8 @@ final class ExecutionSpecValidationService
 
                 continue;
             }
+
+            $fileHasViolations = false;
 
             if ($this->firstLine($contents) !== ExecutionSpecFilename::heading($parsedName['name'])) {
                 $expectedHeading = ExecutionSpecFilename::heading($parsedName['name']);
@@ -94,10 +93,19 @@ final class ExecutionSpecValidationService
                         'actual_heading' => $actualHeading,
                     ],
                 );
+                $fileHasViolations = true;
             }
 
-            foreach ($this->metadataViolations($relativePath, $contents) as $metadataViolation) {
+            $metadataViolations = $this->metadataViolations($relativePath, $contents);
+            foreach ($metadataViolations as $metadataViolation) {
                 $violations[] = $metadataViolation;
+            }
+            if ($metadataViolations !== []) {
+                $fileHasViolations = true;
+            }
+
+            if ($placement['status'] === 'active' && !$fileHasViolations) {
+                $activeSpecReferences[$relativePath] = $placement['feature'] . '/' . $parsedName['name'] . '.md';
             }
         }
 
@@ -134,7 +142,7 @@ final class ExecutionSpecValidationService
                     'Active execution specs must have a matching implementation-log entry.',
                     [
                         'spec' => $specReference,
-                        'log_path' => 'docs/specs/implementation-log.md',
+                        'log_path' => 'docs/features/implementation-log.md',
                     ],
                 );
             }
@@ -163,36 +171,35 @@ final class ExecutionSpecValidationService
      */
     private function specFiles(): array
     {
-        $root = $this->paths->join('docs/specs');
-        if (!is_dir($root)) {
-            return [];
-        }
-
         $files = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
-        );
+        foreach ([
+            'docs/features/*/specs/*.md',
+            'docs/features/*/specs/drafts/*.md',
+            'docs/features/*/specs/*/*.md',
+            'docs/specs/*.md',
+            'docs/specs/*/*.md',
+            'docs/specs/*/drafts/*.md',
+            'docs/*/specs/*.md',
+            'docs/*/specs/drafts/*.md',
+            'docs/*/specs/*/*.md',
+        ] as $pattern) {
+            foreach (glob($this->paths->join($pattern)) ?: [] as $path) {
+                if (!is_file($path)) {
+                    continue;
+                }
 
-        foreach ($iterator as $file) {
-            if (!$file instanceof \SplFileInfo || !$file->isFile()) {
-                continue;
+                $relativePath = $this->relativePath($path);
+                if ($relativePath === null) {
+                    continue;
+                }
+
+                $files[] = $relativePath;
             }
-
-            if ($file->getExtension() !== 'md') {
-                continue;
-            }
-
-            $relativePath = $this->relativePath($file->getPathname());
-            if ($relativePath === null) {
-                continue;
-            }
-
-            $files[] = $relativePath;
         }
 
         sort($files);
 
-        return $files;
+        return array_values(array_unique($files));
     }
 
     /**
@@ -201,7 +208,7 @@ final class ExecutionSpecValidationService
      */
     private function implementationLogEntries(array &$violations): ?array
     {
-        $relativePath = 'docs/specs/implementation-log.md';
+        $relativePath = 'docs/features/implementation-log.md';
         $absolutePath = $this->paths->join($relativePath);
 
         if (!file_exists($absolutePath)) {
@@ -249,7 +256,7 @@ final class ExecutionSpecValidationService
      */
     private function classifyPlacement(string $relativePath): ?array
     {
-        if (preg_match('#^docs/specs/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/(?<name>[^/]+)\.md$#', $relativePath, $matches) === 1) {
+        if (preg_match('#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/specs/(?<name>[^/]+)\.md$#', $relativePath, $matches) === 1) {
             return [
                 'feature' => (string) $matches['feature'],
                 'status' => 'active',
@@ -257,7 +264,7 @@ final class ExecutionSpecValidationService
             ];
         }
 
-        if (preg_match('#^docs/specs/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/drafts/(?<name>[^/]+)\.md$#', $relativePath, $matches) === 1) {
+        if (preg_match('#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/specs/drafts/(?<name>[^/]+)\.md$#', $relativePath, $matches) === 1) {
             return [
                 'feature' => (string) $matches['feature'],
                 'status' => 'draft',
