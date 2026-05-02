@@ -136,8 +136,20 @@ Feature: execution-spec-system
 
 Required action:
 - Run `foundry spec:validate`
-- Resolve duplicate or invalid spec state in this feature
+- Resolve duplicate, invalid, or skipped execution spec IDs in this feature
 TEXT . "\n", $result['output']);
+    }
+
+    public function test_spec_new_refuses_when_feature_has_skipped_ids(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first');
+        $this->writeSpec('execution-spec-system', '003-third', 'drafts');
+
+        $result = $this->runRawCommand(['foundry', 'spec:new', 'execution-spec-system', 'add-cli-command']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertStringContainsString('Reason: could not allocate next spec ID', $result['output']);
+        $this->assertStringContainsString('Resolve duplicate, invalid, or skipped execution spec IDs in this feature', $result['output']);
     }
 
     /**

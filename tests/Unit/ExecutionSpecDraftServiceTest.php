@@ -89,6 +89,18 @@ MD . "\n", (string) file_get_contents($this->project->root . '/' . (string) $res
         $this->assertSame('could not allocate next spec ID', $result['reason']);
     }
 
+    public function test_allocation_failure_is_reported_when_feature_has_skipped_ids(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first');
+        $this->writeSpec('execution-spec-system', '003-third', 'drafts');
+
+        $result = $this->service()->createDraft('execution-spec-system', 'add-cli-command');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('could not allocate next spec ID', $result['reason']);
+        $this->assertContains('Resolve duplicate, invalid, or skipped execution spec IDs in this feature', $result['required_actions']);
+    }
+
     private function service(): ExecutionSpecDraftService
     {
         return new ExecutionSpecDraftService(new Paths($this->project->root));

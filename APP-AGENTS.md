@@ -68,6 +68,8 @@ Execution rules:
 - Treat `docs/features/implementation-log.md` as the completed execution-spec ledger
 - Save a plan file for new active execution specs before implementation; chat-only plans are not sufficient.
 - Plans describe implementation strategy only and must not expand or alter execution-spec scope.
+- Execution spec IDs are ordered contracts and must stay contiguous within each feature at every hierarchy level; skipping numbers is forbidden.
+- Stop instead of planning, implementing, promoting, or logging execution specs when a numeric gap exists.
 - Do not hand-edit `app/generated/*`; regenerate instead
 - Do not hand-edit installed pack files under `.foundry/packs/*`; reinstall or replace them from source instead
 

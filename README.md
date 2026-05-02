@@ -46,6 +46,8 @@ These paths mean:
 
 For new active execution specs, save an implementation plan file before implementation begins. Chat-only plans are not sufficient, and plan files must not expand or alter execution-spec scope.
 
+Execution spec IDs are ordered contracts within each feature. IDs must remain contiguous at every hierarchy level (`001`, `002`, `003`; `007.001`, `007.002`, ...), skipping numbers is forbidden, and agents must stop instead of planning, implementing, promoting, or logging specs when any numeric gap exists.
+
 Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If canonical context is missing, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
 
 ## Shell Completion

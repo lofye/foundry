@@ -80,14 +80,14 @@ final class ExecutionSpecDraftService
         try {
             $nextId = $catalog->nextRootId($providedFeature);
         } catch (FoundryError $error) {
-            if ($error->errorCode === 'EXECUTION_SPEC_ID_ALLOCATION_FAILED') {
+            if (in_array($error->errorCode, ['EXECUTION_SPEC_ID_ALLOCATION_FAILED', 'EXECUTION_SPEC_ID_SEQUENCE_INVALID'], true)) {
                 return $this->failure(
                     providedFeature: $providedFeature,
                     providedSlug: $providedSlug,
                     reason: 'could not allocate next spec ID',
                     requiredActions: [
                         'Run `foundry spec:validate`',
-                        'Resolve duplicate or invalid spec state in this feature',
+                        'Resolve duplicate, invalid, or skipped execution spec IDs in this feature',
                     ],
                 );
             }

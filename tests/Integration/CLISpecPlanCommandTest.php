@@ -28,54 +28,68 @@ final class CLISpecPlanCommandTest extends TestCase
 
     public function test_spec_plan_creates_plan_with_required_heading_and_sections(): void
     {
-        $this->writeActiveSpec('execution-spec-system', '008-implementation-plan-files');
+        $this->writeActiveSpec('execution-spec-system', '001-implementation-plan-files');
 
-        $result = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '008', '--json']);
+        $result = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '001', '--json']);
 
         $this->assertSame(0, $result['status']);
         $this->assertSame('created', $result['payload']['status']);
         $this->assertSame(
-            'docs/features/execution-spec-system/specs/008-implementation-plan-files.md',
+            'docs/features/execution-spec-system/specs/001-implementation-plan-files.md',
             $result['payload']['spec'],
         );
         $this->assertSame(
-            'docs/features/execution-spec-system/plans/008-implementation-plan-files.md',
+            'docs/features/execution-spec-system/plans/001-implementation-plan-files.md',
             $result['payload']['plan'],
         );
 
-        $planPath = $this->project->root . '/docs/features/execution-spec-system/plans/008-implementation-plan-files.md';
+        $planPath = $this->project->root . '/docs/features/execution-spec-system/plans/001-implementation-plan-files.md';
         $this->assertFileExists($planPath);
         $contents = (string) file_get_contents($planPath);
-        $this->assertStringStartsWith('# Implementation Plan: 008-implementation-plan-files', $contents);
+        $this->assertStringStartsWith('# Implementation Plan: 001-implementation-plan-files', $contents);
         $this->assertStringContainsString('## Implementation Steps', $contents);
         $this->assertStringContainsString('php bin/foundry spec:validate --require-plans --json', $contents);
     }
 
     public function test_spec_plan_refuses_overwrite_without_force(): void
     {
-        $this->writeActiveSpec('execution-spec-system', '008-implementation-plan-files');
-        $path = $this->project->root . '/docs/features/execution-spec-system/plans/008-implementation-plan-files.md';
+        $this->writeActiveSpec('execution-spec-system', '001-implementation-plan-files');
+        $path = $this->project->root . '/docs/features/execution-spec-system/plans/001-implementation-plan-files.md';
         mkdir(dirname($path), 0777, true);
-        file_put_contents($path, "# Implementation Plan: 008-implementation-plan-files\n");
+        file_put_contents($path, "# Implementation Plan: 001-implementation-plan-files\n");
 
-        $result = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '008', '--json']);
+        $result = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '001', '--json']);
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('error', $result['payload']['status']);
         $this->assertSame('plan_already_exists', $result['payload']['error']);
-        $this->assertSame('docs/features/execution-spec-system/plans/008-implementation-plan-files.md', $result['payload']['plan']);
+        $this->assertSame('docs/features/execution-spec-system/plans/001-implementation-plan-files.md', $result['payload']['plan']);
     }
 
     public function test_spec_plan_failures_are_deterministic_for_missing_feature_and_spec(): void
     {
-        $missingFeature = $this->runCommand(['foundry', 'spec:plan', 'missing-feature', '008', '--json']);
+        $missingFeature = $this->runCommand(['foundry', 'spec:plan', 'missing-feature', '001', '--json']);
         $this->assertSame(1, $missingFeature['status']);
         $this->assertSame('feature_not_found', $missingFeature['payload']['error']);
 
-        $this->writeActiveSpec('execution-spec-system', '008-implementation-plan-files');
-        $missingSpec = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '009', '--json']);
+        $this->writeActiveSpec('execution-spec-system', '001-implementation-plan-files');
+        $missingSpec = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '002', '--json']);
         $this->assertSame(1, $missingSpec['status']);
         $this->assertSame('spec_not_found', $missingSpec['payload']['error']);
+    }
+
+    public function test_spec_plan_refuses_when_feature_has_skipped_ids(): void
+    {
+        $this->writeActiveSpec('execution-spec-system', '001-first');
+        $this->writeActiveSpec('execution-spec-system', '003-third');
+
+        $result = $this->runCommand(['foundry', 'spec:plan', 'execution-spec-system', '001', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('error', $result['payload']['status']);
+        $this->assertSame('spec_id_sequence_invalid', $result['payload']['error']);
+        $this->assertSame('002', $result['payload']['details']['error_details']['missing_id']);
+        $this->assertSame('003', $result['payload']['details']['error_details']['next_observed_id']);
     }
 
     /**

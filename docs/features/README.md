@@ -46,6 +46,8 @@ Canonical feature context remains separate from execution specs:
 
 For new active execution specs, create the corresponding implementation plan file before implementation begins. Chat-only plans are not sufficient, and plans must not expand or alter execution-spec scope.
 
+Execution spec IDs are ordered contracts within each feature. IDs must remain contiguous at every hierarchy level, skipping numbers is forbidden, and workflows must stop (do not plan, implement, promote, or log) when a numeric gap exists.
+
 ## Heading rules
 
 The first line inside a spec file must mirror the filename only.

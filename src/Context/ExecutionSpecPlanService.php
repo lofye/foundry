@@ -44,6 +44,18 @@ final class ExecutionSpecPlanService
             ]);
         }
 
+        if ($this->featureExists($feature)) {
+            try {
+                $catalog = new ExecutionSpecCatalog($this->paths);
+                $catalog->assertContiguous($feature, $catalog->entries($feature));
+            } catch (FoundryError $error) {
+                return $this->error($feature, null, null, $this->mapResolverError($error->errorCode), [
+                    'error_code' => $error->errorCode,
+                    'error_details' => $error->details,
+                ]);
+            }
+        }
+
         $resolver = $this->resolver ?? new ExecutionSpecResolver($this->paths);
 
         try {
@@ -147,6 +159,7 @@ final class ExecutionSpecPlanService
             'EXECUTION_SPEC_AMBIGUOUS' => 'spec_ambiguous',
             'EXECUTION_SPEC_DRAFT_ONLY' => 'spec_draft_only',
             'EXECUTION_SPEC_NOT_FOUND' => 'spec_not_found',
+            'EXECUTION_SPEC_ID_SEQUENCE_INVALID' => 'spec_id_sequence_invalid',
             default => 'spec_resolution_failed',
         };
     }
@@ -156,5 +169,24 @@ final class ExecutionSpecPlanService
         $firstLine = strtok(str_replace("\r\n", "\n", $contents), "\n");
 
         return $firstLine === false ? '' : trim($firstLine);
+    }
+
+    private function featureExists(string $feature): bool
+    {
+        $paths = [
+            'docs/features/' . $feature,
+            'docs/features/' . $feature . '/specs/drafts',
+            'docs/features/' . $feature . '/' . $feature . '.spec.md',
+            'docs/features/' . $feature . '/' . $feature . '.md',
+            'docs/features/' . $feature . '/' . $feature . '.decisions.md',
+        ];
+
+        foreach ($paths as $path) {
+            if (is_dir($this->paths->join($path)) || is_file($this->paths->join($path))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

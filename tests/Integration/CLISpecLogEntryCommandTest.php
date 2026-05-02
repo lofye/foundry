@@ -29,47 +29,47 @@ final class CLISpecLogEntryCommandTest extends TestCase
 
     public function test_spec_log_entry_outputs_exact_canonical_entry_for_active_spec(): void
     {
-        $this->writeExecutionSpec('execution-spec-system', '004-spec-auto-log-on-implementation', 'execution-spec-system');
+        $this->writeExecutionSpec('execution-spec-system', '001-spec-auto-log-on-implementation', 'execution-spec-system');
         $app = $this->fixedClockApp('2026-04-17 12:30:45 -0400');
 
-        $json = $this->runCommand($app, ['foundry', 'spec:log-entry', 'execution-spec-system', '004', '--json']);
-        $raw = $this->runRawCommand($app, ['foundry', 'spec:log-entry', 'execution-spec-system', '004']);
+        $json = $this->runCommand($app, ['foundry', 'spec:log-entry', 'execution-spec-system', '001', '--json']);
+        $raw = $this->runRawCommand($app, ['foundry', 'spec:log-entry', 'execution-spec-system', '001']);
 
         $this->assertSame(0, $json['status']);
         $this->assertSame([
-            'spec_id' => 'execution-spec-system/004-spec-auto-log-on-implementation',
+            'spec_id' => 'execution-spec-system/001-spec-auto-log-on-implementation',
             'feature' => 'execution-spec-system',
-            'spec_ref' => 'execution-spec-system/004-spec-auto-log-on-implementation.md',
-            'spec_path' => 'docs/features/execution-spec-system/specs/004-spec-auto-log-on-implementation.md',
+            'spec_ref' => 'execution-spec-system/001-spec-auto-log-on-implementation.md',
+            'spec_path' => 'docs/features/execution-spec-system/specs/001-spec-auto-log-on-implementation.md',
             'log_path' => 'docs/features/implementation-log.md',
             'timestamp' => '2026-04-17 12:30:45 -0400',
             'timestamp_heading' => '## 2026-04-17 12:30:45 -0400',
-            'spec_log_line' => '- spec: execution-spec-system/004-spec-auto-log-on-implementation.md',
-            'entry' => "## 2026-04-17 12:30:45 -0400\n- spec: execution-spec-system/004-spec-auto-log-on-implementation.md\n",
+            'spec_log_line' => '- spec: execution-spec-system/001-spec-auto-log-on-implementation.md',
+            'entry' => "## 2026-04-17 12:30:45 -0400\n- spec: execution-spec-system/001-spec-auto-log-on-implementation.md\n",
         ], $json['payload']);
 
         $this->assertSame(0, $raw['status']);
         $this->assertSame(
-            "## 2026-04-17 12:30:45 -0400\n- spec: execution-spec-system/004-spec-auto-log-on-implementation.md\n",
+            "## 2026-04-17 12:30:45 -0400\n- spec: execution-spec-system/001-spec-auto-log-on-implementation.md\n",
             $raw['output'],
         );
     }
 
     public function test_spec_log_entry_repeated_runs_are_stable_with_fixed_timestamp(): void
     {
-        $this->writeExecutionSpec('execution-spec-system', '004-spec-auto-log-on-implementation', 'execution-spec-system');
+        $this->writeExecutionSpec('execution-spec-system', '001-spec-auto-log-on-implementation', 'execution-spec-system');
         $app = $this->fixedClockApp('2026-04-17 12:30:45 -0400');
 
-        $first = $this->runCommand($app, ['foundry', 'spec:log-entry', 'execution-spec-system/004-spec-auto-log-on-implementation', '--json']);
-        $second = $this->runCommand($app, ['foundry', 'spec:log-entry', 'execution-spec-system/004-spec-auto-log-on-implementation', '--json']);
+        $first = $this->runCommand($app, ['foundry', 'spec:log-entry', 'execution-spec-system/001-spec-auto-log-on-implementation', '--json']);
+        $second = $this->runCommand($app, ['foundry', 'spec:log-entry', 'execution-spec-system/001-spec-auto-log-on-implementation', '--json']);
 
         $this->assertSame($first, $second);
     }
 
     public function test_spec_log_entry_rejects_draft_only_matches_clearly(): void
     {
-        $this->writeDraftExecutionSpec('execution-spec-system', '004-spec-auto-log-on-implementation', 'execution-spec-system');
-        $result = $this->runCommand($this->fixedClockApp('2026-04-17 12:30:45 -0400'), ['foundry', 'spec:log-entry', 'execution-spec-system', '004', '--json']);
+        $this->writeDraftExecutionSpec('execution-spec-system', '001-spec-auto-log-on-implementation', 'execution-spec-system');
+        $result = $this->runCommand($this->fixedClockApp('2026-04-17 12:30:45 -0400'), ['foundry', 'spec:log-entry', 'execution-spec-system', '001', '--json']);
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('EXECUTION_SPEC_DRAFT_ONLY', $result['payload']['error']['code']);
@@ -81,8 +81,8 @@ final class CLISpecLogEntryCommandTest extends TestCase
 
     public function test_spec_log_entry_rejects_unknown_active_ids_clearly(): void
     {
-        $this->writeExecutionSpec('execution-spec-system', '004-spec-auto-log-on-implementation', 'execution-spec-system');
-        $result = $this->runCommand($this->fixedClockApp('2026-04-17 12:30:45 -0400'), ['foundry', 'spec:log-entry', 'execution-spec-system', '005', '--json']);
+        $this->writeExecutionSpec('execution-spec-system', '001-spec-auto-log-on-implementation', 'execution-spec-system');
+        $result = $this->runCommand($this->fixedClockApp('2026-04-17 12:30:45 -0400'), ['foundry', 'spec:log-entry', 'execution-spec-system', '002', '--json']);
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('EXECUTION_SPEC_NOT_FOUND', $result['payload']['error']['code']);
@@ -90,11 +90,23 @@ final class CLISpecLogEntryCommandTest extends TestCase
 
     public function test_spec_log_entry_rejects_malformed_ids_clearly(): void
     {
-        $this->writeExecutionSpec('execution-spec-system', '004-spec-auto-log-on-implementation', 'execution-spec-system');
+        $this->writeExecutionSpec('execution-spec-system', '001-spec-auto-log-on-implementation', 'execution-spec-system');
         $result = $this->runCommand($this->fixedClockApp('2026-04-17 12:30:45 -0400'), ['foundry', 'spec:log-entry', 'execution-spec-system', '4', '--json']);
 
         $this->assertSame(1, $result['status']);
         $this->assertSame('EXECUTION_SPEC_ID_INVALID', $result['payload']['error']['code']);
+    }
+
+    public function test_spec_log_entry_refuses_when_feature_has_skipped_ids(): void
+    {
+        $this->writeExecutionSpec('execution-spec-system', '001-first', 'execution-spec-system');
+        $this->writeExecutionSpec('execution-spec-system', '003-third', 'execution-spec-system');
+
+        $result = $this->runCommand($this->fixedClockApp('2026-04-17 12:30:45 -0400'), ['foundry', 'spec:log-entry', 'execution-spec-system', '001', '--json']);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('EXECUTION_SPEC_ID_SEQUENCE_INVALID', $result['payload']['error']['code']);
+        $this->assertStringContainsString('Skipping numbers violates execution-spec-system rules', $result['payload']['error']['message']);
     }
 
     /**

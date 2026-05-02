@@ -124,6 +124,8 @@ The root `app/*` tree is a framework-owned demo and smoke app.
 - docs/features/implementation-log.md → completed execution-spec ledger
 - For new active execution specs, save a plan file before implementation; chat-only plans are not sufficient.
 - Plan files describe implementation strategy only and must not expand or alter execution-spec scope.
+- Execution spec IDs are ordered contracts and must remain contiguous within each feature at every hierarchy level; skipping numbers is forbidden.
+- Agents must stop instead of planning, implementing, promoting, or logging execution specs when any numeric gap exists.
 - `docs/policies/*` → repository execution and reasoning policies
 - `README.md` → contributor + onboarding guidance
 - `APP-AGENTS.md`, `APP-README.md` → scaffold defaults

@@ -122,13 +122,63 @@ final class ExecutionSpecCatalog
 
     public function nextRootId(string $featureName): string
     {
-        $highest = 0;
+        $entries = $this->entries($featureName);
+        $this->assertContiguous($featureName, $entries);
 
-        foreach ($this->entries($featureName) as $entry) {
-            $highest = max($highest, (int) ($entry['segments'][0] ?? 0));
+        $topLevels = [];
+        foreach ($entries as $entry) {
+            $topLevels[(int) ($entry['segments'][0] ?? 0)] = true;
         }
 
-        return sprintf('%03d', $highest + 1);
+        $next = 1;
+        while (isset($topLevels[$next])) {
+            $next++;
+        }
+
+        return sprintf('%03d', $next);
+    }
+
+    /**
+     * @param list<array{
+     *     feature:string,
+     *     status:string,
+     *     path:string,
+     *     name:string,
+     *     id:string,
+     *     slug:string,
+     *     segments:list<int>,
+     *     parent_id:?string
+     * }> $entries
+     */
+    public function assertContiguous(string $featureName, array $entries): void
+    {
+        $continuity = new ExecutionSpecIdContinuity();
+        $gaps = $continuity->gaps(array_map(
+            static fn(array $entry): array => [
+                'id' => (string) $entry['id'],
+                'segments' => (array) $entry['segments'],
+                'path' => (string) $entry['path'],
+            ],
+            $entries,
+        ));
+
+        if ($gaps === []) {
+            return;
+        }
+
+        $firstGap = $gaps[0];
+        throw new FoundryError(
+            'EXECUTION_SPEC_ID_SEQUENCE_INVALID',
+            'validation',
+            [
+                'feature' => $featureName,
+                'missing_id' => (string) $firstGap['missing_id'],
+                'next_observed_id' => (string) $firstGap['next_observed_id'],
+                'path' => (string) $firstGap['path'],
+                'gaps' => $gaps,
+            ],
+            'Execution spec IDs must be contiguous. Skipping numbers violates execution-spec-system rules.',
+        );
     }
 
     /**

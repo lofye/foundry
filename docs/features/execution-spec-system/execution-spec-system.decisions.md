@@ -553,3 +553,37 @@ Timestamp: 2026-05-02T15:05:00-04:00
 - Enforcement Mode
 - Tests
 - Acceptance Criteria
+
+### Decision: enforce sequential execution-spec ID continuity as a fail-closed contract
+Timestamp: 2026-05-02T16:10:00-04:00
+
+**Context**
+- Active execution spec `009-enforce-sequential-execution-spec-ids` requires execution-spec IDs to behave as ordered contracts instead of optional labels.
+- Prior behavior allowed workflows to continue when a feature skipped numeric IDs, which made later specs, plans, and log entries appear valid while earlier required sequence slots were missing.
+
+**Decision**
+- Enforce deterministic contiguous execution-spec IDs across active and draft specs within each feature at every hierarchy level.
+- Treat top-level gaps, child-segment gaps, and missing-parent IDs as validation failures.
+- Make execution-spec workflows that allocate, plan, or emit execution-spec log guidance fail closed when continuity is broken.
+
+**Reasoning**
+- Ordered IDs preserve deterministic progression and reduce ambiguity about implementation order and feature history.
+- Continuity checks across active plus draft scopes prevent side-channel bypasses where drafts could skip ahead silently.
+- Fail-closed workflow behavior keeps tooling aligned with the contract instead of allowing partial enforcement.
+
+**Alternatives Considered**
+- Keep continuity as a soft warning and allow command execution.
+- Enforce only top-level continuity while ignoring child-segment gaps.
+- Enforce continuity only for active specs and ignore drafts.
+
+**Impact**
+- `spec:validate` now reports deterministic ID-gap violations and rejects skipped implementation-log sequences.
+- `spec:new`, `spec:plan`, and `spec:log-entry` now refuse to proceed when feature continuity is invalid.
+- Agent-facing and human-facing documentation now explicitly states that skipping execution-spec IDs is forbidden.
+
+**Spec Reference**
+- Rule
+- Required Behavior
+- ID Continuity Model
+- Required Command Behavior
+- Acceptance Criteria

@@ -33,6 +33,7 @@ final class ExecutionSpecValidationService
         $checkedFiles = 0;
         $features = [];
         $seenIds = [];
+        $continuityCandidates = [];
         $activeSpecReferences = [];
         $activeSpecNames = [];
         $activeSpecPathsByFeature = [];
@@ -69,6 +70,11 @@ final class ExecutionSpecValidationService
             }
 
             $seenIds[$placement['feature']][$parsedName['id']][] = $relativePath;
+            $continuityCandidates[$placement['feature']][] = [
+                'id' => $parsedName['id'],
+                'segments' => $parsedName['segments'],
+                'path' => $relativePath,
+            ];
 
             $contents = file_get_contents($this->paths->join($relativePath));
             if ($contents === false) {
@@ -133,8 +139,26 @@ final class ExecutionSpecValidationService
             }
         }
 
+        $continuity = new ExecutionSpecIdContinuity();
+        foreach ($continuityCandidates as $feature => $entries) {
+            foreach ($continuity->gaps($entries) as $gap) {
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_ID_GAP',
+                    (string) $gap['path'],
+                    'Execution spec IDs must be contiguous. Skipping numbers violates execution-spec-system rules.',
+                    [
+                        'feature' => $feature,
+                        'missing_id' => (string) $gap['missing_id'],
+                        'next_observed_id' => (string) $gap['next_observed_id'],
+                        'path' => (string) $gap['path'],
+                    ],
+                );
+            }
+        }
+
         $loggedSpecs = $this->implementationLogEntries($violations);
         if ($loggedSpecs !== null) {
+            $loggedContinuity = [];
             foreach ($activeSpecReferences as $relativePath => $specReference) {
                 if (isset($loggedSpecs[$specReference])) {
                     continue;
@@ -149,6 +173,38 @@ final class ExecutionSpecValidationService
                         'log_path' => 'docs/features/implementation-log.md',
                     ],
                 );
+            }
+
+            foreach (array_keys($loggedSpecs) as $specReference) {
+                if (preg_match('#^(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/(?<name>[^/]+)\.md$#', $specReference, $matches) !== 1) {
+                    continue;
+                }
+
+                $parsedName = ExecutionSpecFilename::parseName((string) $matches['name']);
+                if ($parsedName === null) {
+                    continue;
+                }
+
+                $loggedContinuity[(string) $matches['feature']][] = [
+                    'id' => $parsedName['id'],
+                    'segments' => $parsedName['segments'],
+                    'path' => 'docs/features/implementation-log.md',
+                ];
+            }
+
+            foreach ($loggedContinuity as $feature => $entries) {
+                foreach ($continuity->gaps($entries) as $gap) {
+                    $violations[] = $this->violation(
+                        'EXECUTION_SPEC_IMPLEMENTATION_LOG_SKIPPED_ID',
+                        'docs/features/implementation-log.md',
+                        'Implementation-log entries must not skip execution spec IDs. Skipping numbers violates execution-spec-system rules.',
+                        [
+                            'feature' => $feature,
+                            'missing_id' => (string) $gap['missing_id'],
+                            'next_observed_id' => (string) $gap['next_observed_id'],
+                        ],
+                    );
+                }
             }
         }
 

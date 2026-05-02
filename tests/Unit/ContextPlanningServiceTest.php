@@ -42,6 +42,8 @@ final class ContextPlanningServiceTest extends TestCase
     {
         $this->writeMeaningfulContext('event-bus');
         $this->writeExistingSpec('event-bus', '001-initial');
+        $this->writeExistingSpec('event-bus', '002-second');
+        $this->writeExistingSpec('event-bus', '003-parent');
         $this->writeExistingSpec('event-bus', '003.001-draft-follow-up', 'drafts');
 
         $result = $this->service()->plan('event-bus')->toArray();

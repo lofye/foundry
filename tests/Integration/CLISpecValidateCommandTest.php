@@ -152,6 +152,31 @@ TEXT . "\n", $raw['output']);
         );
     }
 
+    public function test_spec_validate_reports_sequential_gap_details_in_json_and_plain_text(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first');
+        $this->writeSpec('execution-spec-system', '003-third');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+        $this->writeImplementationLogEntry('execution-spec-system/003-third.md');
+
+        $json = $this->runCommand(['foundry', 'spec:validate', '--json']);
+        $raw = $this->runRawCommand(['foundry', 'spec:validate']);
+
+        $this->assertSame(1, $json['status']);
+        $this->assertFalse($json['payload']['ok']);
+        $gap = array_values(array_filter(
+            $json['payload']['violations'],
+            static fn(array $violation): bool => (string) $violation['code'] === 'EXECUTION_SPEC_ID_GAP',
+        ))[0];
+        $this->assertSame('002', $gap['details']['missing_id']);
+        $this->assertSame('003', $gap['details']['next_observed_id']);
+
+        $this->assertSame(1, $raw['status']);
+        $this->assertStringContainsString('EXECUTION_SPEC_ID_GAP', $raw['output']);
+        $this->assertStringContainsString('missing_id=002', $raw['output']);
+        $this->assertStringContainsString('next_observed_id=003', $raw['output']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}

@@ -127,8 +127,8 @@ MD,
 
     public function test_validate_reports_filename_only_heading_as_invalid(): void
     {
-        $this->writeSpec('execution-spec-system', '015.002.001-grandchild', '# 015.002.001-grandchild');
-        $this->writeImplementationLogEntry('execution-spec-system/015.002.001-grandchild.md');
+        $this->writeSpec('execution-spec-system', '001-grandchild', '# 001-grandchild');
+        $this->writeImplementationLogEntry('execution-spec-system/001-grandchild.md');
 
         $result = $this->service()->validate();
 
@@ -136,8 +136,8 @@ MD,
         $this->assertSame('EXECUTION_SPEC_INVALID_HEADING', $result['violations'][0]['code']);
         $this->assertSame(
             [
-                'expected_heading' => '# Execution Spec: 015.002.001-grandchild',
-                'actual_heading' => '# 015.002.001-grandchild',
+                'expected_heading' => '# Execution Spec: 001-grandchild',
+                'actual_heading' => '# 001-grandchild',
             ],
             $result['violations'][0]['details'],
         );
@@ -145,8 +145,8 @@ MD,
 
     public function test_validate_reports_malformed_execution_spec_prefix_as_invalid(): void
     {
-        $this->writeSpec('execution-spec-system', '015.002.001-grandchild', '# ExecutionSpec: 015.002.001-grandchild');
-        $this->writeImplementationLogEntry('execution-spec-system/015.002.001-grandchild.md');
+        $this->writeSpec('execution-spec-system', '001-grandchild', '# ExecutionSpec: 001-grandchild');
+        $this->writeImplementationLogEntry('execution-spec-system/001-grandchild.md');
 
         $result = $this->service()->validate();
 
@@ -154,8 +154,8 @@ MD,
         $this->assertSame('EXECUTION_SPEC_INVALID_HEADING', $result['violations'][0]['code']);
         $this->assertSame(
             [
-                'expected_heading' => '# Execution Spec: 015.002.001-grandchild',
-                'actual_heading' => '# ExecutionSpec: 015.002.001-grandchild',
+                'expected_heading' => '# Execution Spec: 001-grandchild',
+                'actual_heading' => '# ExecutionSpec: 001-grandchild',
             ],
             $result['violations'][0]['details'],
         );
@@ -165,10 +165,22 @@ MD,
     {
         $this->writeSpec(
             'execution-spec-system',
-            '015.002.001-grandchild',
-            '# Execution Spec: 015.002.001-grandchild',
+            '001-parent',
+            '# Execution Spec: 001-parent',
         );
-        $this->writeImplementationLogEntry('execution-spec-system/015.002.001-grandchild.md');
+        $this->writeSpec(
+            'execution-spec-system',
+            '001.001-child',
+            '# Execution Spec: 001.001-child',
+        );
+        $this->writeSpec(
+            'execution-spec-system',
+            '001.001.001-grandchild',
+            '# Execution Spec: 001.001.001-grandchild',
+        );
+        $this->writeImplementationLogEntry('execution-spec-system/001-parent.md');
+        $this->writeImplementationLogEntry('execution-spec-system/001.001-child.md');
+        $this->writeImplementationLogEntry('execution-spec-system/001.001.001-grandchild.md');
 
         $result = $this->service()->validate();
 
@@ -233,13 +245,75 @@ MD,
         );
     }
 
+    public function test_validate_reports_top_level_gap_deterministically(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+        $this->writeSpec('execution-spec-system', '003-third', '# Execution Spec: 003-third');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+        $this->writeImplementationLogEntry('execution-spec-system/003-third.md');
+
+        $result = $this->service()->validate();
+        $this->assertFalse($result['ok']);
+        $this->assertContains('EXECUTION_SPEC_ID_GAP', array_map(static fn(array $violation): string => (string) $violation['code'], $result['violations']));
+        $gap = array_values(array_filter($result['violations'], static fn(array $violation): bool => $violation['code'] === 'EXECUTION_SPEC_ID_GAP'))[0];
+        $this->assertSame('002', $gap['details']['missing_id']);
+        $this->assertSame('003', $gap['details']['next_observed_id']);
+        $this->assertSame('docs/features/execution-spec-system/specs/003-third.md', $gap['file_path']);
+    }
+
+    public function test_validate_reports_child_gap_and_missing_parent_deterministically(): void
+    {
+        $this->writeSpec('execution-spec-system', '007-parent', '# Execution Spec: 007-parent');
+        $this->writeSpec('execution-spec-system', '007.001-child-a', '# Execution Spec: 007.001-child-a');
+        $this->writeSpec('execution-spec-system', '007.003-child-c', '# Execution Spec: 007.003-child-c');
+        $this->writeSpec('execution-spec-system', '009.001-orphan-child', '# Execution Spec: 009.001-orphan-child');
+        $this->writeImplementationLogEntry('execution-spec-system/007-parent.md');
+        $this->writeImplementationLogEntry('execution-spec-system/007.001-child-a.md');
+        $this->writeImplementationLogEntry('execution-spec-system/007.003-child-c.md');
+        $this->writeImplementationLogEntry('execution-spec-system/009.001-orphan-child.md');
+
+        $result = $this->service()->validate();
+        $this->assertFalse($result['ok']);
+
+        $gaps = array_values(array_filter($result['violations'], static fn(array $violation): bool => $violation['code'] === 'EXECUTION_SPEC_ID_GAP'));
+        $this->assertNotEmpty($gaps);
+        $serialized = array_map(static fn(array $violation): string => json_encode($violation['details'], JSON_THROW_ON_ERROR), $gaps);
+        $this->assertContains('{"feature":"execution-spec-system","missing_id":"007.002","next_observed_id":"007.003","path":"docs\/features\/execution-spec-system\/specs\/007.003-child-c.md"}', $serialized);
+        $this->assertContains('{"feature":"execution-spec-system","missing_id":"009","next_observed_id":"009.001","path":"docs\/features\/execution-spec-system\/specs\/009.001-orphan-child.md"}', $serialized);
+    }
+
+    public function test_validate_checks_active_and_draft_continuity_together(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+        $this->writeSpec('execution-spec-system', '003-third', '# Execution Spec: 003-third', 'drafts');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+
+        $result = $this->service()->validate();
+        $this->assertFalse($result['ok']);
+        $gap = array_values(array_filter($result['violations'], static fn(array $violation): bool => $violation['code'] === 'EXECUTION_SPEC_ID_GAP'))[0];
+        $this->assertSame('002', $gap['details']['missing_id']);
+        $this->assertSame('003', $gap['details']['next_observed_id']);
+    }
+
+    public function test_validate_rejects_implementation_log_entries_with_skipped_ids(): void
+    {
+        $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');
+        $this->writeImplementationLogEntry('execution-spec-system/001-first.md');
+        $this->writeImplementationLogEntry('execution-spec-system/003-third.md');
+
+        $result = $this->service()->validate();
+        $this->assertFalse($result['ok']);
+        $codes = array_map(static fn(array $violation): string => (string) $violation['code'], $result['violations']);
+        $this->assertContains('EXECUTION_SPEC_IMPLEMENTATION_LOG_SKIPPED_ID', $codes);
+    }
+
     public function test_validate_accepts_valid_plan_file_in_canonical_location(): void
     {
-        $this->writeSpec('execution-spec-system', '008-implementation-plan-files', '# Execution Spec: 008-implementation-plan-files');
-        $this->writeImplementationLogEntry('execution-spec-system/008-implementation-plan-files.md');
+        $this->writeSpec('execution-spec-system', '001-implementation-plan-files', '# Execution Spec: 001-implementation-plan-files');
+        $this->writeImplementationLogEntry('execution-spec-system/001-implementation-plan-files.md');
         $this->writeRawFile(
-            'docs/features/execution-spec-system/plans/008-implementation-plan-files.md',
-            "# Implementation Plan: 008-implementation-plan-files\n",
+            'docs/features/execution-spec-system/plans/001-implementation-plan-files.md',
+            "# Implementation Plan: 001-implementation-plan-files\n",
         );
 
         $result = $this->service()->validate();
@@ -250,15 +324,15 @@ MD,
 
     public function test_validate_rejects_orphan_plan_and_bad_heading(): void
     {
-        $this->writeSpec('execution-spec-system', '008-implementation-plan-files', '# Execution Spec: 008-implementation-plan-files');
-        $this->writeImplementationLogEntry('execution-spec-system/008-implementation-plan-files.md');
+        $this->writeSpec('execution-spec-system', '001-implementation-plan-files', '# Execution Spec: 001-implementation-plan-files');
+        $this->writeImplementationLogEntry('execution-spec-system/001-implementation-plan-files.md');
         $this->writeRawFile(
-            'docs/features/execution-spec-system/plans/009-orphan.md',
-            "# Implementation Plan: 009-orphan\n",
+            'docs/features/execution-spec-system/plans/002-orphan.md',
+            "# Implementation Plan: 002-orphan\n",
         );
         $this->writeRawFile(
-            'docs/features/execution-spec-system/plans/008-implementation-plan-files.md',
-            "# Implementation Plan: execution-spec-system/008-implementation-plan-files\n",
+            'docs/features/execution-spec-system/plans/001-implementation-plan-files.md',
+            "# Implementation Plan: execution-spec-system/001-implementation-plan-files\n",
         );
 
         $result = $this->service()->validate();
@@ -271,9 +345,9 @@ MD,
 
     public function test_validate_require_plans_only_enforces_active_specs(): void
     {
-        $this->writeSpec('execution-spec-system', '008-active-missing-plan', '# Execution Spec: 008-active-missing-plan');
-        $this->writeSpec('execution-spec-system', '009-draft-missing-plan', '# Execution Spec: 009-draft-missing-plan', 'drafts');
-        $this->writeImplementationLogEntry('execution-spec-system/008-active-missing-plan.md');
+        $this->writeSpec('execution-spec-system', '001-active-missing-plan', '# Execution Spec: 001-active-missing-plan');
+        $this->writeSpec('execution-spec-system', '002-draft-missing-plan', '# Execution Spec: 002-draft-missing-plan', 'drafts');
+        $this->writeImplementationLogEntry('execution-spec-system/001-active-missing-plan.md');
 
         $default = $this->service()->validate();
         $strict = $this->service()->validate(true);
@@ -282,7 +356,7 @@ MD,
         $this->assertFalse($strict['ok']);
         $this->assertSame('EXECUTION_SPEC_PLAN_REQUIRED_MISSING', $strict['violations'][0]['code']);
         $this->assertSame(
-            'docs/features/execution-spec-system/plans/008-active-missing-plan.md',
+            'docs/features/execution-spec-system/plans/001-active-missing-plan.md',
             $strict['violations'][0]['details']['plan_path'],
         );
     }

@@ -85,7 +85,7 @@ final class SpecLogEntryCommand extends Command
                 'Spec log-entry target required.',
             ),
             1 => $this->resolveSinglePositionalSpec($resolver, $positionals[0]),
-            2 => $this->resolveWithinFeature($resolver, $positionals[0], $positionals[1]),
+            2 => $this->resolveWithinFeature($resolver, $positionals[0], $positionals[1], $context),
             default => throw new FoundryError(
                 'CLI_SPEC_LOG_ENTRY_ARGUMENTS_INVALID',
                 'validation',
@@ -127,8 +127,14 @@ final class SpecLogEntryCommand extends Command
         return $resolver->resolve($trimmed);
     }
 
-    private function resolveWithinFeature(ExecutionSpecResolver $resolver, string $feature, string $id): ExecutionSpec
+    private function resolveWithinFeature(ExecutionSpecResolver $resolver, string $feature, string $id, CommandContext $context): ExecutionSpec
     {
+        $canonicalFeature = FeatureNaming::canonical(trim($feature));
+        if ($this->featureExists($canonicalFeature, $context)) {
+            $catalog = new \Foundry\Context\ExecutionSpecCatalog($context->paths());
+            $catalog->assertContiguous($canonicalFeature, $catalog->entries($canonicalFeature));
+        }
+
         return $resolver->resolveWithinFeature($feature, $id);
     }
 
@@ -182,5 +188,24 @@ final class SpecLogEntryCommand extends Command
             $details,
             'Draft execution specs do not require implementation-log coverage. Promote the spec only if it later becomes active and implemented.',
         );
+    }
+
+    private function featureExists(string $feature, CommandContext $context): bool
+    {
+        $paths = [
+            'docs/features/' . $feature,
+            'docs/features/' . $feature . '/specs/drafts',
+            'docs/features/' . $feature . '/' . $feature . '.spec.md',
+            'docs/features/' . $feature . '/' . $feature . '.md',
+            'docs/features/' . $feature . '/' . $feature . '.decisions.md',
+        ];
+
+        foreach ($paths as $path) {
+            if (is_dir($context->paths()->join($path)) || is_file($context->paths()->join($path))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

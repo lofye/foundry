@@ -264,3 +264,6 @@
 
 ## 2026-05-02 18:54:35 +0000
 - spec: execution-spec-system/008-implementation-plan-files.md
+
+## 2026-05-02 19:54:11 +0000
+- spec: execution-spec-system/009-enforce-sequential-execution-spec-ids.md
