@@ -311,7 +311,7 @@ Preserve feature intent across sessions.
 
 ## Expected Behavior
 
-- Plan feature generates the next bounded execution spec deterministically under docs/features/<feature>/specs/<id>-<slug>.md.
+- Plan feature generates the next bounded execution spec deterministically under docs/features/<feature>/specs/drafts/<id>-<slug>.md.
 - Later execution systems can consume canonical feature context files safely.
 
 ## Acceptance Criteria
@@ -332,7 +332,7 @@ Preserve feature intent across sessions.
 
 ## Current State
 
-- Plan feature generates the next bounded execution spec deterministically under docs/features/<feature>/specs/<id>-<slug>.md.
+- Plan feature generates the next bounded execution spec deterministically under docs/features/<feature>/specs/drafts/<id>-<slug>.md.
 - Plan feature returns deterministic planned or blocked results.
 
 ## Open Questions

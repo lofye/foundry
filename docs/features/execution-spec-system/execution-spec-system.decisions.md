@@ -486,3 +486,34 @@ Timestamp: 2026-05-02T14:10:00-04:00
 - Canonical Path Contract
 - Required Corrections
 - Acceptance Criteria
+
+### Decision: align planning fixtures and contract tests to draft execution-spec path expectations
+Timestamp: 2026-05-02T14:30:00-04:00
+
+**Context**
+- Active execution spec `007.003-path-fixtures-tests-and-contract-cleanup` requires test and fixture contracts to reflect canonical feature-doc paths and to limit stale-path usage to explicit invalid-path coverage.
+- Several planning-related tests still described generated execution specs under `docs/features/<feature>/specs/<id>-<slug>.md` instead of the canonical planner draft path.
+
+**Decision**
+- Update planning-oriented test fixtures and expectations to use `docs/features/<feature>/specs/drafts/<id>-<slug>.md` for planner-produced specs.
+- Keep implementation-log assertions on `docs/features/implementation-log.md` and preserve deterministic contract output behavior.
+- Treat stale active-path patterns as invalid except where tests explicitly cover invalid-path handling.
+
+**Reasoning**
+- Planner output is draft-first by contract, so tests must assert the same path semantics to prevent drift.
+- Deterministic test contracts should fail on stale assumptions rather than silently accepting old path behavior.
+
+**Alternatives Considered**
+- Keep existing planning test phrasing and rely on surrounding docs for clarification.
+- Introduce path normalization in tests instead of correcting explicit expected strings.
+
+**Impact**
+- Planning fixture expectations now match canonical draft execution-spec placement.
+- Test contracts better enforce canonical path boundaries and reduce future migration regressions.
+- Validation and context alignment remain clean after fixture contract updates.
+
+**Spec Reference**
+- Purpose
+- Required Cleanup
+- Invalid Active Test Assumptions
+- Acceptance Criteria

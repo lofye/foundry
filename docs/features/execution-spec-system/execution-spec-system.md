@@ -53,6 +53,9 @@
 - Repository-local implementation skills now reference canonical spec and implementation-log paths under `docs/features/*` instead of legacy `docs/specs/*`.
 - Agent-facing framework, app, and skill instruction surfaces reflect only the canonical feature-doc path contract, and stale-path references are retained only in explicitly historical or migration contexts.
 - Human-facing README surfaces and `docs/features/README.md` now use the canonical feature-context stem (`<feature>`) and explicitly distinguish active specs, draft specs, implementation plans, and the global `docs/features/implementation-log.md` ledger.
+- Planning-oriented tests and fixtures now use draft execution-spec expectations under `docs/features/<feature>/specs/drafts/<id>-<slug>.md` instead of active-spec paths.
+- Test fixtures and contract expectations now enforce canonical active-path behavior while confining stale-path usage to explicit invalid-path coverage.
+- Human-facing and scaffolded documentation contracts now treat `docs/specs/*`, `docs/<feature>/*`, and `<id>-<slug>` feature-context stems as invalid active canonical feature-context paths.
 
 ## Open Questions
 
