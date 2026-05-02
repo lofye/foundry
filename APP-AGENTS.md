@@ -63,6 +63,9 @@ Execution rules:
 - Treat `docs/features/<feature>/<feature>.decisions.md` as append-only decision history
 - Treat code and tests as the source of truth for actual implementation and runtime behavior
 - Treat `docs/features/<feature>/specs/*.md` as execution specs: planning artifacts that are non-authoritative after implementation
+- Treat `docs/features/<feature>/specs/drafts/*.md` as draft execution specs: non-executable planning artifacts
+- Treat `docs/features/<feature>/plans/*.md` as implementation plans: planning artifacts that are non-authoritative after implementation
+- Treat `docs/features/implementation-log.md` as the completed execution-spec ledger
 - Do not hand-edit `app/generated/*`; regenerate instead
 - Do not hand-edit installed pack files under `.foundry/packs/*`; reinstall or replace them from source instead
 

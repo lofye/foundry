@@ -246,9 +246,12 @@
 - note: Added an opt-in, repository-local generate metrics system backed by deterministic records under `.foundry/metrics/generate-metrics.json`, with explicit enablement from `.foundry/config/metrics.json` and no collection when disabled.
 - note: Added `generate:metrics` CLI inspection/export support with deterministic aggregates (total runs, failures, failure rate, average workflow steps, template usage, approval usage, policy violations) and validation that fails on invalid or order-corrupted records.
 - note: Integrated metrics collection into single and workflow generate execution paths without changing behavior when metrics are disabled, and added focused unit and integration coverage for disabled/enabled collection, aggregation correctness, CLI output, and invalid-record detection.
+
 ## 2026-05-01 11:51:20 -0400
 - spec: execution-spec-system/007-modular-docs-feature-layout.md
 
-
 ## 2026-05-01 17:29:12 +0000
 - spec: execution-spec-system/009-correct-feature-docs-layout.md
+
+## 2026-05-02 17:58:07 +0000
+- spec: execution-spec-system/007.001-agent-facing-doc-path-contracts.md

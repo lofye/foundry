@@ -422,3 +422,36 @@ Timestamp: 2026-04-17T13:00:00-04:00
 - Constraints
 - Expected Behavior
 - Acceptance Criteria
+
+### Decision: align agent-facing path contracts to canonical feature docs layout
+Timestamp: 2026-05-02T14:01:00-04:00
+
+**Context**
+- Active execution spec `007.001-agent-facing-doc-path-contracts` requires agent-facing guidance to use the canonical feature-doc path layout and reject stale active path guidance.
+- Several agent-facing files still referenced legacy `docs/specs/*` locations or omitted canonical draft-spec, plan, and implementation-log path guidance.
+
+**Decision**
+- Update framework-level and app-level agent instruction surfaces to use canonical feature context paths at `docs/features/<feature>/<feature>.*`.
+- Update agent-facing instruction surfaces to include canonical draft spec, plan, and implementation-log paths.
+- Update repository-local strict implementation skills to reference `docs/features/<feature>/specs/<id>-<slug>.md` and `docs/features/implementation-log.md`.
+
+**Reasoning**
+- A single deterministic path contract reduces agent routing errors and prevents stale-file writes.
+- Keeping framework and scaffolded app instructions aligned preserves consistent behavior across repository and initialized apps.
+- Updating strict skills removes legacy path guidance from the execution workflow most likely to be reused by agents.
+
+**Alternatives Considered**
+- Restrict updates to `AGENTS.md` only.
+- Keep stale path references and rely on migration memory.
+
+**Impact**
+- Agent-facing active guidance now points to canonical feature-doc paths and canonical implementation-log location.
+- Legacy `docs/specs/*` references remain only in historical, migration, or explicit invalid-path contexts.
+- Verification workflows continue to pass with the updated path contract.
+
+**Spec Reference**
+- Purpose
+- Canonical Path Contract
+- Invalid Active Path Patterns
+- Required Rules
+- Acceptance Criteria

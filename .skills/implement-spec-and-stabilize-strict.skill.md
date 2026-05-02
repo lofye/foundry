@@ -27,7 +27,7 @@ Do not use this skill for:
 # Inputs
 
 Expect:
-- docs/specs/<feature>/<id>-<slug>.md
+- docs/features/<feature>/specs/<id>-<slug>.md
 
 If missing:
 - stop immediately and request it
@@ -106,7 +106,7 @@ If ANY step fails or leaves unresolved issues:
 
 ## Step 2 — Append Implementation Log
 - Append to:
-  docs/specs/implementation-log.md
+  docs/features/implementation-log.md
 - Must follow exact format
 
 ---

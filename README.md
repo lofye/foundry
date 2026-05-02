@@ -40,6 +40,9 @@ These paths mean:
 - `docs/features/<feature>/<feature>.md` → current state
 - `docs/features/<feature>/<feature>.decisions.md` → append-only decision history
 - `docs/features/<feature>/specs/*.md` → execution specs (planning artifacts, non-authoritative after implementation)
+- `docs/features/<feature>/specs/drafts/*.md` → draft execution specs (non-executable planning artifacts)
+- `docs/features/<feature>/plans/*.md` → implementation plans (planning artifacts)
+- `docs/features/implementation-log.md` → completed execution-spec ledger
 
 Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If canonical context is missing, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
 

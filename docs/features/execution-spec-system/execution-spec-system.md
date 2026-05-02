@@ -48,6 +48,10 @@
 - In the framework repository, `implement spec` now blocks framework-internal execution specs before the generic `app/features/*` scaffold path.
 - Framework-repository execution specs do not create `app/features/<feature>/` scaffolds for framework-internal features such as `execution-spec-system`.
 - `implement spec` returns a deterministic explicit block instead of silently generating misplaced app-feature output in the framework repository.
+- Agent-facing framework and app instruction files now consistently describe canonical feature context as `docs/features/<feature>/<feature>.*`.
+- Agent-facing instruction surfaces now include canonical draft-spec, plan, and implementation-log paths: `docs/features/<feature>/specs/drafts/*.md`, `docs/features/<feature>/plans/*.md`, and `docs/features/implementation-log.md`.
+- Repository-local implementation skills now reference canonical spec and implementation-log paths under `docs/features/*` instead of legacy `docs/specs/*`.
+- Agent-facing framework, app, and skill instruction surfaces reflect only the canonical feature-doc path contract, and stale-path references are retained only in explicitly historical or migration contexts.
 
 ## Open Questions
 

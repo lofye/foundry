@@ -15,6 +15,7 @@
 - Provide deterministic automatic implementation-log appends for successful active execution-spec completion.
 - Block only real execution-spec contradictions against canonical non-goals and negative constraints.
 - Prevent framework-repository execution specs from routing into the generic `app/features/*` scaffold pipeline.
+- Keep agent-facing framework, app, and skill instructions aligned to canonical feature-doc paths, including feature context stems, execution-spec paths, plan paths, and implementation-log path.
 
 ## Non-Goals
 - Do not introduce filesystem-specific natural-sort dependencies.
@@ -58,6 +59,8 @@
 - If the implementation log cannot be updated, `implement spec` must surface that failure clearly and deterministically. It must not report a clean successful completion, and it may return a partial-success status such as `completed_with_issues` when the implementation itself succeeded but required logging could not be completed.
 - Canonical conflict detection evaluates positive execution-spec instructions against forbidden clauses extracted from canonical non-goals and negative constraints, and aligned instructions that merely share topic nouns do not trigger `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC`.
 - In the framework repository, `implement spec` blocks framework-internal execution specs before the generic `app/features/*` scaffold path and fails explicitly until a dedicated framework-internal implementation path exists.
+- Agent-facing instructions use `docs/features/<feature>/<feature>.*` for canonical feature context, `docs/features/<feature>/specs/*.md` and `docs/features/<feature>/specs/drafts/*.md` for execution specs, `docs/features/<feature>/plans/*.md` for plans, and `docs/features/implementation-log.md` for implementation history.
+- Agent-facing instructions do not describe `docs/specs/*`, `docs/<feature>/*`, or `<id>-<slug>` feature-context stems as active canonical locations.
 
 ## Acceptance Criteria
 - Hierarchical padded execution-spec filenames are accepted and parsed deterministically.
@@ -83,6 +86,7 @@
 - True contradictions against canonical non-goals or negative constraints still return `EXECUTION_SPEC_CONFLICTS_WITH_CANONICAL_SPEC` deterministically.
 - Framework-repository execution specs do not create `app/features/<feature>/` scaffolds for framework-internal features such as `execution-spec-system`.
 - `implement spec` returns a deterministic explicit block instead of silently generating misplaced app-feature output in the framework repository.
+- Agent-facing framework, app, and skill instruction surfaces reflect only the canonical feature-doc path contract and preserve historical stale-path references only in explicitly historical or migration contexts.
 
 ## Assumptions
 - Feature directories continue to provide context and execution state.

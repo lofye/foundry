@@ -119,6 +119,9 @@ The root `app/*` tree is a framework-owned demo and smoke app.
 - docs/features/<feature>/<feature>.md → current state
 - docs/features/<feature>/<feature>.decisions.md → append-only decision history
 - docs/features/<feature>/specs/*.md → execution specs (planning artifacts, non-authoritative after implementation)
+- docs/features/<feature>/specs/drafts/*.md → draft execution specs (non-executable planning artifacts)
+- docs/features/<feature>/plans/*.md → implementation plans (planning artifacts)
+- docs/features/implementation-log.md → completed execution-spec ledger
 - `docs/policies/*` → repository execution and reasoning policies
 - `README.md` → contributor + onboarding guidance
 - `APP-AGENTS.md`, `APP-README.md` → scaffold defaults
@@ -347,6 +350,7 @@ Canonical files:
 - `docs/features/<feature>/<feature>.spec.md` = intent
 - `docs/features/<feature>/<feature>.md` = state
 - `docs/features/<feature>/<feature>.decisions.md` = history
+- `docs/features/implementation-log.md` = completed execution-spec ledger
 
 Execution specs under `docs/features/<feature>/specs/*.md` are:
 
