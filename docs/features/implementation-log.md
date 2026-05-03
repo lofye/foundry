@@ -286,3 +286,7 @@
 ## 2026-05-03 10:03:21 -0400
 - spec: mcp-server/001-read-layer.md
 - note: Implemented a deterministic read-only MCP runtime with `mcp:serve`, stable tool registry/handlers (`explain_target`, `inspect_graph`, `list_packs`, `explain_pack`, `doctor`, `list_examples`), CLI parity via a read bridge, and unit/integration coverage for wrapper shape and parity behavior.
+
+## 2026-05-03 19:34:25 -0400
+- spec: event-system/001-registry-synchronous-deterministic-dispatch.md
+- note: Implemented deterministic synchronous event primitives (`EventRegistry`, `EventDispatcher`), added read-only CLI inspection commands (`event:list`, `event:inspect`), extended MCP read tools (`event.list`, `event.inspect`) via CLI parity, and added focused unit/integration coverage for ordering, failure wrapping, and deterministic read outputs.

@@ -16,6 +16,7 @@ use Foundry\CLI\Commands\ContextRepairCommand;
 use Foundry\CLI\Commands\DiffCommand;
 use Foundry\CLI\Commands\DoctorCommand;
 use Foundry\CLI\Commands\ExamplesCommand;
+use Foundry\CLI\Commands\EventCommand;
 use Foundry\CLI\Commands\ExplainCommand;
 use Foundry\CLI\Commands\ExportGraphCommand;
 use Foundry\CLI\Commands\ExportOpenApiCommand;
@@ -148,6 +149,7 @@ final class Application
             new LicenseCommand(),
             new McpServeCommand(),
             new FeaturesCommand(),
+            new EventCommand(),
             new PackCommand(),
             new PromptGenerateCommand(),
             new GenerateMetricsCommand(),

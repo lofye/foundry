@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Foundry\MCP;
 
 use Foundry\MCP\Handlers\DoctorHandler;
+use Foundry\MCP\Handlers\EventInspectHandler;
+use Foundry\MCP\Handlers\EventListHandler;
 use Foundry\MCP\Handlers\ExplainPackHandler;
 use Foundry\MCP\Handlers\ExplainTargetHandler;
 use Foundry\MCP\Handlers\InspectGraphHandler;
@@ -22,6 +24,8 @@ final class MCPServer
         $registry = new ToolRegistry();
 
         $registry->register('doctor', new DoctorHandler($bridge));
+        $registry->register('event.inspect', new EventInspectHandler($bridge));
+        $registry->register('event.list', new EventListHandler($bridge));
         $registry->register('explain_pack', new ExplainPackHandler($bridge));
         $registry->register('explain_target', new ExplainTargetHandler($bridge));
         $registry->register('inspect_graph', new InspectGraphHandler($bridge));
