@@ -2,46 +2,54 @@
 
 ## Purpose
 
-- Define the canonical feature context for Foundry's future MCP server surface.
-- Preserve a deterministic planning contract for MCP work before runtime implementation begins.
+- Define the deterministic, read-only MCP surface for Foundry introspection and diagnostics.
 
 ## Goals
 
-- Keep the feature documented under canonical spec, state, and decision files.
-- Track MCP server work through feature-local execution specs.
-- Keep current intent truthful while the feature remains unimplemented.
+- Expose stable MCP tooling for canonical read operations.
+- Preserve CLI parity by delegating to existing read models and command surfaces.
+- Keep MCP V1 strictly read-only and deterministic.
 
 ## Non-Goals
 
-- Do not claim that an MCP server runtime already exists.
-- Do not define mutation or write-capable MCP behavior in the current repository state.
-- Do not bypass the normal feature-context workflow for future MCP work.
+- No mutation or generate operations in V1.
+- No replacement of existing CLI behavior.
+- No non-deterministic or hidden-state tool behavior.
 
 ## Constraints
 
-- Feature context must remain deterministic and machine-consumable.
-- Any future MCP implementation must be driven by canonical feature context rather than draft specs alone.
-- Current documentation must describe present repository reality accurately.
+- MCP tools must return deterministic JSON for identical inputs.
+- MCP tools must map to existing CLI read commands or deterministic read models.
+- The MCP surface must not perform filesystem mutation, generation, or state changes.
 
 ## Expected Behavior
 
-- The repository contains canonical feature context files for `mcp-server`.
-- MCP planning work may exist as draft execution specs under `docs/mcp-server/specs/drafts/`.
-- The current repository state may include a draft read-layer execution spec at `docs/mcp-server/specs/drafts/001-read-layer.md`.
-- The draft read-layer execution spec describes a future deterministic, read-only MCP server surface for Foundry introspection.
-- The current feature state may explicitly report draft planning artifacts without claiming shipped MCP runtime behavior.
-- The current feature state may explicitly report that it no longer relies on placeholder-only sections.
-- Current `mcp-server` work is documentation and planning only until an active execution spec is promoted and implemented.
-- No implemented MCP server command or runtime behavior is implied by this context alone.
+- `foundry mcp:serve` is available as the MCP entrypoint.
+- MCP startup manifest includes canonical tool list:
+  - `explain_target`
+  - `inspect_graph`
+  - `list_packs`
+  - `explain_pack`
+  - `doctor`
+  - `list_examples`
+- MCP tool responses use canonical wrapper shape:
+  - `{"tool":"<name>","data":{...}}`
+- MCP `explain_target` reuses canonical explain behavior.
+- MCP `inspect_graph` reuses canonical graph inspection behavior.
+- MCP `list_packs` reflects installed pack state deterministically.
+- MCP `explain_pack` reuses canonical pack explain behavior.
+- MCP `doctor` matches read-only doctor diagnostics behavior.
+- MCP `list_examples` reflects canonical example catalog behavior.
 
 ## Acceptance Criteria
 
-- `mcp-server` has canonical spec, state, and decisions documents in the feature-local docs layout.
-- The current feature state may truthfully report draft planning artifacts without claiming shipped MCP runtime behavior.
-- The current feature state can be read without placeholder-only sections.
-- The current feature state reflects the unimplemented, draft-planning-only status of `mcp-server`.
+- MCP server command is implemented and callable locally.
+- All V1 tools return valid deterministic JSON.
+- Tool outputs preserve parity with existing CLI read surfaces.
+- Pack-aware data is visible through MCP read tools.
+- No write-capable MCP operations are registered in V1.
 
 ## Assumptions
 
-- MCP server implementation work will be added later through promoted execution specs.
-- The existing draft execution spec describes future intended work rather than completed behavior.
+- Future MCP expansion will continue to use promoted execution specs.
+- Mutation-capable MCP surfaces require explicit future contract work and are out of scope for this feature state.

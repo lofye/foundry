@@ -73,3 +73,44 @@ Timestamp: 2026-05-01T12:12:00-04:00
 - Expected Behavior
 - Acceptance Criteria
 - Assumptions
+
+### Decision: implement a deterministic read-only MCP runtime that delegates to canonical CLI read surfaces
+
+Timestamp: 2026-05-03T09:59:00-04:00
+
+**Context**
+
+- The active execution spec `001-read-layer` required a shipped MCP read surface, but the repository had no `mcp:serve` command and no MCP runtime classes.
+- Existing Foundry read behavior already existed through deterministic CLI surfaces (`explain`, `inspect`, `pack`, `doctor`, `examples:list`).
+
+**Decision**
+
+- Implement `mcp:serve` with a deterministic MCP runtime composed of `MCPServer`, `ToolRegistry`, and stateless tool handlers.
+- Implement MCP tools `explain_target`, `inspect_graph`, `list_packs`, `explain_pack`, `doctor`, and `list_examples`.
+- Reuse existing CLI read behavior through a dedicated `CliReadBridge` instead of duplicating explain/inspect/doctor logic.
+
+**Reasoning**
+
+- CLI delegation preserves parity and avoids divergence between MCP and user-facing read behavior.
+- A registry + handler model provides stable tool identities and deterministic registration order.
+- Restricting V1 to read-only tools preserves safety and aligns with the execution spec.
+
+**Alternatives Considered**
+
+- Build a parallel MCP-specific explain/inspect implementation.
+- Ship only planning docs and defer runtime implementation.
+- Introduce write-capable tools in V1.
+
+**Impact**
+
+- Foundry now exposes a machine-consumable, deterministic MCP read layer through `mcp:serve`.
+- MCP tool responses are stable wrappers around canonical read outputs.
+- The feature state transitions from planning-only to implemented read-layer behavior.
+
+**Spec Reference**
+
+- Purpose
+- Tool Surface
+- CLI Parity Rules
+- Safety Model
+- Acceptance Criteria

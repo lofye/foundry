@@ -2,26 +2,37 @@
 
 ## Purpose
 
-- Record the current repository state for the planned `mcp-server` feature.
+- Record the current repository state for Foundry's deterministic, read-only MCP server surface.
 
 ## Current State
 
-- Canonical feature context now exists for `mcp-server` under `docs/mcp-server/`.
-- One draft execution spec exists at `docs/mcp-server/specs/drafts/001-read-layer.md`.
-- The draft spec describes a future deterministic, read-only MCP server surface for Foundry introspection.
-- The current feature state explicitly reports draft planning artifacts without claiming shipped MCP runtime behavior.
-- The current feature state no longer relies on placeholder-only sections.
-- No implemented `mcp:serve` command, runtime MCP server, or shipped MCP tool surface is being claimed by this feature state.
-- The current feature state reflects the unimplemented, draft-planning-only status of `mcp-server`.
+- `foundry mcp:serve` is implemented and callable locally.
+- MCP startup manifest includes the canonical tool list:
+  - `explain_target`
+  - `inspect_graph`
+  - `list_packs`
+  - `explain_pack`
+  - `doctor`
+  - `list_examples`
+- MCP tool responses use the canonical wrapper shape:
+  - `{"tool":"<name>","data":{...}}`
+- `explain_target` reuses canonical explain behavior.
+- `inspect_graph` reuses canonical graph inspection behavior.
+- `list_packs` reflects installed pack state deterministically.
+- `explain_pack` reuses canonical pack explain behavior.
+- `doctor` matches read-only doctor diagnostics behavior.
+- `list_examples` reflects canonical example catalog behavior.
+- All V1 tools return valid deterministic JSON.
+- Tool outputs preserve parity with existing CLI read surfaces.
+- Pack-aware data is visible through MCP read tools.
+- No write-capable MCP operations are registered in V1.
 
 ## Open Questions
 
-- Which subset of Foundry read surfaces should become first-class MCP tools in the initial implementation?
-- Whether the first implementation should use stdio only or support multiple transport modes remains unresolved.
-- The exact rollout path from draft planning to active implementation is not yet decided.
+- Whether future MCP transport support should include explicit TCP mode in addition to stdio is unresolved.
+- Which additional read surfaces should be promoted into first-class MCP tools after V1 remains unresolved.
 
 ## Next Steps
 
-- Promote the draft execution spec when MCP work is ready to move from planning into active implementation.
-- Decide the initial MCP transport and tool scope before implementing runtime behavior.
-- Keep this feature state aligned with the repository until real MCP server code exists.
+- Expand MCP tool coverage only through deterministic CLI parity mappings.
+- Preserve read-only behavior until an explicit mutation-surface execution spec is promoted and approved.

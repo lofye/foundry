@@ -43,6 +43,7 @@ use Foundry\CLI\Commands\InspectPlatformCommand;
 use Foundry\CLI\Commands\InspectResourceCommand;
 use Foundry\CLI\Commands\InspectRouteCommand;
 use Foundry\CLI\Commands\LicenseCommand;
+use Foundry\CLI\Commands\McpServeCommand;
 use Foundry\CLI\Commands\MigrateDefinitionsCommand;
 use Foundry\CLI\Commands\ObserveCommand;
 use Foundry\CLI\Commands\PackCommand;
@@ -145,6 +146,7 @@ final class Application
             new InitAppCommand(),
             new ExamplesCommand(),
             new LicenseCommand(),
+            new McpServeCommand(),
             new FeaturesCommand(),
             new PackCommand(),
             new PromptGenerateCommand(),

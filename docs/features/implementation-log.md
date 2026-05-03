@@ -282,3 +282,7 @@
 ## 2026-05-02 20:53:32 -0400
 - spec: extension-system/002-extension-marketplace-integration.md
 - note: Added executable CLI aliases `extension:install`, `extension:search`, and `extension:list` that route to the deterministic pack marketplace flows, plus API-surface command metadata and integration coverage for alias behavior.
+
+## 2026-05-03 10:03:21 -0400
+- spec: mcp-server/001-read-layer.md
+- note: Implemented a deterministic read-only MCP runtime with `mcp:serve`, stable tool registry/handlers (`explain_target`, `inspect_graph`, `list_packs`, `explain_pack`, `doctor`, `list_examples`), CLI parity via a read bridge, and unit/integration coverage for wrapper shape and parity behavior.
