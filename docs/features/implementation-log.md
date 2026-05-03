@@ -274,3 +274,11 @@
 ## 2026-05-02 18:24:22 -0400
 - spec: extension-system/001-pack-interface-and-service-provider-contract.md
 - note: Enforced deterministic pack service-provider activation by wrapping register() failures, rejecting register-time global/filesystem side effects, and adding focused loader coverage for thrown registration and side-effect failure modes.
+
+## 2026-05-02 20:48:08 -0400
+- spec: extension-system/002-extension-marketplace-integration.md
+- note: Validated deterministic hosted-pack discovery and install flows, explicit version pinning and compatibility enforcement, installed-pack registry persistence, and pack CLI/inspect/verify surfaces; closed strict compliance by adding the required active-spec ledger entry.
+
+## 2026-05-02 20:53:32 -0400
+- spec: extension-system/002-extension-marketplace-integration.md
+- note: Added executable CLI aliases `extension:install`, `extension:search`, and `extension:list` that route to the deterministic pack marketplace flows, plus API-surface command metadata and integration coverage for alias behavior.

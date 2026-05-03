@@ -164,7 +164,7 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'completion', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new', 'spec:plan', 'spec:log-entry', 'spec:validate', 'plan:list', 'plan:replay', 'plan:show', 'plan:undo' => $first,
+            'help', 'completion', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new', 'spec:plan', 'spec:log-entry', 'spec:validate', 'plan:list', 'plan:replay', 'plan:show', 'plan:undo', 'extension:install', 'extension:search', 'extension:list' => $first,
             'license' => match ($second) {
                 'status' => 'license status',
                 'activate' => 'license activate',
@@ -418,6 +418,9 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('pack remove', 'pack remove <vendor/pack>', 'experimental', 'Deactivate an installed Foundry pack without deleting its files.'),
             $this->cliCommandEntry('pack list', 'pack list', 'experimental', 'List locally installed Foundry packs, active versions, and whether each pack came from local or remote install sources.'),
             $this->cliCommandEntry('pack info', 'pack info <vendor/pack>', 'experimental', 'Inspect local manifest metadata, checksum/signature, install source, activation state, and explain summary for one pack.'),
+            $this->cliCommandEntry('extension:install', 'extension:install <path-or-name>', 'experimental', 'Alias for `pack install` to preserve legacy extension marketplace command compatibility.'),
+            $this->cliCommandEntry('extension:search', 'extension:search <query>', 'experimental', 'Alias for `pack search` to preserve legacy extension marketplace command compatibility.'),
+            $this->cliCommandEntry('extension:list', 'extension:list', 'experimental', 'Alias for `pack list` to preserve legacy extension marketplace command compatibility.'),
             $this->cliCommandEntry('explain', 'explain [<target>] [--type=<kind>] [--markdown] [--deep] [--neighbors|--no-neighbors] [--no-diagnostics] [--no-flow] [--git] [--diff]', 'experimental', 'Explain a framework, application, or installed pack subject from the compiled graph, projections, diagnostics, docs metadata, and extension registry. When no target is given, Foundry explains the first feature or route deterministically. JSON output includes deterministic confidence data, optional Git context, and `foundry explain --diff` renders the last architectural generate diff.'),
             $this->cliCommandEntry('diff', 'diff', 'experimental', 'Compare the current graph against the last compiled baseline.'),
             $this->cliCommandEntry('trace', 'trace [<target>]', 'experimental', 'Analyze local trace output for a feature, route, or free-form filter.'),

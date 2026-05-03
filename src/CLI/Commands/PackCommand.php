@@ -16,25 +16,43 @@ final class PackCommand extends Command
     #[\Override]
     public function supportedSignatures(): array
     {
-        return ['pack install', 'pack remove', 'pack list', 'pack info', 'pack search'];
+        return [
+            'pack install',
+            'pack remove',
+            'pack list',
+            'pack info',
+            'pack search',
+            'extension:install',
+            'extension:search',
+            'extension:list',
+        ];
     }
 
     #[\Override]
     public function matches(array $args): bool
     {
-        return ($args[0] ?? null) === 'pack'
-            && in_array((string) ($args[1] ?? ''), ['install', 'remove', 'list', 'info', 'search'], true);
+        if (($args[0] ?? null) === 'pack') {
+            return in_array((string) ($args[1] ?? ''), ['install', 'remove', 'list', 'info', 'search'], true);
+        }
+
+        return in_array((string) ($args[0] ?? ''), ['extension:install', 'extension:search', 'extension:list'], true);
     }
 
     #[\Override]
     public function run(array $args, CommandContext $context): array
     {
         $action = (string) ($args[1] ?? '');
+        $subject = (string) ($args[2] ?? '');
+        if (str_starts_with((string) ($args[0] ?? ''), 'extension:')) {
+            $action = substr((string) $args[0], strlen('extension:'));
+            $subject = (string) ($args[1] ?? '');
+        }
+
         $manager = $this->manager ?? new PackManager($context->paths());
 
         return match ($action) {
             'install' => $this->result(
-                payload: ['pack' => $manager->install((string) ($args[2] ?? ''), $context)],
+                payload: ['pack' => $manager->install($subject, $context)],
                 message: fn(array $payload): string => $this->renderInstall($payload['pack'] ?? []),
                 json: $context->expectsJson(),
             ),
@@ -49,12 +67,12 @@ final class PackCommand extends Command
                 json: $context->expectsJson(),
             ),
             'info' => $this->result(
-                payload: ['pack' => $manager->info((string) ($args[2] ?? ''), $context)],
+                payload: ['pack' => $manager->info($subject, $context)],
                 message: fn(array $payload): string => $this->renderInfo((array) ($payload['pack'] ?? [])),
                 json: $context->expectsJson(),
             ),
             'search' => $this->result(
-                payload: $manager->search((string) ($args[2] ?? '')),
+                payload: $manager->search($subject),
                 message: fn(array $payload): string => $this->renderSearch($payload),
                 json: $context->expectsJson(),
             ),

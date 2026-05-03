@@ -366,6 +366,34 @@ final class CLIPackCommandsTest extends TestCase
         $this->assertSame('PACK_REGISTRY_UNAVAILABLE', $result['payload']['error']['code']);
     }
 
+    public function test_extension_alias_commands_route_to_pack_marketplace_flows(): void
+    {
+        $app = new Application();
+
+        $install = $this->runCommand($app, ['foundry', 'extension:install', $this->fixturePath('foundry-blog'), '--json']);
+        $this->assertSame(0, $install['status']);
+        $this->assertSame('foundry/blog', $install['payload']['pack']['pack']);
+
+        $list = $this->runCommand($app, ['foundry', 'extension:list', '--json']);
+        $this->assertSame(0, $list['status']);
+        $this->assertSame('foundry/blog', $list['payload']['packs'][0]['name']);
+
+        $search = $this->runCommand($this->hostedPackApplication([
+            [
+                'name' => 'foundry/blog',
+                'version' => '1.1.0',
+                'description' => 'Blog workflow tools',
+                'download_url' => 'https://downloads.example/foundry-blog-1.1.0.zip',
+                'checksum' => str_repeat('1', 64),
+                'signature' => null,
+                'verified' => true,
+            ],
+        ]), ['foundry', 'extension:search', 'blog', '--json']);
+        $this->assertSame(0, $search['status']);
+        $this->assertSame('blog', $search['payload']['query']);
+        $this->assertSame('foundry/blog', $search['payload']['packs'][0]['name']);
+    }
+
     /**
      * @param array<int,string> $argv
      * @return array{status:int,payload:array<string,mixed>}
