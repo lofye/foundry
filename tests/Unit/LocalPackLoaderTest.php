@@ -323,6 +323,96 @@ PHP);
         $this->assertContains('PACK_ENTRY_INVALID', $codes);
     }
 
+    public function test_loader_reports_register_failures_and_side_effects(): void
+    {
+        $paths = Paths::fromCwd($this->project->root);
+        $registry = new InstalledPackRegistry($paths);
+
+        $throwingDir = $registry->installPath('foundry/throwing-pack', '1.0.0');
+        mkdir($throwingDir, 0777, true);
+        file_put_contents($throwingDir . '/Provider.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+
+namespace Vendor\Throwing;
+
+use Foundry\Packs\PackContext;
+use Foundry\Packs\PackServiceProvider;
+
+final class Provider implements PackServiceProvider
+{
+    public function register(PackContext $context): void
+    {
+        throw new \RuntimeException('boom');
+    }
+}
+PHP);
+        $throwingChecksum = $this->writeManifest($throwingDir, [
+            'name' => 'foundry/throwing-pack',
+            'version' => '1.0.0',
+            'description' => 'Throwing register',
+            'entry' => 'Vendor\\Throwing\\Provider',
+            'capabilities' => ['throwing.capability'],
+            'signature' => null,
+        ]);
+        $registry->activate(new PackManifest(
+            name: 'foundry/throwing-pack',
+            version: '1.0.0',
+            description: 'Throwing register',
+            entry: 'Vendor\\Throwing\\Provider',
+            capabilities: ['throwing.capability'],
+            checksum: $throwingChecksum,
+            signature: null,
+        ));
+
+        $sideEffectDir = $registry->installPath('foundry/side-effect-pack', '1.0.0');
+        mkdir($sideEffectDir, 0777, true);
+        file_put_contents($sideEffectDir . '/Provider.php', <<<'PHP'
+<?php
+declare(strict_types=1);
+
+namespace Vendor\SideEffect;
+
+use Foundry\Packs\PackContext;
+use Foundry\Packs\PackServiceProvider;
+
+final class Provider implements PackServiceProvider
+{
+    public function register(PackContext $context): void
+    {
+        file_put_contents($context->installPath() . '/unexpected.txt', 'x');
+    }
+}
+PHP);
+        $sideEffectChecksum = $this->writeManifest($sideEffectDir, [
+            'name' => 'foundry/side-effect-pack',
+            'version' => '1.0.0',
+            'description' => 'Side effects',
+            'entry' => 'Vendor\\SideEffect\\Provider',
+            'capabilities' => ['side-effect.capability'],
+            'signature' => null,
+        ]);
+        $registry->activate(new PackManifest(
+            name: 'foundry/side-effect-pack',
+            version: '1.0.0',
+            description: 'Side effects',
+            entry: 'Vendor\\SideEffect\\Provider',
+            capabilities: ['side-effect.capability'],
+            checksum: $sideEffectChecksum,
+            signature: null,
+        ));
+
+        $result = (new LocalPackLoader($paths))->load();
+        $codes = array_values(array_map(
+            static fn(array $row): string => (string) ($row['code'] ?? ''),
+            $result['diagnostics'],
+        ));
+
+        $this->assertContains('PACK_REGISTER_FAILED', $codes);
+        $this->assertContains('PACK_REGISTER_SIDE_EFFECT', $codes);
+        $this->assertSame([], $result['entries']);
+    }
+
     public function test_loader_uses_autoload_files_and_registers_compiler_extension_providers(): void
     {
         $paths = Paths::fromCwd($this->project->root);

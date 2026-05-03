@@ -266,7 +266,46 @@ final class LocalPackLoader
         }
 
         $context = new PackContext($manifest, $installPath);
-        $provider->register($context);
+        $cwdBefore = getcwd() ?: null;
+        $superglobalsBefore = $this->sideEffectSnapshot();
+        $installChecksumBefore = PackChecksum::forDirectory($installPath);
+
+        try {
+            $provider->register($context);
+        } catch (\Throwable $error) {
+            throw new FoundryError(
+                'PACK_REGISTER_FAILED',
+                'runtime',
+                [
+                    'entry' => $manifest->entry,
+                    'install_path' => $installPath,
+                    'exception' => $error::class,
+                ],
+                'Pack provider register() threw an exception.',
+                0,
+                $error,
+            );
+        }
+
+        $cwdAfter = getcwd() ?: null;
+        if ($cwdBefore !== $cwdAfter || $superglobalsBefore !== $this->sideEffectSnapshot()) {
+            throw new FoundryError(
+                'PACK_REGISTER_SIDE_EFFECT',
+                'validation',
+                ['entry' => $manifest->entry, 'install_path' => $installPath],
+                'Pack provider register() must not mutate global runtime state.',
+            );
+        }
+
+        $installChecksumAfter = PackChecksum::forDirectory($installPath);
+        if ($installChecksumBefore !== $installChecksumAfter) {
+            throw new FoundryError(
+                'PACK_REGISTER_SIDE_EFFECT',
+                'validation',
+                ['entry' => $manifest->entry, 'install_path' => $installPath],
+                'Pack provider register() must not modify installed pack files.',
+            );
+        }
 
         $extension = $context->extension();
         if ($extension === null && $provider instanceof CompilerExtension) {
@@ -275,6 +314,31 @@ final class LocalPackLoader
         }
 
         return [new InstalledPackExtension($manifest, $context, $extension, $source), $context];
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    private function sideEffectSnapshot(): array
+    {
+        return [
+            '_ENV' => $this->stableHash($_ENV),
+            '_SERVER' => $this->stableHash($_SERVER),
+            '_GET' => $this->stableHash($_GET),
+            '_POST' => $this->stableHash($_POST),
+            '_FILES' => $this->stableHash($_FILES),
+            '_COOKIE' => $this->stableHash($_COOKIE),
+            '_REQUEST' => $this->stableHash($_REQUEST),
+        ];
+    }
+
+    private function stableHash(array $value): string
+    {
+        try {
+            return hash('sha256', serialize($value));
+        } catch (\Throwable) {
+            return hash('sha256', json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '');
+        }
     }
 
     private function loadPhpFiles(string $installPath): void

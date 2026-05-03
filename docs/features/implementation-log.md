@@ -270,3 +270,7 @@
 
 ## 2026-05-02 20:06:01 +0000
 - spec: execution-spec-system/010-enforce-feature-scoped-gapless-spec-ids.md
+
+## 2026-05-02 18:24:22 -0400
+- spec: extension-system/001-pack-interface-and-service-provider-contract.md
+- note: Enforced deterministic pack service-provider activation by wrapping register() failures, rejecting register-time global/filesystem side effects, and adding focused loader coverage for thrown registration and side-effect failure modes.
