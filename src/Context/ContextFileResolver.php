@@ -8,6 +8,10 @@ use Foundry\Support\FeatureNaming;
 
 final class ContextFileResolver
 {
+    public function __construct(
+        private readonly ?string $workspaceRoot = null,
+    ) {}
+
     public function legacySpecPath(string $featureName): string
     {
         $featureName = FeatureNaming::canonical($featureName);
@@ -24,7 +28,10 @@ final class ContextFileResolver
 
     public function specPath(string $featureName): string
     {
-        return $this->legacySpecPath($featureName);
+        return $this->preferredPath(
+            canonical: $this->canonicalSpecPath($featureName),
+            legacy: $this->legacySpecPath($featureName),
+        );
     }
 
     public function legacyStatePath(string $featureName): string
@@ -43,7 +50,10 @@ final class ContextFileResolver
 
     public function statePath(string $featureName): string
     {
-        return $this->legacyStatePath($featureName);
+        return $this->preferredPath(
+            canonical: $this->canonicalStatePath($featureName),
+            legacy: $this->legacyStatePath($featureName),
+        );
     }
 
     public function legacyDecisionsPath(string $featureName): string
@@ -62,7 +72,10 @@ final class ContextFileResolver
 
     public function decisionsPath(string $featureName): string
     {
-        return $this->legacyDecisionsPath($featureName);
+        return $this->preferredPath(
+            canonical: $this->canonicalDecisionsPath($featureName),
+            legacy: $this->legacyDecisionsPath($featureName),
+        );
     }
 
     /**
@@ -106,5 +119,55 @@ final class ContextFileResolver
         $parts = array_filter(explode('-', $slug), static fn(string $part): bool => $part !== '');
 
         return implode('', array_map(static fn(string $part): string => ucfirst($part), $parts));
+    }
+
+    private function preferredPath(string $canonical, string $legacy): string
+    {
+        if ($this->isFile($canonical)) {
+            return $canonical;
+        }
+
+        if ($this->isFile($legacy)) {
+            return $legacy;
+        }
+
+        if ($this->isDirectory(dirname($canonical))) {
+            return $canonical;
+        }
+
+        if ($this->isDirectory(dirname($legacy))) {
+            return $legacy;
+        }
+
+        return $legacy;
+    }
+
+    private function isFile(string $relativePath): bool
+    {
+        $absolutePath = $this->absolutePath($relativePath);
+        if ($absolutePath === null) {
+            return false;
+        }
+
+        return is_file($absolutePath);
+    }
+
+    private function isDirectory(string $relativePath): bool
+    {
+        $absolutePath = $this->absolutePath($relativePath);
+        if ($absolutePath === null) {
+            return false;
+        }
+
+        return is_dir($absolutePath);
+    }
+
+    private function absolutePath(string $relativePath): ?string
+    {
+        if ($this->workspaceRoot === null || $this->workspaceRoot === '') {
+            return null;
+        }
+
+        return rtrim($this->workspaceRoot, '/\\') . '/' . ltrim($relativePath, '/\\');
     }
 }

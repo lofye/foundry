@@ -82,7 +82,7 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertFalse($result['repair_attempted']);
         $this->assertFalse($result['repair_successful']);
         $this->assertTrue($result['quality_gate']['passed']);
-        $this->assertSame(95.0, $result['quality_gate']['coverage']['global_line_coverage']);
+        $this->assertSame(100.0, $result['quality_gate']['coverage']['global_line_coverage']);
         $this->assertSame('passed', $result['quality_gate']['changed_surface']['status']);
         $this->assertFileExists($this->project->root . '/app/features/event-bus/feature.yaml');
         $this->assertStringContainsString('Implemented Event bus feature scaffolding exists in the app.', (string) file_get_contents($this->project->root . '/docs/features/event-bus/event-bus.md'));
@@ -111,7 +111,18 @@ final class ContextExecutionServiceTest extends TestCase
     public function test_execution_returns_completed_with_issues_when_quality_gate_fails(): void
     {
         $this->writeMeaningfulContext('event-bus');
-        file_put_contents($this->project->root . '/.foundry-test-coverage-lines', "89.50\n");
+        $coveragePath = $this->project->root . '/src/Foo.php';
+        if (!is_dir(dirname($coveragePath))) {
+            mkdir(dirname($coveragePath), 0777, true);
+        }
+        file_put_contents($coveragePath, "<?php\n");
+        file_put_contents($this->project->root . '/.foundry-test-coverage-files.json', json_encode([
+            [
+                'path' => $coveragePath,
+                'statements' => 10,
+                'covered_statements' => 8,
+            ],
+        ], JSON_THROW_ON_ERROR));
 
         $result = $this->service()->execute('event-bus')->toArray();
 
@@ -120,7 +131,7 @@ final class ContextExecutionServiceTest extends TestCase
         $this->assertTrue($result['requires_repair']);
         $this->assertSame('IMPLEMENTATION_QUALITY_GATE_GLOBAL_COVERAGE_BELOW_THRESHOLD', $result['issues'][0]['code']);
         $this->assertFalse($result['quality_gate']['passed']);
-        $this->assertSame(89.5, $result['quality_gate']['coverage']['global_line_coverage']);
+        $this->assertSame(80.0, $result['quality_gate']['coverage']['global_line_coverage']);
     }
 
     public function test_guided_repair_resolves_simple_issues_deterministically(): void

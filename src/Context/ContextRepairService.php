@@ -10,15 +10,17 @@ use Foundry\Support\Paths;
 
 final class ContextRepairService
 {
+    private readonly ContextFileResolver $resolver;
     private readonly ContextInspectionService $inspectionService;
 
     public function __construct(
         private readonly Paths $paths,
         ?ContextInspectionService $inspectionService = null,
-        private readonly ContextFileResolver $resolver = new ContextFileResolver(),
+        ?ContextFileResolver $resolver = null,
         private readonly FeatureSpecDocumentNormalizer $featureSpecDocumentNormalizer = new FeatureSpecDocumentNormalizer(),
         private readonly StateDocumentNormalizer $stateDocumentNormalizer = new StateDocumentNormalizer(),
     ) {
+        $this->resolver = $resolver ?? new ContextFileResolver($paths->root());
         $this->inspectionService = $inspectionService ?? new ContextInspectionService($paths);
     }
 

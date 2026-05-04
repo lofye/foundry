@@ -43,7 +43,8 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $args = $_SERVER['argv'] ?? [];
-$isCoverage = in_array('--coverage-text', $args, true);
+$isCoverage = in_array('--coverage-text', $args, true)
+    || in_array('--coverage-clover', $args, true);
 $coverageCloverPath = null;
 
 foreach ($args as $index => $arg) {
@@ -104,6 +105,17 @@ if ($isCoverage) {
                     'covered_statements' => 10,
                 ];
             }
+        }
+
+        if ($coverageFiles === []) {
+            $lineCoverage = (float) $readControl('.foundry-test-coverage-lines', '95.00');
+            $statements = 100;
+            $coveredStatements = (int) round(($lineCoverage / 100) * $statements);
+            $coverageFiles[] = [
+                'path' => $root . '/src/__synthetic__.php',
+                'statements' => $statements,
+                'covered_statements' => $coveredStatements,
+            ];
         }
 
         $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<coverage generated=\"0\">\n  <project timestamp=\"0\">\n";

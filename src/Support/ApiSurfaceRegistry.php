@@ -554,6 +554,7 @@ final class ApiSurfaceRegistry
             'feature' => ['stable', 'verify feature <feature>', 'Verify feature-local contract completeness.'],
             'features' => ['stable', 'verify features', 'Verify feature workspace boundary compliance and canonical/legacy duplication diagnostics.'],
             'context' => ['stable', 'verify context [--feature=<feature>]', 'Verify feature context health using doctor and alignment results.'],
+            'coverage' => ['stable', 'verify coverage [--min=<percent>] [--clover=<path>]', 'Verify coverage threshold compliance from Clover XML metrics.'],
             'resource' => ['stable', 'verify resource <name>', 'Verify resource contracts.'],
             'notifications' => ['stable', 'verify notifications', 'Verify notification contracts.'],
             'api' => ['stable', 'verify api', 'Verify API resource contracts.'],
@@ -747,7 +748,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['init', 'new', 'init app', 'examples:list', 'examples:load', 'preview notification', 'implement feature', 'implement spec', 'plan feature', 'spec:new', 'spec:plan'], true)
                 || str_starts_with($signature, 'generate ')
                 => 'App Scaffolding',
-            in_array($signature, ['upgrade-check', 'spec:log-entry', 'spec:validate', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify features', 'verify context', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)
+            in_array($signature, ['upgrade-check', 'spec:log-entry', 'spec:validate', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify features', 'verify context', 'verify coverage', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)
                 => 'Verification',
             in_array($signature, ['migrate definitions', 'codemod run', 'inspect extensions', 'inspect extension', 'inspect packs', 'inspect pack', 'inspect compatibility', 'inspect migrations', 'inspect definition-format', 'generate migration'], true)
                 => 'Extensions',

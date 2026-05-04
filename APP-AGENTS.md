@@ -115,7 +115,8 @@ Completion quality gate:
 
 ```bash
 php vendor/bin/phpunit
-php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text
+XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+php bin/foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
 ```
 
 Use `foundry context init <feature> --json` when canonical feature context files are missing.
@@ -140,7 +141,8 @@ Use `foundry context repair --feature=<feature> --json` when context verificatio
 
 ```bash
 php vendor/bin/phpunit
-php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text
+XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+php bin/foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
 ```
 
 - Implementation is not complete unless the quality gate passes

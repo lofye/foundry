@@ -11,6 +11,7 @@ use Foundry\Support\Paths;
 
 final class ContextInitService
 {
+    private readonly ContextFileResolver $resolver;
     /**
      * @var array<string,array{path:string,stub:string}>
      */
@@ -32,9 +33,11 @@ final class ContextInitService
     public function __construct(
         private readonly Paths $paths,
         private readonly FeatureNameValidator $featureNameValidator = new FeatureNameValidator(),
-        private readonly ContextFileResolver $resolver = new ContextFileResolver(),
+        ?ContextFileResolver $resolver = null,
         private readonly FeatureSpecDocumentNormalizer $featureSpecDocumentNormalizer = new FeatureSpecDocumentNormalizer(),
-    ) {}
+    ) {
+        $this->resolver = $resolver ?? new ContextFileResolver($paths->root());
+    }
 
     /**
      * @return array{success:bool,feature:string,feature_valid:bool,created:list<string>,existing:list<string>,issues:list<array<string,mixed>>}

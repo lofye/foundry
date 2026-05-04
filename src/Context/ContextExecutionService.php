@@ -15,6 +15,7 @@ use Foundry\Support\Yaml;
 
 final class ContextExecutionService
 {
+    private readonly ContextFileResolver $resolver;
     private readonly ContextInspectionService $inspectionService;
     private readonly ContextInitService $initService;
     private readonly FeatureGenerator $featureGenerator;
@@ -27,7 +28,7 @@ final class ContextExecutionService
     public function __construct(
         private readonly Paths $paths,
         private readonly FeatureNameValidator $featureNameValidator = new FeatureNameValidator(),
-        private readonly ContextFileResolver $resolver = new ContextFileResolver(),
+        ?ContextFileResolver $resolver = null,
         ?ContextInspectionService $inspectionService = null,
         ?ContextInitService $initService = null,
         ?FeatureGenerator $featureGenerator = null,
@@ -37,6 +38,7 @@ final class ContextExecutionService
         ?FeatureSpecDocumentNormalizer $featureSpecDocumentNormalizer = null,
         ?ImplementationQualityGateService $implementationQualityGateService = null,
     ) {
+        $this->resolver = $resolver ?? new ContextFileResolver($paths->root());
         $this->inspectionService = $inspectionService ?? new ContextInspectionService($paths);
         $this->initService = $initService ?? new ContextInitService($paths);
         $this->featureGenerator = $featureGenerator ?? new FeatureGenerator($paths);

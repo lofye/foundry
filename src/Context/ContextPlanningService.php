@@ -11,6 +11,7 @@ use Foundry\Support\Paths;
 
 final class ContextPlanningService
 {
+    private readonly ContextFileResolver $resolver;
     private readonly ContextInspectionService $inspectionService;
     private readonly ContextExecutionService $executionService;
     private readonly ExecutionSpecCatalog $executionSpecCatalog;
@@ -18,12 +19,13 @@ final class ContextPlanningService
     public function __construct(
         private readonly Paths $paths,
         private readonly FeatureNameValidator $featureNameValidator = new FeatureNameValidator(),
-        private readonly ContextFileResolver $resolver = new ContextFileResolver(),
+        ?ContextFileResolver $resolver = null,
         private readonly ExecutionSpecPlanner $planner = new ExecutionSpecPlanner(),
         ?ExecutionSpecCatalog $executionSpecCatalog = null,
         ?ContextInspectionService $inspectionService = null,
         ?ContextExecutionService $executionService = null,
     ) {
+        $this->resolver = $resolver ?? new ContextFileResolver($paths->root());
         $this->inspectionService = $inspectionService ?? new ContextInspectionService($paths);
         $this->executionService = $executionService ?? new ContextExecutionService($paths);
         $this->executionSpecCatalog = $executionSpecCatalog ?? new ExecutionSpecCatalog($paths);

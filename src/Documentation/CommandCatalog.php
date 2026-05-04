@@ -303,6 +303,7 @@ final class CommandCatalog
             $signature === 'verify graph' => 'verify graph --json',
             $signature === 'verify graph-integrity' => 'verify graph-integrity --json',
             $signature === 'verify pipeline' => 'verify pipeline --json',
+            $signature === 'verify coverage' => 'verify coverage --min=90 --clover=build/coverage/clover.xml --json',
             $signature === 'verify extensions' => 'verify extensions --json',
             $signature === 'verify compatibility' => 'verify compatibility --json',
             $signature === 'verify notifications' => 'verify notifications --json',

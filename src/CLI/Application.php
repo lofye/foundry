@@ -67,6 +67,7 @@ use Foundry\CLI\Commands\SpecValidateCommand;
 use Foundry\CLI\Commands\TraceCommand;
 use Foundry\CLI\Commands\UpgradeCheckCommand;
 use Foundry\CLI\Commands\VerifyCompatibilityCommand;
+use Foundry\CLI\Commands\VerifyCoverageCommand;
 use Foundry\CLI\Commands\VerifyContextCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
@@ -136,6 +137,7 @@ final class Application
             new VerifyGraphCommand(),
             new VerifyPipelineCommand(),
             new VerifyCompatibilityCommand(),
+            new VerifyCoverageCommand(),
             new UpgradeCheckCommand(),
             new MigrateDefinitionsCommand(),
             new CodemodRunCommand(),

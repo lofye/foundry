@@ -102,6 +102,92 @@ YAML);
         $this->assertSame('CLI_COMMAND_NOT_FOUND', $result['payload']['error']['code']);
     }
 
+    public function test_verify_coverage_reads_clover_metrics_deterministically(): void
+    {
+        $directory = $this->project->root . '/build/coverage';
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($directory . '/clover.xml', <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="0">
+  <project timestamp="0">
+    <file name="/tmp/app/src/Foo.php">
+      <metrics statements="80" coveredstatements="70"/>
+    </file>
+    <file name="/tmp/app/src/Bar.php">
+      <metrics statements="20" coveredstatements="18"/>
+    </file>
+    <metrics files="2" statements="100" coveredstatements="88"/>
+  </project>
+</coverage>
+XML);
+
+        $app = new Application();
+        $result = $this->runCommand($app, [
+            'foundry',
+            'verify',
+            'coverage',
+            '--min=90',
+            '--clover=build/coverage/clover.xml',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('fail', $result['payload']['status']);
+        $this->assertEquals(90.0, $result['payload']['min_required']);
+        $this->assertEquals(88.0, $result['payload']['line_coverage_percent']);
+        $this->assertSame(88, $result['payload']['covered_lines']);
+        $this->assertSame(100, $result['payload']['total_lines']);
+        $this->assertSame('build/coverage/clover.xml', $result['payload']['clover_path']);
+    }
+
+    public function test_verify_coverage_rejects_non_numeric_minimum(): void
+    {
+        $app = new Application();
+        $result = $this->runCommand($app, [
+            'foundry',
+            'verify',
+            'coverage',
+            '--min=abc',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('CLI_VERIFY_COVERAGE_MIN_INVALID', $result['payload']['error']['code']);
+    }
+
+    public function test_verify_coverage_rejects_empty_clover_path(): void
+    {
+        $app = new Application();
+        $result = $this->runCommand($app, [
+            'foundry',
+            'verify',
+            'coverage',
+            '--clover=   ',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('CLI_VERIFY_COVERAGE_CLOVER_REQUIRED', $result['payload']['error']['code']);
+    }
+
+    public function test_verify_coverage_rejects_negative_minimum(): void
+    {
+        $app = new Application();
+        $result = $this->runCommand($app, [
+            'foundry',
+            'verify',
+            'coverage',
+            '--min=-0.01',
+            '--json',
+        ]);
+
+        $this->assertSame(1, $result['status']);
+        $this->assertSame('CLI_VERIFY_COVERAGE_MIN_INVALID', $result['payload']['error']['code']);
+    }
+
     public function test_help_and_api_surface_outputs_expose_stability_metadata(): void
     {
         $app = new Application();

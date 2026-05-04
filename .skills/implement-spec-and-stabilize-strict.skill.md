@@ -140,6 +140,18 @@ Requirements:
 If ANY failure:
 → FIX or FAIL
 
+Then run the canonical coverage gate:
+
+XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+php bin/foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
+
+Requirements:
+- Clover coverage run succeeds
+- `verify coverage` returns `status=pass`
+
+If ANY failure:
+→ FIX or FAIL
+
 ---
 
 ## Step 5 — Context Verification (MUST BE CLEAN)

@@ -11,11 +11,12 @@ use Foundry\Tooling\ProcessRunner;
 final class ImplementationQualityGateService
 {
     private const float GLOBAL_LINE_THRESHOLD = 90.0;
-    private const string COVERAGE_CLOVER_PATH = 'storage/tmp/foundry-quality-gate-clover.xml';
+    private const string COVERAGE_CLOVER_PATH = 'build/coverage/clover.xml';
 
     public function __construct(
         private readonly Paths $paths,
         private readonly ProcessRunner $runner = new ProcessRunner(),
+        private readonly ?CloverCoverageVerifier $coverageVerifier = null,
     ) {}
 
     /**
@@ -31,7 +32,6 @@ final class ImplementationQualityGateService
             '-d',
             'xdebug.mode=coverage',
             'vendor/bin/phpunit',
-            '--coverage-text',
             '--coverage-clover',
             self::COVERAGE_CLOVER_PATH,
         ];
@@ -74,9 +74,8 @@ final class ImplementationQualityGateService
 
         $coverageResult = $this->runner->run($coverageCommand, $this->paths->root());
         $actionsTaken[] = 'Ran quality gate command: ' . $this->commandString($coverageCommand);
-        $globalLineCoverage = $this->parseGlobalLineCoverage(
-            trim(($coverageResult['stdout'] !== '' ? $coverageResult['stdout'] : $coverageResult['stderr']) ?? ''),
-        );
+        $coverageSummary = $this->coverageVerifier()->summarize(self::COVERAGE_CLOVER_PATH);
+        $globalLineCoverage = $coverageSummary['line_coverage_percent'] ?? null;
         $coverage = [
             'ran' => true,
             'passed' => (bool) $coverageResult['ok'],
@@ -84,6 +83,8 @@ final class ImplementationQualityGateService
             'command_string' => $this->commandString($coverageCommand),
             'exit_code' => (int) $coverageResult['exit_code'],
             'global_line_coverage' => $globalLineCoverage,
+            'covered_lines' => $coverageSummary['covered_lines'] ?? null,
+            'total_lines' => $coverageSummary['total_lines'] ?? null,
             'threshold' => $threshold,
             'meets_threshold' => $globalLineCoverage === null ? null : $globalLineCoverage >= $threshold,
         ];
@@ -108,7 +109,7 @@ final class ImplementationQualityGateService
                     'exit_code' => (int) $coverageResult['exit_code'],
                 ],
                 requiredActions: [
-                    'Run `php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text --coverage-clover storage/tmp/foundry-quality-gate-clover.xml` successfully before treating implementation as complete.',
+                    'Run `XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml` successfully before treating implementation as complete.',
                 ],
             );
         }
@@ -133,7 +134,7 @@ final class ImplementationQualityGateService
                     'exit_code' => (int) $coverageResult['exit_code'],
                 ],
                 requiredActions: [
-                    'Ensure `php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text --coverage-clover storage/tmp/foundry-quality-gate-clover.xml` emits a parseable global line-coverage summary before treating implementation as complete.',
+                    'Ensure `XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml` emits a readable Clover report with deterministic statement metrics before treating implementation as complete.',
                 ],
             );
         }
@@ -257,19 +258,6 @@ final class ImplementationQualityGateService
             'under_covered' => [],
             'message' => $message,
         ];
-    }
-
-    private function parseGlobalLineCoverage(string $output): ?float
-    {
-        if ($output === '') {
-            return null;
-        }
-
-        if (preg_match('/^\s*Lines:\s+([0-9]+(?:\.[0-9]+)?)%/mi', $output, $matches) !== 1) {
-            return null;
-        }
-
-        return round((float) $matches[1], 2);
     }
 
     /**
@@ -664,5 +652,10 @@ final class ImplementationQualityGateService
         if (is_file($path)) {
             unlink($path);
         }
+    }
+
+    private function coverageVerifier(): CloverCoverageVerifier
+    {
+        return $this->coverageVerifier ?? new CloverCoverageVerifier($this->paths);
     }
 }

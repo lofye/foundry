@@ -11,6 +11,7 @@ use Foundry\Support\Paths;
 
 final class ContextDoctorService
 {
+    private readonly ContextFileResolver $resolver;
     /**
      * @var array<string,int>
      */
@@ -32,13 +33,14 @@ final class ContextDoctorService
     public function __construct(
         private readonly Paths $paths,
         private readonly FeatureNameValidator $featureNameValidator = new FeatureNameValidator(),
-        private readonly ContextFileResolver $resolver = new ContextFileResolver(),
+        ?ContextFileResolver $resolver = null,
         private readonly SpecValidator $specValidator = new SpecValidator(),
         private readonly StateValidator $stateValidator = new StateValidator(),
         private readonly DecisionLedgerValidator $decisionLedgerValidator = new DecisionLedgerValidator(),
         ?array $diagnosticRules = null,
         private readonly ContextDiagnosticOutputCoalescer $outputCoalescer = new ContextDiagnosticOutputCoalescer(),
     ) {
+        $this->resolver = $resolver ?? new ContextFileResolver($paths->root());
         $this->diagnosticRules = $diagnosticRules ?? [
             new ExecutionSpecDriftContextDoctorRule(),
             new StaleCompletedItemsInNextStepsContextDoctorRule(),

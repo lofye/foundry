@@ -95,6 +95,14 @@ php -S 127.0.0.1:8000 public/index.php
 4. Make the smallest necessary source-of-truth changes.
 5. Re-run verification and tests.
 
+When claiming implementation completion, use this canonical machine gate:
+
+```bash
+php vendor/bin/phpunit
+XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+php bin/foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
+```
+
 ## Reference Pointers
 
 For deeper architecture walkthroughs, use `foundry explain <target> --deep --markdown --json`.

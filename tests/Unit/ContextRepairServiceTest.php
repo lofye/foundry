@@ -108,6 +108,51 @@ MD, $state);
         $this->assertSame(2, substr_count($spec, "- Keep output deterministic.\n"));
     }
 
+    public function test_repair_returns_blocked_without_file_changes_when_context_requires_manual_alignment(): void
+    {
+        $this->initService()->init('event-bus');
+
+        $result = $this->service()->repairFeature('event-bus');
+
+        $this->assertSame('blocked', $result['status']);
+        $this->assertContains('docs/features/event-bus/event-bus.md', $result['files_changed']);
+        $this->assertNotSame([], $result['issues_repaired']);
+        $this->assertFalse($result['can_proceed']);
+        $this->assertTrue($result['requires_manual_action']);
+    }
+
+    public function test_repair_fails_closed_when_existing_context_file_is_unreadable(): void
+    {
+        $this->initService()->init('event-bus');
+        $decisionsPath = $this->project->root . '/docs/features/event-bus/event-bus.decisions.md';
+        chmod($decisionsPath, 0000);
+        $warnings = [];
+        set_error_handler(static function (int $severity, string $message) use (&$warnings): bool {
+            if ($severity === E_WARNING) {
+                $warnings[] = $message;
+
+                return true;
+            }
+
+            return false;
+        });
+
+        try {
+            $result = $this->service()->repairFeature('event-bus');
+        } finally {
+            restore_error_handler();
+            chmod($decisionsPath, 0644);
+        }
+
+        $this->assertSame('failed', $result['status']);
+        $this->assertSame('CONTEXT_REPAIR_CRITICAL_INPUT_MISSING', $result['error']['code']);
+        $this->assertNotSame([], $warnings);
+        $this->assertContains(
+            'doctor:CONTEXT_FILE_UNREADABLE @ docs/features/event-bus/event-bus.decisions.md',
+            $result['issues_remaining'],
+        );
+    }
+
     private function service(): ContextRepairService
     {
         return new ContextRepairService(new Paths($this->project->root));

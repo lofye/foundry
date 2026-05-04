@@ -54,6 +54,8 @@ foundry verify graph --json
 foundry verify pipeline --json
 foundry verify contracts --json
 php vendor/bin/phpunit -c phpunit.xml.dist
+XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
 php -S 127.0.0.1:8000 public/index.php
 ```
 

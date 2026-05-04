@@ -193,7 +193,8 @@ Completion quality gate:
 
 ```bash
 php vendor/bin/phpunit
-php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text
+XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+php bin/foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
 ```
 
 ---
@@ -252,7 +253,8 @@ Stable outputs must not depend on timestamps, randomness, or unstable ordering.
 
 ```bash
 php vendor/bin/phpunit
-php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-text
+XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+php bin/foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
 ```
 - Implementation is not complete unless the quality gate passes
 - Global line coverage must be ≥ 90%

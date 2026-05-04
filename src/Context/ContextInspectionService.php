@@ -10,15 +10,17 @@ use Foundry\Support\Paths;
 
 final class ContextInspectionService
 {
+    private readonly ContextFileResolver $resolver;
     private readonly ContextDoctorService $doctorService;
 
     public function __construct(
         private readonly Paths $paths,
         ?ContextDoctorService $doctorService = null,
-        private readonly ContextFileResolver $resolver = new ContextFileResolver(),
+        ?ContextFileResolver $resolver = null,
         private readonly AlignmentChecker $alignmentChecker = new AlignmentChecker(),
         private readonly ContextDiagnosticOutputCoalescer $outputCoalescer = new ContextDiagnosticOutputCoalescer(),
     ) {
+        $this->resolver = $resolver ?? new ContextFileResolver($paths->root());
         $this->doctorService = $doctorService ?? new ContextDoctorService($paths);
     }
 

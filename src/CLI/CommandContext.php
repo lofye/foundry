@@ -36,6 +36,7 @@ use Foundry\Generation\TestGenerator;
 use Foundry\Generation\UploadsGenerator;
 use Foundry\Generation\WorkflowGenerator;
 use Foundry\Notifications\NotificationPreviewer;
+use Foundry\Quality\CloverCoverageVerifier;
 use Foundry\Support\ApiSurfaceRegistry;
 use Foundry\Support\Paths;
 use Foundry\Upgrade\UpgradeAnalyzer;
@@ -344,5 +345,10 @@ final class CommandContext
     public function policiesVerifier(): PoliciesVerifier
     {
         return new PoliciesVerifier($this->graphCompiler());
+    }
+
+    public function cloverCoverageVerifier(): CloverCoverageVerifier
+    {
+        return new CloverCoverageVerifier($this->paths());
     }
 }

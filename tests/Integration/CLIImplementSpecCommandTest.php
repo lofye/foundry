@@ -339,7 +339,18 @@ MD);
         $this->runCommand(['foundry', 'context', 'init', 'event-bus', '--json']);
         $this->writeMeaningfulContext('event-bus');
         $this->writeExecutionSpec('event-bus', '001-initial');
-        file_put_contents($this->project->root . '/.foundry-test-coverage-lines', "89.50\n");
+        $coveragePath = $this->project->root . '/src/Foo.php';
+        if (!is_dir(dirname($coveragePath))) {
+            mkdir(dirname($coveragePath), 0777, true);
+        }
+        file_put_contents($coveragePath, "<?php\n");
+        file_put_contents($this->project->root . '/.foundry-test-coverage-files.json', json_encode([
+            [
+                'path' => $coveragePath,
+                'statements' => 10,
+                'covered_statements' => 8,
+            ],
+        ], JSON_THROW_ON_ERROR));
 
         $result = $this->runCommand(['foundry', 'implement', 'spec', 'event-bus/001-initial', '--json']);
 
