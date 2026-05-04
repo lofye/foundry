@@ -49,6 +49,70 @@ final class ExecutionSpecResolverTest extends TestCase
         $this->assertSame('blog', $spec->feature);
     }
 
+    public function test_execution_spec_resolves_from_canonical_features_workspace(): void
+    {
+        $this->writeRawCanonicalExecutionSpec('EventSystem', 'event-system', '001-initial', <<<MD
+# Execution Spec: 001-initial
+
+## Feature
+
+- event-system
+
+## Purpose
+
+- Execute a bounded implementation step.
+
+## Scope
+
+- Add initial blog scaffolding.
+
+## Constraints
+
+- Keep execution deterministic.
+
+## Requested Changes
+
+- Add initial blog scaffolding.
+MD);
+
+        $spec = $this->resolver()->resolve('event-system/001-initial');
+
+        $this->assertSame('event-system/001-initial', $spec->specId);
+        $this->assertSame('Features/EventSystem/specs/001-initial.md', $spec->path);
+    }
+
+    public function test_canonical_features_workspace_is_preferred_over_legacy_when_both_exist(): void
+    {
+        $this->writeExecutionSpec('event-system', '001-initial', 'event-system');
+        $this->writeRawCanonicalExecutionSpec('EventSystem', 'event-system', '001-initial', <<<MD
+# Execution Spec: 001-initial
+
+## Feature
+
+- event-system
+
+## Purpose
+
+- Execute canonical implementation step.
+
+## Scope
+
+- Canonical preferred path.
+
+## Constraints
+
+- Keep execution deterministic.
+
+## Requested Changes
+
+- Add initial blog scaffolding.
+MD);
+
+        $spec = $this->resolver()->resolve('001-initial');
+
+        $this->assertSame('Features/EventSystem/specs/001-initial.md', $spec->path);
+    }
+
     public function test_hierarchical_execution_spec_ids_resolve_and_expose_parent_relationship(): void
     {
         $this->writeExecutionSpec('blog', '015.002.001-grandchild', 'blog');
@@ -423,6 +487,35 @@ MD);
     private function writeRawDraftExecutionSpec(string $feature, string $name, string $contents): void
     {
         $path = $this->project->root . '/docs/features/' . $feature . '/specs/drafts/' . $name . '.md';
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($path, $contents);
+    }
+
+    private function writeRawCanonicalExecutionSpec(string $featureDirectory, string $featureSlug, string $name, string $contents): void
+    {
+        $path = $this->project->root . '/Features/' . $featureDirectory . '/specs/' . $name . '.md';
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        file_put_contents($path, $contents);
+        $featureRoot = $this->project->root . '/Features/' . $featureDirectory;
+        $this->writeFileIfMissing($featureRoot . '/' . $featureSlug . '.spec.md', '# Feature Spec: ' . $featureSlug . "\n");
+        $this->writeFileIfMissing($featureRoot . '/' . $featureSlug . '.md', '# Feature: ' . $featureSlug . "\n");
+        $this->writeFileIfMissing($featureRoot . '/' . $featureSlug . '.decisions.md', "### Decision: baseline\n\nTimestamp: 2026-05-03T10:00:00-04:00\n\n**Context**\n\n- baseline\n\n**Decision**\n\n- baseline\n\n**Reasoning**\n\n- baseline\n\n**Alternatives Considered**\n\n- baseline\n\n**Impact**\n\n- baseline\n\n**Spec Reference**\n\n- baseline\n");
+    }
+
+    private function writeFileIfMissing(string $path, string $contents): void
+    {
+        if (is_file($path)) {
+            return;
+        }
+
         $directory = dirname($path);
         if (!is_dir($directory)) {
             mkdir($directory, 0777, true);

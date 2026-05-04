@@ -14,6 +14,8 @@ final class ExecutionSpecValidationService
     private const IGNORED_ROOT_FILES = [
         'docs/features/README.md',
         'docs/features/implementation-log.md',
+        'Features/README.md',
+        'Features/implementation.log',
     ];
 
     public function __construct(
@@ -37,6 +39,7 @@ final class ExecutionSpecValidationService
         $activeSpecReferences = [];
         $activeSpecNames = [];
         $activeSpecPathsByFeature = [];
+        $activeSpecLocations = [];
 
         foreach ($this->specFiles() as $relativePath) {
             if (in_array($relativePath, self::IGNORED_ROOT_FILES, true)) {
@@ -117,6 +120,32 @@ final class ExecutionSpecValidationService
                 $activeSpecReferences[$relativePath] = $placement['feature'] . '/' . $parsedName['name'] . '.md';
                 $activeSpecNames[$placement['feature']][$parsedName['name']] = true;
                 $activeSpecPathsByFeature[$placement['feature']][$parsedName['name']] = $relativePath;
+                $activeSpecLocations[$placement['feature']][$parsedName['name']][$placement['workspace']][] = $relativePath;
+            }
+        }
+
+        foreach ($activeSpecLocations as $feature => $specNames) {
+            foreach ($specNames as $name => $locations) {
+                if (!isset($locations['canonical'], $locations['legacy'])) {
+                    continue;
+                }
+
+                $canonicalPaths = array_values(array_unique(array_map('strval', (array) $locations['canonical'])));
+                $legacyPaths = array_values(array_unique(array_map('strval', (array) $locations['legacy'])));
+                sort($canonicalPaths);
+                sort($legacyPaths);
+
+                $violations[] = $this->violation(
+                    'FEATURE_DUPLICATE_CANONICAL_AND_LEGACY',
+                    $canonicalPaths[0] ?? ('Features/' . $name . '.md'),
+                    'Execution spec exists in both canonical and legacy feature workspaces.',
+                    [
+                        'feature' => $feature,
+                        'spec_name' => $name,
+                        'canonical_paths' => $canonicalPaths,
+                        'legacy_paths' => $legacyPaths,
+                    ],
+                );
             }
         }
 
@@ -162,7 +191,8 @@ final class ExecutionSpecValidationService
             }
         }
 
-        $loggedSpecs = $this->implementationLogEntries($violations);
+        $logPath = $this->implementationLogPath();
+        $loggedSpecs = $this->implementationLogEntries($violations, $logPath);
         if ($loggedSpecs !== null) {
             $loggedContinuity = [];
             foreach ($activeSpecReferences as $relativePath => $specReference) {
@@ -176,7 +206,7 @@ final class ExecutionSpecValidationService
                     'Active execution specs must have a matching implementation-log entry.',
                     [
                         'spec' => $specReference,
-                        'log_path' => 'docs/features/implementation-log.md',
+                        'log_path' => $logPath,
                     ],
                 );
             }
@@ -202,7 +232,7 @@ final class ExecutionSpecValidationService
                 foreach ($continuity->gaps($entries) as $gap) {
                     $violations[] = $this->violation(
                         'EXECUTION_SPEC_IMPLEMENTATION_LOG_SKIPPED_ID',
-                        'docs/features/implementation-log.md',
+                        $logPath,
                         'Implementation-log entries must not skip execution spec IDs. Skipping numbers violates execution-spec-system rules.',
                         [
                             'feature' => $feature,
@@ -327,7 +357,7 @@ final class ExecutionSpecValidationService
                         [
                             'feature' => $feature,
                             'id' => (string) (ExecutionSpecFilename::parseName($name)['id'] ?? ''),
-                            'plan_path' => 'docs/features/' . $feature . '/plans/' . $name . '.md',
+                            'plan_path' => $this->canonicalPlanPath($feature, $name),
                         ],
                     );
                 }
@@ -359,6 +389,9 @@ final class ExecutionSpecValidationService
     {
         $files = [];
         foreach ([
+            'Features/*/specs/*.md',
+            'Features/*/specs/drafts/*.md',
+            'Features/*/specs/*/*.md',
             'docs/features/*/specs/*.md',
             'docs/features/*/specs/drafts/*.md',
             'docs/features/*/specs/*/*.md',
@@ -396,6 +429,8 @@ final class ExecutionSpecValidationService
         $files = [];
 
         foreach ([
+            'Features/*/plans/*.md',
+            'Features/*/plans/*/*.md',
             'docs/features/*/plans/*.md',
             'docs/features/*/plans/*/*.md',
             'docs/specs/plans/*.md',
@@ -425,61 +460,87 @@ final class ExecutionSpecValidationService
      * @param list<array<string,mixed>> $violations
      * @return array<string,true>|null
      */
-    private function implementationLogEntries(array &$violations): ?array
+    private function implementationLogEntries(array &$violations, string $relativePath): ?array
     {
-        $relativePath = 'docs/features/implementation-log.md';
-        $absolutePath = $this->paths->join($relativePath);
-
-        if (!file_exists($absolutePath)) {
-            return [];
-        }
-
-        if (is_dir($absolutePath)) {
-            $violations[] = $this->violation(
-                'EXECUTION_SPEC_IMPLEMENTATION_LOG_INVALID',
-                $relativePath,
-                'Execution spec implementation log must be a readable file.',
-                ['path' => $relativePath],
-            );
-
-            return null;
-        }
-
-        $contents = file_get_contents($absolutePath);
-        if ($contents === false) {
-            $violations[] = $this->violation(
-                'EXECUTION_SPEC_IMPLEMENTATION_LOG_INVALID',
-                $relativePath,
-                'Execution spec implementation log must be a readable file.',
-                ['path' => $relativePath],
-            );
-
-            return null;
-        }
-
         $entries = [];
+        $candidatePaths = [$relativePath];
 
-        foreach (preg_split('/\R/', $contents) ?: [] as $line) {
-            if (preg_match('/^- spec: (?<spec>.+)$/', $line, $matches) !== 1) {
+        if ($relativePath === 'Features/implementation.log') {
+            $candidatePaths[] = 'docs/features/implementation-log.md';
+        } elseif ($relativePath === 'docs/features/implementation-log.md') {
+            $candidatePaths[] = 'Features/implementation.log';
+        }
+
+        foreach (array_values(array_unique($candidatePaths)) as $candidatePath) {
+            $absolutePath = $this->paths->join($candidatePath);
+            if (!file_exists($absolutePath)) {
                 continue;
             }
 
-            $entries[(string) $matches['spec']] = true;
+            if (is_dir($absolutePath)) {
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_IMPLEMENTATION_LOG_INVALID',
+                    $candidatePath,
+                    'Execution spec implementation log must be a readable file.',
+                    ['path' => $candidatePath],
+                );
+
+                return null;
+            }
+
+            $contents = file_get_contents($absolutePath);
+            if ($contents === false) {
+                $violations[] = $this->violation(
+                    'EXECUTION_SPEC_IMPLEMENTATION_LOG_INVALID',
+                    $candidatePath,
+                    'Execution spec implementation log must be a readable file.',
+                    ['path' => $candidatePath],
+                );
+
+                return null;
+            }
+
+            foreach (preg_split('/\R/', $contents) ?: [] as $line) {
+                if (preg_match('/^- spec: (?<spec>.+)$/', $line, $matches) !== 1) {
+                    continue;
+                }
+
+                $entries[(string) $matches['spec']] = true;
+            }
         }
 
         return $entries;
     }
 
     /**
-     * @return array{feature:string,status:string,name:string}|null
+     * @return array{feature:string,status:string,name:string,workspace:string}|null
      */
     private function classifyPlacement(string $relativePath): ?array
     {
+        if (preg_match('#^Features/(?<feature_dir>[A-Z][A-Za-z0-9]*)/specs/(?<name>[^/]+)\.md$#', $relativePath, $matches) === 1) {
+            return [
+                'feature' => $this->slugFromPascal((string) $matches['feature_dir']),
+                'status' => 'active',
+                'name' => (string) $matches['name'],
+                'workspace' => 'canonical',
+            ];
+        }
+
+        if (preg_match('#^Features/(?<feature_dir>[A-Z][A-Za-z0-9]*)/specs/drafts/(?<name>[^/]+)\.md$#', $relativePath, $matches) === 1) {
+            return [
+                'feature' => $this->slugFromPascal((string) $matches['feature_dir']),
+                'status' => 'draft',
+                'name' => (string) $matches['name'],
+                'workspace' => 'canonical',
+            ];
+        }
+
         if (preg_match('#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/specs/(?<name>[^/]+)\.md$#', $relativePath, $matches) === 1) {
             return [
                 'feature' => (string) $matches['feature'],
                 'status' => 'active',
                 'name' => (string) $matches['name'],
+                'workspace' => 'legacy',
             ];
         }
 
@@ -488,6 +549,7 @@ final class ExecutionSpecValidationService
                 'feature' => (string) $matches['feature'],
                 'status' => 'draft',
                 'name' => (string) $matches['name'],
+                'workspace' => 'legacy',
             ];
         }
 
@@ -499,6 +561,13 @@ final class ExecutionSpecValidationService
      */
     private function classifyPlanPlacement(string $relativePath): ?array
     {
+        if (preg_match('#^Features/(?<feature_dir>[A-Z][A-Za-z0-9]*)/plans/(?<name>[^/]+)\.md$#', $relativePath, $matches) === 1) {
+            return [
+                'feature' => $this->slugFromPascal((string) $matches['feature_dir']),
+                'name' => (string) $matches['name'],
+            ];
+        }
+
         if (preg_match('#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/plans/(?<name>[^/]+)\.md$#', $relativePath, $matches) !== 1) {
             return null;
         }
@@ -511,6 +580,10 @@ final class ExecutionSpecValidationService
 
     private function planFeatureHint(string $relativePath): string
     {
+        if (preg_match('#^Features/(?<feature_dir>[A-Z][A-Za-z0-9]*)/#', $relativePath, $matches) === 1) {
+            return $this->slugFromPascal((string) $matches['feature_dir']);
+        }
+
         if (preg_match('#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/#', $relativePath, $matches) === 1) {
             return (string) $matches['feature'];
         }
@@ -592,5 +665,45 @@ final class ExecutionSpecValidationService
             'file_path' => $filePath,
             'details' => $details,
         ];
+    }
+
+    private function implementationLogPath(): string
+    {
+        $canonical = $this->paths->join('Features/implementation.log');
+        $legacy = $this->paths->join('docs/features/implementation-log.md');
+
+        if (is_file($canonical) || is_dir($this->paths->join('Features'))) {
+            return 'Features/implementation.log';
+        }
+
+        if (is_file($legacy) || is_dir($this->paths->join('docs/features'))) {
+            return 'docs/features/implementation-log.md';
+        }
+
+        return 'Features/implementation.log';
+    }
+
+    private function canonicalPlanPath(string $feature, string $name): string
+    {
+        $canonical = 'Features/' . $this->pascalFromSlug($feature) . '/plans/' . $name . '.md';
+        if (is_file($this->paths->join($canonical)) || is_dir($this->paths->join('Features/' . $this->pascalFromSlug($feature)))) {
+            return $canonical;
+        }
+
+        return 'docs/features/' . $feature . '/plans/' . $name . '.md';
+    }
+
+    private function pascalFromSlug(string $slug): string
+    {
+        $parts = array_filter(explode('-', $slug), static fn(string $part): bool => $part !== '');
+
+        return implode('', array_map(static fn(string $part): string => ucfirst($part), $parts));
+    }
+
+    private function slugFromPascal(string $value): string
+    {
+        $hyphenated = (string) preg_replace('/(?<!^)[A-Z]/', '-$0', $value);
+
+        return strtolower($hyphenated);
     }
 }

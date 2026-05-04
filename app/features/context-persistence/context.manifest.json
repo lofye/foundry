@@ -12,8 +12,8 @@
         "app/features/context-persistence/cache.yaml",
         "app/features/context-persistence/events.yaml",
         "app/features/context-persistence/jobs.yaml",
-        "app/features/context-persistence/tests/context_persistence_contract_test.php",
-        "app/features/context-persistence/tests/context_persistence_feature_test.php"
+        "app/features/context-persistence/tests/context-persistence_contract_test.php",
+        "app/features/context-persistence/tests/context-persistence_feature_test.php"
     ],
     "generated_files": [
         "app/.foundry/build/graph/app_graph.json",
@@ -47,8 +47,8 @@
         "output": "app/features/context-persistence/output.schema.json"
     },
     "tests": [
-        "context_persistence_contract_test",
-        "context_persistence_feature_test"
+        "context-persistence_contract_test",
+        "context-persistence_feature_test"
     ],
     "forbidden_paths": [
         "src/Core",

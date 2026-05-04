@@ -55,12 +55,13 @@ final class ContextInitService
             ];
         }
 
-        $directory = $this->paths->join('docs/features/' . $featureName);
+        $paths = $this->targetPaths($featureName);
+        $directory = $this->paths->join(dirname($paths['spec']));
         if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
             throw new FoundryError(
                 'CONTEXT_DIRECTORY_CREATE_FAILED',
                 'filesystem',
-                ['path' => 'docs/features/' . $featureName],
+                ['path' => dirname($paths['spec'])],
                 'Unable to create feature context directory.',
             );
         }
@@ -68,10 +69,8 @@ final class ContextInitService
         $created = [];
         $existing = [];
 
-        foreach (self::FILES as $definition) {
-            $pathMethod = $definition['path'];
-            /** @var string $relativePath */
-            $relativePath = $this->resolver->{$pathMethod}($featureName);
+        foreach (self::FILES as $kind => $definition) {
+            $relativePath = (string) ($paths[$kind] ?? '');
             $absolutePath = $this->paths->join($relativePath);
 
             if (is_file($absolutePath)) {
@@ -114,6 +113,19 @@ final class ContextInitService
             'existing' => $existing,
             'issues' => [],
         ];
+    }
+
+    /**
+     * @return array{spec:string,state:string,decisions:string}
+     */
+    private function targetPaths(string $featureName): array
+    {
+        $canonicalRoot = $this->paths->join('Features');
+        if (is_dir($canonicalRoot)) {
+            return $this->resolver->canonicalPaths($featureName);
+        }
+
+        return $this->resolver->legacyPaths($featureName);
     }
 
     private function renderStub(string $stub, string $featureName): string

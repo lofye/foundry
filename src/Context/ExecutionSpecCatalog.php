@@ -68,7 +68,7 @@ final class ExecutionSpecCatalog
 
                 $entries[] = [
                     'feature' => $featureName,
-                    'status' => $status,
+                    'status' => str_contains($status, 'draft') ? 'draft' : 'active',
                     'path' => $relativePath,
                     'name' => $parsedName['name'],
                     'id' => $parsedName['id'],
@@ -194,10 +194,21 @@ final class ExecutionSpecCatalog
      */
     private function featureDirectories(string $featureName): array
     {
+        $pascal = $this->pascalFromSlug($featureName);
+
         return [
-            'active' => 'docs/features/' . $featureName . '/specs',
-            'draft' => 'docs/features/' . $featureName . '/specs/drafts',
+            'canonical_active' => 'Features/' . $pascal . '/specs',
+            'canonical_draft' => 'Features/' . $pascal . '/specs/drafts',
+            'legacy_active' => 'docs/features/' . $featureName . '/specs',
+            'legacy_draft' => 'docs/features/' . $featureName . '/specs/drafts',
         ];
+    }
+
+    private function pascalFromSlug(string $slug): string
+    {
+        $parts = array_filter(explode('-', $slug), static fn(string $part): bool => $part !== '');
+
+        return implode('', array_map(static fn(string $part): string => ucfirst($part), $parts));
     }
 
     private function relativePath(string $absolutePath): ?string

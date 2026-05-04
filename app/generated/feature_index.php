@@ -108,8 +108,8 @@ return array (
       ),
       'files' => 
       array (
-        0 => 'app/features/context-persistence/tests/context_persistence_contract_test.php',
-        1 => 'app/features/context-persistence/tests/context_persistence_feature_test.php',
+        0 => 'app/features/context-persistence/tests/context-persistence_contract_test.php',
+        1 => 'app/features/context-persistence/tests/context-persistence_feature_test.php',
       ),
     ),
     'llm' => 

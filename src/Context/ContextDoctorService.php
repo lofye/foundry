@@ -52,7 +52,7 @@ final class ContextDoctorService
     public function checkFeature(string $featureName): array
     {
         $featureName = FeatureNaming::canonical($featureName);
-        $relativePaths = $this->resolver->paths($featureName);
+        $relativePaths = $this->preferredContextPaths($featureName);
         $nameValidation = $this->featureNameValidator->validate($featureName);
 
         if (!$nameValidation->valid) {
@@ -169,41 +169,26 @@ final class ContextDoctorService
      */
     private function discoverContextFeatures(): array
     {
-        $directory = $this->paths->join('docs/features');
-        if (!is_dir($directory)) {
-            return [];
-        }
-
-        $items = scandir($directory);
-        if ($items === false) {
-            return [];
-        }
-
         $features = [];
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-
-            $path = $directory . '/' . $item;
-            if (!is_dir($path) || !$this->isCanonicalFeatureDirectory($item)) {
-                continue;
-            }
-
-            $featureName = $item;
-            $contextPaths = $this->resolver->paths($featureName);
-            if (
-                !is_file($this->paths->join($contextPaths['spec']))
-                && !is_file($this->paths->join($contextPaths['state']))
-                && !is_file($this->paths->join($contextPaths['decisions']))
-            ) {
+        foreach ($this->discoverLegacyFeatureSlugs() as $featureName) {
+            $contextPaths = $this->resolver->legacyPaths($featureName);
+            if ($this->contextFilesMissing($contextPaths)) {
                 continue;
             }
 
             $features[] = $featureName;
         }
 
-        return $features;
+        foreach ($this->discoverCanonicalFeatureSlugs() as $featureName) {
+            $contextPaths = $this->resolver->canonicalPaths($featureName);
+            if ($this->contextFilesMissing($contextPaths)) {
+                continue;
+            }
+
+            $features[] = $featureName;
+        }
+
+        return array_values(array_unique($features));
     }
 
     /**
@@ -211,32 +196,11 @@ final class ContextDoctorService
      */
     private function discoverExecutionSpecFeatures(): array
     {
-        $directory = $this->paths->join('docs/features');
-        if (!is_dir($directory)) {
-            return [];
-        }
-
-        $items = scandir($directory);
-        if ($items === false) {
-            return [];
-        }
-
         $features = [];
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
+        foreach (array_values(array_unique(array_merge($this->discoverLegacyFeatureSlugs(), $this->discoverCanonicalFeatureSlugs()))) as $featureName) {
+            if ($this->featureHasExecutionSpecs($featureName)) {
+                $features[] = $featureName;
             }
-
-            $path = $directory . '/' . $item;
-            if (!is_dir($path) || !$this->isCanonicalFeatureDirectory($item)) {
-                continue;
-            }
-
-            if (!$this->featureHasExecutionSpecs($item)) {
-                continue;
-            }
-
-            $features[] = $item;
         }
 
         return $features;
@@ -545,8 +509,16 @@ final class ContextDoctorService
     {
         $featureName = FeatureNaming::canonical($featureName);
 
-        return $this->directoryContainsMarkdownFiles('docs/features/' . $featureName . '/specs')
-            || $this->directoryContainsMarkdownFiles('docs/features/' . $featureName . '/specs/drafts');
+        $legacySpecs = 'docs/features/' . $featureName . '/specs';
+        $legacyDraftSpecs = 'docs/features/' . $featureName . '/specs/drafts';
+        $canonicalRoot = 'Features/' . $this->pascalFromSlug($featureName);
+        $canonicalSpecs = $canonicalRoot . '/specs';
+        $canonicalDraftSpecs = $canonicalRoot . '/specs/drafts';
+
+        return $this->directoryContainsMarkdownFiles($legacySpecs)
+            || $this->directoryContainsMarkdownFiles($legacyDraftSpecs)
+            || $this->directoryContainsMarkdownFiles($canonicalSpecs)
+            || $this->directoryContainsMarkdownFiles($canonicalDraftSpecs);
     }
 
     private function directoryContainsMarkdownFiles(string $relativePath): bool
@@ -578,9 +550,106 @@ final class ContextDoctorService
         return false;
     }
 
-    private function isCanonicalFeatureDirectory(string $name): bool
+    private function isLegacyFeatureDirectory(string $name): bool
     {
         return preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $name) === 1;
+    }
+
+    private function isCanonicalFeatureDirectory(string $name): bool
+    {
+        return preg_match('/^[A-Z][A-Za-z0-9]*$/', $name) === 1;
+    }
+
+    /**
+     * @return array{spec:string,state:string,decisions:string}
+     */
+    private function preferredContextPaths(string $featureName): array
+    {
+        $canonical = $this->resolver->canonicalPaths($featureName);
+        if (!$this->contextFilesMissing($canonical) || is_dir($this->paths->join(dirname($canonical['spec'])))) {
+            return $canonical;
+        }
+
+        return $this->resolver->legacyPaths($featureName);
+    }
+
+    /**
+     * @param array{spec:string,state:string,decisions:string} $paths
+     */
+    private function contextFilesMissing(array $paths): bool
+    {
+        return !is_file($this->paths->join($paths['spec']))
+            && !is_file($this->paths->join($paths['state']))
+            && !is_file($this->paths->join($paths['decisions']));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function discoverLegacyFeatureSlugs(): array
+    {
+        $directory = $this->paths->join('docs/features');
+        if (!is_dir($directory)) {
+            return [];
+        }
+
+        $items = scandir($directory);
+        if ($items === false) {
+            return [];
+        }
+
+        $features = [];
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            if (!is_dir($directory . '/' . $item) || !$this->isLegacyFeatureDirectory($item)) {
+                continue;
+            }
+
+            $features[] = $item;
+        }
+
+        return $features;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function discoverCanonicalFeatureSlugs(): array
+    {
+        $directory = $this->paths->join('Features');
+        if (!is_dir($directory)) {
+            return [];
+        }
+
+        $items = scandir($directory);
+        if ($items === false) {
+            return [];
+        }
+
+        $features = [];
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            if (!is_dir($directory . '/' . $item) || !$this->isCanonicalFeatureDirectory($item)) {
+                continue;
+            }
+
+            $features[] = FeatureNaming::canonical(strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $item)));
+        }
+
+        return $features;
+    }
+
+    private function pascalFromSlug(string $slug): string
+    {
+        $parts = array_filter(explode('-', $slug), static fn(string $part): bool => $part !== '');
+
+        return implode('', array_map(static fn(string $part): string => ucfirst($part), $parts));
     }
 
     /**

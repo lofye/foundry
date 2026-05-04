@@ -310,6 +310,33 @@ MD,
         $this->assertSame('003', $gap['details']['next_observed_id']);
     }
 
+    public function test_validate_supports_canonical_features_workspace_specs_and_log(): void
+    {
+        $this->writeRawFile('Features/ExecutionSpecSystem/specs/001-canonical.md', '# Execution Spec: 001-canonical');
+        $this->writeRawFile(
+            'Features/implementation.log',
+            "## 2026-05-03 12:00:00 -0400\n- spec: execution-spec-system/001-canonical.md\n",
+        );
+
+        $result = $this->service()->validate();
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame([], $result['violations']);
+    }
+
+    public function test_validate_reports_duplicate_canonical_and_legacy_spec_definitions(): void
+    {
+        $this->writeRawFile('Features/ExecutionSpecSystem/specs/001-shared.md', '# Execution Spec: 001-shared');
+        $this->writeSpec('execution-spec-system', '001-shared', '# Execution Spec: 001-shared');
+        $this->writeImplementationLogEntry('execution-spec-system/001-shared.md');
+
+        $result = $this->service()->validate();
+
+        $this->assertFalse($result['ok']);
+        $codes = array_map(static fn(array $violation): string => (string) $violation['code'], $result['violations']);
+        $this->assertContains('FEATURE_DUPLICATE_CANONICAL_AND_LEGACY', $codes);
+    }
+
     public function test_validate_does_not_enforce_global_sequence_across_features(): void
     {
         $this->writeSpec('execution-spec-system', '001-first', '# Execution Spec: 001-first');

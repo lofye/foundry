@@ -11,6 +11,8 @@ final class ExecutionSpecFilename
     public const NAME_PATTERN = '(?<name>(?<id>' . self::ID_PATTERN . ')-(?<slug>' . self::SLUG_PATTERN . '))';
     public const ACTIVE_PATH_PATTERN = '#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/specs/' . self::NAME_PATTERN . '\.md$#';
     public const DRAFT_PATH_PATTERN = '#^docs/features/(?<feature>[a-z0-9]+(?:-[a-z0-9]+)*)/specs/drafts/' . self::NAME_PATTERN . '\.md$#';
+    public const ACTIVE_CANONICAL_PATH_PATTERN = '#^Features/(?<feature_dir>[A-Z][A-Za-z0-9]*)/specs/' . self::NAME_PATTERN . '\.md$#';
+    public const DRAFT_CANONICAL_PATH_PATTERN = '#^Features/(?<feature_dir>[A-Z][A-Za-z0-9]*)/specs/drafts/' . self::NAME_PATTERN . '\.md$#';
 
     /**
      * @return array{
@@ -68,7 +70,12 @@ final class ExecutionSpecFilename
      */
     public static function parseActivePath(string $relativePath): ?array
     {
-        return self::parsePath($relativePath, self::ACTIVE_PATH_PATTERN);
+        $legacy = self::parsePath($relativePath, self::ACTIVE_PATH_PATTERN);
+        if ($legacy !== null) {
+            return $legacy;
+        }
+
+        return self::parseCanonicalPath($relativePath, self::ACTIVE_CANONICAL_PATH_PATTERN);
     }
 
     /**
@@ -83,7 +90,12 @@ final class ExecutionSpecFilename
      */
     public static function parseDraftPath(string $relativePath): ?array
     {
-        return self::parsePath($relativePath, self::DRAFT_PATH_PATTERN);
+        $legacy = self::parsePath($relativePath, self::DRAFT_PATH_PATTERN);
+        if ($legacy !== null) {
+            return $legacy;
+        }
+
+        return self::parseCanonicalPath($relativePath, self::DRAFT_CANONICAL_PATH_PATTERN);
     }
 
     /**
@@ -115,5 +127,43 @@ final class ExecutionSpecFilename
             'segments' => $name['segments'],
             'parent_id' => $name['parent_id'],
         ];
+    }
+
+    /**
+     * @return array{
+     *     feature:string,
+     *     name:string,
+     *     id:string,
+     *     slug:string,
+     *     segments:list<int>,
+     *     parent_id:?string
+     * }|null
+     */
+    private static function parseCanonicalPath(string $relativePath, string $pattern): ?array
+    {
+        if (preg_match($pattern, $relativePath, $matches) !== 1) {
+            return null;
+        }
+
+        $name = self::parseName((string) $matches['name']);
+        if ($name === null) {
+            return null;
+        }
+
+        return [
+            'feature' => self::slugFromPascal((string) $matches['feature_dir']),
+            'name' => $name['name'],
+            'id' => $name['id'],
+            'slug' => $name['slug'],
+            'segments' => $name['segments'],
+            'parent_id' => $name['parent_id'],
+        ];
+    }
+
+    private static function slugFromPascal(string $value): string
+    {
+        $hyphenated = (string) preg_replace('/(?<!^)[A-Z]/', '-$0', $value);
+
+        return strtolower($hyphenated);
     }
 }

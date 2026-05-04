@@ -95,7 +95,7 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['path' => $relativePath],
-                'Execution spec ids must resolve to docs/features/<feature>/specs/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+                'Execution spec ids must resolve to Features/<FeaturePascalName>/specs/<id>-<slug>.md (canonical) or docs/features/<feature>/specs/<id>-<slug>.md (legacy compatibility), where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
@@ -185,7 +185,7 @@ final class ExecutionSpecResolver
     {
         $pathInput = str_replace('\\', '/', $specId);
 
-        if (str_starts_with($pathInput, 'docs/')) {
+        if (str_starts_with($pathInput, 'docs/') || str_starts_with($pathInput, 'Features/')) {
             $path = str_ends_with($pathInput, '.md') ? $pathInput : $pathInput . '.md';
             $draftPath = ExecutionSpecFilename::parseDraftPath($path);
             if ($draftPath !== null) {
@@ -212,7 +212,7 @@ final class ExecutionSpecResolver
             [$feature, $name] = explode('/', $trimmed, 2);
             $feature = FeatureNaming::canonical($feature);
             $name = $this->stripMarkdownExtension($name);
-            $path = 'docs/features/' . $feature . '/specs/' . $name . '.md';
+            $path = $this->activeSpecPathForFeature($feature, $name);
 
             return $this->canonicalPathParts($path);
         }
@@ -222,7 +222,7 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['spec_id' => $specId],
-                'Execution spec ids must resolve to docs/features/<feature>/specs/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+                'Execution spec ids must resolve to Features/<FeaturePascalName>/specs/<id>-<slug>.md (canonical) or docs/features/<feature>/specs/<id>-<slug>.md (legacy compatibility), where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
@@ -232,42 +232,16 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['spec_id' => $specId],
-                'Execution spec ids must resolve to docs/features/<feature>/specs/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+                'Execution spec ids must resolve to Features/<FeaturePascalName>/specs/<id>-<slug>.md (canonical) or docs/features/<feature>/specs/<id>-<slug>.md (legacy compatibility), where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
-        $matches = glob($this->paths->join('docs/features/*/specs/' . $basename . '.md')) ?: [];
-        $relativeMatches = [];
-
-        foreach ($matches as $match) {
-            $relative = $this->relativePath($match);
-            if ($relative === null) {
-                continue;
-            }
-
-            if (ExecutionSpecFilename::parseActivePath($relative) === null) {
-                continue;
-            }
-
-            $relativeMatches[] = $relative;
-        }
+        $relativeMatches = $this->collectActiveMatches($basename);
 
         sort($relativeMatches);
 
         if ($relativeMatches === []) {
-            $draftMatches = [];
-            foreach (glob($this->paths->join('docs/features/*/specs/drafts/' . $basename . '.md')) ?: [] as $match) {
-                $relative = $this->relativePath($match);
-                if ($relative === null) {
-                    continue;
-                }
-
-                if (ExecutionSpecFilename::parseDraftPath($relative) === null) {
-                    continue;
-                }
-
-                $draftMatches[] = $relative;
-            }
+            $draftMatches = $this->collectDraftMatches($basename);
 
             sort($draftMatches);
             if ($draftMatches !== []) {
@@ -317,7 +291,7 @@ final class ExecutionSpecResolver
                 'EXECUTION_SPEC_PATH_NON_CANONICAL',
                 'validation',
                 ['path' => $relativePath],
-                'Execution spec ids must resolve to docs/features/<feature>/specs/<id>-<slug>.md, where <id> uses one or more dot-separated 3-digit segments.',
+                'Execution spec ids must resolve to Features/<FeaturePascalName>/specs/<id>-<slug>.md (canonical) or docs/features/<feature>/specs/<id>-<slug>.md (legacy compatibility), where <id> uses one or more dot-separated 3-digit segments.',
             );
         }
 
@@ -355,8 +329,12 @@ final class ExecutionSpecResolver
      */
     private function matchesById(string $feature, string $id, bool $includeDrafts): array
     {
-        $patterns = ['docs/features/' . $feature . '/specs/*.md'];
+        $patterns = [
+            'Features/' . $this->pascalFromSlug($feature) . '/specs/*.md',
+            'docs/features/' . $feature . '/specs/*.md',
+        ];
         if ($includeDrafts) {
+            $patterns[] = 'Features/' . $this->pascalFromSlug($feature) . '/specs/drafts/*.md';
             $patterns[] = 'docs/features/' . $feature . '/specs/drafts/*.md';
         }
 
@@ -379,14 +357,18 @@ final class ExecutionSpecResolver
             }
         }
 
-        sort($matches);
-
-        return array_values(array_unique($matches));
+        return $this->canonicalPreferredByName($matches);
     }
 
     private function featureExists(string $feature): bool
     {
+        $canonicalRoot = 'Features/' . $this->pascalFromSlug($feature);
         $paths = [
+            $canonicalRoot,
+            $canonicalRoot . '/specs/drafts',
+            $canonicalRoot . '/' . $feature . '.spec.md',
+            $canonicalRoot . '/' . $feature . '.md',
+            $canonicalRoot . '/' . $feature . '.decisions.md',
             'docs/features/' . $feature,
             'docs/features/' . $feature . '/specs/drafts',
             'docs/features/' . $feature . '/' . $feature . '.spec.md',
@@ -401,6 +383,109 @@ final class ExecutionSpecResolver
         }
 
         return false;
+    }
+
+    private function activeSpecPathForFeature(string $feature, string $name): string
+    {
+        $canonical = 'Features/' . $this->pascalFromSlug($feature) . '/specs/' . $name . '.md';
+        if (is_file($this->paths->join($canonical))) {
+            return $canonical;
+        }
+
+        return 'docs/features/' . $feature . '/specs/' . $name . '.md';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function collectActiveMatches(string $basename): array
+    {
+        $matches = [];
+
+        foreach ([
+            'Features/*/specs/' . $basename . '.md',
+            'docs/features/*/specs/' . $basename . '.md',
+        ] as $pattern) {
+            foreach (glob($this->paths->join($pattern)) ?: [] as $match) {
+                $relative = $this->relativePath($match);
+                if ($relative === null || ExecutionSpecFilename::parseActivePath($relative) === null) {
+                    continue;
+                }
+
+                $matches[] = $relative;
+            }
+        }
+
+        return $this->canonicalPreferredByName($matches);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function collectDraftMatches(string $basename): array
+    {
+        $matches = [];
+
+        foreach ([
+            'Features/*/specs/drafts/' . $basename . '.md',
+            'docs/features/*/specs/drafts/' . $basename . '.md',
+        ] as $pattern) {
+            foreach (glob($this->paths->join($pattern)) ?: [] as $match) {
+                $relative = $this->relativePath($match);
+                if ($relative === null || ExecutionSpecFilename::parseDraftPath($relative) === null) {
+                    continue;
+                }
+
+                $matches[] = $relative;
+            }
+        }
+
+        return $this->canonicalPreferredByName($matches);
+    }
+
+    private function pascalFromSlug(string $slug): string
+    {
+        $parts = array_filter(explode('-', $slug), static fn(string $part): bool => $part !== '');
+
+        return implode('', array_map(static fn(string $part): string => ucfirst($part), $parts));
+    }
+
+    /**
+     * @param list<string> $paths
+     * @return list<string>
+     */
+    private function canonicalPreferredByName(array $paths): array
+    {
+        $paths = array_values(array_unique($paths));
+        usort($paths, static function (string $left, string $right): int {
+            $leftCanonical = str_starts_with($left, 'Features/');
+            $rightCanonical = str_starts_with($right, 'Features/');
+            if ($leftCanonical !== $rightCanonical) {
+                return $leftCanonical ? -1 : 1;
+            }
+
+            return strcmp($left, $right);
+        });
+
+        $deduped = [];
+        $seen = [];
+
+        foreach ($paths as $path) {
+            $parsed = ExecutionSpecFilename::parseActivePath($path) ?? ExecutionSpecFilename::parseDraftPath($path);
+            if ($parsed === null) {
+                continue;
+            }
+
+            $key = $parsed['feature'] . '/' . $parsed['name'];
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $deduped[] = $path;
+        }
+
+        return $deduped;
     }
 
     private function featureFromContents(string $contents): ?string

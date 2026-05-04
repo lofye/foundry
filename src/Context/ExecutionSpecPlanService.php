@@ -83,11 +83,19 @@ final class ExecutionSpecPlanService
         }
 
         $planDirectory = dirname($absolutePlanPath);
+        if (file_exists($planDirectory) && !is_dir($planDirectory)) {
+            return $this->error($feature, $relativeSpecPath, $relativePlanPath, 'plan_directory_create_failed');
+        }
+
         if (!is_dir($planDirectory) && !mkdir($planDirectory, 0777, true) && !is_dir($planDirectory)) {
             return $this->error($feature, $relativeSpecPath, $relativePlanPath, 'plan_directory_create_failed');
         }
 
         $contents = $this->renderPlan($parsedPath['name']);
+        if (is_dir($absolutePlanPath)) {
+            return $this->error($feature, $relativeSpecPath, $relativePlanPath, 'plan_write_failed');
+        }
+
         if (file_put_contents($absolutePlanPath, $contents) === false) {
             return $this->error($feature, $relativeSpecPath, $relativePlanPath, 'plan_write_failed');
         }

@@ -61,6 +61,9 @@ final class ApiSurfaceRegistryTest extends TestCase
         $generateTemplate = $registry->classifyCliCommand(['generate', '--template=feature.recipe']);
         $licenseStatus = $registry->classifyCliCommand(['license', 'status']);
         $features = $registry->classifyCliCommand(['features']);
+        $featureList = $registry->classifyCliCommand(['feature:list']);
+        $featureInspect = $registry->classifyCliCommand(['feature:inspect', 'event-system']);
+        $featureMap = $registry->classifyCliCommand(['feature:map']);
         $inspectContext = $registry->classifyCliCommand(['inspect', 'context', 'event-bus']);
         $contextInit = $registry->classifyCliCommand(['context', 'init', 'event-bus']);
         $contextDoctor = $registry->classifyCliCommand(['context', 'doctor', '--feature=event-bus']);
@@ -79,6 +82,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $specLogEntry = $registry->classifyCliCommand(['spec:log-entry', 'execution-spec-system', '004']);
         $specValidate = $registry->classifyCliCommand(['spec:validate']);
         $verifyContext = $registry->classifyCliCommand(['verify', 'context', '--feature=event-bus']);
+        $verifyFeatures = $registry->classifyCliCommand(['verify', 'features']);
         $init = $registry->classifyCliCommand(['init']);
         $examplesList = $registry->classifyCliCommand(['examples:list']);
         $examplesLoad = $registry->classifyCliCommand(['examples:load', 'blog-api']);
@@ -105,6 +109,9 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($generateTemplate);
         $this->assertNotNull($licenseStatus);
         $this->assertNotNull($features);
+        $this->assertNotNull($featureList);
+        $this->assertNotNull($featureInspect);
+        $this->assertNotNull($featureMap);
         $this->assertNotNull($inspectContext);
         $this->assertNotNull($contextInit);
         $this->assertNotNull($contextDoctor);
@@ -122,6 +129,7 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertNotNull($specLogEntry);
         $this->assertNotNull($specValidate);
         $this->assertNotNull($verifyContext);
+        $this->assertNotNull($verifyFeatures);
         $this->assertNotNull($init);
         $this->assertNotNull($examplesList);
         $this->assertNotNull($examplesLoad);
@@ -190,6 +198,12 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('Monetization', $features['category']);
         $this->assertSame('features', $features['command_type']);
         $this->assertFalse($features['supports_pipeline_stage_filter']);
+        $this->assertSame('stable', $featureList['stability']);
+        $this->assertSame('feature:list', $featureList['command_type']);
+        $this->assertSame('stable', $featureInspect['stability']);
+        $this->assertSame('feature:inspect', $featureInspect['command_type']);
+        $this->assertSame('stable', $featureMap['stability']);
+        $this->assertSame('feature:map', $featureMap['command_type']);
         $this->assertSame('stable', $inspectContext['stability']);
         $this->assertSame('Architecture', $inspectContext['category']);
         $this->assertSame('inspect', $inspectContext['command_type']);
@@ -251,6 +265,9 @@ final class ApiSurfaceRegistryTest extends TestCase
         $this->assertSame('stable', $verifyContext['stability']);
         $this->assertSame('Verification', $verifyContext['category']);
         $this->assertSame('verify', $verifyContext['command_type']);
+        $this->assertSame('stable', $verifyFeatures['stability']);
+        $this->assertSame('Verification', $verifyFeatures['category']);
+        $this->assertSame('verify', $verifyFeatures['command_type']);
         $this->assertSame('experimental', $packSearch['stability']);
         $this->assertSame('Extensions', $packSearch['category']);
         $this->assertSame('pack', $packSearch['command_type']);

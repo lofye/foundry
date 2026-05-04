@@ -290,3 +290,8 @@
 ## 2026-05-03 19:34:25 -0400
 - spec: event-system/001-registry-synchronous-deterministic-dispatch.md
 - note: Implemented deterministic synchronous event primitives (`EventRegistry`, `EventDispatcher`), added read-only CLI inspection commands (`event:list`, `event:inspect`), extended MCP read tools (`event.list`, `event.inspect`) via CLI parity, and added focused unit/integration coverage for ordering, failure wrapping, and deterministic read outputs.
+
+## 2026-05-03 22:51:05 -0400
+- spec: feature-system/001-feature-boundaries-and-localized-runtime-layout.md
+- note: Added canonical `Features/` workspace support with deterministic `feature:list`, `feature:inspect`, `feature:map`, and `verify features` CLI surfaces, canonical/legacy duplicate diagnostics, and boundary enforcement signaling.
+- note: Extended execution-spec resolution/validation and context path verification to support canonical `Features/*` specs, plans, and implementation ledger compatibility while preserving legacy `docs/features/*` readability.

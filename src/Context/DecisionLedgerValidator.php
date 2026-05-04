@@ -28,10 +28,13 @@ final class DecisionLedgerValidator
         $missingSections = [];
         $fileExists = is_file($filePath);
 
-        if (!$this->hasCanonicalPath($filePath, $this->resolver->decisionsPath($featureName))) {
+        if (!$this->hasCanonicalPath($filePath, [
+            $this->resolver->legacyDecisionsPath($featureName),
+            $this->resolver->canonicalDecisionsPath($featureName),
+        ])) {
             $issues[] = new ValidationIssue(
                 code: 'CONTEXT_DECISIONS_PATH_NON_CANONICAL',
-                message: sprintf('Decision ledger path must be docs/%1$s/%1$s.decisions.md.', $featureName),
+                message: sprintf('Decision ledger path must be canonical: docs/features/%1$s/%1$s.decisions.md or Features/%2$s/%1$s.decisions.md.', $featureName, $this->pascalFromSlug($featureName)),
                 file_path: $filePath,
             );
         }
@@ -116,11 +119,20 @@ final class DecisionLedgerValidator
         return ValidationResult::fromIssues($issues, $missingSections, true);
     }
 
-    private function hasCanonicalPath(string $filePath, string $expectedPath): bool
+    /**
+     * @param list<string> $expectedPaths
+     */
+    private function hasCanonicalPath(string $filePath, array $expectedPaths): bool
     {
         $normalized = str_replace('\\', '/', $filePath);
 
-        return $normalized === $expectedPath || str_ends_with($normalized, '/' . $expectedPath);
+        foreach ($expectedPaths as $expectedPath) {
+            if ($normalized === $expectedPath || str_ends_with($normalized, '/' . $expectedPath)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -187,5 +199,12 @@ final class DecisionLedgerValidator
         }
 
         return $missingSections;
+    }
+
+    private function pascalFromSlug(string $slug): string
+    {
+        $parts = array_filter(explode('-', $slug), static fn(string $part): bool => $part !== '');
+
+        return implode('', array_map(static fn(string $part): string => ucfirst($part), $parts));
     }
 }

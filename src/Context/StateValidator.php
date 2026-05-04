@@ -26,10 +26,13 @@ final class StateValidator
         $missingSections = [];
         $fileExists = is_file($filePath);
 
-        if (!$this->hasCanonicalPath($filePath, $this->resolver->statePath($featureName))) {
+        if (!$this->hasCanonicalPath($filePath, [
+            $this->resolver->legacyStatePath($featureName),
+            $this->resolver->canonicalStatePath($featureName),
+        ])) {
             $issues[] = new ValidationIssue(
                 code: 'CONTEXT_STATE_PATH_NON_CANONICAL',
-                message: sprintf('State path must be docs/%1$s/%1$s.md.', $featureName),
+                message: sprintf('State path must be canonical: docs/features/%1$s/%1$s.md or Features/%2$s/%1$s.md.', $featureName, $this->pascalFromSlug($featureName)),
                 file_path: $filePath,
             );
         }
@@ -84,11 +87,20 @@ final class StateValidator
         return ValidationResult::fromIssues($issues, $missingSections, true);
     }
 
-    private function hasCanonicalPath(string $filePath, string $expectedPath): bool
+    /**
+     * @param list<string> $expectedPaths
+     */
+    private function hasCanonicalPath(string $filePath, array $expectedPaths): bool
     {
         $normalized = str_replace('\\', '/', $filePath);
 
-        return $normalized === $expectedPath || str_ends_with($normalized, '/' . $expectedPath);
+        foreach ($expectedPaths as $expectedPath) {
+            if ($normalized === $expectedPath || str_ends_with($normalized, '/' . $expectedPath)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function firstHeading(string $contents): ?string
@@ -105,5 +117,12 @@ final class StateValidator
     private function hasSection(string $contents, string $section): bool
     {
         return preg_match('/^## ' . preg_quote($section, '/') . '\s*$/m', $contents) === 1;
+    }
+
+    private function pascalFromSlug(string $slug): string
+    {
+        $parts = array_filter(explode('-', $slug), static fn(string $part): bool => $part !== '');
+
+        return implode('', array_map(static fn(string $part): string => ucfirst($part), $parts));
     }
 }

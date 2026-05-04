@@ -72,9 +72,9 @@ final class ContextInspectionService
         }
 
         return $this->alignmentChecker->check(
-            $this->readFile($this->resolver->specPath($featureName)),
-            $this->readFile($this->resolver->statePath($featureName)),
-            $this->readFile($this->resolver->decisionsPath($featureName)),
+            $this->readFile($this->preferredContextPaths($featureName)['spec']),
+            $this->readFile($this->preferredContextPaths($featureName)['state']),
+            $this->readFile($this->preferredContextPaths($featureName)['decisions']),
         )->toArray($featureName);
     }
 
@@ -184,6 +184,25 @@ final class ContextInspectionService
         }
 
         return $contents;
+    }
+
+    /**
+     * @return array{spec:string,state:string,decisions:string}
+     */
+    private function preferredContextPaths(string $featureName): array
+    {
+        $canonical = $this->resolver->canonicalPaths($featureName);
+        $canonicalRoot = dirname($canonical['spec']);
+        if (
+            is_file($this->paths->join($canonical['spec']))
+            || is_file($this->paths->join($canonical['state']))
+            || is_file($this->paths->join($canonical['decisions']))
+            || is_dir($this->paths->join($canonicalRoot))
+        ) {
+            return $canonical;
+        }
+
+        return $this->resolver->legacyPaths($featureName);
     }
 
     /**

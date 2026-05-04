@@ -164,7 +164,7 @@ final class ApiSurfaceRegistry
         }
 
         return match ($first) {
-            'help', 'completion', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'examples:list', 'examples:load', 'spec:new', 'spec:plan', 'spec:log-entry', 'spec:validate', 'plan:list', 'plan:replay', 'plan:show', 'plan:undo', 'extension:install', 'extension:search', 'extension:list', 'mcp:serve', 'event:list', 'event:inspect' => $first,
+            'help', 'completion', 'new', 'serve', 'queue:work', 'queue:inspect', 'schedule:run', 'trace:tail', 'affected-files', 'impacted-features', 'upgrade-check', 'explain', 'diff', 'trace', 'observe:trace', 'observe:profile', 'observe:compare', 'history', 'regressions', 'features', 'feature:list', 'feature:inspect', 'feature:map', 'examples:list', 'examples:load', 'spec:new', 'spec:plan', 'spec:log-entry', 'spec:validate', 'plan:list', 'plan:replay', 'plan:show', 'plan:undo', 'extension:install', 'extension:search', 'extension:list', 'mcp:serve', 'event:list', 'event:inspect' => $first,
             'license' => match ($second) {
                 'status' => 'license status',
                 'activate' => 'license activate',
@@ -413,6 +413,9 @@ final class ApiSurfaceRegistry
             $this->cliCommandEntry('license activate', 'license activate [--key=YOUR_KEY]', 'experimental', 'Validate and store a local Foundry license key. Optional remote validation runs only when explicitly configured.'),
             $this->cliCommandEntry('license deactivate', 'license deactivate', 'experimental', 'Remove the locally stored Foundry license file. Environment-provided keys remain active until the environment is cleared.'),
             $this->cliCommandEntry('features', 'features', 'experimental', 'List capability and service descriptors published by the monetization layer.'),
+            $this->cliCommandEntry('feature:list', 'feature:list', 'stable', 'List feature workspaces and context/boundary presence in deterministic slug order.'),
+            $this->cliCommandEntry('feature:inspect', 'feature:inspect <feature>', 'stable', 'Inspect one feature workspace context, directories, and declared dependencies.'),
+            $this->cliCommandEntry('feature:map', 'feature:map', 'stable', 'Emit deterministic feature-owned path mapping and shared-glue placeholders.'),
             $this->cliCommandEntry('pack install', 'pack install <path-or-name>', 'experimental', 'Install a Foundry pack from disk or the hosted public registry, optionally pinning an exact hosted version with vendor/pack@1.2.0.'),
             $this->cliCommandEntry('pack search', 'pack search <query>', 'experimental', 'Search the hosted public pack registry by name and description.'),
             $this->cliCommandEntry('pack remove', 'pack remove <vendor/pack>', 'experimental', 'Deactivate an installed Foundry pack without deleting its files.'),
@@ -549,6 +552,7 @@ final class ApiSurfaceRegistry
             'extensions' => ['experimental', 'verify extensions', 'Verify extension registration and compatibility warnings.'],
             'compatibility' => ['experimental', 'verify compatibility', 'Verify extension and pack compatibility contracts.'],
             'feature' => ['stable', 'verify feature <feature>', 'Verify feature-local contract completeness.'],
+            'features' => ['stable', 'verify features', 'Verify feature workspace boundary compliance and canonical/legacy duplication diagnostics.'],
             'context' => ['stable', 'verify context [--feature=<feature>]', 'Verify feature context health using doctor and alignment results.'],
             'resource' => ['stable', 'verify resource <name>', 'Verify resource contracts.'],
             'notifications' => ['stable', 'verify notifications', 'Verify notification contracts.'],
@@ -743,7 +747,7 @@ final class ApiSurfaceRegistry
             in_array($signature, ['init', 'new', 'init app', 'examples:list', 'examples:load', 'preview notification', 'implement feature', 'implement spec', 'plan feature', 'spec:new', 'spec:plan'], true)
                 || str_starts_with($signature, 'generate ')
                 => 'App Scaffolding',
-            in_array($signature, ['upgrade-check', 'spec:log-entry', 'spec:validate', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify context', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)
+            in_array($signature, ['upgrade-check', 'spec:log-entry', 'spec:validate', 'verify graph', 'verify graph-integrity', 'verify pipeline', 'verify extensions', 'verify compatibility', 'verify feature', 'verify features', 'verify context', 'verify resource', 'verify notifications', 'verify api', 'verify billing', 'verify workflows', 'verify orchestrations', 'verify search', 'verify streams', 'verify locales', 'verify policies', 'verify contracts', 'verify cli-surface', 'verify auth', 'verify cache', 'verify events', 'verify jobs', 'verify migrations'], true)
                 => 'Verification',
             in_array($signature, ['migrate definitions', 'codemod run', 'inspect extensions', 'inspect extension', 'inspect packs', 'inspect pack', 'inspect compatibility', 'inspect migrations', 'inspect definition-format', 'generate migration'], true)
                 => 'Extensions',

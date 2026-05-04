@@ -21,6 +21,7 @@ use Foundry\CLI\Commands\ExplainCommand;
 use Foundry\CLI\Commands\ExportGraphCommand;
 use Foundry\CLI\Commands\ExportOpenApiCommand;
 use Foundry\CLI\Commands\FeaturesCommand;
+use Foundry\CLI\Commands\FeatureSystemCommand;
 use Foundry\CLI\Commands\GenerateCommand as PromptGenerateCommand;
 use Foundry\CLI\Commands\GenerateFeatureCommand;
 use Foundry\CLI\Commands\GenerateIndexesCommand;
@@ -69,6 +70,7 @@ use Foundry\CLI\Commands\VerifyCompatibilityCommand;
 use Foundry\CLI\Commands\VerifyContextCommand;
 use Foundry\CLI\Commands\VerifyContractsCommand;
 use Foundry\CLI\Commands\VerifyFeatureCommand;
+use Foundry\CLI\Commands\VerifyFeaturesCommand;
 use Foundry\CLI\Commands\VerifyGraphCommand;
 use Foundry\CLI\Commands\VerifyIntegrationCommand;
 use Foundry\CLI\Commands\VerifyPipelineCommand;
@@ -149,6 +151,7 @@ final class Application
             new LicenseCommand(),
             new McpServeCommand(),
             new FeaturesCommand(),
+            new FeatureSystemCommand(),
             new EventCommand(),
             new PackCommand(),
             new PromptGenerateCommand(),
@@ -162,6 +165,7 @@ final class Application
             new PreviewNotificationCommand(),
             new InspectContextCommand(),
             new VerifyFeatureCommand(),
+            new VerifyFeaturesCommand(),
             new VerifyContextCommand(),
             new VerifyResourceCommand(),
             new VerifyIntegrationCommand(),
