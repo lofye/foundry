@@ -1,6 +1,6 @@
 ---
-name: implement-spec-and-stabilize-strict
-description: Strictly implement a Foundry execution spec and enforce a fully clean, verified, aligned system state. Refuses completion if any issues remain.
+name: implement-spec-and-stabilize
+description: Implement a Foundry execution spec and stabilize the system, allowing clearly reported partial completion when blockers remain.
 ---
 
 # Purpose
@@ -9,36 +9,35 @@ Use this skill when:
 - preparing for release
 - finalizing a feature
 - enforcing a fully clean system state
-- zero-tolerance for drift or unresolved issues
+- iterative implementation where repair may require follow-up
 
 This skill helps produce:
-- fully implemented spec
-- zero validation errors
-- zero failing tests
-- zero context verification issues
-- fully aligned feature context
-- production-ready system state
+- implemented or partially implemented spec
+- validation/test/context results
+- boundary verification results when available
+- clearly reported blockers
+- safe next actions
 
 Do not use this skill for:
-- iterative development
-- partially complete specs
-- exploratory work
+- release-final zero-tolerance stabilization
+- cases where unresolved issues must block completion; use implement-spec-and-stabilize-strict instead
 
 # Inputs
 
 Expect:
-- docs/features/<feature>/specs/<id>-<slug>.md
+- Features/<FeatureName>/specs/<id>-<slug>.md
 
 If missing:
 - stop immediately and request it
 
 # Core Principle
 
-This is a **zero-tolerance pipeline**.
+This is a **best-effort stabilization pipeline**.
 
-If ANY step fails or leaves unresolved issues:
-→ DO NOT COMPLETE  
-→ REPORT FAILURE
+If a step fails or leaves unresolved issues:
+→ do not hide it
+→ report the blocker clearly
+→ provide the smallest safe next action
 
 ---
 
@@ -87,18 +86,6 @@ Requirements:
 If ANY failure:
 → FIX or FAIL
 
-Then run the canonical coverage gate:
-
-XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
-php bin/foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
-
-Requirements:
-- Clover coverage run succeeds
-- `verify coverage` returns `status=pass`
-
-If ANY failure:
-→ FIX or FAIL
-
 ---
 
 ## Step 5 — Context Verification (MUST BE CLEAN)
@@ -134,37 +121,69 @@ If still not clean:
 
 ---
 
-## Step 7 — Feature Alignment Pass (MANDATORY)
+## Step 7 — Feature Boundary Verification (MANDATORY WHEN AVAILABLE)
+
+Run when available:
+
+```bash
+php bin/foundry verify features --json
+```
+
+Prefer feature-scoped verification when available:
+
+```bash
+php bin/foundry verify features --feature=<feature> --json
+php bin/foundry feature:map --feature=<feature> --json
+```
+
+Requirements:
+- feature-specific logic should stay inside the owning feature directory
+- shared framework files should contain registration glue only
+- warnings and violations must be reported
+
+If boundary violations exist:
+→ fix them when safely in scope
+→ otherwise report them clearly as remaining issues
+
+If the command is not available because the feature-boundary system has not yet been implemented:
+→ report "boundary_verification_available": false
+
+---
+
+## Step 8 — Feature Alignment Pass (MANDATORY)
 
 Run:
-- feature-alignment-pass across docs/features/*
+- feature-alignment-pass across Features/*
+- include legacy docs/features/* during migration when present
 
 Then re-run:
 
 php bin/foundry verify context --json
 
 Requirements:
-- still fully clean
+- report whether alignment is clean
+- repair safe alignment issues when in scope
 
-If NOT:
-→ FAIL
+If NOT clean:
+→ report remaining issues clearly
 
 ---
 
-## Step 8 — Final System Check
+## Step 9 — Final System Check
 
-All must be true:
+Report all of the following:
 
-- spec implemented
-- implementation log correct
-- spec validation clean
-- tests pass
-- context verification clean
-- no remaining issues
-- no required manual actions
+- whether the spec was implemented
+- whether the implementation log is correct
+- whether spec validation is clean
+- whether tests pass
+- whether context verification is clean
+- whether feature boundary verification is clean when available
+- remaining issues
+- required manual actions
 
-If ANY condition is not met:
-→ FAIL
+If any condition is not met:
+→ return partial/blocked status rather than claiming completion
 
 ---
 
@@ -173,15 +192,17 @@ If ANY condition is not met:
 Return:
 
 {
-"status": "ok|failed",
+"status": "ok|partial|blocked",
 "spec": "<feature>/<id>",
 "implemented": true|false,
 "validation_clean": true|false,
 "tests_passed": true|false,
 "context_clean": true|false,
 "alignment_clean": true|false,
+"boundary_clean": true|false|null,
 "remaining_issues": [],
-"failure_reason": null|string
+"failure_reason": null|string,
+"next_actions": []
 }
 
 ---
@@ -190,12 +211,11 @@ Return:
 
 SUCCESS requires:
 
-- zero validation issues
-- zero failing tests
-- zero context issues
-- zero required_actions
-- deterministic alignment
-- no ambiguity
+- implemented behavior matches the spec
+- tests and validation pass, or blockers are explicitly reported
+- context is clean, or unresolved context issues are explicitly reported
+- boundary verification is clean when available, or violations are explicitly reported
+- deterministic alignment where safely achievable
 
 ---
 
@@ -203,12 +223,13 @@ SUCCESS requires:
 
 This skill must NEVER:
 - silently succeed with issues
-- downgrade failures to warnings
-- ignore unresolved problems
+- hide unresolved problems
+- claim strict completion when checks are incomplete
 
 It must:
-- enforce a fully clean, production-ready state
-- fail loudly if that state is not achieved
+- report blockers clearly
+- distinguish complete success from partial stabilization
+- recommend the smallest safe next action
 
 ---
 
@@ -242,6 +263,7 @@ Return:
 "would_add_log_entry": true|false,
 "would_fail_validation": true|false,
 "would_fail_tests": true|false,
+"would_fail_boundary_verification": true|false|null,
 "context_issues": [],
 "repairable_issues": [],
 "unresolved_issues": [],

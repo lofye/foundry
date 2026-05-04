@@ -30,6 +30,37 @@ Execution spec IDs are ordered contracts within each feature. IDs must stay cont
 
 Use `foundry verify context --feature=<feature> --json` as the primary machine-readable proceed/fail gate. If a feature does not have canonical context yet, create it first with `foundry context init <feature> --json`. If context verification fails, repair context before implementation.
 
+## Feature-Localized Layout
+
+Foundry apps are moving toward a localized structure where the feature directory is the primary context unit for LLMs:
+
+```text
+Features/
+  implementation.log
+  README.md
+
+  <FeatureName>/
+    <feature>.spec.md
+    <feature>.md
+    <feature>.decisions.md
+    specs/
+    plans/
+    docs/
+    src/
+    tests/
+```
+
+Feature-specific app code and tests should live inside the owning feature directory once the localized feature layout is enabled. Shared files should contain registration glue only.
+
+Use boundary verification when available:
+
+```bash
+foundry verify features --json
+foundry feature:map --feature=<feature> --json
+```
+
+Legacy `app/features/*`, `docs/features/*`, and generated compatibility paths may exist during migration, but new feature work should prefer localized feature roots.
+
 ## First Run
 
 Foundry scaffolds a project-local `foundry` launcher. If your shell does not resolve current-directory executables, use `./foundry ...` instead.

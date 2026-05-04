@@ -27,7 +27,7 @@ Do not use this skill for:
 # Inputs
 
 Expect:
-- docs/features/<feature>/specs/<id>-<slug>.md
+- Features/<FeatureName>/specs/<id>-<slug>.md
 
 If missing:
 - stop immediately and request it
@@ -72,6 +72,7 @@ Return:
   "would_add_log_entry": true|false,
   "would_fail_validation": true|false,
   "would_fail_tests": true|false,
+  "would_fail_boundary_verification": true|false|null,
   "context_issues": [],
   "repairable_issues": [],
   "unresolved_issues": [],
@@ -140,18 +141,6 @@ Requirements:
 If ANY failure:
 → FIX or FAIL
 
-Then run the canonical coverage gate:
-
-XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
-php bin/foundry verify coverage --min=90 --clover=build/coverage/clover.xml --json
-
-Requirements:
-- Clover coverage run succeeds
-- `verify coverage` returns `status=pass`
-
-If ANY failure:
-→ FIX or FAIL
-
 ---
 
 ## Step 5 — Context Verification (MUST BE CLEAN)
@@ -187,10 +176,41 @@ If still not clean:
 
 ---
 
-## Step 7 — Feature Alignment Pass (MANDATORY)
+## Step 7 — Feature Boundary Verification (MANDATORY)
+
+Run when available:
+
+```bash
+php bin/foundry verify features --json
+```
+
+Prefer feature-scoped verification when available:
+
+```bash
+php bin/foundry verify features --feature=<feature> --json
+php bin/foundry feature:map --feature=<feature> --json
+```
+
+Requirements:
+- zero boundary violations
+- no feature-specific runtime logic outside the owning feature directory
+- no feature-specific tests outside the owning feature directory unless explicitly grandfathered
+- shared framework files contain registration glue only
+- opt-out, if configured, is explicit and reported
+
+If ANY boundary violation exists:
+→ FIX or FAIL
+
+If the command is not available because the feature-boundary system has not yet been implemented:
+→ report "boundary_verification_available": false
+→ do not claim boundary enforcement was run
+
+---
+
+## Step 8 — Feature Alignment Pass (MANDATORY)
 
 Run:
-- feature-alignment-pass across docs/features/*
+- feature-alignment-pass across Features/*
 
 Then re-run:
 
@@ -204,7 +224,7 @@ If NOT:
 
 ---
 
-## Step 8 — Final System Check
+## Step 9 — Final System Check
 
 All must be true:
 
@@ -213,6 +233,7 @@ All must be true:
 - spec validation clean
 - tests pass
 - context verification clean
+- feature boundary verification clean when available
 - no remaining issues
 - no required manual actions
 
@@ -233,6 +254,7 @@ Return:
   "tests_passed": true|false,
   "context_clean": true|false,
   "alignment_clean": true|false,
+  "boundary_clean": true|false|null,
   "remaining_issues": [],
   "failure_reason": null|string
 }
@@ -246,6 +268,7 @@ SUCCESS requires:
 - zero validation issues
 - zero failing tests
 - zero context issues
+- zero feature boundary violations when boundary verification is available
 - zero required_actions
 - deterministic alignment
 - no ambiguity

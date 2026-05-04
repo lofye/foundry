@@ -132,6 +132,75 @@ The root `app/*` tree is a framework-owned demo and smoke app.
 - `src/CLI/Commands/InitAppCommand.php` → scaffold promotion behavior
 - `stubs/*` → generator templates only when used
 
+---
+
+## Feature Boundary Rules (MANDATORY)
+
+Foundry features are intended to be physically localized so agents can load, reason about, modify, test, and verify one feature with the smallest safe context window.
+
+The canonical localized feature root is:
+
+`Features/<FeatureName>/`
+
+Recommended structure:
+
+```text
+Features/
+  implementation.log
+  README.md
+
+  <FeatureName>/
+    <feature>.spec.md
+    <feature>.md
+    <feature>.decisions.md
+    specs/
+    plans/
+    docs/
+    src/
+    tests/
+```
+
+Rules:
+
+- `Features/<FeatureName>/` is the primary LLM context boundary for a feature.
+- Feature-specific runtime behavior MUST live under `Features/<FeatureName>/src/`.
+- Feature-specific tests MUST live under `Features/<FeatureName>/tests/`.
+- Feature-specific execution specs, plans, supporting docs, canonical spec/state files, and decision ledgers MUST live under that feature root once the localized layout is enabled.
+- Shared framework directories such as `src/CLI`, `src/Support`, `src/MCP`, `src/Packs`, and similar framework surfaces MAY contain thin registration glue only.
+- Shared framework directories MUST NOT contain feature-specific business logic, policy logic, validators, handlers, renderers, or workflows when that logic can live inside the owning feature.
+- Cross-feature imports MUST be explicit, minimal, and justified by the feature contract.
+- Generated, cached, imported, or vendor-owned outputs MUST NOT be used to bypass feature boundaries.
+- Boundary violations MUST be fixed rather than normalized away, ignored, or hidden in shared framework code.
+
+Compatibility rule:
+
+- Existing legacy paths under `docs/features/*`, `src/*`, and `tests/*` may exist during migration.
+- New feature work MUST prefer the localized `Features/<FeatureName>/` layout once the feature-boundary system is available.
+- Legacy placement is allowed only when the active execution spec explicitly requires it, when migration has not yet occurred, or when the boundary validator reports it as grandfathered.
+
+Boundary enforcement is ON by default.
+
+Agents MUST run the feature-boundary verification command when available before claiming meaningful feature work complete:
+
+```bash
+php bin/foundry verify features --json
+```
+
+If a feature-scoped command exists, prefer it while iterating:
+
+```bash
+php bin/foundry verify features --feature=<feature-name> --json
+php bin/foundry feature:map --feature=<feature-name> --json
+php bin/foundry feature:inspect <feature-name> --json
+```
+
+Completion rules:
+
+- `verify features` passing means feature boundaries are clean enough to proceed or complete.
+- Boundary warnings require explicit acknowledgement and must not be silently ignored.
+- Boundary failures block completion.
+- Opting out of boundary enforcement is permitted only through an explicit documented project configuration and must be reported as a warning by doctor/verify.
+
 Do NOT:
 
 - edit `app/generated/*` manually

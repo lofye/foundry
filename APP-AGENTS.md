@@ -73,6 +73,75 @@ Execution rules:
 - Do not hand-edit `app/generated/*`; regenerate instead
 - Do not hand-edit installed pack files under `.foundry/packs/*`; reinstall or replace them from source instead
 
+---
+
+## Feature Boundary Rules (MANDATORY)
+
+Foundry app features should be physically localized so agents can load, reason about, modify, test, and verify one feature with the smallest safe context window.
+
+The canonical localized feature root is:
+
+`Features/<FeatureName>/`
+
+Recommended structure:
+
+```text
+Features/
+  implementation.log
+  README.md
+
+  <FeatureName>/
+    <feature>.spec.md
+    <feature>.md
+    <feature>.decisions.md
+    specs/
+    plans/
+    docs/
+    src/
+    tests/
+```
+
+Rules:
+
+- `Features/<FeatureName>/` is the primary LLM context boundary for app feature work.
+- Feature-specific app behavior MUST live under `Features/<FeatureName>/src/` once localized feature layout is enabled.
+- Feature-specific tests MUST live under `Features/<FeatureName>/tests/`.
+- Feature-specific specs, plans, supporting docs, canonical spec/state files, and decision ledgers MUST live under that feature root once the localized layout is enabled.
+- Shared app or framework surfaces MAY contain thin registration glue only.
+- Shared surfaces MUST NOT contain feature-specific business logic, policy logic, validators, handlers, renderers, or workflows when that logic can live inside the owning feature.
+- Cross-feature imports MUST be explicit, minimal, and justified by the feature contract.
+- Generated output, installed pack files, cached registry data, and compiled projections MUST NOT be hand-edited to bypass feature boundaries.
+- Boundary violations MUST be fixed rather than normalized away, ignored, or hidden in shared files.
+
+Compatibility rule:
+
+- Existing legacy paths such as `app/features/*`, `docs/features/*`, `app/generated/*`, and global tests may exist during migration.
+- New feature work MUST prefer the localized `Features/<FeatureName>/` layout once the feature-boundary system is available.
+- Legacy placement is allowed only when the active execution spec explicitly requires it, when migration has not yet occurred, or when the boundary validator reports it as grandfathered.
+
+Boundary enforcement is ON by default.
+
+Agents MUST run the feature-boundary verification command when available before claiming meaningful feature work complete:
+
+```bash
+foundry verify features --json
+```
+
+If a feature-scoped command exists, prefer it while iterating:
+
+```bash
+foundry verify features --feature=<feature-name> --json
+foundry feature:map --feature=<feature-name> --json
+foundry feature:inspect <feature-name> --json
+```
+
+Completion rules:
+
+- `verify features` passing means feature boundaries are clean enough to proceed or complete.
+- Boundary warnings require explicit acknowledgement and must not be silently ignored.
+- Boundary failures block completion.
+- Opting out of boundary enforcement is permitted only through an explicit documented project configuration and must be reported as a warning by doctor/verify.
+
 ## Safe Edit Loop
 
 1. Load the reasoning policy and choose the correct reasoning level for the task.

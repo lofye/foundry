@@ -1,6 +1,6 @@
 ---
 name: feature-alignment-pass
-description: Reconcile and normalize docs/features spec, state, and decisions files to ensure deterministic alignment without semantic invention
+description: Reconcile and normalize feature spec, state, and decisions files to ensure deterministic alignment without semantic invention
 ---
 
 # Purpose
@@ -8,7 +8,7 @@ description: Reconcile and normalize docs/features spec, state, and decisions fi
 Use this skill when:
 - feature specs have just been implemented
 - context files may be out of sync
-- running a consistency/cleanup pass across docs/features/*
+- running a consistency/cleanup pass across Features/* or legacy docs/features/*
 - preparing for verification or release
 
 This skill helps produce:
@@ -25,9 +25,9 @@ Do not use this skill for:
 # Inputs
 
 Expect inputs such as:
-- docs/features/*.spec.md
-- docs/features/*.md
-- docs/features/*.decisions.md
+- Features/<FeatureName>/<feature>.spec.md
+- Features/<FeatureName>/<feature>.md
+- Features/<FeatureName>/<feature>.decisions.md
 
 If any critical input is missing:
 - do not invent it
@@ -88,7 +88,12 @@ For each feature:
     - duplicate removal
     - canonical ordering
 
-4. DO NOT:
+4. Check feature-boundary context when available:
+    - prefer localized `Features/<FeatureName>/` context
+    - do not move files across boundaries unless the active task explicitly authorizes migration
+    - report legacy-path use when it matters to alignment
+
+5. DO NOT:
     - invent missing content
     - resolve unclear intent
     - modify decision history
@@ -111,6 +116,7 @@ AND a JSON summary:
 "files_modified": [],
 "issues_found": [],
 "issues_unresolved": [],
+"boundary_observations": [],
 "requires_manual_review": true|false
 }
 
